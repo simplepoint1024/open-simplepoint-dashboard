@@ -1,10 +1,11 @@
-import {lazy, Suspense} from 'react';
+import {asyncComponent} from '../AsyncComponent';
+import {Suspense} from 'react';
 import {Spin} from 'antd';
 import {registerWorkflowFormAdapter} from '../WorkflowForms/adapterRegistry';
 
-const BindingEditor = lazy(() => import('./BindingEditor'));
-const SnapshotView = lazy(() => import('./SnapshotView'));
-const StartEntry = lazy(() => import('./StartEntry'));
+const BindingEditor = asyncComponent(() => import('./BindingEditor'));
+const SnapshotView = asyncComponent(() => import('./SnapshotView'));
+const StartEntry = asyncComponent(() => import('./StartEntry'));
 
 /** Called once by the host, never discovered from saved process metadata. */
 export function registerApplicationWorkflow() {

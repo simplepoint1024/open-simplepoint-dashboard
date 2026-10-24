@@ -1,0 +1,213 @@
+{
+  "date": "2026-10-24",
+  "task": "平台菜单重新分组、跨模块共享目录与首次启动自动初始化",
+  "status": "implemented_deployed_verified",
+  "categories": [
+    "我的",
+    "AI平台",
+    "数据平台",
+    "应用平台",
+    "平台配置",
+    "权限配置",
+    "系统资源",
+    "多语言",
+    "系统运维",
+    "系统配置"
+  ],
+  "retainedIndependentEntries": [
+    "首页",
+    "人力办公"
+  ],
+  "implementation": {
+    "authoritativeResourceContributions": [
+      "common-ui",
+      "app-http",
+      "workflow-http",
+      "dna-http",
+      "ai-http",
+      "auditing-http"
+    ],
+    "registrationContract": "security.resource:4",
+    "identityMigration": "V21__shared_resource_directories.sql",
+    "initialization": "复用模块初始化和资源声明注册机制；从声明推导共享目录依赖，按依赖顺序注册；首次安装自动建立目录，重复注册保留资源身份。",
+    "existingInstallation": "通过受管资源注册更新既有目录；通过平台翻译 API 更新本次批准的 37 条菜单翻译。首次安装直接使用更新后的打包翻译。",
+    "tenantSynchronization": "仅跟随未自定义位置的原平台父目录变更，保留租户自定义名称和位置。",
+    "scope": "继续按工作空间及实际授权过滤菜单，隐藏空目录。",
+    "additionalCorrections": [
+      "主应用本地页面不再请求远程 federation manifest",
+      "隐藏仅含不可见页面的空目录",
+      "流程定义名称列保留可读宽度并支持横向滚动"
+    ]
+  },
+  "preservation": {
+    "originalResourceIdentitiesPreserved": 307,
+    "addedDirectories": 15,
+    "grantsUnchanged": 332,
+    "customizedTenantNamesPreserved": 2,
+    "allDeclaredParentsMatch": true,
+    "sourceCatalogAcyclic": true,
+    "resourceOwnersAtNewGeneration": 6
+  },
+  "tests": {
+    "backend": {
+      "tests": 5120,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 142,
+      "suites": 779
+    },
+    "frontendModuleFederationTestsPassed": 15,
+    "frontendTypecheck": "passed",
+    "i18nSynchronizationAndCheck": "passed",
+    "strictUiAudit": {
+      "reviewedExceptions": 39,
+      "unreviewedExceptions": 0,
+      "passed": true
+    },
+    "firstStart": "真实六模块资源声明通过实际初始化器与 H2 资源仓储验证空库初始化及重复注册，资源 ID、父子关系和归属稳定。",
+    "postgresMigrationRehearsal": {
+      "sharedDirectoryColumns": 1,
+      "migrationAndRepeatVerified": true
+    }
+  },
+  "deployment": {
+    "origins": [
+      "https://single.simplepoint.online:8000",
+      "https://home.simplepoint.online:8000"
+    ],
+    "servicesChecked": 10,
+    "allServicesHealthy": true,
+    "restart": {
+      "sameImageRestartHealthy": true,
+      "resourceIdsAndParentRelationshipsUnchanged": true,
+      "grantsUnchanged": true,
+      "customizedTenantNamesUnchanged": true,
+      "approvedTranslationsRetained": 37
+    },
+    "deploymentCredentialChecks": {
+      "currentDeploymentAuthenticates": true,
+      "allThreePreviousDeploymentCredentialsRejected": true
+    }
+  },
+  "browser": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T13:59:55.758Z",
+      "menuTitlesUpdated": true,
+      "tenantResourceNavigationAndUrlRestore": true,
+      "workflowNestedUnderApplication": true,
+      "workflowNameColumnAtLeast200px": true,
+      "officeListsEmpty": 3,
+      "designedFormStillOpens": true,
+      "pendingAndCompletedEmpty": true,
+      "httpErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T14:00:44.290Z",
+      "menuTitlesUpdated": true,
+      "tenantResourceNavigationAndUrlRestore": true,
+      "workflowNestedUnderApplication": true,
+      "workflowNameColumnAtLeast200px": true,
+      "officeListsEmpty": 3,
+      "designedFormStillOpens": true,
+      "pendingAndCompletedEmpty": true,
+      "httpErrors": [],
+      "consoleErrors": []
+    }
+  ],
+  "authorizationScenarios": [
+    "管理员：平台、组织及个人工作空间，页面集合与调整前保持一致",
+    "普通成员：组织工作空间；不可见负责人专用套餐入口及无授权的空目录",
+    "平台空间：不显示不可用业务功能，运维目录包含相应跨模块日志审计页面"
+  ],
+  "businessDataPreservation": {
+    "at": "2026-10-24T14:03:48.374Z",
+    "results": [
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "activeFormPagesEmpty": 10,
+        "submissionsEmpty": 10,
+        "workflowDefinitionsPreserved": 23,
+        "allInstancesAndPersonalTasksEmpty": true,
+        "managerPendingAndCompletedEmpty": true,
+        "officeBusinessMenusRetained": 3
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "activeFormPagesEmpty": 10,
+        "submissionsEmpty": 10,
+        "workflowDefinitionsPreserved": 23,
+        "allInstancesAndPersonalTasksEmpty": true,
+        "managerPendingAndCompletedEmpty": true,
+        "officeBusinessMenusRetained": 3
+      }
+    ]
+  },
+  "servedAssets": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "passed": true,
+      "hostFilesVerified": 350,
+      "remotes": [
+        {
+          "module": "common",
+          "assetCount": 109
+        },
+        {
+          "module": "audit",
+          "assetCount": 49
+        },
+        {
+          "module": "dna",
+          "assetCount": 79
+        },
+        {
+          "module": "ai",
+          "assetCount": 53
+        },
+        {
+          "module": "app",
+          "assetCount": 50
+        },
+        {
+          "module": "workflow",
+          "assetCount": 61
+        }
+      ]
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "passed": true,
+      "hostFilesVerified": 350,
+      "remotes": [
+        {
+          "module": "common",
+          "assetCount": 109
+        },
+        {
+          "module": "audit",
+          "assetCount": 49
+        },
+        {
+          "module": "dna",
+          "assetCount": 79
+        },
+        {
+          "module": "ai",
+          "assetCount": 53
+        },
+        {
+          "module": "app",
+          "assetCount": 50
+        },
+        {
+          "module": "workflow",
+          "assetCount": 61
+        }
+      ]
+    }
+  ],
+  "verificationScope": "本记录覆盖本次菜单重组、初始化、权限可见性、导航、业务配置保留及部署资源验证；不代表重新验证所有历史业务流程。"
+}

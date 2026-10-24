@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +22,7 @@ import org.simplepoint.plugin.api.PluginArtifact;
 import org.simplepoint.plugin.api.manifest.PluginManifest;
 import org.simplepoint.plugin.rbac.resource.api.repository.RemoteModuleRepository;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
+import org.simplepoint.plugin.rbac.resource.service.support.ResourceCatalogWriteBoundary;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.entity.MicroModule;
 import org.simplepoint.security.entity.Resource;
@@ -32,29 +32,29 @@ import org.simplepoint.security.service.ResourceService;
 @ExtendWith(MockitoExtension.class)
 class PluginResourceContributionHandlerTest {
 
-  @Mock
-  RemoteModuleRepository remoteModuleRepository;
+  @Mock RemoteModuleRepository remoteModuleRepository;
 
-  @Mock
-  ResourceRepository resourceRepository;
+  @Mock ResourceRepository resourceRepository;
 
-  @Mock
-  ResourceService resourceService;
+  @Mock ResourceService resourceService;
 
-  @InjectMocks
-  PluginResourceContributionHandler handler;
+  @Mock ResourceCatalogWriteBoundary catalogWrites;
+
+  @InjectMocks PluginResourceContributionHandler handler;
 
   @Test
   void validate_acceptsResourceManifestWithoutWritingResources() {
     final Plugin plugin = plugin();
     when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics"))).thenReturn(List.of());
-    when(remoteModuleRepository.findAll(Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
+    when(remoteModuleRepository.findAll(
+            Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
         .thenReturn(List.of());
     when(resourceRepository.findAllByCodes(anyCollection())).thenReturn(List.of());
 
     handler.validate(plugin);
 
-    verify(resourceService, never()).sync(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anySet());
+    verify(resourceService, never())
+        .sync(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anySet());
   }
 
   @Test
@@ -64,11 +64,13 @@ class PluginResourceContributionHandlerTest {
     existing.setServiceName("analytics");
     existing.setPluginId("another.plugin");
 
-    when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics"))).thenReturn(List.of(existing));
+    when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics")))
+        .thenReturn(List.of(existing));
 
     assertThatThrownBy(() -> handler.validate(plugin()))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("frontend remote 'analytics' is not owned by plugin plugin.analytics");
+        .hasMessageContaining(
+            "frontend remote 'analytics' is not owned by plugin plugin.analytics");
   }
 
   @Test
@@ -77,7 +79,8 @@ class PluginResourceContributionHandlerTest {
     existing.setCode("analytics.dashboard");
     existing.setPluginId("another.plugin");
     when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics"))).thenReturn(List.of());
-    when(remoteModuleRepository.findAll(Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
+    when(remoteModuleRepository.findAll(
+            Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
         .thenReturn(List.of());
     when(resourceRepository.findAllByCodes(anyCollection())).thenReturn(List.of(existing));
 
@@ -88,14 +91,14 @@ class PluginResourceContributionHandlerTest {
 
   @Test
   void validateBatch_rejectsDuplicateRemoteAcrossPluginCandidates() {
-    Plugin reports = pluginWithRemote(
-        "plugin.reports",
-        "analytics",
-        "http://cdn.example.com/reports/mf-manifest.json");
+    Plugin reports =
+        pluginWithRemote(
+            "plugin.reports", "analytics", "http://cdn.example.com/reports/mf-manifest.json");
 
     assertThatThrownBy(() -> handler.validate(List.of(plugin(), reports)))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("frontend remote 'analytics' is declared by multiple plugin candidates");
+        .hasMessageContaining(
+            "frontend remote 'analytics' is declared by multiple plugin candidates");
   }
 
   @Test
@@ -109,8 +112,13 @@ class PluginResourceContributionHandlerTest {
 
   @Test
   void installed_registersRemoteAndSynchronizesResources() {
-    Plugin plugin = plugin();
-    when(remoteModuleRepository.findAll(Map.of("pluginId", "plugin.analytics", "serviceName", "analytics")))
+    final Plugin plugin = plugin();
+    when(remoteModuleRepository.findAll(Map.of("serviceName", "analytics"))).thenReturn(List.of());
+    when(remoteModuleRepository.findAll(
+            Map.of("entry", "http://cdn.example.com/analytics/mf-manifest.json")))
+        .thenReturn(List.of());
+    when(remoteModuleRepository.findAll(
+            Map.of("pluginId", "plugin.analytics", "serviceName", "analytics")))
         .thenReturn(List.of());
 
     handler.installed(plugin);
@@ -120,13 +128,15 @@ class PluginResourceContributionHandlerTest {
     assertThat(remoteCaptor.getValue().getPluginId()).isEqualTo("plugin.analytics");
     assertThat(remoteCaptor.getValue().getPluginVersion()).isEqualTo("1.0.0");
     assertThat(remoteCaptor.getValue().getRemoteVersion()).isEqualTo("2.0.0");
-    assertThat(remoteCaptor.getValue().getPluginArtifactSha256()).isEqualTo(
-        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    assertThat(remoteCaptor.getValue().getPluginArtifactSha256())
+        .isEqualTo("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
     assertThat(remoteCaptor.getValue().getServiceName()).isEqualTo("analytics");
-    assertThat(remoteCaptor.getValue().getEntry()).isEqualTo("http://cdn.example.com/analytics/mf-manifest.json");
+    assertThat(remoteCaptor.getValue().getEntry())
+        .isEqualTo("http://cdn.example.com/analytics/mf-manifest.json");
 
     ArgumentCaptor<Set<ResourceDeclaration>> resourcesCaptor = ArgumentCaptor.forClass(Set.class);
-    verify(resourceService).sync(org.mockito.ArgumentMatchers.eq("plugin.analytics"), resourcesCaptor.capture());
+    verify(resourceService)
+        .sync(org.mockito.ArgumentMatchers.eq("plugin.analytics"), resourcesCaptor.capture());
     ResourceDeclaration root = resourcesCaptor.getValue().iterator().next();
     assertThat(root.getPluginId()).isEqualTo("plugin.analytics");
     assertThat(root.getCode()).isEqualTo("analytics.root");
@@ -135,24 +145,23 @@ class PluginResourceContributionHandlerTest {
     ResourceDeclaration page = root.getChildren().iterator().next();
     assertThat(page.getCode()).isEqualTo("analytics.dashboard");
     assertThat(page.getPath()).isEqualTo("/analytics");
-    assertThat(page.getChildren()).extracting(ResourceDeclaration::getCode).containsExactly("analytics.refresh");
+    assertThat(page.getChildren())
+        .extracting(ResourceDeclaration::getCode)
+        .containsExactly("analytics.refresh");
   }
 
   @Test
   void uninstalling_removesOwnedResourcesAndRemotes() {
-    Resource resource = new Resource();
-    resource.setId("resource-id");
-    resource.setPluginId("plugin.analytics");
     MicroModule remote = new MicroModule();
     remote.setId("remote-id");
     remote.setPluginId("plugin.analytics");
 
-    when(resourceService.findAll(Map.of("pluginId", "plugin.analytics"))).thenReturn(List.of(resource));
-    when(remoteModuleRepository.findAll(Map.of("pluginId", "plugin.analytics"))).thenReturn(List.of(remote));
+    when(remoteModuleRepository.findAll(Map.of("pluginId", "plugin.analytics")))
+        .thenReturn(List.of(remote));
 
     handler.uninstalling(plugin());
 
-    verify(resourceService).removeByIds(List.of("resource-id"));
+    verify(resourceService).removeByOwner("plugin.analytics");
     verify(remoteModuleRepository).deleteByIds(List.of("remote-id"));
   }
 
@@ -167,30 +176,35 @@ class PluginResourceContributionHandlerTest {
     frontend.setRemotes(List.of(remote));
     manifest.setFrontend(frontend);
 
-    PluginManifest.ResourceContribution root = resource("analytics.root", "Analytics", "MODULE", null);
+    PluginManifest.ResourceContribution root =
+        resource("analytics.root", "Analytics", "MODULE", null);
     root.setRouteKind("submenu");
-    PluginManifest.ResourceContribution page = resource("analytics.dashboard", "Analytics Dashboard", "PAGE", "/analytics");
+    PluginManifest.ResourceContribution page =
+        resource("analytics.dashboard", "Analytics Dashboard", "PAGE", "/analytics");
     page.setComponent("analytics/Dashboard");
     page.setRouteKind("item");
     page.setGrantable(true);
-    PluginManifest.ResourceContribution refresh = resource("analytics.refresh", "Refresh Analytics", "ACTION", null);
+    PluginManifest.ResourceContribution refresh =
+        resource("analytics.refresh", "Refresh Analytics", "ACTION", null);
     refresh.setGrantable(true);
     page.setChildren(List.of(refresh));
     root.setChildren(List.of(page));
     manifest.setResources(List.of(root));
 
-    PluginArtifact artifact = new PluginArtifact(
-        URI.create("file:/plugins/analytics.jar"),
-        42,
-        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    PluginArtifact artifact =
+        new PluginArtifact(
+            URI.create("file:/plugins/analytics.jar"),
+            42,
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
     return new Plugin(artifact, manifest, Map.of());
   }
 
   private static Plugin plugin(PluginManifest manifest) {
-    PluginArtifact artifact = new PluginArtifact(
-        URI.create("file:/plugins/" + manifest.getId() + ".jar"),
-        42,
-        "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
+    PluginArtifact artifact =
+        new PluginArtifact(
+            URI.create("file:/plugins/" + manifest.getId() + ".jar"),
+            42,
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789");
     return new Plugin(artifact, manifest, Map.of());
   }
 
@@ -219,7 +233,8 @@ class PluginResourceContributionHandlerTest {
     return manifest;
   }
 
-  private static PluginManifest.ResourceContribution resource(String code, String name, String type, String path) {
+  private static PluginManifest.ResourceContribution resource(
+      String code, String name, String type, String path) {
     PluginManifest.ResourceContribution resource = new PluginManifest.ResourceContribution();
     resource.setCode(code);
     resource.setName(name);

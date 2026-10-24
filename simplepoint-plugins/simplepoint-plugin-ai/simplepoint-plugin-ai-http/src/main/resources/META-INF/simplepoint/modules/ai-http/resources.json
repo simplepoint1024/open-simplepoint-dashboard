@@ -1,0 +1,669 @@
+{
+  "module": "ai",
+  "resources": [
+    {
+      "code": "ai.workbench.view",
+      "name": "AI平台",
+      "label": "AI平台",
+      "title": "menu.ai.workbench",
+      "type": "MODULE",
+      "path": "/ai/workbench",
+      "icon": "RobotOutlined",
+      "routeKind": "submenu",
+      "description": "menu.ai.workbench",
+      "sort": 20,
+      "publicAccess": false,
+      "grantable": true,
+      "disabled": false,
+      "scopeTypes": [
+        "SYSTEM",
+        "TENANT"
+      ],
+      "children": [
+        {
+          "code": "ai.navigation.models.view",
+          "name": "模型服务",
+          "label": "模型服务",
+          "title": "menu.navigation.ai.navigation.models.view",
+          "type": "GROUP",
+          "icon": "RobotOutlined",
+          "routeKind": "submenu",
+          "sort": 10,
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
+          "grantable": false,
+          "publicAccess": false,
+          "disabled": false,
+          "requireOrgTenant": false,
+          "children": [
+            {
+              "code": "ai.workbench.providers.view",
+              "name": "模型接入",
+              "label": "模型接入",
+              "title": "menu.ai.providers",
+              "type": "PAGE",
+              "path": "/ai/workbench/providers",
+              "component": "ai/workbench/Providers",
+              "icon": "CloudServerOutlined",
+              "routeKind": "item",
+              "sort": 20,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.providers.create",
+                  "name": "新增模型接入",
+                  "label": "新增模型接入",
+                  "alias": "i18n:table.button.create",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.providers.edit",
+                  "name": "修改模型接入",
+                  "label": "修改模型接入",
+                  "alias": "i18n:table.button.edit",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.providers.delete",
+                  "name": "删除模型接入",
+                  "label": "删除模型接入",
+                  "alias": "i18n:table.button.delete",
+                  "type": "ACTION",
+                  "sort": 103,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.providers.test",
+                  "name": "测试模型接入",
+                  "label": "测试模型接入",
+                  "alias": "i18n:ai.providers.button.test",
+                  "type": "ACTION",
+                  "sort": 104,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.providers.discover",
+                  "name": "发现模型",
+                  "label": "发现模型",
+                  "alias": "i18n:ai.providers.button.discover",
+                  "type": "ACTION",
+                  "sort": 105,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.providers.sync",
+                  "name": "同步模型",
+                  "label": "同步模型",
+                  "alias": "i18n:ai.providers.button.sync",
+                  "type": "ACTION",
+                  "sort": 106,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                }
+              ]
+            },
+            {
+              "code": "ai.workbench.models.view",
+              "name": "模型管理",
+              "label": "模型管理",
+              "title": "menu.ai.models",
+              "type": "PAGE",
+              "path": "/ai/workbench/models",
+              "component": "ai/workbench/Models",
+              "icon": "AppstoreOutlined",
+              "routeKind": "item",
+              "sort": 30,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.models.create",
+                  "name": "新增模型",
+                  "label": "新增模型",
+                  "alias": "i18n:table.button.create",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.models.edit",
+                  "name": "修改模型",
+                  "label": "修改模型",
+                  "alias": "i18n:table.button.edit",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.models.delete",
+                  "name": "删除模型",
+                  "label": "删除模型",
+                  "alias": "i18n:table.button.delete",
+                  "type": "ACTION",
+                  "sort": 103,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.models.debug",
+                  "name": "调试模型",
+                  "label": "调试模型",
+                  "alias": "i18n:ai.model-debug.button",
+                  "type": "ACTION",
+                  "sort": 104,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "ai.navigation.extensions.view",
+          "name": "知识与扩展",
+          "label": "知识与扩展",
+          "title": "menu.navigation.ai.navigation.extensions.view",
+          "type": "GROUP",
+          "icon": "BookOutlined",
+          "routeKind": "submenu",
+          "sort": 20,
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
+          "grantable": false,
+          "publicAccess": false,
+          "disabled": false,
+          "requireOrgTenant": false,
+          "children": [
+            {
+              "code": "ai.workbench.knowledge-bases.view",
+              "name": "知识库",
+              "label": "知识库",
+              "title": "menu.ai.knowledgeBases",
+              "type": "PAGE",
+              "path": "/ai/workbench/knowledge-bases",
+              "component": "ai/workbench/KnowledgeBases",
+              "icon": "DatabaseOutlined",
+              "routeKind": "item",
+              "sort": 40,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.knowledge-bases.create",
+                  "name": "新增知识库",
+                  "label": "新增知识库",
+                  "alias": "i18n:table.button.create",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.knowledge-bases.edit",
+                  "name": "修改知识库",
+                  "label": "修改知识库",
+                  "alias": "i18n:table.button.edit",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.knowledge-bases.delete",
+                  "name": "删除知识库",
+                  "label": "删除知识库",
+                  "alias": "i18n:table.button.delete",
+                  "type": "ACTION",
+                  "sort": 103,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.knowledge-bases.documents",
+                  "name": "管理文档",
+                  "label": "管理文档",
+                  "alias": "i18n:ai.knowledge-bases.button.documents",
+                  "type": "ACTION",
+                  "sort": 104,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.knowledge-bases.retrieve",
+                  "name": "检索测试",
+                  "label": "检索测试",
+                  "alias": "i18n:ai.knowledge-bases.button.retrieve",
+                  "type": "ACTION",
+                  "sort": 105,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                }
+              ]
+            },
+            {
+              "code": "ai.workbench.catalog.view",
+              "name": "扩展市场",
+              "label": "扩展市场",
+              "title": "menu.ai.catalog",
+              "type": "PAGE",
+              "path": "/ai/workbench/catalog",
+              "component": "ai/workbench/Catalog",
+              "icon": "AppstoreOutlined",
+              "routeKind": "item",
+              "sort": 47,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.catalog.sync",
+                  "name": "同步官方 MCP Registry",
+                  "label": "同步官方 MCP Registry",
+                  "alias": "i18n:ai.catalog.action.sync",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false,
+                  "scopeTypes": [
+                    "SYSTEM"
+                  ]
+                },
+                {
+                  "code": "ai.workbench.catalog.import",
+                  "name": "导入 MCP Server",
+                  "label": "导入 MCP Server",
+                  "alias": "i18n:ai.catalog.action.import",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false,
+                  "scopeTypes": [
+                    "SYSTEM",
+                    "TENANT"
+                  ]
+                }
+              ]
+            },
+            {
+              "code": "ai.workbench.mcp-servers.view",
+              "name": "MCP 中心",
+              "label": "MCP 中心",
+              "title": "menu.ai.mcpServers",
+              "type": "PAGE",
+              "path": "/ai/workbench/mcp-servers",
+              "component": "ai/workbench/McpServers",
+              "icon": "ClusterOutlined",
+              "routeKind": "item",
+              "sort": 50,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.mcp-gateway.view",
+                  "name": "查看 MCP Gateway 状态",
+                  "label": "MCP Gateway",
+                  "type": "FEATURE",
+                  "sort": 100,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.create",
+                  "name": "新增 MCP Server",
+                  "label": "新增 MCP Server",
+                  "alias": "i18n:table.button.create",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.edit",
+                  "name": "修改 MCP Server",
+                  "label": "修改 MCP Server",
+                  "alias": "i18n:table.button.edit",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.delete",
+                  "name": "删除 MCP Server",
+                  "label": "删除 MCP Server",
+                  "alias": "i18n:table.button.delete",
+                  "type": "ACTION",
+                  "sort": 103,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.discover",
+                  "name": "发现 MCP 能力",
+                  "label": "发现 MCP 能力",
+                  "alias": "i18n:ai.mcp-servers.button.discover",
+                  "type": "ACTION",
+                  "sort": 104,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.authorize",
+                  "name": "授权 MCP Server",
+                  "label": "授权 MCP Server",
+                  "alias": "i18n:ai.mcp-servers.button.authorize",
+                  "type": "ACTION",
+                  "sort": 105,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.read-resource",
+                  "name": "读取 MCP Resource",
+                  "label": "读取 MCP Resource",
+                  "alias": "i18n:ai.mcp.resources.read",
+                  "type": "ACTION",
+                  "sort": 106,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.mcp-servers.get-prompt",
+                  "name": "获取 MCP Prompt",
+                  "label": "获取 MCP Prompt",
+                  "alias": "i18n:ai.mcp.prompts.get",
+                  "type": "ACTION",
+                  "sort": 107,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.tools.view",
+                  "name": "查看 MCP 能力",
+                  "label": "MCP 能力",
+                  "type": "FEATURE",
+                  "sort": 108,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false,
+                  "children": [
+                    {
+                      "code": "ai.workbench.tools.call",
+                      "name": "调用工具",
+                      "label": "调用工具",
+                      "alias": "i18n:ai.tools.button.call",
+                      "type": "ACTION",
+                      "sort": 101,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    }
+                  ]
+                },
+                {
+                  "code": "ai.workbench.mcp-publications.view",
+                  "name": "查看 MCP 发布",
+                  "label": "MCP 发布",
+                  "type": "FEATURE",
+                  "sort": 110,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false,
+                  "children": [
+                    {
+                      "code": "ai.workbench.mcp-publications.create",
+                      "name": "新增 MCP Publication",
+                      "label": "新增 MCP Publication",
+                      "alias": "i18n:table.button.create",
+                      "type": "ACTION",
+                      "sort": 101,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    },
+                    {
+                      "code": "ai.workbench.mcp-publications.edit",
+                      "name": "修改 MCP Publication",
+                      "label": "修改 MCP Publication",
+                      "alias": "i18n:table.button.edit",
+                      "type": "ACTION",
+                      "sort": 102,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    },
+                    {
+                      "code": "ai.workbench.mcp-publications.delete",
+                      "name": "删除 MCP Publication",
+                      "label": "删除 MCP Publication",
+                      "alias": "i18n:table.button.delete",
+                      "type": "ACTION",
+                      "sort": 103,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    }
+                  ]
+                },
+                {
+                  "code": "ai.workbench.runtime.view",
+                  "name": "查看 MCP 运行时",
+                  "label": "MCP 运行时",
+                  "type": "FEATURE",
+                  "sort": 114,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false,
+                  "children": [
+                    {
+                      "code": "ai.workbench.runtime.pools.manage",
+                      "name": "管理 Runtime Pool",
+                      "label": "管理 Runtime Pool",
+                      "alias": "i18n:ai.runtime.action.pool.manage",
+                      "type": "ACTION",
+                      "sort": 101,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    },
+                    {
+                      "code": "ai.workbench.runtime.workloads.manage",
+                      "name": "管理 Runtime Workload",
+                      "label": "管理 Runtime Workload",
+                      "alias": "i18n:ai.runtime.action.workload.manage",
+                      "type": "ACTION",
+                      "sort": 102,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    },
+                    {
+                      "code": "ai.workbench.runtime.secrets.manage",
+                      "name": "管理 Runtime Secret",
+                      "label": "管理 Runtime Secret",
+                      "alias": "i18n:ai.runtime.action.secret.manage",
+                      "type": "ACTION",
+                      "sort": 103,
+                      "publicAccess": false,
+                      "grantable": true,
+                      "disabled": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "ai.navigation.usage.view",
+          "name": "访问与用量",
+          "label": "访问与用量",
+          "title": "menu.navigation.ai.navigation.usage.view",
+          "type": "GROUP",
+          "icon": "KeyOutlined",
+          "routeKind": "submenu",
+          "sort": 30,
+          "scopeTypes": [
+            "SYSTEM",
+            "TENANT"
+          ],
+          "grantable": false,
+          "publicAccess": false,
+          "disabled": false,
+          "requireOrgTenant": false,
+          "children": [
+            {
+              "code": "ai.workbench.api-keys.view",
+              "name": "API密钥",
+              "label": "API密钥",
+              "title": "menu.ai.apiKeys",
+              "type": "PAGE",
+              "path": "/ai/workbench/api-keys",
+              "component": "ai/workbench/ApiKeys",
+              "icon": "KeyOutlined",
+              "routeKind": "item",
+              "sort": 10,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ],
+              "children": [
+                {
+                  "code": "ai.workbench.api-keys.create",
+                  "name": "新增 API Key",
+                  "label": "新增 API Key",
+                  "alias": "i18n:table.button.create",
+                  "type": "ACTION",
+                  "sort": 101,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.api-keys.edit",
+                  "name": "修改 API Key",
+                  "label": "修改 API Key",
+                  "alias": "i18n:table.button.edit",
+                  "type": "ACTION",
+                  "sort": 102,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.api-keys.rotate",
+                  "name": "轮换 API Key",
+                  "label": "轮换 API Key",
+                  "alias": "i18n:ai.api-keys.button.rotate",
+                  "type": "ACTION",
+                  "sort": 103,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                },
+                {
+                  "code": "ai.workbench.api-keys.delete",
+                  "name": "吊销 API Key",
+                  "label": "吊销 API Key",
+                  "alias": "i18n:table.button.delete",
+                  "type": "ACTION",
+                  "sort": 104,
+                  "publicAccess": false,
+                  "grantable": true,
+                  "disabled": false
+                }
+              ]
+            },
+            {
+              "code": "ai.workbench.billing.view",
+              "name": "账单",
+              "label": "账单",
+              "title": "menu.ai.billing",
+              "type": "PAGE",
+              "path": "/ai/workbench/billing",
+              "component": "ai/workbench/Billing",
+              "icon": "DollarOutlined",
+              "routeKind": "item",
+              "sort": 60,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "scopeTypes": [
+                "SYSTEM",
+                "TENANT"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

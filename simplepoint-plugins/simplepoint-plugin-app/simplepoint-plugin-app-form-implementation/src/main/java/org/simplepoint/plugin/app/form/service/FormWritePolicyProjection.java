@@ -28,12 +28,19 @@ final class FormWritePolicyProjection {
       }
       FormFieldWritePolicy effective = stricter(field.effectiveWritePolicy(), policy.effectiveWritePolicy());
       var access = org.simplepoint.plugin.app.form.api.model.FormFieldAccess.intersect(field.access(), policy.access());
-      if (effective == field.effectiveWritePolicy() && java.util.Objects.equals(access, field.access())) {
+      // Current governance owns calculation mode; an old page cannot accept a new output or revive a removed formula.
+      var mode = policy.storageMode() == FormStorageMode.COMPUTED || field.storageMode() == FormStorageMode.COMPUTED
+          ? policy.storageMode() : field.storageMode();
+      var calculation = mode == FormStorageMode.COMPUTED ? policy.calculation() : null;
+      if (effective == field.effectiveWritePolicy() && java.util.Objects.equals(access, field.access())
+          && mode == field.storageMode() && java.util.Objects.equals(calculation, field.calculation())) {
         return field;
       }
       return new FormFieldDefinition(field.fieldId(), field.storageCode(), field.label(), field.storageLabel(),
-          field.type(), field.storageMode(), field.submitRequired(), field.storageRequired(), field.length(),
-          field.precision(), field.scale(), field.defaultValue(), field.choices(), effective, field.validation(), access);
+          field.type(), mode, field.submitRequired(), field.storageRequired(), field.length(),
+          field.precision(), field.scale(), calculation == null ? field.defaultValue() : null, field.choices(),
+          calculation == null ? effective : null, field.validation(), access,
+          calculation, field.labelLocalization());
     }).toList(), page.indexes(), page.scenes(), page.rules(), governing.details(), governing.constraints(), page.presentation());
   }
 
@@ -48,7 +55,6 @@ final class FormWritePolicyProjection {
   }
 
   private static boolean persistent(final FormFieldDefinition field) {
-    return field.storageMode() == FormStorageMode.STORED || field.storageMode() == FormStorageMode.REFERENCE
-        || field.storageMode() == FormStorageMode.ATTACHMENT;
+    return field.persistent();
   }
 }

@@ -315,7 +315,7 @@ function DefinitionsSession() {
   </Space>;
 
   const columns: ColumnsType<DefinitionSummary> = useMemo(() => [
-    {title: t('workflow.definition.name', '流程名称'), dataIndex: 'name', key: 'name'},
+    {title: t('workflow.definition.name', '流程名称'), dataIndex: 'name', key: 'name', width: 240},
     {title: t('workflow.definition.key', '流程标识'), dataIndex: 'key', key: 'key', width: 180},
     {title: t('workflow.definition.category', '分类'), dataIndex: 'category', key: 'category', width: 140,
       render: (value?: string) => value || '—'},
@@ -413,7 +413,7 @@ function DefinitionsSession() {
             type: 'primary', disabled: locked, argumentMinSize: 0, argumentMaxSize: 0}] : []}
           onButtonEvents={{add: () => {if (!locked) {setWriteError(''); setCreateOpen(true);}}}}/>
         </Space>}
-        scroll={{x: 1100}} pagination={definitions.tableProps.pagination && {...definitions.tableProps.pagination, disabled: locked}}/>
+        scroll={{x: 'max-content'}} pagination={definitions.tableProps.pagination && {...definitions.tableProps.pagination, disabled: locked}}/>
 
     <Modal title={t('workflow.action.create', '新建流程')} open={createOpen && mutation.selected} footer={null}
       destroyOnHidden={!createOpen} closable={!saving} maskClosable={!saving} keyboard={!saving}
@@ -491,7 +491,7 @@ function DefinitionsSession() {
         setHistory(undefined); setVersionPreview(undefined); setVersionLoading(false);}}>
       {history && <>
         <DataTable rowKey="id" storageKey="workflow.definition.versions" columns={versionColumns}
-          dataSource={history.versions} pagination={{pageSize: 10, showSizeChanger: true}}
+          dataSource={history.versions} pagination={{defaultPageSize: 50, showSizeChanger: true}}
           query={{mode: 'local', scope: 'complete', contextKey: history.definition.id, fields: {
             version: {type: 'number'}, comment: {type: 'string'}, publishedAt: {type: 'date-time'},
           }}}/>

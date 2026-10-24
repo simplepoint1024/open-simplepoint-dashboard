@@ -2,7 +2,6 @@ package org.simplepoint.plugin.rbac.core.api.service;
 
 import java.util.List;
 import org.simplepoint.core.annotation.PermissionFields;
-import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.RoleResourceGrant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,27 +14,71 @@ public interface RoleResourceConfigurationService {
   /** Null update means unchanged; an update with null ID clears the rule. */
   record PolicyUpdate(String policyId) {}
 
+  /** Minimal option for a tenant-owned permission policy. */
   record PolicyOption(String id, String name, String detail) {}
 
   /** Minimal resource projection. Revision covers the resource and this role's explicit grants. */
   record Row(
-      @PermissionFields(resource = Resource.class, value = "id") String id,
-      @PermissionFields(resource = Resource.class, value = "code") String code,
-      @PermissionFields(resource = Resource.class, value = {"alias", "label", "name", "title", "code"}) String label,
-      @PermissionFields(resource = Resource.class, value = "type") String type,
-      @PermissionFields(resource = Resource.class, value = "path") String path,
-      @PermissionFields(resource = Resource.class, value = "parentId") String parentId,
-      @PermissionFields(resource = Resource.class, value = "icon") String icon,
-      @PermissionFields(resource = Resource.class, value = "parentId") boolean hasChildren,
-      @PermissionFields(resource = Resource.class, value = "parentId") boolean hasNavigationChildren,
-      @PermissionFields(resource = Resource.class, value = "description") String description,
-      @PermissionFields(resource = Resource.class, value = "grantable") boolean grantable,
-      @PermissionFields(resource = RoleResourceGrant.class, value = {"roleId", "resourceCode"}) boolean granted,
-      String revision, PolicySlot dataPermission, PolicySlot fieldPermission) {}
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "id")
+          String id,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "code")
+          String code,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = {"alias", "label", "name", "title", "code"})
+          String label,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "type")
+          String type,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "path")
+          String path,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "parentId")
+          String parentId,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "icon")
+          String icon,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "parentId")
+          boolean hasChildren,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "parentId")
+          boolean hasNavigationChildren,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "description")
+          String description,
+      @PermissionFields(
+              resourceName = "org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource",
+              value = "grantable")
+          boolean grantable,
+      @PermissionFields(
+              resource = RoleResourceGrant.class,
+              value = {"roleId", "resourceCode"})
+          boolean granted,
+      String revision,
+      PolicySlot dataPermission,
+      PolicySlot fieldPermission) {}
 
   /** Explicit changes only: an omitted resource is never revoked. */
-  record Change(String resourceId, String resourceCode, String revision, Boolean granted,
-      PolicyUpdate dataPermission, PolicyUpdate fieldPermission) {
+  record Change(
+      String resourceId,
+      String resourceCode,
+      String revision,
+      Boolean granted,
+      PolicyUpdate dataPermission,
+      PolicyUpdate fieldPermission) {
     public Change(String resourceId, String resourceCode, String revision, Boolean granted) {
       this(resourceId, resourceCode, revision, granted, null, null);
     }
@@ -51,16 +94,30 @@ public interface RoleResourceConfigurationService {
   record BulkCommand(String resourceId, Boolean granted, String revision) {}
 
   /** Searches accessible resources in SQL; rootsOnly and parentId each load one tree level. */
-  Page<Row> list(String roleId, String keyword, String state, String type, String parentId,
-      boolean rootsOnly, boolean navigationOnly, Pageable page);
+  Page<Row> list(
+      String roleId,
+      String keyword,
+      String state,
+      String type,
+      String parentId,
+      boolean rootsOnly,
+      boolean navigationOnly,
+      Pageable page);
 
   /** Paged tenant-owned policies that can be attached to the selected page. */
-  default Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page) {
+  default Page<PolicyOption> policies(
+      String roleId, String resourceCode, String kind, String keyword, Pageable page) {
     return policies(roleId, resourceCode, kind, keyword, page, null);
   }
 
   /** Exact selected-value hydration uses the same tenant and page-model eligibility as browsing. */
-  Page<PolicyOption> policies(String roleId, String resourceCode, String kind, String keyword, Pageable page, String selectedId);
+  Page<PolicyOption> policies(
+      String roleId,
+      String resourceCode,
+      String kind,
+      String keyword,
+      Pageable page,
+      String selectedId);
 
   /** Checks resource revisions under the role lock before applying any changes. */
   void save(String roleId, Patch patch);

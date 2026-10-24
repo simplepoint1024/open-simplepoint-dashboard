@@ -1,6 +1,7 @@
 package org.simplepoint.security.context;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -16,12 +17,11 @@ class AuthorizationContextResolverTest {
   @Test
   void resolve_userInfoWithoutSubjectThrowsBadCredentialsException() {
     CacheService cacheService = mock(CacheService.class);
-    AuthorizationContextService contextService = mock(AuthorizationContextService.class);
-    AuthorizationContextResolver resolver = new StubAuthorizationContextResolver(
-        cacheService,
-        contextService,
-        Map.of("preferred_username", "service-client")
-    );
+    AuthorizationContextService contextService =
+        mock(AuthorizationContextService.class, CALLS_REAL_METHODS);
+    AuthorizationContextResolver resolver =
+        new StubAuthorizationContextResolver(
+            cacheService, contextService, Map.of("preferred_username", "service-client"));
 
     assertThatThrownBy(() -> resolver.resolve(Map.of(HttpHeaders.AUTHORIZATION, "Bearer token")))
         .isInstanceOf(BadCredentialsException.class)
@@ -36,8 +36,7 @@ class AuthorizationContextResolverTest {
     StubAuthorizationContextResolver(
         CacheService cacheService,
         AuthorizationContextService contextService,
-        Map<String, Object> userInfo
-    ) {
+        Map<String, Object> userInfo) {
       super("test:", cacheService, contextService, URI.create("http://localhost/userinfo"));
       this.userInfo = userInfo;
     }

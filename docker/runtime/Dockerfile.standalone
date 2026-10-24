@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1.7
+# Build installDist with frontend packaging enabled before building this runtime image.
+ARG RUNTIME_IMAGE=eclipse-temurin:21.0.12_8-jre-jammy
+FROM ${RUNTIME_IMAGE}
+
+RUN groupadd --system --gid 10001 simplepoint \
+    && useradd --system --uid 10001 --gid simplepoint --home-dir /opt/simplepoint --shell /usr/sbin/nologin simplepoint \
+    && install -d -o simplepoint -g simplepoint /opt/simplepoint /opt/simplepoint/data/dna /opt/simplepoint/plugins
+WORKDIR /opt/simplepoint
+COPY --chown=10001:10001 simplepoint-services/simplepoint-service-standalone/build/install/simplepoint-service-standalone/ /opt/simplepoint/
+COPY --chmod=0555 docker/runtime/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+ENV SIMPLEPOINT_START_SCRIPT=/opt/simplepoint/bin/simplepoint-service-standalone \
+    SIMPLEPOINT_WAIT_FOR=postgres:5432,redis:6379 \
+    SIMPLEPOINT_WAIT_TIMEOUT=180
+EXPOSE 18088
+USER 10001:10001
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=12 \
+    CMD curl -fsS http://127.0.0.1:18088/actuator/health/readiness >/dev/null || exit 1
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

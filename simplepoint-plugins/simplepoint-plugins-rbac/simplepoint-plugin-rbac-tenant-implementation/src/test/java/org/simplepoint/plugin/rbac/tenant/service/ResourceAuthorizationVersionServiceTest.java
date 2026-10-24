@@ -1,54 +1,50 @@
 package org.simplepoint.plugin.rbac.tenant.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
+import org.mockito.ArgumentCaptor;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.service.impl.ResourceAuthorizationVersionServiceImpl;
 
-@ExtendWith(MockitoExtension.class)
 class ResourceAuthorizationVersionServiceTest {
-
-  @Mock
-  TenantRepository tenantRepository;
-
-  @Mock
-  TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
-
-  @Mock
-  RoleResourceGrantRepository roleResourceGrantRepository;
-
-  @InjectMocks
-  ResourceAuthorizationVersionService service;
-
   @Test
-  void refreshByApplicationCodes_refreshesResolvedTenantIds() {
-    when(tenantPackageRelevanceRepository.findTenantIdsByApplicationCodes(Set.of("common")))
-        .thenReturn(Set.of("tenant1", "tenant2"));
-
-    service.refreshByApplicationCodes(Set.of("common"));
-
-    verify(tenantRepository).increaseAuthorizationVersion(Set.of("tenant1", "tenant2"));
+  void apiContractDoesNotInstallPersistenceInConsumingServices() {
+    assertThat(ResourceAuthorizationVersionService.class).isInterface();
+    try (var context = new org.springframework.context.annotation.AnnotationConfigApplicationContext()) {
+      context.scan("org.simplepoint.plugin.rbac.tenant.api.service");
+      context.refresh();
+      assertThat(context.getBeansOfType(ResourceAuthorizationVersionService.class)).isEmpty();
+      assertThat(context.getBeansOfType(TenantRepository.class)).isEmpty();
+    }
   }
 
   @Test
-  void findAffectedTenantIdsByResourceCodes_mergesRoleGrantsAndPackageResources() {
-    when(roleResourceGrantRepository.findTenantIdsByResourceCodes(Set.of("resources.view")))
-        .thenReturn(Set.of("tenant1"));
-    when(tenantPackageRelevanceRepository.findTenantIdsByResourceCodes(Set.of("resources.view")))
-        .thenReturn(Set.of("tenant2"));
-
-    Set<String> result = service.findAffectedTenantIdsByResourceCodes(Set.of("resources.view"));
-
-    assertThat(result).containsExactlyInAnyOrder("tenant1", "tenant2");
+  void explicitTenantInvalidationDeduplicatesAndBoundsTheWriteCohort() {
+    var repository = mock(TenantRepository.class);
+    var service = new ResourceAuthorizationVersionServiceImpl(repository);
+    service.refreshTenant(" ");
+    service.refreshTenants(null);
+    verifyNoInteractions(repository);
+    var ids = new java.util.ArrayList<String>();
+    for (int index = 0; index < 521; index++) {
+      ids.add("tenant-" + index);
+    }
+    ids.addAll(List.copyOf(ids));
+    ids.add(null);
+    ids.add("");
+    service.refreshTenants(ids);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Collection<String>> batches = ArgumentCaptor.forClass(Collection.class);
+    org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(6))
+        .increaseAuthorizationVersion(batches.capture());
+    assertThat(batches.getAllValues())
+        .allSatisfy(batch -> assertThat(batch).hasSizeLessThanOrEqualTo(100));
+    assertThat(batches.getAllValues().stream().flatMap(Collection::stream).distinct()).hasSize(521);
   }
 }

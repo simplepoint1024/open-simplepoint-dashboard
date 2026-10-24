@@ -12,20 +12,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-/**
- * JPA repository for role resource grants.
- */
+/** JPA repository for role resource grants. */
 @Repository
-public interface JpaRoleResourceGrantRepository extends JpaRepository<RoleResourceGrant, String>,
-    RoleResourceGrantRepository {
+public interface JpaRoleResourceGrantRepository
+    extends JpaRepository<RoleResourceGrant, String>, RoleResourceGrantRepository {
 
   @Override
   void deleteAllByroleId(String roleId);
-
-  @Override
-  @Modifying
-  @Query("delete from RoleResourceGrant grant where grant.resourceCode in ?1")
-  void deleteAllByResourceCodes(Collection<String> resourceCodes);
 
   @Override
   @Modifying
@@ -37,7 +30,8 @@ public interface JpaRoleResourceGrantRepository extends JpaRepository<RoleResour
   List<RoleResourceGrant> findByRoleIdIn(Collection<String> roleIds);
 
   @Override
-  @Query("""
+  @Query(
+      """
       select distinct grant.tenantId
       from RoleResourceGrant grant
       where grant.resourceCode in ?1
@@ -53,17 +47,18 @@ public interface JpaRoleResourceGrantRepository extends JpaRepository<RoleResour
   }
 
   /** Returns only an effective grant, independently of request-scoped Hibernate filters. */
-  Optional<RoleResourceGrant> findFirstByTenantIdAndRoleIdAndDeletedAtIsNull(String tenantId, String roleId);
+  Optional<RoleResourceGrant> findFirstByTenantIdAndRoleIdAndDeletedAtIsNull(
+      String tenantId, String roleId);
 
   @Override
   @Modifying
-  @Query("update RoleResourceGrant grant set grant.dataScopeId = :dataScopeId, grant.fieldScopeId = :fieldScopeId "
-      + "where grant.tenantId = :tenantId and grant.roleId = :roleId and grant.deletedAt is null")
-  void updateScopeForRole(@Param("tenantId") String tenantId, @Param("roleId") String roleId,
-                          @Param("dataScopeId") String dataScopeId, @Param("fieldScopeId") String fieldScopeId);
-
-  @Override
-  @Modifying
-  @Query("update RoleResourceGrant grant set grant.resourceCode = ?2 where grant.resourceCode = ?1")
-  void updateResourceCode(String oldCode, String newCode);
+  @Query(
+      "update RoleResourceGrant grant set grant.dataScopeId = :dataScopeId, grant.fieldScopeId ="
+          + " :fieldScopeId where grant.tenantId = :tenantId and grant.roleId = :roleId and"
+          + " grant.deletedAt is null")
+  void updateScopeForRole(
+      @Param("tenantId") String tenantId,
+      @Param("roleId") String roleId,
+      @Param("dataScopeId") String dataScopeId,
+      @Param("fieldScopeId") String fieldScopeId);
 }

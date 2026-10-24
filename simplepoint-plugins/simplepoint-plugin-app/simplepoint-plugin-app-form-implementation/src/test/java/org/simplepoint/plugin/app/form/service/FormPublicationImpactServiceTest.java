@@ -107,6 +107,7 @@ class FormPublicationImpactServiceTest {
     assertThat(impact.activeBindingIds()).containsExactlyInAnyOrder("old-a", "old-b");
     assertThat(impact.checks()).hasSize(1);
     assertThat(impact.valueChecks()).hasSize(1);
+    assertThat(impact.validations()).isNull(); // Ordinary legacy publication keeps its original inspection budget.
     var check = impact.checks().values().iterator().next();
     assertThat(check.fields()).containsExactly("column_name");
     assertThat(check.filter()).isNull(); // The surviving old page now applies CREATE_ONLY to its required field.
@@ -221,14 +222,50 @@ class FormPublicationImpactServiceTest {
   }
 
   private FormPublicationImpactService impacts() {
-    return new FormPublicationImpactService(session, codec, context);
+    return new FormPublicationImpactService(session, codec, context, new ObjectMapper());
+  }
+
+  @Test
+  void freezesSurvivingPageRequirementsInsideTheCalculatedIntentAndReplaysWithoutReadingNewerPages() {
+    var work = new BindingWork("calculated", "attempt", "tenant-a", "app-a", "page-a", "form-a", 3,
+        "model-a", "page:page-a", "Orders", null, 10, 3);
+    transaction(() -> {
+      var field = new FormFieldDefinition("name", "column_name", "Name", "Name", FormFieldType.STRING, FormStorageMode.STORED,
+          false, false, 128, null, null, null, List.of(), FormFieldWritePolicy.EDITABLE);
+      var document = new ApplicationFormDocument("1", List.of(field, FormCalculationPublicationProjectionTest.number("total", "1")),
+          List.of(), List.of(), List.of());
+      var version = FormCalculationPublicationProjectionTest.version(document);
+      version.setId("version-3");
+      version.setTenantId("tenant-a");
+      version.setFormId("form-a");
+      version.setVersionNumber(3);
+      version.setRendererVersion("1");
+      version.setCreatedAt(NOW);
+      session.persist(version);
+      session.find(ApplicationFormEntity.class, "form-a").setLatestVersion(3);
+      seedBinding("calculated", "page-a", 3, 3, ApplicationFormPageBindingStatus.ACTIVATING);
+      return null;
+    });
+    var impact = transaction(() -> impacts().requirements(work));
+    assertThat(impact.validations()).hasSize(1);
+    assertThat(impact.validations().getFirst().field().fieldId()).isEqualTo("name");
+    var prepared = transaction(() -> policies().prepare(work, impact));
+    assertThat(prepared.command().calculation().validations()).isEqualTo(impact.validations());
+    assertThat(prepared.command().calculation().constraints()).containsKey("platform_record_state");
+    session.close();
+    session = factory.openSession();
+    transaction(() -> {
+      session.find(ApplicationFormPageBindingEntity.class, "old-b").setStatus(ApplicationFormPageBindingStatus.RETIRED);
+      return null;
+    });
+    assertThat(transaction(() -> policies().prepare(work, null)).command()).isEqualTo(prepared.command());
   }
 
   private FormWritePolicyPublicationStateService policies() {
     var pages = mock(ApplicationPageAccessPort.class);
     when(pages.requirePageForUpdate("tenant-a", "app-a", "page-a"))
         .thenReturn(new ApplicationPageTarget("page-a", "Orders", null, 10));
-    return new FormWritePolicyPublicationStateService(session, pages, context, new ObjectMapper(), Clock.fixed(NOW, ZoneOffset.UTC));
+    return new FormWritePolicyPublicationStateService(session, pages, context, new ObjectMapper(), Clock.fixed(NOW, ZoneOffset.UTC), FormCalculationPublicationProjectionTest.projection());
   }
 
   private void seedVersion(final int number, final boolean required, final FormFieldWritePolicy policy) {

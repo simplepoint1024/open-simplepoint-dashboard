@@ -1,0 +1,475 @@
+{
+  "passed": true,
+  "completedAt": "2026-10-20T03:07:36.908Z",
+  "version": "20261020-designer-usability2",
+  "scope": "Seven form-designer usability improvements; independent formula library/editor, shared field definitions and existing read-only server evaluation/publication contracts",
+  "improvements": [
+    {
+      "order": 1,
+      "name": "Readable formula summaries",
+      "status": "verified",
+      "evidence": "Business labels with stable stored field IDs; duplicate label disambiguation; field-specific dialog titles."
+    },
+    {
+      "order": 2,
+      "name": "Actionable diagnostics",
+      "status": "verified",
+      "evidence": "Formula AST/source selection, Unicode code-point to UTF-16 mapping, field/component navigation; server scope/field/detail-row diagnostics without input values."
+    },
+    {
+      "order": 3,
+      "name": "Unified field properties",
+      "status": "verified",
+      "evidence": "Ordinary, calculated and detail fields share FieldDefinitionDialog/FieldEditor with icon tabs and atomic cancellation; shared scene references shown."
+    },
+    {
+      "order": 4,
+      "name": "Temporary formula trials",
+      "status": "verified",
+      "evidence": "Real backend evaluation of unsaved definitions; exact decimals; dependency/mandatory inputs only; bounded detail rows; stale request cancellation/fencing; no draft or business writes."
+    },
+    {
+      "order": 5,
+      "name": "Dependency and impact inspection",
+      "status": "verified",
+      "evidence": "Main/detail qualified identities, direct dependencies, transitive affected fields, shared scenes, intersecting cycle detection."
+    },
+    {
+      "order": 6,
+      "name": "Publication summary",
+      "status": "verified",
+      "evidence": "Exact published-version comparison for field additions/removals/attributes/formulas; frozen publication candidate; server progress counts, explicit pending state before counts available."
+    },
+    {
+      "order": 7,
+      "name": "Complex-form navigation",
+      "status": "verified",
+      "evidence": "Searchable keyboard-accessible component tree, field list and diagnostics; selection follows scene, canvas and properties."
+    }
+  ],
+  "tests": {
+    "backend": {
+      "calculation": 270,
+      "applicationService": 57,
+      "formCalculationIntegration": 48,
+      "failures": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "model": 30,
+      "formulaSyntax": 8,
+      "unicodeSelection": 2,
+      "failures": 0
+    },
+    "typecheck": "8 frontend workspaces passed",
+    "uiAudit": "40/40 reviewed exceptions; no unreviewed controls",
+    "i18n": "Bundle/usage checks and 9 tests passed",
+    "scopedCheckstyle": "All changed Java production/test files passed",
+    "browserFixture": "Complete form-designer suite passed, including trials, cancellation, detail layouts, retention, publication and recovery",
+    "distribution": "installDist with frontend enabled and verifyFrontendDistribution passed"
+  },
+  "source": {
+    "simplepoint-calculation/src/main/java/org/simplepoint/calculation/FormulaAggregatePlan.java": "4d123d7bf00edea12d78ab202d494c875b7e175737fd711e04a3c7a91845f25d",
+    "simplepoint-calculation/src/main/java/org/simplepoint/calculation/FormulaException.java": "4925e3cca06925658893f3d35bcce8e4747de2dd6bf54cfd868ea99a5230c8de",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-api/src/main/java/org/simplepoint/plugin/app/form/api/error/ApplicationFormException.java": "fc16139958131974e4e9fde8701a851e866be93b85adc977e33a8d2533bbe8b2",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-api/src/main/java/org/simplepoint/plugin/app/form/api/model/FormCalculationDiagnostic.java": "b3df4e7c6f8e11195f3be47df1af51769d35dd7e7f3a3ea3f333e36f05dc1341",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationCompiler.java": "0a6af50d1f7e01f6473f84309319a7677f47c3106d2b926c79970480ca00f426",
+    "simplepoint-react/libs/calculation-editor/src/index.tsx": "96f7525892faa9a16ad9f4a98a0faa61cef468fbae5cfc355247f498f5b93b4e",
+    "simplepoint-react/libs/calculation-editor/src/style.css": "922178032ee6201a489ee0cc752db0f27545586775b20a236fb274040530fe2d",
+    "simplepoint-react/libs/calculation/src/index.ts": "10cf5bdb99ac1b6425386691b5154f10b174235fcf8e7f95044139edaa87ccec",
+    "simplepoint-react/libs/components/FormDesigner/CalculationFieldEditor.tsx": "82b77d759f5e8f009b85748458c1460d1c97c5e63dd09f6528f89432800ae8de",
+    "simplepoint-react/libs/components/FormDesigner/CalculationTrial.tsx": "fad9b4c2f65ab5b2fd58e4671c1525ed6582158467d63762a9b64e7fd3f0fae1",
+    "simplepoint-react/libs/components/FormDesigner/Canvas.tsx": "af2839c0c18a3a7ed94bf4aebb6b7104f9040cafc327b38f828406d2760f7022",
+    "simplepoint-react/libs/components/FormDesigner/DataSchemaEditor.tsx": "3a373832bbbeeab6b0f7456af334bb5592dd52c0d542ac591fd57fe34f3271cf",
+    "simplepoint-react/libs/components/FormDesigner/DesignerDiagnostics.tsx": "771f9ca2b08a6556c617280562d30977477849aad71d833b0b9b5ae7386be056",
+    "simplepoint-react/libs/components/FormDesigner/DesignerNavigator.tsx": "f908b8c0bdd3b78186724090f0857076ae70b9f88e9f163f0f07fd70f38aff81",
+    "simplepoint-react/libs/components/FormDesigner/FieldCalculationProperties.tsx": "70bdd128e5ee1e972e2f033b1485424134ba2c245af27c8e56d839d149d63f19",
+    "simplepoint-react/libs/components/FormDesigner/FieldDefinitionDialog.tsx": "6ec6d247b0dd406efcaaae03aa3aff06482ce75e7d7397740b919c7344529bca",
+    "simplepoint-react/libs/components/FormDesigner/FieldDependencies.tsx": "ce653c80ff94e197fe82f72499330a4486316ec027519937b4e5bfbeb8a6952e",
+    "simplepoint-react/libs/components/FormDesigner/FieldDependencyProperties.tsx": "1601bc7737ff43895f03ee76bae7cdc46f372095f7b9e67a5770f272fc1432d3",
+    "simplepoint-react/libs/components/FormDesigner/FieldEditor.tsx": "e7b96a5b8f0a9f936b89f6c425637fdc2c03dc230c1d032815c02c80bd2607e7",
+    "simplepoint-react/libs/components/FormDesigner/FormProperties.tsx": "28b4ca657d405f947874962d11f1cc7251eae3847940035b42b842eb1e295e88",
+    "simplepoint-react/libs/components/FormDesigner/Preview.tsx": "cbbb89fc5be5bcaf862190136df94804fb0988f3a87f597bf9dc9d90180e6428",
+    "simplepoint-react/libs/components/FormDesigner/Properties.tsx": "09ba74ed9f20b7867dc2b687d6352272e09a14dc13a052e892395a7a430391a4",
+    "simplepoint-react/libs/components/FormDesigner/RuleEditor.tsx": "16e7c871be84c0a4114556ddb014b650a2a03d856e1bce1efbb9bb8b64c69db6",
+    "simplepoint-react/libs/components/FormDesigner/calculationDiagnostics.ts": "a52f82a29a99913d436dc66db1a9d4b8d620b23e752cbf22c806fc1549683acd",
+    "simplepoint-react/libs/components/FormDesigner/calculationModel.ts": "52c416d6df973015167ef9d72a6e020c41143f7a72fec49da9e1dff004a43f21",
+    "simplepoint-react/libs/components/FormDesigner/calculationTrialModel.ts": "e1f30db0dbedc49973d3a68fddccceb03708ff6320bfe4b3a8a4a4efeba78bab",
+    "simplepoint-react/libs/components/FormDesigner/contracts.ts": "857bb6ddd662d5bb93f634eb5ca4d5cd9d67fa6be6b4974f1e2c751edebd0556",
+    "simplepoint-react/libs/components/FormDesigner/dataModel.ts": "ce22fa9f786ded1f1ace55c1477500b006487ea1f72583ee770457d569231479",
+    "simplepoint-react/libs/components/FormDesigner/definitionChanges.ts": "3f3cec02ef062d9a18d9ace683e345cde504cbc233cf5a93ae400f0a4e832a02",
+    "simplepoint-react/libs/components/FormDesigner/draftState.ts": "7a195d4512b0672dba3d046d2eeb0f4354b463521baca62fd87d872377e1e14a",
+    "simplepoint-react/libs/components/FormDesigner/extensions/index.ts": "5e72741fdfa54fc771606677f7cf7923ed20755400399b25b5bfada5634a4e65",
+    "simplepoint-react/libs/components/FormDesigner/fieldAnalysis.ts": "1b09b3272269912bf11badf9fd2a5c59fc1c3edd087a57358db00acf0513e93e",
+    "simplepoint-react/libs/components/FormDesigner/fieldCapabilities.ts": "d699ea5e7c119c21fe258460e819df1e19dbbd7d34c325731ca128ba6bbb8e67",
+    "simplepoint-react/libs/components/FormDesigner/fieldValidation.ts": "04478201f5107a66a4502b85c4bf75024261ecc1b51aa20afad9a09c2812b3ea",
+    "simplepoint-react/libs/components/FormDesigner/formPresentation.ts": "b72c60ab7adfe379a8ec7ee5eb7031218539bbd185e41fee35765f4e4d4d3c8a",
+    "simplepoint-react/libs/components/FormDesigner/index.tsx": "093c64c27c5f3354115cb285408173e36cc63fd3b452c466545c398b492ec9e4",
+    "simplepoint-react/libs/components/FormDesigner/labels.ts": "6cb9b6cbc381a6bb92ad1440cf5a9aeebccdd358571a6c16ae9155741fced640",
+    "simplepoint-react/libs/components/FormDesigner/model.ts": "94a48010918839da0375393fec31656e088ceffd0406665d2489d2d6e12246a0",
+    "simplepoint-react/libs/components/FormDesigner/presentation.ts": "8b19512b5ccf4247ff5851f347db2c20a1aae662131ad9b43a0572a981122b26",
+    "simplepoint-react/libs/components/FormDesigner/ruleModel.ts": "e4d3d220e6ef893ef0a087144a92b8eb85786d1b255d2fdd242cc2a8bb049ded",
+    "simplepoint-react/libs/components/FormDesigner/style.css": "884fbfcd9ae2c73e3b3b588855e7f984f3340bcf6289120af370f693764d2454",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ApplicationForms.tsx": "de0ac63ec88e3eca15a9c91a46829908789fc71235f2bd75683375e4bc41be92",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/FormEditor.tsx": "18da1c56527451fcb9cc1b6d410774b7eba478262a423e19c7ae5b68d79ccd2e",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/FormPublication.tsx": "329e2e7766fc3045724f289e7fc2a24863dc4cdf0fd52a825ccac8064ee1f87e",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PageFormDesigner.tsx": "a4cfcdbb059ea5309597f652ca07852ca99dc98f52020e9d1e169fe148ea855b",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublicationInspection.tsx": "6b5881eb20396ace7d71b51420758377c52da0619449af83c54c6f445375a1db",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublicationProgress.tsx": "3b1b82311c99c567033744256eea8e071f1dc7daae91ec3fb249e92bf858bd13",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublicationSummary.tsx": "05cd7fe66ce1a8754c083030276f25db334a35569938665d2e15d549fd348ada",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublishedFormData.tsx": "3721d6679238a9d1b22ea4483713243b4c37e417a25119c550c2e3822a592cb1",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ReleaseHistory.tsx": "ed6c71a3c9b621615bb63e97f4d9f9246f820736d67cddedb1e57e0e6838ec29",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ResourceLifecycle.tsx": "7fc1de75468d9ba7d760a71fb78f2292114ced9efcf202125f77ecc53f780aa1",
+    "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/useDesignerCalculationPreview.ts": "bdb16daf388539fc6405c42d8994d8824bcbf520be881a034c49340ce4672029",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/controller/ApplicationFormExceptionHandler.java": "759a2eebc0b223722548114e862c19ca92bf0c4fcff24b276e50000130cf978c",
+    "simplepoint-services/simplepoint-service-app/src/main/resources/META-INF/simplepoint/i18n/en-US/app-workbench.json": "d16b868d3108950c294a0e22d8ed626f853d5a59c6156b5a7a42a0ccb929e75c",
+    "simplepoint-services/simplepoint-service-app/src/main/resources/META-INF/simplepoint/i18n/zh-CN/app-workbench.json": "a84882001dafc8d8797ad39384f082bdfc21f2354e253347d7c13038429d6d92",
+    "simplepoint-react/libs/calculation-editor/src/diagnosticSelection.ts": "0ca7094c9a3ade0f9ce5da230a4112a5f403ebb93ce928a46173b49f45e98221"
+  },
+  "deployment": {
+    "passed": true,
+    "version": "20261020-designer-usability2",
+    "at": "2026-10-20T03:07:13.546Z",
+    "jarHashesMatch": true,
+    "health": [
+      {
+        "service": "authorization",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "common",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "auditing",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "dna",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "ai",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "app",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "workflow",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "mcp-gateway",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "host",
+        "health": "healthy",
+        "consul": "passing"
+      }
+    ]
+  },
+  "servedAssets": [
+    {
+      "asset": "mf-manifest.json",
+      "sha256": "733828fa732f13af225972b45e7504eb4c9ac435b8113de395853128c4b625a3"
+    },
+    {
+      "asset": "app.af0c9fbc30.js",
+      "sha256": "122d127bf1c11c22e9b224a81cf16a033ba87d0b8473aebd99e07eeaeb1ec6fa"
+    },
+    {
+      "asset": "__federation_expose_Marketplace.b3f755e957.js",
+      "sha256": "6b1f439e902b2f6e6d88db4b583348c0649aa8010db660872ec7c041c84d8b02"
+    },
+    {
+      "asset": "259.c846ce4478.js",
+      "sha256": "76dca0ac6c43e6e2fc02258da657ead5792dedc0a0f2b8cc6c903297a759265f"
+    },
+    {
+      "asset": "307.fedab0d10d.js",
+      "sha256": "83dff588ffa73feeb14328680ea31a3f12395b9ea40f3526ba3f32a3c062b9e1"
+    },
+    {
+      "asset": "31.d01b3c4e09.js",
+      "sha256": "4d898082aef8e5d15d1dedad8edffa1bc2184822ff158168b21c73320db498e5"
+    },
+    {
+      "asset": "38.58b677822a.js",
+      "sha256": "3328c884807fa502819f5fd1028a84e4b49ea1bf0721f482fe884bd0c602dffa"
+    },
+    {
+      "asset": "380.bac8d5de4b.js",
+      "sha256": "a6c6bf1530b97f6cf562b3607c30a0bae8fdc9997e781259231bd38c83d482d7"
+    },
+    {
+      "asset": "740.3eacd45ca4.js",
+      "sha256": "7e7e7e6bfb84e45f1d20a52866ef2bcf723eea41be135d10f2f2ba46eb7c2aa1"
+    },
+    {
+      "asset": "__federation_expose_FormRuntime.9957e08ec1.js",
+      "sha256": "2d009e75168874654edbc7e833e5398efb71cddf5cff220bb138dffa9efc4264"
+    },
+    {
+      "asset": "1.ec4e7cb45e.js",
+      "sha256": "e7cca29123790ac03a4bdf350d8f74509ad86dee07846d0add5afadf70d9bbaa"
+    },
+    {
+      "asset": "110.d1f3dc0810.js",
+      "sha256": "54c896c5061e61e627c0020e5a6554acf454a3d7e2e114f27f770655401b4a70"
+    },
+    {
+      "asset": "139.c7f9abba3e.js",
+      "sha256": "4f29e3738fd7e7935da4d7cae6394f118774f454e39322c57e62c9d77645ff9f"
+    },
+    {
+      "asset": "144.60df58a6d0.js",
+      "sha256": "416885c0dda246478d3872f341ee1280b5895d20cde584487a23ca0bc03bb9ef"
+    },
+    {
+      "asset": "169.eabed1c338.js",
+      "sha256": "fb2f890ecf57f53b727d0aea2bf125cc2f9bd730468765770c448879f089ec2e"
+    },
+    {
+      "asset": "210.836e6cc498.js",
+      "sha256": "f2fc4638b0a167a72a89c61e4023680c3f05c7d9596addccf50b53d334d1419b"
+    },
+    {
+      "asset": "302.ead936708b.js",
+      "sha256": "5f640524aee3258698f70500f12dbb66ae6c08c637c8d101b5f10065fa35f4af"
+    },
+    {
+      "asset": "371.e336287f1a.js",
+      "sha256": "4125b408e625e05cb1a8075933883c6f02b0b7d0ce6634aeca2812cf7ab5c3fb"
+    },
+    {
+      "asset": "499.d401a5e4ea.js",
+      "sha256": "30bd468af5e187cb47966a8dcfdcc04fe3a068a0fba9eb03ae5ff469f039a1a9"
+    },
+    {
+      "asset": "550.6fc8bef471.js",
+      "sha256": "bf5c6df05634831c7f3cd95bf5881fca087fecf3a5545ae32af66a44f9e2fde3"
+    },
+    {
+      "asset": "559.e998a0943b.js",
+      "sha256": "320b27bd2da6ecfb6d9003b86a9b0e35954ceb2c8191e0dfc0478d638a131072"
+    },
+    {
+      "asset": "573.8a2506f09f.js",
+      "sha256": "07a29a7e6243cab819243c9150f004d5ac2fca69700725cf92ec4595a3b79a21"
+    },
+    {
+      "asset": "580.cd94387833.js",
+      "sha256": "bab0303ff89343fce8e5f38a52b56ea6c2832a86da2ccc22bbee0220d9afcb40"
+    },
+    {
+      "asset": "626.d95a9c9e26.js",
+      "sha256": "3a291a5d4641f7deeef199cc0a395355c5308ad3569cea09eab4be6bc7d1161a"
+    },
+    {
+      "asset": "639.4507004cd2.js",
+      "sha256": "19ca1fbc93b687127e83a211385aa89203abd346732ee2dce2942810a8f9152a"
+    },
+    {
+      "asset": "641.821b864020.js",
+      "sha256": "58fb8af87b58a1cbe0597ff71a526a5a3026af28bbc62f0d5e30ee135ce493e2"
+    },
+    {
+      "asset": "697.43f2578525.js",
+      "sha256": "eea068d51ff35ef7bec36ee757ae6256004e2a978f0f802796ee595355c85493"
+    },
+    {
+      "asset": "705.1af0334f53.js",
+      "sha256": "1232d5d1679851579e95c1dddee24c7f931998c8bb27dd2a35185c43094eee07"
+    },
+    {
+      "asset": "729.44b657981f.js",
+      "sha256": "1cea7eb71deedcf0b7c75aa9bcfa1d6b242006954642e3e37ece8aa141437953"
+    },
+    {
+      "asset": "752.58aa267383.js",
+      "sha256": "fd52362c5a676e8d6b11738b0d713e94fb9a4af5186926013fc2fadcb7be56ab"
+    },
+    {
+      "asset": "779.cf4e70d948.js",
+      "sha256": "4614c5d07dbe89d56d81f687a0bee9f228203d43cd993700769179e97d3a0465"
+    },
+    {
+      "asset": "848.15b907636b.js",
+      "sha256": "49c995ed2c411c55d36e0dde0ddf5539e59bc4e093529a593a2b4ae708d509c5"
+    },
+    {
+      "asset": "852.b7389a8ed0.js",
+      "sha256": "f79a34a008bebd1a26d4b9da7a291d652c499ef111a6744bd3e23c0b507446c9"
+    },
+    {
+      "asset": "90.36c2bd8180.js",
+      "sha256": "a97bb39b74711385922e77088ab4ff1d9f1f5c7d2e921c722ea8fa669afe91e6"
+    },
+    {
+      "asset": "940.33f4bfddb2.js",
+      "sha256": "4771e984bc32d9ab156b3b4abfd7aed6ed360ae5450cf0597b81cfa536f2f56b"
+    },
+    {
+      "asset": "943.a034bd0e59.js",
+      "sha256": "eb162e4644d119f431390c5293732296790fe5414752c105d21e5c6c08b88b60"
+    },
+    {
+      "asset": "963.8638b0e6d6.js",
+      "sha256": "69c55f1e79adc218e84b3f90bff229fad0a8140920b1e81e8b66898d5d3170ed"
+    },
+    {
+      "asset": "__federation_expose_FormRuntime.513ff665ba.css",
+      "sha256": "90ba0501f53f90e5d6b612f25f7ec7e234124f6c5e9cedaf5a4bfa73ae4d0611"
+    },
+    {
+      "asset": "1.6d23009598.css",
+      "sha256": "8ac02d84ccdce54ba1286460c33221eccfa920ed260c36957f05a460348abcbd"
+    },
+    {
+      "asset": "110.a7a3dc4b2d.css",
+      "sha256": "c24f37b9d5e169ebc2e2fda1293253e665e5f192454568109d027338167971fc"
+    },
+    {
+      "asset": "210.49ddd12bc2.css",
+      "sha256": "c8e233aaf5714c751c7e6b37badcc73b68210001b34828c9386a6bf802e553e7"
+    },
+    {
+      "asset": "246.b72482ce02.css",
+      "sha256": "301b527daa7bd4649b66ce692ca37286b07b984981d034d0887a72b72e12e246"
+    },
+    {
+      "asset": "359.2e2eb16d9c.css",
+      "sha256": "4bbd24550764832f93bff60e6f3286f820bef0acc7d94f23f7371b2af2a21f4c"
+    },
+    {
+      "asset": "550.a7a3dc4b2d.css",
+      "sha256": "c24f37b9d5e169ebc2e2fda1293253e665e5f192454568109d027338167971fc"
+    },
+    {
+      "asset": "580.025add8d6a.css",
+      "sha256": "3fb19f4de0c431e57e32ef18e57a6949b2a05e3cd647cbe427987986160b414e"
+    },
+    {
+      "asset": "852.2e2eb16d9c.css",
+      "sha256": "4bbd24550764832f93bff60e6f3286f820bef0acc7d94f23f7371b2af2a21f4c"
+    },
+    {
+      "asset": "963.1e13b25b01.css",
+      "sha256": "3066e172a6dd30d925592aae4333ea6d908bd01e531858cafdff4902e97e21a7"
+    },
+    {
+      "asset": "__federation_expose_Templates.3b8a5ef344.js",
+      "sha256": "ce3fd384ff59afd8d19e2ffce991334b85a759db9c8acafc033ed4dc34e8e05a"
+    },
+    {
+      "asset": "__federation_expose_Workbench.35332ceec0.js",
+      "sha256": "92835bd288d4cb80f5e0c5d1116901de2fc3acf4db79482e069d797aba2bdeae"
+    },
+    {
+      "asset": "215.48b4f522c9.js",
+      "sha256": "01daaeabfc7c72c599f4505317aa982a9d94ede67050fc563c2b21c3275654ed"
+    },
+    {
+      "asset": "864.94db57ad36.js",
+      "sha256": "e93c752fb498e7a8ac7d3932311f6a4e6c42c6ff6bcccc55bec5b26232e2c8e8"
+    },
+    {
+      "asset": "__federation_expose_Workbench.347493fd33.css",
+      "sha256": "d93e61bf4dd961fb8b65d154d114431e54c0a7a381149d3e42386b62d857aa63"
+    },
+    {
+      "asset": "215.b72482ce02.css",
+      "sha256": "301b527daa7bd4649b66ce692ca37286b07b984981d034d0887a72b72e12e246"
+    },
+    {
+      "asset": "864.ddd913c47f.css",
+      "sha256": "fe17762ba5592cbd6a4819ae598f5299e10e4e07bc79e5f2c85a8e363e20ca36"
+    }
+  ],
+  "realBrowser": {
+    "passed": true,
+    "readableSummary": true,
+    "fieldTitle": true,
+    "realTrial": [
+      "7.00",
+      "8.00"
+    ],
+    "valueFreeError": "DIV_ZERO",
+    "nodeErrorLocation": true,
+    "unicodeSyntaxLocation": true,
+    "dependencies": true,
+    "navigation": true,
+    "diagnostics": true,
+    "publishedVersionSummary": true,
+    "discardPreservedDraft": true,
+    "draftRevision": 32,
+    "businessWrites": 0
+  },
+  "realDetailBrowser": {
+    "passed": true,
+    "at": "2026-10-20T03:07:20.196Z",
+    "detailEditor": true,
+    "uniformTabs": true,
+    "realTrialRows": [
+      "180.00",
+      "45.00"
+    ],
+    "parentInputDependency": true,
+    "parentAggregateImpact": true,
+    "unchangedDraft": true,
+    "businessWrites": 0
+  },
+  "realBackend": {
+    "passed": true,
+    "at": "2026-10-20T03:07:14.310Z",
+    "realBackend": true,
+    "readOnly": true,
+    "draftRevision": 1,
+    "parentDetailCalculation": {
+      "total": "225.00",
+      "tax": "23.26",
+      "base": "281.25",
+      "payable": "271.25",
+      "rowAmounts": [
+        "180.00",
+        "45.00"
+      ],
+      "rowTax": [
+        "20.71",
+        "2.55"
+      ]
+    },
+    "structuredDetailError": {
+      "code": "DIV_ZERO",
+      "line": 1,
+      "column": 0,
+      "scope": "expense_items",
+      "fieldId": "tax_amount",
+      "row": 1
+    },
+    "typedInputError": {
+      "scope": "expense_items",
+      "fieldId": "quantity",
+      "row": 0,
+      "valuesNotExposed": true
+    },
+    "businessWrites": 0
+  },
+  "limitations": [
+    "Full application-service test Checkstyle still reports 78 existing warnings in 4 unrelated files; scoped checks for modified files pass.",
+    "Publication summary compares field definitions; authoritative affected-record counts are reported by server publication progress, not guessed before publication.",
+    "This task did not rerun the earlier 176-case platform acceptance matrix or a full repository build.",
+    "Live trials used existing synthetic acceptance forms without publishing or modifying their drafts/business data; publication response-loss/recovery was exercised by the browser fixture suite."
+  ]
+}

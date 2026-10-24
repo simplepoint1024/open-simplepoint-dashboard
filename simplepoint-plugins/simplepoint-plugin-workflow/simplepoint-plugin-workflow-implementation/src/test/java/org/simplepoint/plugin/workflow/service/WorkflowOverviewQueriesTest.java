@@ -18,7 +18,9 @@ class WorkflowOverviewQueriesTest extends WorkflowDirectoryFixture {
   @Test
   void homeUsesFullCountsFiveRowPreviewsAndEngineAuthoritativeStatus() {
     var overview =
-        new WorkflowOverviewQueries(new WorkflowInboxQueries(em), new WorkflowMatterQueries(em));
+        new WorkflowOverviewQueries(
+            new WorkflowInboxQueries(em, labelReader()),
+            new WorkflowMatterQueries(em, labelReader()));
     String definition = publish("actor", null);
     for (int i = 0; i < 7; i++) {
       transaction.execute(
@@ -65,7 +67,9 @@ class WorkflowOverviewQueriesTest extends WorkflowDirectoryFixture {
   @Test
   void taskOnlyPermissionDoesNotExposeStarterRows() {
     var overview =
-        new WorkflowOverviewQueries(new WorkflowInboxQueries(em), new WorkflowMatterQueries(em));
+        new WorkflowOverviewQueries(
+            new WorkflowInboxQueries(em, labelReader()),
+            new WorkflowMatterQueries(em, labelReader()));
     transaction.execute(
         status ->
             service.start(

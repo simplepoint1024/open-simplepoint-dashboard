@@ -1,0 +1,554 @@
+{
+  "date": "2026-10-21",
+  "recordedAt": "2026-10-21T07:19:23.453472+08:00",
+  "status": "shared-prefix mechanism verified; full module composition goal remains incomplete",
+  "scope": "Controller-derived shared HTTP subtree ownership, pure deployment routing, consistent servlet mounting and Common real-controller metadata compatibility",
+  "counts": {
+    "backendTests": 104,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "purePlanningTests": 37,
+    "servletAssemblyTests": 15,
+    "springCompositionTests": 32,
+    "workflowHttpTests": 19,
+    "commonControllerPlanningTests": 1,
+    "styleJavaFiles": 14,
+    "styleReports": 3
+  },
+  "projects": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.ModuleCatalogTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+          "sha256": "de588f2be8b7e4e5705e91aa1078d478aaadffd671975f85b821e63251b0fb61",
+          "cases": [
+            "indexDiscoveryDoesNotInitializeConfigurationClasses()",
+            "allClasspathIndexesParticipateInDuplicateChecks()",
+            "planAndCatalogCannotBeMutated()",
+            "fullDeploymentRejectsUnresolvedRemoteCapabilities()",
+            "requiredClosureIsOrderedWithoutActivatingUnselectedModules()",
+            "malformedOrConflictingInitializerDeclarationsAreRejected()",
+            "deploymentDerivesRemoteRoutesAndRemovesThemAfterAggregation()",
+            "malformedOrOversizedIndexesFailInsteadOfPartiallyLoading()",
+            "deploymentsRejectCompetingOrIncompatibleRemoteProviders()",
+            "overlappingPackagesAndCompetingProvidersFail()",
+            "localDependencyCycleFailsWithItsPath()",
+            "deploymentsCannotSilentlyDuplicateModuleOwnershipThroughLocalClosure()",
+            "componentOwnershipRequiresActualPackageBoundary()",
+            "duplicateModuleIdsFailBeforeSelection()",
+            "missingAndIncompatibleLocalDependenciesHaveStableDiagnostics()",
+            "bidirectionalApiConsumptionIsNotAnActivationCycle()",
+            "declarationsAndRootOrderDoNotChangePlan()",
+            "startupDependenciesParticipateInDeploymentValidationWithoutDuplicatedContractLists()",
+            "externalBindingsCannotHideIncompatibleJavaContracts()",
+            "invalidDeclarationsAreRejected()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleDefaultsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+          "sha256": "b5642b0aef6ae4c04580df1adbcfb65ee9c1b1df61e34b4baee19dda6de1ea98",
+          "cases": [
+            "hostSettingsAndOversizedDefaultsCannotBeImported()",
+            "defaultsLoadOnlyForSelectedModulesAndRemainImmutable()",
+            "duplicatedResourcesAndKeysAreRejected()",
+            "conflictsNeverDependOnModuleOrderOrExposeValues()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleHttpPlanTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpPlanTest.xml",
+          "sha256": "1c9326bf599e3fef250ff8d90a097af37634baa17402e25fa4b38b8e29207620",
+          "cases": [
+            "invalidOrOverlappingNamespacesFailBeforeAnyRuntimeStarts()",
+            "namespacesRemainStableWhenAdaptersMoveBetweenHosts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleHttpRoutesTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpRoutesTest.xml",
+          "sha256": "4f4e13b8bf0d06e767f0493d0bb12f924010ef8282323dd44d3a56c8cc026991",
+          "cases": [
+            "subtreesRemainStableAcrossSplitAndAggregateHosts()",
+            "wholeNamespaceAndNestedOwnerConflictsFailAcrossHosts()",
+            "malformedReadersFailBeforeRuntimeStarts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleResourcePlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcePlanTest.xml",
+          "sha256": "23ddf0688336d5cf67242f3b97c3454ba5f69932331a38fa7c0c9d89f79fd78d",
+          "cases": [
+            "freshDeploymentClientsRemainStableAcrossHostRelocationButChangeAcrossReleases()",
+            "twoPartialWritersCannotShareAnOwnerEvenOnDifferentHosts()",
+            "registrationPolicyUsesModuleCredentialsAcrossAllTopologies()",
+            "missingRegistrationOrOwnershipAndInvalidIdentitiesFailDuringPlanning()",
+            "invalidClientIdentifiersCannotBecomePoliciesOrRuntimeCredentials()",
+            "resourceOwnerDoesNotFollowAdapterOrHostNames()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleResourcesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml",
+          "sha256": "2b3f1bf9f164159c8f9f1cf0fb35a68de766004b697502cd9ced63a5fc55d73b",
+          "cases": [
+            "rejectsMissingDuplicateAndOversizedAssetsInsteadOfChoosingByClasspathOrder()",
+            "rejectsTraversalAndExternalUrls()"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-http-servlet",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.http.servlet.ModuleHttpAssemblyTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-http-servlet/build/test-results/test/TEST-org.simplepoint.platform.http.servlet.ModuleHttpAssemblyTest.xml",
+          "sha256": "ed7d4a8e39c59067f89fd7816416baf990987754a2c5514ddf8f23f72cf1e447",
+          "cases": [
+            "pluginShadowCannotBorrowCoreModuleOwnership()",
+            "competingPrefixConfigurerCannotSilentlyMoveThePublicApi()",
+            "legacyHostKeepsGatewayStrippedRoutesAndDoesNotStartModularHosting()",
+            "actualModuleSelectionSeparatesIdenticalRoutesAndLeavesUnselectedControllersAbsent()",
+            "unownedControllerCannotCaptureAnOwnedNamespace()",
+            "everyHandlerMappingReceivesTheSamePrefixIncludingAdditionalPlatformMappings()",
+            "undeclaredDomainControllersCannotAccidentallyBecomePublicHttpEndpoints()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.http.servlet.SharedModuleHttpTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-http-servlet/build/test-results/test/TEST-org.simplepoint.platform.http.servlet.SharedModuleHttpTest.xml",
+          "sha256": "a4c27e5788a4a48f66251384780ecbdec90c9adf12b5176b5a7b015cc0c5cce4",
+          "cases": [
+            "duplicateControllerClassesAreRejectedInsteadOfFollowingClasspathOrder()",
+            "combinedMvcMountsSharedPrefixOnceAndRetainsNestedRoutesAndAliases()",
+            "selectingOneSharedOwnerDoesNotActivateTheOther()",
+            "childModuleCannotReserveControllersLoadedByItsParent()",
+            "siblingAndWildcardCapturesCannotBypassSubtreeOwnership()",
+            "dynamicRootsAreBoundedAndNeverResolveEnvironmentOrTraversal()",
+            "composedConditionalControllerMetadataDoesNotInitializeItsClass()",
+            "actualControllerAliasesAndInheritedRootsDriveSplitAndCombinedRouting()"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.spring.ModuleBootstrapBootTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleBootstrapBootTest.xml",
+          "sha256": "b50557ccf66acc1493065fd02b57e0edfa871305be6794e842d72c5306433286",
+          "cases": [
+            "duplicateIdentityFailsBeforeRegistryOrBusinessEffects()",
+            "missingModuleDeclarationCannotSilentlySkipDiscoveredBootstrapProviders()",
+            "baseDataPreservesCrossModulePrioritiesAndRunsBeforeRegistration()",
+            "modularBootstrapCannotClaimReadinessAfterIgnoringRequiredFailures()",
+            "unownedProviderCannotBorrowModuleCredentials()",
+            "splitAndMergedHostsKeepTheSameRegistryKeysAndOwningCredentials()",
+            "modulePolicyIsIndependentOfLegacyServiceAllowlist()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.spring.ModuleCallerIdentityTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCallerIdentityTest.xml",
+          "sha256": "f8d60e7c84b48aa3471c971e2dbda8d5a1b7e87d9f8da93ff444a2848d6a72c6",
+          "cases": [
+            "failedRemoteInvocationStillClearsTheSelectedCredential()",
+            "unknownOwnersAndUndeclaredConsumersCannotBorrowAnAvailableModuleCredential()",
+            "defaultConfigurationFetchesSeparateCredentialsAndAuthenticatesThemLocally()",
+            "remoteTransportReceivesTheSameModuleCredentialBinding()",
+            "nestedCallUsesTheCalleeModulesClientAndRestoresIncomingIdentity()",
+            "concurrentBackgroundCallsKeepTheirInjectedModuleAndDoNotLeakThreadState()",
+            "bindsConstructorFieldLazyAndDeferredClientsWithoutBusinessAop()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.spring.ModuleClientDefinitionTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleClientDefinitionTest.xml",
+          "sha256": "27d2fc9dfc88c7925cf0903ed25b579af649da108550dc190b62bd2b03d0e912",
+          "cases": [
+            "singletonReplacementCannotCacheTheFirstCallersIdentityForEveryConsumer()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.spring.ModuleCredentialConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCredentialConfigurationTest.xml",
+          "sha256": "1d543e22232c11e793097bb9a87629e31d72a9e86fcfe0c7837be7c6e41eb228",
+          "cases": [
+            "onlySelectedModulesCanBeBoundAndUnpreparedContextCannotBorrowCallerState()",
+            "cachesAndRefreshesEachModulesOwnOauthCredentialWithoutUsingTheHostCredential()",
+            "rejectsMissingCredentialsAndSharedClientIdsWithoutExposingSecrets()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.spring.ModuleInitializationBootTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleInitializationBootTest.xml",
+          "sha256": "b5d6fcb4899582f751d5be75abb7b713b9aab2a1646202af6794c6e5677a7068",
+          "cases": [
+            "selectingOneModuleDoesNotReadOtherModulesBrokenAssetsOrRegisterTheirContents()",
+            "duplicateCodesAcrossOwnersFailBeforeRemoteEffectsWithoutWebServer()",
+            "missingSelectedDeclarationFailsBootBeforeAnyRemoteReadsOrWrites()",
+            "bootRegistersOnlySelectedAssetsWithEachOwnersCredential()",
+            "requiredRegistryFailureFailsBootWithoutReplayOrCredentialLeak()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.spring.PlatformModuleAssemblyTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.PlatformModuleAssemblyTest.xml",
+          "sha256": "861c242bd3f35bd1efa9d3bb0d4bdea7299399f62039be3306fc49526ec1e5d7",
+          "cases": [
+            "moduleDefaultsNeverOverrideExplicitDeploymentPolicy()",
+            "modularHostsCannotDisableTheServiceCallBoundary()",
+            "unknownModuleFailsStartupBeforeActivatingComponents()",
+            "missingDeclaredProviderFailsStartup()",
+            "undeclaredProviderFailsStartup()",
+            "indexedEnvironmentSelectionOverridesCompiledDefaults()",
+            "emptyHostSelectionFailsInsteadOfStartingAnEmptyService()",
+            "remoteConsumerHasProxyWithoutLocalProvider()",
+            "selectionActivatesDependencyClosureAndUsesTheRoutingBoundaryForLocalCalls()"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.workflow.http.WorkflowHttpArtifactTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpArtifactTest.xml",
+          "sha256": "09648407528159d72e7a022a2f1a461a54c1df3cccf6e180980570af7f8e54f7",
+          "cases": [
+            "domainSelectionDoesNotImplicitlyActivateItsOptionalAdapter()",
+            "movedResourcesRetainHistoricalIdentityAndHaveExactlyOneClasspathDefinition()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.http.WorkflowHttpCompositionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpCompositionTest.xml",
+          "sha256": "a6a518e9908a92fdfbbe55dd8739d91e0f18633bd7fb9f23d99c87e3326a41bc",
+          "cases": [
+            "relocatedEndpointsKeepScopeMethodPermissionsAndStructuredErrors()",
+            "samePackagedControllerMappingsRemainEquivalentInLegacyAndModularHosts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.http.WorkflowResourceInitializationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowResourceInitializationTest.xml",
+          "sha256": "173c3a4d759d972f780a51798ceaa5520867ec92cf22680a4b21b80af9094a59",
+          "cases": [
+            "actualPackagedDeclarationsRegisterHistoricalOwnerAndMatchSelectedRequestScopes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.rest.WorkflowDirectoryErrorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowDirectoryErrorTest.xml",
+          "sha256": "a8dee459b2f95faba6d74f34c17e17354894af9986aae0360a85f7e4c20caa96",
+          "cases": [
+            "[1] DIRECTORY_PREPARING",
+            "[2] DIRECTORY_UNAVAILABLE"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest.xml",
+          "sha256": "9055a70feefb909b1a8453560edbc01ad88f7b13129beacc743d51366a82f942",
+          "cases": [
+            "onlyDefinitionReadersOrAdministratorsCanInvokeThePreview()",
+            "httpPreservesNumericLookingIdentitiesAsJsonStringsAndRejectsGeneralExpressions()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.rest.WorkflowModelingErrorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowModelingErrorTest.xml",
+          "sha256": "81084da49de34d390b960a867eba18d36c4e3d30f14713679a2e81d649b6b65d",
+          "cases": [
+            "existingDomainErrorsRetainTheirStatusAndEnvelopeWithoutPretendingToTargetNodes()",
+            "modelingErrorsExposeStableTranslationKeysAndCanvasElementsWithoutVariableValues()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.rest.WorkflowPersonalHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPersonalHttpTest.xml",
+          "sha256": "dcd64d67c83ca36d988cf1d294e3463ceed9eaa7b0d5c4bc9be6ea3fe45cd6fd",
+          "cases": [
+            "genuineMethodSecurityDoesNotTurnReadAccessIntoApprovalOrCancellation()",
+            "progressNodeAndJournalReadsArePaginatedAndDomainConflictsKeepStableHttpErrors()",
+            "inboxCarriesTypedHeaderDocumentsAndRepeatedSortWithoutLosingPageOrView()",
+            "realScopeInterceptorAndMethodSecurityKeepParticipantReadsUsableWithDepartmentPolicies()",
+            "lifecycleBodiesPreserveReasonsBooleansAndVersionPinsAndRejectMalformedRequests()",
+            "matterViewsAndBoundedPickerKeepTheirDistinctTransportContracts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest.xml",
+          "sha256": "a1f0500b914bb3f1138891544e98eeb97f2f52756d05742093c57f387bc5044b",
+          "cases": [
+            "onlyDefinitionReadersAndAdministratorsCanInvokeNativePriorityPreview()",
+            "httpReturnsNativeValuesOrTranslatedIssueCodesWithoutEvaluatingVariableExpressions()"
+          ]
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest.xml",
+          "sha256": "7cb746a398825f4c2764ff6a25cba3b40122045b36e3a7d5d2985dc1cf96cc8b",
+          "cases": [
+            "realIdentityOidcAndLocaleControllersCanShareCommonWithoutOwningEachOthersPaths()"
+          ]
+        }
+      ]
+    }
+  ],
+  "checkstyle": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/sharedHttp.xml",
+      "sha256": "69699f883cba36ba944787eb96165c4292c80d2b7946d33e7bb0a5384c16c0e7",
+      "errors": 0,
+      "files": 5
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-http-servlet/build/reports/checkstyle/sharedHttp.xml",
+      "sha256": "70b78908bd3903f168ce6aa50b3f47cb0d0de2c154029a00f269029178b3a9a6",
+      "errors": 0,
+      "files": 8
+    },
+    {
+      "report": "simplepoint-services/simplepoint-service-common/build/reports/checkstyle/sharedHttp.xml",
+      "sha256": "359cfd7787ec08cae6521c36abefc2450ce49a6a6d06e2d03105125c8fb4d154",
+      "errors": 0,
+      "files": 1
+    }
+  ],
+  "checkstyleSources": [
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttp.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttpRoutes.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttpPlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleHttpRoutesTest.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ControllerHttpRoutes.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/HttpRoutePaths.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpMappings.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpAutoConfiguration.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/platform/http/servlet/SharedModuleHttpTest.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/sharedalpha/SharedAlphaModule.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/sharedbeta/SharedBetaModule.java",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/metadata/MetadataModule.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/CommonHttpRoutePlanningTest.java"
+  ],
+  "checkstyleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-shared-http-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleSharedHttp', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifySharedHttpStyle') { dependsOn checks }\n}\n",
+  "command": [
+    "./gradlew",
+    "-I",
+    "/tmp/simplepoint-shared-http-checkstyle.gradle",
+    ":simplepoint-platform:simplepoint-platform-composition:test",
+    ":simplepoint-platform:simplepoint-platform-composition:verifyCompositionDependencies",
+    ":simplepoint-platform:simplepoint-platform-http-servlet:test",
+    ":simplepoint-platform:simplepoint-platform-composition-spring:test",
+    ":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-http:test",
+    ":simplepoint-services:simplepoint-service-common:test",
+    "--tests",
+    "*CommonHttpRoutePlanningTest",
+    "verifySharedHttpStyle",
+    "verifyModuleBoundaries",
+    "-Psimplepoint.frontend.skip=true",
+    "--console=plain"
+  ],
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "database": "not required; no database or running-service changes",
+    "temporaryFixtures": "JUnit TempDir duplicate-class fixture; cleaned by test framework"
+  },
+  "gateHistory": "Initial implementation tests passed. First broader quality run passed tests but reported nine missing Javadocs in public fixture types/methods. Those were fixed; loader ownership and traversal validation were strengthened and regression/style/boundary/dependency gates rerun successfully.",
+  "verifiedScenarios": [
+    "Shared namespaces produce disjoint subtree-to-host routes for split and combined deployments; subtree maps are immutable and same-owner nested roots collapse.",
+    "Whole-namespace and nested different-owner conflicts fail during planning across different hosts; malformed or unconstructable metadata readers cannot silently reserve routes.",
+    "Actual MVC module selection mounts the shared prefix once, preserves legacy aliases, nested paths and inherited interface mappings, and leaves unselected controllers absent.",
+    "Wrong-owner paths, unowned wildcard captures and segment-prefix confusion reject without depending on HTTP method or registration order.",
+    "Composed conditional-controller mappings are read without initializing their deliberately failing static initializer; planning ignores deployment conditions when reserving ownership.",
+    "Duplicate controller resources and configuration/controller ClassLoader mismatch reject before runtime.",
+    "Environment placeholders, relative paths, dot traversal before and after variables, and duplicate slashes reject; stable roots before variables are derived.",
+    "Actual Common identity, OIDC and i18n controller classes produce compatible split/combined routes with unchanged URLs; tests use explicit metadata-only module fixtures, not production module assembly.",
+    "Existing exclusive namespaces, extra MVC handler mappings, legacy gateway-stripped hosting, selected-module isolation and workflow HTTP regression remain passing.",
+    "Pure composition runtime dependency gate confirms no Spring/web dependency; module JARs contain the exact newly compiled planning and servlet classes."
+  ],
+  "limitations": [
+    "No production Common/OIDC/i18n HTTP adapter extraction or component-scan ownership migration is claimed. Common tests use metadata-only fixture module declarations; a full modular business host is not started.",
+    "Common was filtered to the new planning test. Other four listed test projects ran their full test tasks; no full repository or production business suite was run.",
+    "Paths are reserved as literal subtrees, not partitioned by request method/headers/query conditions. Shared mode requires a type-level mapping with a stable first segment; whole-namespace mode remains available.",
+    "Metadata readers are trusted application adapters with a public no-argument constructor. The supplied servlet reader is bounded and metadata-only; this interface is not an untrusted-code sandbox.",
+    "Runtime dynamic-plugin mapping additions and full browser/security/data/permissions flows remain part of later integration acceptance; initialization validation is not a replacement.",
+    "No frontend changes, frontend tests, service distribution rebuild, deployment, production configuration/database writes, commit or push in this increment.",
+    "Gateway/config publication, complete resource-owner adoption, remaining HTTP/frontend/security composition, formal standalone service and three-topology acceptance remain outstanding."
+  ],
+  "sources": {
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttp.java": "c9512d2921fad7ee009f12dbf921041f8f64a04269b9bffdbb0add21f9eb2707",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttpRoutes.java": "ab77928e9016d286ce03dc868774f488d4f860a879bb5315ba56a86825ed1545",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttpPlan.java": "36e1beb5b9413afb2dc24cbc92876ede786cc047e681ac23575720e25e904c69",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java": "6c6ccec3a7ae1d7fd7a89ee59a4c4cc368512969fcd3644221fad7ce9518730c",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleHttpRoutesTest.java": "c0f7f89cf2dc04c830de02a6e26d4a2f7821f42343a711844b9be3877516f1bd",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ControllerHttpRoutes.java": "5db549d7d15887a0e3433620fe10d989a564e8191ede3fd863fc38f9eb09cd90",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/HttpRoutePaths.java": "e8e4a918b6cb35790a7510b1d0c24d86076927ad4fadff02d6e3705d83a38108",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpMappings.java": "b097e9523576aa61b0878749cc5c83745b280f8d966a0aa6802ddd1852c56a08",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpAutoConfiguration.java": "221e00b80e058d42e1fa8bd4c32f32a8af9dd7611f0fbf5c0dbf0dda925318a3",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/platform/http/servlet/SharedModuleHttpTest.java": "78cd5f822e021ae7d949ae475cc70ccda09e2c499423b27dff5abd8a9b21a449",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/sharedalpha/SharedAlphaModule.java": "25c90c4ed9f91d202cc64e22f272686f202a94c3e92d527b65e810d6e84564e7",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/sharedbeta/SharedBetaModule.java": "09a3caf49ce1973f32c9496a4e21c2785b48dcb9e7bc1da35cd25314f1c284e0",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/metadata/MetadataModule.java": "545901298c68e6f73ca3749a25a87f201131bb1a16b7a013d85ce42512dfc38f",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/CommonHttpRoutePlanningTest.java": "c318534e659ee7c65ef1cd40aa219eea6ba72e3dda34723e709191e46f662362",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/resources/META-INF/simplepoint/modules.imports": "b86650bf6db5f98533c125842e929eb52e9452cf09d317c1bb50409d4b8c00a2",
+    "simplepoint-services/simplepoint-service-common/build.gradle.kts": "96d7adaf9067af08eb7d04677957107ce33d0ae9b1a28ce67061278aea4e76e3",
+    "AGENTS.md": "78a81e415588c7c579aa76fd0af12c9ffcebc405b7e03a488f7a4eaac92e269d",
+    "doc/design/modular_service_composition_plan.md": "433c9d334072a5710869aac58fb0649697b81900e6fd72338451f4791ab92e83",
+    "simplepoint-platform/simplepoint-platform-composition/README.md": "d5449f73e86d77e0c359ed3f7b2df167f96762864f0b0bdb89843011b47bcddf",
+    "simplepoint-platform/simplepoint-platform-http-servlet/README.md": "ce4e845db77573e191e2bf4b7aa33136fb0f1428c5e00b60088de2c2c6eb6705"
+  },
+  "artifacts": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build/libs/simplepoint-platform-composition.jar",
+      "sha256": "76c5170cd0e6a3865b5bc350544e988bcd513d0903d99fda5aa382ebc421e3a9",
+      "checkedExactCompiledEntries": [
+        "org/simplepoint/platform/composition/ModuleHttp.class",
+        "org/simplepoint/platform/composition/ModuleHttpRoutes.class",
+        "org/simplepoint/platform/composition/ModuleHttpPlan.class",
+        "org/simplepoint/platform/composition/DeploymentPlan.class"
+      ]
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-http-servlet/build/libs/simplepoint-platform-http-servlet.jar",
+      "sha256": "484afcb3200b60bafeb496687241575d7a4a485d7c67479c4446b543d657cd8b",
+      "checkedExactCompiledEntries": [
+        "org/simplepoint/platform/http/servlet/ControllerHttpRoutes.class",
+        "org/simplepoint/platform/http/servlet/HttpRoutePaths.class",
+        "org/simplepoint/platform/http/servlet/ModuleHttpMappings.class",
+        "org/simplepoint/platform/http/servlet/ModuleHttpAutoConfiguration.class"
+      ]
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-shared-http-quality.log",
+      "sha256": "f75f39e9890950ce54beed6e1e2cd0026d6813e0d56b48e62780e14cfa331048"
+    }
+  ]
+}

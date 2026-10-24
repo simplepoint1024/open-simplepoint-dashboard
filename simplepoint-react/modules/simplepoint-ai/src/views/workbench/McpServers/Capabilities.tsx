@@ -738,7 +738,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                     },
                   }}
                   dataSource={tools}
-                  pagination={{ pageSize: 20, hideOnSinglePage: true }}
+                  pagination={{ defaultPageSize: 50, hideOnSinglePage: true }}
                 />
               ),
             },
@@ -763,7 +763,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                   loading={loading}
                   columns={resourceColumns}
                   dataSource={resources}
-                  pagination={{ pageSize: 20, hideOnSinglePage: true }}
+                  pagination={{ defaultPageSize: 50, hideOnSinglePage: true }}
                 />
               ),
             },
@@ -787,7 +787,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                   }}
                   loading={loading}
                   dataSource={resourceTemplates}
-                  pagination={{ pageSize: 20, hideOnSinglePage: true }}
+                  pagination={{ defaultPageSize: 50, hideOnSinglePage: true }}
                   columns={[
                     {
                       title: t("ai.mcp.resources.template", "URI Template"),
@@ -832,7 +832,7 @@ const McpCapabilities = ({ initialServerId }: McpCapabilitiesProps = {}) => {
                     },
                   }}
                   dataSource={prompts}
-                  pagination={{ pageSize: 20, hideOnSinglePage: true }}
+                  pagination={{ defaultPageSize: 50, hideOnSinglePage: true }}
                 />
               ),
             },

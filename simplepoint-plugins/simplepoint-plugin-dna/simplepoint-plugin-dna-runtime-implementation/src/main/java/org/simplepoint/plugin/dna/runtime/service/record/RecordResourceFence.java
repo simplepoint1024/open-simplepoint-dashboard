@@ -11,7 +11,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Holds a shared control-plane fence until the target write commits; offline takes its write lock. */
+/** Holds a shared control-plane fence through target reads/writes; offline takes its write lock. */
 @Component
 public class RecordResourceFence {
   private final EntityManager em;

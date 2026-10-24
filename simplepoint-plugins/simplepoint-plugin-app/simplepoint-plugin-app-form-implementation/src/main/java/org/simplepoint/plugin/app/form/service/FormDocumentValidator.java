@@ -92,9 +92,11 @@ public class FormDocumentValidator {
     validateIndexes(document.indexes(), fields);
     if (document.presentation() != null) {
       var presentation = document.presentation();
-      if (presentation.listFieldOrder().size() != new HashSet<>(presentation.listFieldOrder()).size()
+      if (presentation.listFieldOrder().size()
+              != new HashSet<>(presentation.listFieldOrder()).size()
           || !fields.keySet().containsAll(presentation.listFieldOrder())
-          || presentation.labelWidth() != null && (presentation.labelWidth() < 60 || presentation.labelWidth() > 240)) {
+          || presentation.labelWidth() != null
+              && (presentation.labelWidth() < 60 || presentation.labelWidth() > 240)) {
         invalid("Form presentation contains invalid field order or label width");
       }
     }
@@ -103,6 +105,9 @@ public class FormDocumentValidator {
     validateDetails(document);
     FormAggregateValidation.validateDefinition(document);
     FormComponentValues.validateDefinition(document);
+    if (FormCalculationCompiler.hasCalculations(document)) {
+      new FormCalculationCompiler(java.time.Clock.systemUTC()).compile(document);
+    }
   }
 
   private void validateDetails(final ApplicationFormDocument document) {
@@ -121,18 +126,21 @@ public class FormDocumentValidator {
         invalid("Detail identity or storage code is invalid");
       }
       requireText(detail.label(), 120, "Detail label is invalid");
+      requireLocalizedLabel(detail.label(), detail.labelLocalization());
       if (detail.fields().isEmpty() || detail.fields().size() > 48 || detail.indexes().size() > 8) {
         invalid("A detail requires 1 to 48 fields and at most eight indexes");
       }
       if (detail.fields().stream()
           .anyMatch(
               field ->
-                  field.storageMode() != FormStorageMode.STORED
+                  (field.storageMode() != FormStorageMode.STORED
+                          && !(field.storageMode() == FormStorageMode.COMPUTED
+                              && field.calculation() != null))
                       || "parent_record_id".equals(field.storageCode())
                       || "row_order".equals(field.storageCode())
                       || "owned_parent".equals(field.fieldId())
                       || "owned_order".equals(field.fieldId()))) {
-        invalid("Detail fields must use stored values and cannot use ownership column names");
+        invalid("Detail fields require persistent values and cannot use ownership column names");
       }
       if (detail.indexes().stream()
           .anyMatch(index -> "owned_parent_order".equals(index.storageCode()))) {
@@ -172,7 +180,8 @@ public class FormDocumentValidator {
       if (field == null
           || !validId(field.fieldId())
           || RUNTIME_FIELD_IDS.contains(field.fieldId())
-          || org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField.properties().contains(field.fieldId())) {
+          || org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField.properties()
+              .contains(field.fieldId())) {
         invalid("Form field identity is invalid");
       }
       if (fields.putIfAbsent(field.fieldId(), field) != null) {
@@ -182,6 +191,7 @@ public class FormDocumentValidator {
         invalid("Form field type and storage mode are required");
       }
       requireText(field.label(), 120, "Form field label is invalid");
+      requireLocalizedLabel(field.label(), field.labelLocalization());
       validateStorageCode(field, codes);
       validateStorageLabel(field);
       validateStorageMode(field);
@@ -191,7 +201,9 @@ public class FormDocumentValidator {
         invalid("Business write policies require a persistent field");
       }
       validateTypeModifiers(field);
-      try {FormFieldValidations.definition(field);} catch (IllegalArgumentException error) {
+      try {
+        FormFieldValidations.definition(field);
+      } catch (IllegalArgumentException error) {
         invalid("Form field business validation is invalid");
       }
       validateChoices(field);
@@ -199,7 +211,9 @@ public class FormDocumentValidator {
         validateValue(field.type(), field.defaultValue(), "Form field default value is invalid");
         if (field.defaultValue().kind() != FormValueKind.NULL) {
           validateLiteralConstraints(field, field.defaultValue().value());
-          try {FormFieldValidations.value(field, field.defaultValue().value());} catch (IllegalArgumentException error) {
+          try {
+            FormFieldValidations.value(field, field.defaultValue().value());
+          } catch (IllegalArgumentException error) {
             invalid("Form field default does not satisfy business validation");
           }
         }
@@ -211,10 +225,7 @@ public class FormDocumentValidator {
 
   private static void validateStorageCode(
       final FormFieldDefinition field, final Set<String> codes) {
-    boolean persisted =
-        field.storageMode() == FormStorageMode.STORED
-            || field.storageMode() == FormStorageMode.REFERENCE
-            || field.storageMode() == FormStorageMode.ATTACHMENT;
+    boolean persisted = field.persistent();
     if (persisted) {
       if (field.storageCode() == null
           || !CODE.matcher(field.storageCode()).matches()
@@ -231,22 +242,17 @@ public class FormDocumentValidator {
     if (!field.storageRequired()) {
       return;
     }
-    boolean persisted =
-        field.storageMode() == FormStorageMode.STORED
-            || field.storageMode() == FormStorageMode.REFERENCE
-            || field.storageMode() == FormStorageMode.ATTACHMENT;
+    boolean persisted = field.persistent();
     if (!persisted
-        || field.defaultValue() == null
-        || field.defaultValue().kind() == FormValueKind.NULL) {
+        || field.calculation() == null
+            && (field.defaultValue() == null
+                || field.defaultValue().kind() == FormValueKind.NULL)) {
       invalid("A storage-required field must be persistent and have a non-null default value");
     }
   }
 
   private static void validateStorageLabel(final FormFieldDefinition field) {
-    boolean persisted =
-        field.storageMode() == FormStorageMode.STORED
-            || field.storageMode() == FormStorageMode.REFERENCE
-            || field.storageMode() == FormStorageMode.ATTACHMENT;
+    boolean persisted = field.persistent();
     if (persisted) {
       requireText(field.storageLabel(), 128, "Persistent form field storage label is invalid");
     } else if (field.storageLabel() != null && !field.storageLabel().isBlank()) {
@@ -310,6 +316,7 @@ public class FormDocumentValidator {
         invalid("Form field choice does not match its logical type");
       }
       requireText(choice.label(), 120, "Form field choice label is invalid");
+      requireLocalizedLabel(choice.label(), choice.labelLocalization());
     }
     if (!choices.isEmpty()
         && field.defaultValue() != null
@@ -329,7 +336,8 @@ public class FormDocumentValidator {
       final FormFieldDefinition field, final String literal) {
     try {
       FormChoiceValues.validateStoredTemporal(field, literal);
-      if (field.type() == FormFieldType.STRING && literal.codePointCount(0, literal.length()) > field.length()
+      if (field.type() == FormFieldType.STRING
+              && literal.codePointCount(0, literal.length()) > field.length()
           || field.type() == FormFieldType.DECIMAL
               && new BigDecimal(FormChoiceValues.canonical(FormFieldType.DECIMAL, literal))
                       .setScale(field.scale(), java.math.RoundingMode.UNNECESSARY)
@@ -460,6 +468,7 @@ public class FormDocumentValidator {
       invalid("Form component column span must be between 1 and 24");
     }
     optionalText(component.label(), 120, "Form component label is invalid");
+    requireLocalizedLabel(component.label(), component.labelLocalization());
     optionalText(component.description(), 500, "Form component description is invalid");
     optionalText(component.placeholder(), 200, "Form component placeholder is invalid");
     validateComponentProperties(component, descriptor);
@@ -696,13 +705,13 @@ public class FormDocumentValidator {
   }
 
   private static void requireText(final String value, final int maxLength, final String message) {
-    if (value == null || value.isBlank() || value.length() > maxLength) {
+    if (value == null || value.isBlank() || value.codePointCount(0, value.length()) > maxLength) {
       invalid(message);
     }
   }
 
   private static void optionalText(final String value, final int maxLength, final String message) {
-    if (value != null && (value.isBlank() || value.length() > maxLength)) {
+    if (value != null && (value.isBlank() || value.codePointCount(0, value.length()) > maxLength)) {
       invalid(message);
     }
   }
@@ -721,4 +730,12 @@ public class FormDocumentValidator {
       Objects.requireNonNull(persistentInputs, "persistentInputs");
     }
   }
+  private static void requireLocalizedLabel(String label, org.simplepoint.api.locale.LocalizedText value) {
+    if (value != null && !java.util.Objects.equals(label, value.defaultValue())) {
+      throw new org.simplepoint.plugin.app.form.api.error.ApplicationFormException(
+          org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.DOCUMENT_INVALID,
+          "Localized label must retain its declared default label");
+    }
+  }
+
 }

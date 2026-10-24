@@ -114,7 +114,7 @@ class WorkflowDefinitionQueriesTest extends WorkflowEngineFixture {
                       status -> service.queryDefinitions(filters, PageRequest.of(0, 20))))
           .isInstanceOf(InvalidQueryException.class);
     }
-    assertThatThrownBy(() -> service.queryDefinitions(Map.of(), PageRequest.of(0, 101)))
+    assertThatThrownBy(() -> service.queryDefinitions(Map.of(), PageRequest.of(0, 501)))
         .isInstanceOf(InvalidQueryException.class);
     assertThatThrownBy(
             () -> service.queryDefinitions(Map.of(), PageRequest.of(0, 20, Sort.by("draftXml"))))

@@ -2,12 +2,15 @@ package com.simplepoint.service.router.proxy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.simplepoint.service.router.config.ServiceRouterProperties;
+import com.simplepoint.service.router.exception.RemoteServiceFailureException;
 import com.simplepoint.service.router.exception.ServiceRouteNotFoundException;
 import com.simplepoint.service.router.exception.ServiceRouterException;
+import com.simplepoint.service.router.invocation.IsolatedLocalInvoker;
 import com.simplepoint.service.router.invocation.NoFallback;
 import com.simplepoint.service.router.invocation.RemoteInvoker;
 import com.simplepoint.service.router.invocation.RemoteRequest;
 import com.simplepoint.service.router.invocation.RemoteResponse;
+import com.simplepoint.service.router.invocation.ServiceRouterJsonCodec;
 import com.simplepoint.service.router.loadbalance.LoadBalancer;
 import com.simplepoint.service.router.metadata.RoutedServiceMetadata;
 import com.simplepoint.service.router.metadata.RoutedServiceMetadataResolver;
@@ -19,20 +22,18 @@ import com.simplepoint.service.router.tracing.TraceContext;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import org.simplepoint.remoting.NoRemoteErrorDecoder;
 import org.simplepoint.remoting.RemoteBusinessException;
 import org.simplepoint.remoting.RemoteContract;
 import org.simplepoint.remoting.RemoteErrorDecoder;
+import org.simplepoint.remoting.RemoteOperation;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
-/**
- * Invocation handler for routed service consumer proxies.
- */
+/** Invocation handler for routed service consumer proxies. */
 public class ServiceRouterInvocationHandler implements InvocationHandler {
 
   private final Class<?> serviceInterface;
@@ -49,7 +50,7 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
 
   private final RemoteInvoker remoteInvoker;
 
-  private final ObjectMapper objectMapper;
+  private final ServiceRouterJsonCodec codec;
 
   private final ServiceRouterProperties properties;
 
@@ -77,8 +78,7 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
       final RemoteInvoker remoteInvoker,
       final ObjectMapper objectMapper,
       final ServiceRouterProperties properties,
-      final ApplicationContext applicationContext
-  ) {
+      final ApplicationContext applicationContext) {
     this.serviceInterface = serviceInterface;
     this.errorDecoder = createErrorDecoder(serviceInterface);
     this.metadata = metadata;
@@ -86,33 +86,24 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
     this.serviceDiscovery = serviceDiscovery;
     this.loadBalancer = loadBalancer;
     this.remoteInvoker = remoteInvoker;
-    this.objectMapper = objectMapper;
+    this.codec = new ServiceRouterJsonCodec(objectMapper);
     this.properties = properties;
     this.applicationContext = applicationContext;
   }
 
   @Override
-  public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+  public Object invoke(final Object proxy, final Method method, final Object[] args)
+      throws Throwable {
     if (method.getDeclaringClass() == Object.class) {
       return invokeObjectMethod(proxy, method, args);
     }
-    try {
-      if (properties.getConsumer().isLocalFirst()) {
-        LocalRoutedService localService = localServiceRegistry.find(metadata).orElse(null);
-        if (localService != null) {
-          return invokeLocal(localService, method, args);
-        }
+    if (properties.getConsumer().isLocalFirst()) {
+      LocalRoutedService localService = localServiceRegistry.find(metadata).orElse(null);
+      if (localService != null) {
+        return invokeLocal(localService, method, args);
       }
-      return invokeRemote(method, args);
-    } catch (RemoteBusinessException ex) {
-      throw ex;
-    } catch (Exception ex) {
-      Object fallback = fallbackBean();
-      if (fallback != null) {
-        return invokeFallback(fallback, method, args);
-      }
-      throw ex;
     }
+    return invokeRemote(method, args);
   }
 
   private static RemoteErrorDecoder createErrorDecoder(final Class<?> serviceInterface) {
@@ -123,55 +114,92 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
     try {
       return contract.errorDecoder().getConstructor().newInstance();
     } catch (ReflectiveOperationException ex) {
-      throw new IllegalArgumentException("Cannot initialize contract error decoder: " + serviceInterface.getName(), ex);
+      throw new IllegalArgumentException(
+          "Cannot initialize contract error decoder: " + serviceInterface.getName(), ex);
     }
   }
 
-  private Object invokeRemote(final Method method, final Object[] args) {
-    int attempts = metadata.retries() + 1;
-    RuntimeException last = null;
-    for (int attempt = 0; attempt < attempts; attempt++) {
-      try {
-        ServiceRoute route = loadBalancer.choose(serviceDiscovery.discover(metadata))
-            .orElseThrow(() -> new ServiceRouteNotFoundException(metadata.name(), metadata.version()));
-        RemoteRequest request = new RemoteRequest(
+  private Object invokeRemote(final Method method, final Object[] args) throws Throwable {
+    RemoteOperation operation = method.getAnnotation(RemoteOperation.class);
+    boolean idempotent = operation != null && operation.idempotent();
+    int attempts = idempotent ? metadata.retries() + 1 : 1;
+    RemoteRequest request =
+        new RemoteRequest(
             metadata.name(),
             metadata.version(),
             RoutedServiceMetadataResolver.methodId(method),
             args == null ? List.of() : Arrays.asList(args),
-            TraceContext.newTraceId()
-        );
-        RemoteResponse response = remoteInvoker.invoke(route, request);
-        if (response == null) {
-          throw new ServiceRouterException("Remote provider returned empty response");
-        }
-        if (!response.success()) {
-          RemoteBusinessException business = errorDecoder.decode(response.errorCode(), response.message());
-          if (business != null) {
-            throw business;
+            TraceContext.newTraceId());
+    for (int attempt = 0; attempt < attempts; attempt++) {
+      RemoteResponse response;
+      try {
+        ServiceRoute route =
+            loadBalancer
+                .choose(serviceDiscovery.discover(metadata))
+                .orElseThrow(
+                    () -> new ServiceRouteNotFoundException(metadata.name(), metadata.version()));
+        response = remoteInvoker.invoke(route, request);
+      } catch (ResourceAccessException
+          | HttpServerErrorException
+          | ServiceRouteNotFoundException ex) {
+        // Only explicitly idempotent operations may repeat an uncertain delivery.
+        // Provider/authentication/decoding failures never enter this recovery path.
+        if (idempotent) {
+          if (attempt + 1 < attempts) {
+            continue;
           }
-          throw new ServiceRouterException(response.errorCode() + ": " + response.message());
+          Object fallback = fallbackBean();
+          if (fallback != null) {
+            return invokeFallback(fallback, method, args);
+          }
         }
-        if (method.getReturnType() == void.class) {
-          return null;
-        }
-        return convertResponseData(response.data(), method);
-      } catch (RemoteBusinessException ex) {
         throw ex;
-      } catch (RuntimeException ex) {
-        last = ex;
       }
+      return result(method, response);
     }
-    throw last == null ? new ServiceRouterException("Remote invocation failed") : last;
+    throw new ServiceRouterException("Remote invocation has no configured attempts");
   }
 
-  private Object invokeLocal(final LocalRoutedService localService, final Method method, final Object[] args)
+  private Object invokeLocal(
+      final LocalRoutedService localService, final Method method, final Object[] args)
       throws Throwable {
+    RemoteContract contract = serviceInterface.getAnnotation(RemoteContract.class);
+    RemoteContract providerContract =
+        localService.interfaceType().getAnnotation(RemoteContract.class);
+    if (properties.getConsumer().isLocalIsolation()
+        || (contract != null && contract.isolateLocalCalls())
+        || (providerContract != null && providerContract.isolateLocalCalls())) {
+      RemoteRequest request =
+          new RemoteRequest(
+              metadata.name(),
+              metadata.version(),
+              RoutedServiceMetadataResolver.methodId(method),
+              args == null ? List.of() : Arrays.asList(args),
+              TraceContext.newTraceId());
+      return result(
+          method,
+          applicationContext.getBean(IsolatedLocalInvoker.class).invoke(localService, request));
+    }
     try {
       return method.invoke(localService.bean(), args);
     } catch (InvocationTargetException ex) {
       throw ex.getTargetException() == null ? ex : ex.getTargetException();
     }
+  }
+
+  private Object result(final Method method, final RemoteResponse response) {
+    if (response == null) {
+      throw new ServiceRouterException("Remote provider returned empty response");
+    }
+    if (!response.success()) {
+      RemoteBusinessException business =
+          errorDecoder.decode(response.errorCode(), response.message());
+      if (business != null) {
+        throw business;
+      }
+      throw new RemoteServiceFailureException(response.errorCode(), response.message());
+    }
+    return codec.result(serviceInterface, method, response.data());
   }
 
   private Object fallbackBean() {
@@ -185,9 +213,11 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
     }
   }
 
-  private Object invokeFallback(final Object fallback, final Method method, final Object[] args) throws Throwable {
+  private Object invokeFallback(final Object fallback, final Method method, final Object[] args)
+      throws Throwable {
     try {
-      Method fallbackMethod = fallback.getClass().getMethod(method.getName(), method.getParameterTypes());
+      Method fallbackMethod =
+          fallback.getClass().getMethod(method.getName(), method.getParameterTypes());
       return fallbackMethod.invoke(fallback, args);
     } catch (InvocationTargetException ex) {
       throw ex.getTargetException() == null ? ex : ex.getTargetException();
@@ -201,29 +231,5 @@ public class ServiceRouterInvocationHandler implements InvocationHandler {
       case "equals" -> proxy == args[0];
       default -> throw new IllegalStateException("Unsupported Object method: " + method.getName());
     };
-  }
-
-  private Object convertResponseData(final Object data, final Method method) {
-    if (method.getReturnType() == Optional.class) {
-      if (data == null) {
-        return Optional.empty();
-      }
-      return Optional.of(convertOptionalValue(data, method.getGenericReturnType()));
-    }
-    return objectMapper.convertValue(
-        data,
-        objectMapper.getTypeFactory().constructType(method.getGenericReturnType())
-    );
-  }
-
-  private Object convertOptionalValue(final Object data, final Type returnType) {
-    if (returnType instanceof ParameterizedType parameterizedType
-        && parameterizedType.getActualTypeArguments().length > 0) {
-      return objectMapper.convertValue(
-          data,
-          objectMapper.getTypeFactory().constructType(parameterizedType.getActualTypeArguments()[0])
-      );
-    }
-    return data;
   }
 }

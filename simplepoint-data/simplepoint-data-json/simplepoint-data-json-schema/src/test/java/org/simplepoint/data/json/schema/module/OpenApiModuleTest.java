@@ -92,6 +92,29 @@ class OpenApiModuleTest {
     );
   }
 
+  @Test
+  void localizedFieldsPublishBoundedObjectContractAndPreserveUiMetadata() {
+    var config = new SchemaGeneratorConfigBuilder(new ObjectMapper(), SchemaVersion.DRAFT_7, OptionPreset.PLAIN_JSON);
+    config.with(new OpenApiModule());
+    var schema = new SchemaGenerator(config.build()).generateSchema(LocalizedEntity.class);
+    var field = schema.path("properties").path("name");
+    assertEquals("object", field.path("type").asText(), field.toPrettyString());
+    assertEquals(1, field.path("x-localized").path("version").asInt());
+    assertEquals(100, field.path("properties").path("defaultValue").path("maxLength").asInt());
+    assertEquals(32, field.path("properties").path("translations").path("maxProperties").asInt());
+    assertEquals("LocalizedText", field.path("x-ui").path("ui:field").asText());
+    assertEquals(true, field.path("x-ui").path("x-list-visible").asBoolean());
+    assertEquals(false, field.has("$ref"), field.toPrettyString());
+    assertEquals(false, field.path("additionalProperties").asBoolean());
+  }
+
+  static class LocalizedEntity {
+    @org.simplepoint.api.schema.LocalizedField(maxLength = 100)
+    @Schema(extensions = @Extension(name = "x-ui", properties =
+        @ExtensionProperty(name = "x-list-visible", value = "true", parseValue = true)))
+    public org.simplepoint.api.locale.LocalizedText name;
+  }
+
   static class DictionaryEntity {
 
     @DictionaryField("account.status")

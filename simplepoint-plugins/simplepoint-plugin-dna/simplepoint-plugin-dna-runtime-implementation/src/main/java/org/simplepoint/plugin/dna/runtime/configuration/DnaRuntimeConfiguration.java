@@ -2,6 +2,12 @@ package org.simplepoint.plugin.dna.runtime.configuration;
 
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
 import org.simplepoint.data.calcite.core.query.DefaultCalciteQueryEngine;
+import org.simplepoint.events.api.ModuleEvents;
+import org.simplepoint.platform.composition.ModuleDependency;
+import org.simplepoint.platform.composition.ModuleMigrations;
+import org.simplepoint.platform.composition.PlatformModule;
+import org.simplepoint.plugin.dna.runtime.api.service.DnaFormRuntimeService;
+import org.simplepoint.plugin.dna.runtime.api.service.DnaOwnedRecordService;
 import org.simplepoint.plugin.dna.runtime.api.service.PhysicalBindingTargetResolver;
 import org.simplepoint.plugin.dna.runtime.api.service.PhysicalTableNamingStrategy;
 import org.simplepoint.plugin.dna.runtime.service.support.ConfiguredPhysicalBindingTargetResolver;
@@ -12,12 +18,19 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /** Replaceable defaults for physical placement and immutable table naming. */
+@ModuleEvents(RuntimeEventDeclarations.class)
+@ModuleMigrations
+@PlatformModule(
+    id = "dna-runtime",
+    packages = {"org.simplepoint.plugin.dna.runtime", "org.simplepoint.dna.runtime.service"},
+    requires = {@ModuleDependency(id = "dna-core"), @ModuleDependency(id = "dna-federation")},
+    provides = {DnaFormRuntimeService.class, DnaOwnedRecordService.class})
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({
-    DnaRuntimePlacementProperties.class,
-    DnaRuntimeExecutionProperties.class,
-    DnaRuntimePublicationProperties.class,
-    DnaFormRuntimeRemoteProperties.class
+  DnaRuntimePlacementProperties.class,
+  DnaRuntimeExecutionProperties.class,
+  DnaRuntimePublicationProperties.class,
+  DnaFormRuntimeRemoteProperties.class
 })
 public class DnaRuntimeConfiguration {
 
@@ -30,8 +43,7 @@ public class DnaRuntimeConfiguration {
   @Bean
   @ConditionalOnMissingBean
   PhysicalBindingTargetResolver physicalBindingTargetResolver(
-      final DnaRuntimePlacementProperties properties
-  ) {
+      final DnaRuntimePlacementProperties properties) {
     return new ConfiguredPhysicalBindingTargetResolver(properties);
   }
 

@@ -33,7 +33,9 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
 
   private final String loginSubject;
 
-  private final String password;
+  private String password;
+  private String oneTimeCode;
+  private boolean connectAttempted;
 
   private final String catalogCode;
 
@@ -54,12 +56,14 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   private boolean connected;
 
   DnaJdbcSocketTransport(final DnaJdbcModels.ConnectionConfig config) throws SQLException {
-    this.objectMapper = new ObjectMapper()
-        .findAndRegisterModules()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    this.objectMapper =
+        new ObjectMapper()
+            .findAndRegisterModules()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     this.baseUri = config.baseUri();
     this.loginSubject = config.loginSubject();
     this.password = config.password();
+    this.oneTimeCode = config.properties().getProperty("oneTimeCode");
     this.catalogCode = config.catalogCode();
     this.tenantId = config.tenantId();
     this.configuredContextId = config.contextId();
@@ -73,14 +77,12 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
         rawSocket.setKeepAlive(true);
         rawSocket.setTcpNoDelay(true);
         rawSocket.connect(
-            new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)),
-            connectTimeout
-        );
+            new InetSocketAddress(baseUri.getHost(), resolvePort(baseUri)), connectTimeout);
         if (ssl) {
           SSLSocketFactory sslFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-          SSLSocket sslSocket = (SSLSocket) sslFactory.createSocket(
-              rawSocket, baseUri.getHost(), resolvePort(baseUri), true
-          );
+          SSLSocket sslSocket =
+              (SSLSocket)
+                  sslFactory.createSocket(rawSocket, baseUri.getHost(), resolvePort(baseUri), true);
           sslSocket.startHandshake();
           this.socket = sslSocket;
         } else {
@@ -102,26 +104,37 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     }
   }
 
-  DnaJdbcModels.PingResult ping() throws SQLException {
+  synchronized DnaJdbcModels.PingResult ping() throws SQLException {
     if (!connected) {
-      DnaJdbcModels.SocketResponse response = send(DnaJdbcModels.SocketRequest.builder("CONNECT")
-          .loginSubject(loginSubject)
-          .password(password)
-          .catalogCode(catalogCode)
-          .tenantId(tenantId)
-          .contextId(configuredContextId)
-          .schema(configuredSchema)
-          .build());
-      DnaJdbcModels.PingResult result = requireSuccess(response).pingResult();
-      this.connected = true;
-      if (result != null && result.contextId() != null && !result.contextId().isBlank()) {
-        this.sessionContextId = result.contextId();
+      if (connectAttempted) {
+        throw new SQLException("JDBC authentication already attempted; reconnect", "28000");
       }
-      return result;
+      connectAttempted = true;
+      try {
+        DnaJdbcModels.SocketResponse response =
+            send(
+                DnaJdbcModels.SocketRequest.builder("CONNECT")
+                    .loginSubject(loginSubject)
+                    .password(password)
+                    .oneTimeCode(oneTimeCode)
+                    .catalogCode(catalogCode)
+                    .tenantId(tenantId)
+                    .contextId(configuredContextId)
+                    .schema(configuredSchema)
+                    .build());
+        DnaJdbcModels.PingResult result = requireSuccess(response).pingResult();
+        this.connected = true;
+        if (result != null && result.contextId() != null && !result.contextId().isBlank()) {
+          this.sessionContextId = result.contextId();
+        }
+        return result;
+      } finally {
+        password = null;
+        oneTimeCode = null;
+      }
     }
-    DnaJdbcModels.SocketResponse response = send(DnaJdbcModels.SocketRequest.builder("PING")
-        .contextId(sessionContextId)
-        .build());
+    DnaJdbcModels.SocketResponse response =
+        send(DnaJdbcModels.SocketRequest.builder("PING").contextId(sessionContextId).build());
     DnaJdbcModels.PingResult result = requireSuccess(response).pingResult();
     if (result != null && result.contextId() != null && !result.contextId().isBlank()) {
       this.sessionContextId = result.contextId();
@@ -130,69 +143,82 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   }
 
   DnaJdbcModels.TabularResult catalogs() throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("CATALOGS")
-        .contextId(sessionContextId)
-        .build())).tabularResult();
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("CATALOGS")
+                    .contextId(sessionContextId)
+                    .build()))
+        .tabularResult();
   }
 
-  DnaJdbcModels.TabularResult schemas(
-      final String catalogPattern,
-      final String schemaPattern
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("SCHEMAS")
-        .contextId(sessionContextId)
-        .catalogPattern(catalogPattern)
-        .schemaPattern(schemaPattern)
-        .build())).tabularResult();
+  DnaJdbcModels.TabularResult schemas(final String catalogPattern, final String schemaPattern)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("SCHEMAS")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalogPattern)
+                    .schemaPattern(schemaPattern)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult tableTypes() throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("TABLE_TYPES")
-        .contextId(sessionContextId)
-        .build())).tabularResult();
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("TABLE_TYPES")
+                    .contextId(sessionContextId)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult tables(
       final String catalogPattern,
       final String schemaPattern,
       final String tablePattern,
-      final List<String> types
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("TABLES")
-        .contextId(sessionContextId)
-        .catalogPattern(catalogPattern)
-        .schemaPattern(schemaPattern)
-        .tablePattern(tablePattern)
-        .types(types)
-        .build())).tabularResult();
+      final List<String> types)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("TABLES")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalogPattern)
+                    .schemaPattern(schemaPattern)
+                    .tablePattern(tablePattern)
+                    .types(types)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult columns(
       final String catalogPattern,
       final String schemaPattern,
       final String tablePattern,
-      final String columnPattern
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("COLUMNS")
-        .contextId(sessionContextId)
-        .catalogPattern(catalogPattern)
-        .schemaPattern(schemaPattern)
-        .tablePattern(tablePattern)
-        .columnPattern(columnPattern)
-        .build())).tabularResult();
+      final String columnPattern)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("COLUMNS")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalogPattern)
+                    .schemaPattern(schemaPattern)
+                    .tablePattern(tablePattern)
+                    .columnPattern(columnPattern)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult primaryKeys(
-      final String catalog,
-      final String schema,
-      final String table
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("PRIMARY_KEYS")
-        .contextId(sessionContextId)
-        .catalogPattern(catalog)
-        .schemaPattern(schema)
-        .tablePattern(table)
-        .build())).tabularResult();
+      final String catalog, final String schema, final String table) throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("PRIMARY_KEYS")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalog)
+                    .schemaPattern(schema)
+                    .tablePattern(table)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult indexInfo(
@@ -200,48 +226,54 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
       final String schema,
       final String table,
       final boolean unique,
-      final boolean approximate
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("INDEX_INFO")
-        .contextId(sessionContextId)
-        .catalogPattern(catalog)
-        .schemaPattern(schema)
-        .tablePattern(table)
-        .unique(unique)
-        .approximate(approximate)
-        .build())).tabularResult();
+      final boolean approximate)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("INDEX_INFO")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalog)
+                    .schemaPattern(schema)
+                    .tablePattern(table)
+                    .unique(unique)
+                    .approximate(approximate)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult importedKeys(
-      final String catalog,
-      final String schema,
-      final String table
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("IMPORTED_KEYS")
-        .contextId(sessionContextId)
-        .catalogPattern(catalog)
-        .schemaPattern(schema)
-        .tablePattern(table)
-        .build())).tabularResult();
+      final String catalog, final String schema, final String table) throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("IMPORTED_KEYS")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalog)
+                    .schemaPattern(schema)
+                    .tablePattern(table)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult exportedKeys(
-      final String catalog,
-      final String schema,
-      final String table
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("EXPORTED_KEYS")
-        .contextId(sessionContextId)
-        .catalogPattern(catalog)
-        .schemaPattern(schema)
-        .tablePattern(table)
-        .build())).tabularResult();
+      final String catalog, final String schema, final String table) throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("EXPORTED_KEYS")
+                    .contextId(sessionContextId)
+                    .catalogPattern(catalog)
+                    .schemaPattern(schema)
+                    .tablePattern(table)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.TabularResult typeInfo() throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("TYPE_INFO")
-        .contextId(sessionContextId)
-        .build())).tabularResult();
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("TYPE_INFO")
+                    .contextId(sessionContextId)
+                    .build()))
+        .tabularResult();
   }
 
   DnaJdbcModels.QueryResult query(
@@ -249,62 +281,75 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
       final String sql,
       final String defaultSchema,
       final List<Object> parameters,
-      final Integer maxRows
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("QUERY")
-        .catalogCode(catalogCode)
-        .contextId(sessionContextId)
-        .sql(sql)
-        .defaultSchema(defaultSchema)
-        .parameters(parameters)
-        .maxRows(maxRows)
-        .build())).queryResult();
+      final Integer maxRows)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("QUERY")
+                    .catalogCode(catalogCode)
+                    .contextId(sessionContextId)
+                    .sql(sql)
+                    .defaultSchema(defaultSchema)
+                    .parameters(parameters)
+                    .maxRows(maxRows)
+                    .build()))
+        .queryResult();
   }
 
   DnaJdbcModels.UpdateResult executeUpdate(
       final String catalogCode,
       final String sql,
       final String defaultSchema,
-      final List<Object> parameters
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("EXECUTE_UPDATE")
-        .catalogCode(catalogCode)
-        .contextId(sessionContextId)
-        .sql(sql)
-        .defaultSchema(defaultSchema)
-        .parameters(parameters)
-        .build())).updateResult();
+      final List<Object> parameters)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("EXECUTE_UPDATE")
+                    .catalogCode(catalogCode)
+                    .contextId(sessionContextId)
+                    .sql(sql)
+                    .defaultSchema(defaultSchema)
+                    .parameters(parameters)
+                    .build()))
+        .updateResult();
   }
 
   DnaJdbcModels.UpdateResult executeDdl(
       final String catalogCode,
       final String sql,
       final String defaultSchema,
-      final List<Object> parameters
-  ) throws SQLException {
-    return requireSuccess(send(DnaJdbcModels.SocketRequest.builder("EXECUTE_DDL")
-        .catalogCode(catalogCode)
-        .contextId(sessionContextId)
-        .sql(sql)
-        .defaultSchema(defaultSchema)
-        .parameters(parameters)
-        .build())).updateResult();
+      final List<Object> parameters)
+      throws SQLException {
+    return requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("EXECUTE_DDL")
+                    .catalogCode(catalogCode)
+                    .contextId(sessionContextId)
+                    .sql(sql)
+                    .defaultSchema(defaultSchema)
+                    .parameters(parameters)
+                    .build()))
+        .updateResult();
   }
 
   void flushCache() throws SQLException {
-    requireSuccess(send(DnaJdbcModels.SocketRequest.builder("FLUSH_CACHE")
-        .contextId(sessionContextId)
-        .build()));
+    requireSuccess(
+        send(
+            DnaJdbcModels.SocketRequest.builder("FLUSH_CACHE")
+                .contextId(sessionContextId)
+                .build()));
   }
 
-  /**
-   * Sends a batch of metadata requests in a single TCP round-trip.
-   */
-  List<DnaJdbcModels.SocketResponse> batch(final List<DnaJdbcModels.SocketRequest> requests) throws SQLException {
-    DnaJdbcModels.SocketResponse response = requireSuccess(send(DnaJdbcModels.SocketRequest.builder("BATCH")
-        .contextId(sessionContextId)
-        .batch(requests)
-        .build()));
+  /** Sends a batch of metadata requests in a single TCP round-trip. */
+  List<DnaJdbcModels.SocketResponse> batch(final List<DnaJdbcModels.SocketRequest> requests)
+      throws SQLException {
+    DnaJdbcModels.SocketResponse response =
+        requireSuccess(
+            send(
+                DnaJdbcModels.SocketRequest.builder("BATCH")
+                    .contextId(sessionContextId)
+                    .batch(requests)
+                    .build()));
     return response.batchResults() != null ? response.batchResults() : List.of();
   }
 
@@ -317,8 +362,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   }
 
   /**
-   * Temporarily adjusts the socket read timeout (e.g. for query timeout enforcement).
-   * Pass 0 to reset to the default configured timeout.
+   * Temporarily adjusts the socket read timeout (e.g. for query timeout enforcement). Pass 0 to
+   * reset to the default configured timeout.
    */
   void setSocketTimeout(final int timeoutMs) throws SQLException {
     try {
@@ -333,11 +378,10 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     try {
       if (!socket.isClosed()) {
         try {
-          send(DnaJdbcModels.SocketRequest.builder("CLOSE")
-              .contextId(sessionContextId)
-              .build());
+          send(DnaJdbcModels.SocketRequest.builder("CLOSE").contextId(sessionContextId).build());
         } catch (SQLException ex) {
-          LOGGER.log(Level.FINE, "Ignoring DNA JDBC Socket CLOSE handshake failure during shutdown", ex);
+          LOGGER.log(
+              Level.FINE, "Ignoring DNA JDBC Socket CLOSE handshake failure during shutdown", ex);
         }
       }
     } finally {
@@ -349,7 +393,8 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     }
   }
 
-  private DnaJdbcModels.SocketResponse send(final DnaJdbcModels.SocketRequest request) throws SQLException {
+  private DnaJdbcModels.SocketResponse send(final DnaJdbcModels.SocketRequest request)
+      throws SQLException {
     try {
       byte[] payload = objectMapper.writeValueAsBytes(request);
       outputStream.writeInt(payload.length);
@@ -361,8 +406,9 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
       }
       byte[] responseBytes = inputStream.readNBytes(length);
       if (responseBytes.length != length) {
-        throw new SQLException("DNA JDBC Socket 响应已中断 (期望 " + length + " 字节, 实际 "
-            + responseBytes.length + " 字节)", "08006");
+        throw new SQLException(
+            "DNA JDBC Socket 响应已中断 (期望 " + length + " 字节, 实际 " + responseBytes.length + " 字节)",
+            "08006");
       }
       return objectMapper.readValue(responseBytes, DnaJdbcModels.SocketResponse.class);
     } catch (java.net.SocketTimeoutException ex) {
@@ -372,12 +418,16 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
     }
   }
 
-  private static DnaJdbcModels.SocketResponse requireSuccess(final DnaJdbcModels.SocketResponse response) throws SQLException {
+  private static DnaJdbcModels.SocketResponse requireSuccess(
+      final DnaJdbcModels.SocketResponse response) throws SQLException {
     if (response == null || !Boolean.TRUE.equals(response.success())) {
       throw new SQLException(
           response == null ? "DNA JDBC Socket 返回空响应" : response.errorMessage(),
-          "HY000"
-      );
+          response != null
+                  && response.sqlState() != null
+                  && response.sqlState().matches("[A-Z0-9]{5}")
+              ? response.sqlState()
+              : "HY000");
     }
     return response;
   }
@@ -387,10 +437,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   }
 
   private static int resolveProperty(
-      final DnaJdbcModels.ConnectionConfig config,
-      final String key,
-      final int defaultValue
-  ) {
+      final DnaJdbcModels.ConnectionConfig config, final String key, final int defaultValue) {
     if (config.properties() == null) {
       return defaultValue;
     }
@@ -407,10 +454,7 @@ final class DnaJdbcSocketTransport implements AutoCloseable {
   }
 
   private static boolean resolveBooleanProperty(
-      final DnaJdbcModels.ConnectionConfig config,
-      final String key,
-      final boolean defaultValue
-  ) {
+      final DnaJdbcModels.ConnectionConfig config, final String key, final boolean defaultValue) {
     if (config.properties() == null) {
       return defaultValue;
     }

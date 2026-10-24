@@ -15,6 +15,10 @@ export function createOrganizationFixture() {
     async handle(req, url, respond, expectedFailure) {
       const base = '/common/platform/organizations';
       if (url.pathname === `${base}/schema`) return respond({schema: localQuerySchema(fields), buttons: []}), true;
+      if (url.pathname.startsWith(base + '/') && !['tree','schema','options','selection'].includes(url.pathname.slice(base.length+1))) {
+        const id=decodeURIComponent(url.pathname.slice(base.length+1));const record=[...roots,...children].find(row=>row.id===id);
+        return respond(record ? {record, references: {}} : {message: 'Organization unavailable'}, record ? 200 : 404), true;
+      }
       if (![base, `${base}/tree`].includes(url.pathname)) return false;
       const page = Number(url.searchParams.get('page') ?? 0);
       const size = Number(url.searchParams.get('size') ?? 20);

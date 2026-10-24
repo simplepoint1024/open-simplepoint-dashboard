@@ -12,6 +12,7 @@ import org.simplepoint.plugin.app.form.api.model.ApplicationFormSubmissionSnapsh
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormSceneType;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel;
+import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
 import org.springframework.stereotype.Service;
 
 /**
@@ -26,6 +27,8 @@ public class FormSubmissionSnapshotService {
   private final FormRuntimeDocumentCompiler documents;
   private final DnaInvocationContextFactory contexts;
   private final FormRequestContext actors;
+  private final FormRecordIdentityLabels identityLabels;
+  private final org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService records;
 
   /** Creates the coordinator with explicit persistence, policy and service dependencies. */
   public FormSubmissionSnapshotService(
@@ -34,13 +37,17 @@ public class FormSubmissionSnapshotService {
       PublishedApplicationFormResolver resolver,
       FormRuntimeDocumentCompiler documents,
       DnaInvocationContextFactory contexts,
-      FormRequestContext actors) {
+      FormRequestContext actors,
+      FormRecordIdentityLabels identityLabels,
+      org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService records) {
     this.workflow = workflow;
     this.journal = journal;
     this.resolver = resolver;
     this.documents = documents;
     this.contexts = contexts;
     this.actors = actors;
+    this.identityLabels = identityLabels;
+    this.records = records;
   }
 
   /** Loads a task-authorized snapshot and applies current page and field permissions. */
@@ -51,9 +58,8 @@ public class FormSubmissionSnapshotService {
     var task = workflow.taskForm(authority, taskId);
     var snapshot = load(task.businessKey(), authority.tenantId());
     if (!snapshot.view().definitionId().equals(task.definitionId())
-        || task.formContract().startBinding() == null
-        || !FormSubmissionMapping.PROVIDER.equals(task.formContract().startBinding().provider())
-        || !snapshot.view().formId().equals(task.formContract().startBinding().formId())
+        || !matchesBinding(task.formContract().startBinding(), snapshot)
+        || task.binding() != null && !matchesBinding(task.binding(), snapshot)
         || task.definitionVersion() != snapshot.view().definitionVersion()
         || snapshot.view().processInstanceId() != null
             && !snapshot.view().processInstanceId().equals(task.processInstanceId())) {
@@ -91,6 +97,18 @@ public class FormSubmissionSnapshotService {
     return project(snapshot, snapshot.accepted().workflow().binding().sceneId());
   }
 
+  /** Record readers may inspect evidence, but gain no submission mutation/engine authority. */
+  public ApplicationFormSubmissionSnapshot forRecord(
+      String applicationId, String pageId, String recordId, String id) {
+    var actor = actors.requireActor();
+    records.get(applicationId, pageId, recordId);
+    var snapshot = journal.snapshot(id, actor.tenantId());
+    if (!applicationId.equals(snapshot.view().applicationId())
+        || !pageId.equals(snapshot.view().pageId())
+        || !recordId.equals(snapshot.record().id())) throw unavailable();
+    return project(snapshot, snapshot.accepted().workflow().binding().sceneId());
+  }
+
   private FormSubmissionJournal.Snapshot load(String businessKey, String tenant) {
     if (businessKey == null || !businessKey.matches("app-form:[a-f0-9]{64}")) {
       throw unavailable();
@@ -98,12 +116,24 @@ public class FormSubmissionSnapshotService {
     return journal.snapshot(businessKey.substring("app-form:".length()), tenant);
   }
 
+  private static boolean matchesBinding(
+      WorkflowFormContract.Binding binding, FormSubmissionJournal.Snapshot snapshot) {
+    return binding != null
+        && FormSubmissionMapping.PROVIDER.equals(binding.provider())
+        && snapshot.view().formId().equals(binding.formId())
+        && snapshot.view().formVersion() == binding.version()
+        && (binding.sceneId() == null
+            || snapshot.accepted().form().document().scenes().stream()
+                .anyMatch(scene -> scene.sceneId().equals(binding.sceneId())));
+  }
+
   private ApplicationFormSubmissionSnapshot project(
       FormSubmissionJournal.Snapshot snapshot, String sceneId) {
     var form = snapshot.accepted().form();
     resolver.requireRead(form);
-    var authority = contexts.forResource(form.resourceCode());
-    var policy = authority.fieldPermissions();
+    var authority = contexts.forForm(form);
+    var current = resolver.currentCalculationScope(form);
+    var policy = FormCalculationPermissions.restrict(current, authority.fieldPermissions());
     Map<String, Object> values =
         projectFields(
             form.document().fields(), snapshot.record().values(), form.physicalModelId(), policy);
@@ -129,7 +159,8 @@ public class FormSubmissionSnapshotService {
                           "values",
                           projectFields(
                               detail.fields(), row.values(), binding.physicalModelId(), policy),
-                          "systemValues", FormRecordSystemFields.project(
+                          "systemValues",
+                          FormRecordSystemFields.project(
                               row.systemValues(), binding.physicalModelId(), policy)))
               .toList());
     }
@@ -150,17 +181,18 @@ public class FormSubmissionSnapshotService {
                 : sceneId,
             form.resourceCode(),
             new ApplicationFormRuntimeCapabilities(false, false, false, false),
-            documents.compile(form),
+            documents.compile(form, policy),
             form.writePolicyVersion());
     return new ApplicationFormSubmissionSnapshot(
         snapshot.view(),
         descriptor,
-        new ApplicationFormRecordView(
+        identityLabels.decorate(form.tenantId(), new ApplicationFormRecordView(
             snapshot.record().id(),
             snapshot.record().version(),
             snapshot.record().state(),
             values,
-            FormRecordSystemFields.project(snapshot.record().systemValues(), form.physicalModelId(), policy)));
+            FormRecordSystemFields.project(
+                snapshot.record().systemValues(), form.physicalModelId(), policy))));
   }
 
   private static Map<String, Object> projectFields(
@@ -170,7 +202,8 @@ public class FormSubmissionSnapshotService {
       Map<String, String> permissions) {
     Map<String, Object> result = new LinkedHashMap<>();
     for (var field : fields) {
-      String policy = RecordPermissionModel.access(permissions, model, field.fieldId(), field.storageCode());
+      String policy =
+          RecordPermissionModel.access(permissions, model, field.fieldId(), field.storageCode());
       if ("HIDDEN".equals(policy) || !captured.containsKey(field.fieldId())) {
         continue;
       }

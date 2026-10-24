@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 
 /** Authorization module owns revocation and publishes completion in the same inbox transaction. */
 @Component
-@ConditionalOnProperty(prefix = "simplepoint.events", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(
+    name = {"simplepoint.events.enabled", "simplepoint.rbac.managed-resource.enabled"},
+    havingValue = "true")
 public class ManagedResourceOfflineHandler implements EventHandler {
   private final ManagedTenantResourceServiceImpl resources;
   private final EventPublisher events;
@@ -23,7 +25,7 @@ public class ManagedResourceOfflineHandler implements EventHandler {
 
   @Override
   public EventSubscription subscription() {
-    return new EventSubscription("resource-offline.grants", "app", ResourceLifecycleEvents.OFFLINE_REQUESTED, 1);
+    return ResourceLifecycleEvents.GRANTS_SUBSCRIPTION;
   }
 
   @Override

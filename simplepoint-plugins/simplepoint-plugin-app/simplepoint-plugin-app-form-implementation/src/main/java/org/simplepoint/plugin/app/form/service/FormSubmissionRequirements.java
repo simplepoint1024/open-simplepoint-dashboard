@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.FormComponentDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormCondition;
@@ -23,6 +24,15 @@ final class FormSubmissionRequirements {
 
   /** Preserves ordered rule overrides, ancestor visibility and the union of every scene's requirements. */
   static List<Requirement> compile(final ApplicationFormDocument document) {
+    return compileRequirements(document, false);
+  }
+
+  /** Includes formula outputs for validation inside the authoritative calculation transaction. */
+  static List<Requirement> compileCalculated(final ApplicationFormDocument document) {
+    return compileRequirements(document, true);
+  }
+
+  private static List<Requirement> compileRequirements(final ApplicationFormDocument document, final boolean calculated) {
     Map<String, FormFieldDefinition> fields = new HashMap<>();
     document.fields().forEach(field -> fields.put(field.fieldId(), field));
     Map<String, FormFieldType> types = document.fields().stream().collect(
@@ -47,7 +57,7 @@ final class FormSubmissionRequirements {
     }
     Map<String, List<Predicate>> occurrences = new HashMap<>();
     document.scenes().forEach(scene -> project(scene.root(), Constant.TRUE, states, occurrences));
-    return document.fields().stream().filter(FormSubmissionRequirements::persistent).map(field -> {
+    return document.fields().stream().filter(field -> calculated ? field.persistent() : persistent(field)).map(field -> {
       List<Predicate> predicates = occurrences.get(field.fieldId());
       Predicate required = predicates == null ? constant(field.submitRequired()) : any(predicates);
       return new Requirement(field, required);
@@ -117,13 +127,33 @@ final class FormSubmissionRequirements {
       if (field.effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY && field.submitRequired()) {
         return new Requirement(field, Constant.TRUE);
       }
-      return state == FormRecordState.SUBMITTED || !field.allowsWrite(state)
+      return state == FormRecordState.SUBMITTED || field.storageMode() != FormStorageMode.COMPUTED && !field.allowsWrite(state)
           ? this : new Requirement(field, Constant.FALSE);
     }
 
     boolean missing(final Map<String, Object> values) {
       return predicate.matches(values) && FormRuleEvaluator.empty(values.get(field.fieldId()), field.type());
     }
+
+    /** Pre-calculation checks must not evaluate a condition against an absent or obsolete output. */
+    boolean requiresCalculatedValues(final Set<String> calculated) {
+      return dependsOn(predicate, calculated);
+    }
+  }
+
+  private static boolean dependsOn(final Predicate predicate, final Set<String> calculated) {
+    return switch (predicate) {
+      case Constant ignored -> false;
+      case Condition condition -> dependsOn(condition.condition(), calculated);
+      case Negated negated -> dependsOn(negated.child(), calculated);
+      case All all -> all.children().stream().anyMatch(child -> dependsOn(child, calculated));
+      case Any any -> any.children().stream().anyMatch(child -> dependsOn(child, calculated));
+    };
+  }
+
+  private static boolean dependsOn(final FormCondition condition, final Set<String> calculated) {
+    return condition.fieldId() != null && calculated.contains(condition.fieldId())
+        || condition.children().stream().anyMatch(child -> dependsOn(child, calculated));
   }
 
   /** Structural predicates can be inspected by publication analysis without executing a UI renderer. */

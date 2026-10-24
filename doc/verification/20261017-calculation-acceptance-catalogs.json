@@ -1,0 +1,1315 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-17T11:58:35.409Z",
+  "deployedVersion": "20261017-workflow-form5",
+  "sources": {
+    "components": "Authenticated live APP designer-contract",
+    "functions": "Authenticated live APP calculations/catalog",
+    "workflow": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-api/src/main/resources/META-INF/simplepoint/workflow/modeling.json",
+    "workflowSha256": "5aed1dcea45ab4bb11addc4b1f9f972e378f6a05e55a0dcbbcf3b4a513becbee"
+  },
+  "components": [
+    {
+      "type": "layout.form",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "layout.grid",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "layout.group",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "layout.tabs",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.text",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.text",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.textarea",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "TEXT",
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.json",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "JSON"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.number",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "INT64",
+        "DECIMAL",
+        "INT32"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.switch",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "BOOLEAN"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.select",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING",
+        "JSON",
+        "DATE",
+        "TIME",
+        "DATETIME",
+        "INT64",
+        "TEXT",
+        "UUID",
+        "BOOLEAN",
+        "INT32",
+        "DECIMAL"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.date",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "DATE"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.time",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "TIME"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.datetime",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "DATETIME"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.user",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.role",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.organization",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.tenant",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "STRING"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.attachment",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "JSON"
+      ],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.save",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.submit",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.reset",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.open-dialog",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.open-drawer",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.close",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "action.apply",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "layout.matrix",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "rows": {
+          "name": "rows",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "2"
+          }
+        },
+        "columns": {
+          "name": "columns",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "2"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": [
+        "layout.cell"
+      ]
+    },
+    {
+      "type": "layout.cell",
+      "version": "1",
+      "container": true,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [
+        "layout.matrix"
+      ],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "data.detail",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "detailId": {
+          "name": "detailId",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": null
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.divider",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {},
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.image",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "height": {
+          "name": "height",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "180"
+          }
+        },
+        "src": {
+          "name": "src",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "STRING",
+            "value": ""
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.alert",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "text": {
+          "name": "text",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "STRING",
+            "value": "提示内容"
+          }
+        },
+        "severity": {
+          "name": "severity",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "STRING",
+            "value": "info"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.progress",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "percent": {
+          "name": "percent",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "0"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.icon",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "icon": {
+          "name": "icon",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "STRING",
+            "value": "InfoCircleOutlined"
+          }
+        },
+        "size": {
+          "name": "size",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "24"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "display.markdown",
+      "version": "1",
+      "container": false,
+      "fieldRequired": false,
+      "supportedFieldTypes": [],
+      "propertySchema": {
+        "text": {
+          "name": "text",
+          "acceptedKinds": [
+            "STRING"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "STRING",
+            "value": "### 标题\n请输入内容"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.rating",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "INT32"
+      ],
+      "propertySchema": {
+        "count": {
+          "name": "count",
+          "acceptedKinds": [
+            "INTEGER"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "INTEGER",
+            "value": "5"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.cascader",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "JSON"
+      ],
+      "propertySchema": {
+        "options": {
+          "name": "options",
+          "acceptedKinds": [
+            "JSON"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "JSON",
+            "value": "[]"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    },
+    {
+      "type": "field.transfer",
+      "version": "1",
+      "container": false,
+      "fieldRequired": true,
+      "supportedFieldTypes": [
+        "JSON"
+      ],
+      "propertySchema": {
+        "options": {
+          "name": "options",
+          "acceptedKinds": [
+            "JSON"
+          ],
+          "required": true,
+          "defaultValue": {
+            "kind": "JSON",
+            "value": "[]"
+          }
+        }
+      },
+      "allowedParentTypes": [],
+      "allowedChildTypes": []
+    }
+  ],
+  "writePolicies": [
+    "EDITABLE",
+    "CREATE_ONLY",
+    "UNTIL_SUBMITTED"
+  ],
+  "calculation": {
+    "languageVersion": "1",
+    "functions": [
+      {
+        "name": "ABS",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "AND",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "AVERAGE",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "BOOLEAN",
+        "category": "CONVERT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "CLEAN",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "COALESCE",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "ANY",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "CONCAT",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "CONCATENATE",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "COS",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "COUNT",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "COUNTA",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "DATE",
+        "category": "DATE",
+        "minArguments": 3,
+        "maxArguments": 3,
+        "resultType": "DATE",
+        "parameters": [
+          "year",
+          "month",
+          "day"
+        ]
+      },
+      {
+        "name": "DATEVALUE",
+        "category": "DATE",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "DATE",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "DAY",
+        "category": "DATE",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "DAYS",
+        "category": "DATE",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "endDate",
+          "startDate"
+        ]
+      },
+      {
+        "name": "EXACT",
+        "category": "TEXT",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "firstText",
+          "secondText"
+        ]
+      },
+      {
+        "name": "EXP",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "FIND",
+        "category": "TEXT",
+        "minArguments": 2,
+        "maxArguments": 3,
+        "resultType": "NUMBER",
+        "parameters": [
+          "findText",
+          "withinText",
+          "start"
+        ]
+      },
+      {
+        "name": "IF",
+        "category": "LOGIC",
+        "minArguments": 2,
+        "maxArguments": 3,
+        "resultType": "ANY",
+        "parameters": [
+          "condition",
+          "whenTrue",
+          "whenFalse"
+        ]
+      },
+      {
+        "name": "IFERROR",
+        "category": "LOGIC",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "ANY",
+        "parameters": [
+          "value",
+          "fallback"
+        ]
+      },
+      {
+        "name": "INT",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "ISBLANK",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "ISNUMBER",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "ISTEXT",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "LEFT",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 2,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "count"
+        ]
+      },
+      {
+        "name": "LEN",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "LN",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "LOG10",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "LOWER",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "MAX",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "MID",
+        "category": "TEXT",
+        "minArguments": 3,
+        "maxArguments": 3,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "start",
+          "count"
+        ]
+      },
+      {
+        "name": "MIN",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "MOD",
+        "category": "MATH",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "number",
+          "divisor"
+        ]
+      },
+      {
+        "name": "MONTH",
+        "category": "DATE",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "NOT",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "NOW",
+        "category": "DATE",
+        "minArguments": 0,
+        "maxArguments": 0,
+        "resultType": "DATETIME",
+        "parameters": []
+      },
+      {
+        "name": "NUMBER",
+        "category": "CONVERT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "OR",
+        "category": "LOGIC",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "BOOLEAN",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "PI",
+        "category": "MATH",
+        "minArguments": 0,
+        "maxArguments": 0,
+        "resultType": "NUMBER",
+        "parameters": []
+      },
+      {
+        "name": "POWER",
+        "category": "MATH",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "base",
+          "exponent"
+        ]
+      },
+      {
+        "name": "PRODUCT",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "REPLACE",
+        "category": "TEXT",
+        "minArguments": 4,
+        "maxArguments": 4,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "start",
+          "count",
+          "newText"
+        ]
+      },
+      {
+        "name": "REPT",
+        "category": "TEXT",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "count"
+        ]
+      },
+      {
+        "name": "RIGHT",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 2,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "count"
+        ]
+      },
+      {
+        "name": "ROUND",
+        "category": "MATH",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "number",
+          "digits"
+        ]
+      },
+      {
+        "name": "ROUNDDOWN",
+        "category": "MATH",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "number",
+          "digits"
+        ]
+      },
+      {
+        "name": "ROUNDUP",
+        "category": "MATH",
+        "minArguments": 2,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "number",
+          "digits"
+        ]
+      },
+      {
+        "name": "SEARCH",
+        "category": "TEXT",
+        "minArguments": 2,
+        "maxArguments": 3,
+        "resultType": "NUMBER",
+        "parameters": [
+          "findText",
+          "withinText",
+          "start"
+        ]
+      },
+      {
+        "name": "SIGN",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "SIN",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "SQRT",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "STRING",
+        "category": "CONVERT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "SUBSTITUTE",
+        "category": "TEXT",
+        "minArguments": 3,
+        "maxArguments": 4,
+        "resultType": "STRING",
+        "parameters": [
+          "text",
+          "oldText",
+          "newText",
+          "occurrence"
+        ]
+      },
+      {
+        "name": "SUM",
+        "category": "AGGREGATE",
+        "minArguments": 1,
+        "maxArguments": 256,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "TAN",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "TEXT",
+        "category": "CONVERT",
+        "minArguments": 1,
+        "maxArguments": 2,
+        "resultType": "STRING",
+        "parameters": [
+          "value",
+          "format"
+        ]
+      },
+      {
+        "name": "TEXTJOIN",
+        "category": "TEXT",
+        "minArguments": 3,
+        "maxArguments": 256,
+        "resultType": "STRING",
+        "parameters": [
+          "delimiter",
+          "ignoreEmpty",
+          "values"
+        ]
+      },
+      {
+        "name": "TODAY",
+        "category": "DATE",
+        "minArguments": 0,
+        "maxArguments": 0,
+        "resultType": "DATE",
+        "parameters": []
+      },
+      {
+        "name": "TRIM",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "TRUNC",
+        "category": "MATH",
+        "minArguments": 1,
+        "maxArguments": 2,
+        "resultType": "NUMBER",
+        "parameters": [
+          "number",
+          "digits"
+        ]
+      },
+      {
+        "name": "UPPER",
+        "category": "TEXT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "STRING",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "VALUE",
+        "category": "CONVERT",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      },
+      {
+        "name": "YEAR",
+        "category": "DATE",
+        "minArguments": 1,
+        "maxArguments": 1,
+        "resultType": "NUMBER",
+        "parameters": [
+          "value"
+        ]
+      }
+    ]
+  },
+  "workflow": {
+    "schemaVersion": 1,
+    "maxProcesses": 1,
+    "maxParticipants": 1,
+    "annotationFormat": "text/plain",
+    "prohibitedElements": [
+      "scriptTask",
+      "serviceTask",
+      "businessRuleTask",
+      "sendTask",
+      "receiveTask",
+      "callActivity",
+      "manualTask"
+    ],
+    "unsupportedCollaborationElements": [
+      "participantMultiplicity",
+      "messageFlow"
+    ],
+    "diagramTypes": [
+      "Participant",
+      "Lane",
+      "DataObjectReference",
+      "DataStoreReference",
+      "Group",
+      "TextAnnotation"
+    ],
+    "replacementEntries": [
+      "replace-with-user-task",
+      "replace-with-exclusive-gateway",
+      "replace-with-parallel-gateway",
+      "replace-with-inclusive-gateway",
+      "replace-with-none-start",
+      "replace-with-none-end",
+      "replace-with-none-start-event",
+      "replace-with-none-end-event",
+      "replace-with-collapsed-subprocess",
+      "replace-with-expanded-subprocess",
+      "replace-with-subprocess",
+      "replace-with-sequence-flow",
+      "replace-with-default-flow",
+      "replace-with-conditional-flow",
+      "replace-with-data-object-reference",
+      "replace-with-data-store-reference"
+    ]
+  }
+}

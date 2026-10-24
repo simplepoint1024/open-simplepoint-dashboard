@@ -3,18 +3,32 @@ export const dnaRuntimeRoute = {id: 'dna-runtime-details-test', code: 'dna.runti
   path: '/smoke/dna-runtime-details', component: 'dna/platform/RuntimeGovernance', label: '表单数据底座测试', scopeTypes: ['PLATFORM']};
 const base = '/dna/platform/dna/runtime';
 export function createDnaRuntimeFixture() {
-  let enabled = false, holdPlan = false, releasePlan;
+  let enabled = false, holdPlan = false, releasePlan, canPublish = false, releasePublication;
   const requests = [];
+  const publications = [];
   const model = {id: 'model-one', displayName: '实际模型详情', appId: 'app-one', formId: 'form-one', status: 'ACTIVE',
     latestVersion: 1, activeVersion: 1, lockVersion: 0, updatedAt: '2026-10-14T00:00:00Z'};
-  return {requests, holdPlan() {holdPlan = true;}, pendingPlan() {return !!releasePlan;}, releasePlan() {holdPlan = false; releasePlan?.(); releasePlan = undefined;}, enable() {enabled = true;}, async handle(req, url, respond) {
+  return {requests, publications, allowPublication() {canPublish = true;},
+    finishPublication() {releasePublication?.(); releasePublication = undefined;},
+    holdPlan() {holdPlan = true;}, pendingPlan() {return !!releasePlan;}, releasePlan() {holdPlan = false; releasePlan?.(); releasePlan = undefined;}, enable() {enabled = true;}, async handle(req, url, respond) {
     if (!enabled || !url.pathname.startsWith(base)) return false;
     requests.push(url.pathname);
-    if (req.method !== 'GET') throw Error('Details regression must never write');
-    if (url.pathname.endsWith('/plan')) {
+    if (url.pathname === base + '/models/model-one/publish' && req.method === 'POST') {
+      assert.equal(canPublish, true);
+      const chunks = []; for await (const chunk of req) chunks.push(chunk);
+      publications.push(JSON.parse(Buffer.concat(chunks).toString()));
+      await new Promise(resolve => {releasePublication = resolve;});
+      canPublish = false;
+      respond({migrationId: 'reviewed-migration', physicalModelId: 'model-one', targetVersion: 2,
+        status: 'SUCCEEDED', risk: 'CONDITIONAL', steps: [{sequence: 1, operation: 'ALTER_COLUMN',
+          logicalObject: '已完成非空迁移', risk: 'CONDITIONAL', status: 'SUCCEEDED'}]}); return true;
+    }
+    if (req.method !== 'GET') throw Error('Unexpected governance write');
+    if (url.pathname.endsWith('/review')) {
       if (holdPlan) await new Promise(resolve => {releasePlan = resolve;});
-      respond({physicalModelId:'model-one',targetVersion:1,dialectId:'postgresql',risk:'SAFE',steps:[
-        {sequence:1,operation:'CREATE_TABLE',logicalObject:'实际表',risk:'SAFE',status:'SUCCEEDED'}]}); return true;
+      respond({expectedVersion: 7, canPublish, plan: {physicalModelId:'model-one',targetVersion:2,
+        actualChecksum: 'a'.repeat(64), targetChecksum: 'b'.repeat(64), dialectId:'postgresql',risk:'CONDITIONAL',steps:[
+        {sequence:1,operation:'CREATE_TABLE',logicalObject:'实际表',risk:'SAFE',status:'SUCCEEDED'}]}}); return true;
     }
     if (url.pathname === base + '/models/model-one') {
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -45,7 +59,7 @@ export async function smokeDnaRuntimeDetails({clickMenu, clickReady, clickText, 
   await clickReady('.ant-drawer-open .dna-model-definition .ant-tabs-tab[data-node-key="indexes"]');
   await poll(() => evaluate("document.querySelector('.ant-drawer-open')?.textContent.includes('实际字段 (actual_name) → 金额 (amount)')"), 'ordered index fields');
   assert.ok(fixture.requests.includes(base + '/models/model-one'));
-  assert.ok(!fixture.requests.some(path => path.endsWith('/plan')));
+  assert.ok(!fixture.requests.some(path => path.endsWith('/review')));
   await clickReady('.ant-drawer-open .ant-drawer-close');
 
   // A delayed response belongs to its retained page, never to the foreground tab.
@@ -57,6 +71,7 @@ export async function smokeDnaRuntimeDetails({clickMenu, clickReady, clickText, 
   await clickMenu('表单数据底座测试');
   await clickText(root + ' button', '查看计划');
   await poll(() => evaluate("document.querySelector('.ant-drawer-open')?.textContent.includes('实际表')"), 'current plan');
+  assert.equal(await evaluate("document.querySelector('.ant-drawer-open')?.textContent.includes('执行已评审迁移')"), false);
   const plan = '.ant-drawer-open .sp-data-table-root';
   await clickReady(plan + ' [aria-label="切换为卡片"]');
   await poll(() => preferences.has('sp.data-table.dna.runtime.plan.steps'), 'DataTable settings synchronized to account');
@@ -74,6 +89,23 @@ export async function smokeDnaRuntimeDetails({clickMenu, clickReady, clickText, 
   await clickMenu('表单数据底座测试');
   await poll(() => evaluate("!!document.querySelector('.sp-table-settings-drawer.ant-drawer-open')"), 'owning tab restores settings');
   await clickReady('.sp-table-settings-drawer.ant-drawer-open .ant-drawer-close');
+
+  fixture.allowPublication();
+  await clickText(root + ' button', '查看计划');
+  await poll(() => evaluate("document.querySelector('.ant-drawer-open')?.textContent.includes('执行已评审迁移')"), 'server grants reviewed publication');
+  await evaluate(`(() => {const button=[...document.querySelectorAll('.ant-drawer-open button')]
+    .find(e=>e.textContent.includes('执行已评审迁移')); button.click(); button.click();})()`);
+  await poll(() => fixture.publications.length === 1, 'exactly one locked publication');
+  assert.deepEqual(fixture.publications, [{targetVersion: 2, expectedVersion: 7,
+    actualChecksum: 'a'.repeat(64), targetChecksum: 'b'.repeat(64)}]);
+  await poll(() => evaluate("!document.querySelector('.ant-drawer-open .ant-drawer-close')"), 'cannot close an in-flight migration');
+  await clickMenu('首页');
+  await poll(() => evaluate("!document.querySelector('.ant-drawer-open')"), 'in-flight drawer follows owning page');
+  fixture.finishPublication();
+  await clickMenu('表单数据底座测试');
+  await poll(() => evaluate("document.querySelector('.ant-drawer-open')?.textContent.includes('已完成非空迁移')"), 'committed migration shown on owning page');
+  assert.equal(fixture.publications.length, 1);
+  await clickReady('.ant-drawer-open .ant-drawer-close');
 
   for (const viewport of [{width: 1440, height: 900}, {width: 1024, height: 700}]) {
     await send('Emulation.setDeviceMetricsOverride', {...viewport, deviceScaleFactor: 1, mobile: false});

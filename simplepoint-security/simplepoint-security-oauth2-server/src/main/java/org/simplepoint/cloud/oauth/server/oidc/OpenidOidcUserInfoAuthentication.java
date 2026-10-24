@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.simplepoint.cloud.oauth.server.expansion.oidc.AbstractOidcUserInfoAuthentication;
 import org.simplepoint.core.oidc.OidcScopes;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -44,7 +44,7 @@ public class OpenidOidcUserInfoAuthentication extends AbstractOidcUserInfoAuthen
    *                     用户服务，负责管理用户信息
    */
   public OpenidOidcUserInfoAuthentication(
-      final UsersService usersService
+      final UserManagementService usersService
   ) {
     super(usersService);
   }

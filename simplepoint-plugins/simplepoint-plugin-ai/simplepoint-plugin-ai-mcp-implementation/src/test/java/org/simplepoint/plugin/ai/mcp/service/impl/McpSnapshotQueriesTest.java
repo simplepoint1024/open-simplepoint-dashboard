@@ -157,7 +157,7 @@ class McpSnapshotQueriesTest {
               () -> queries.page(server, Map.of(field, "is:null"), PageRequest.of(0, 20)))
           .isInstanceOf(InvalidQueryException.class);
     }
-    assertThatThrownBy(() -> queries.page(server, Map.of(), PageRequest.of(0, 101)))
+    assertThatThrownBy(() -> queries.page(server, Map.of(), PageRequest.of(0, 501)))
         .isInstanceOf(InvalidQueryException.class);
     assertThatThrownBy(() -> queries.page(server, Map.of(), Pageable.unpaged()))
         .isInstanceOf(InvalidQueryException.class);

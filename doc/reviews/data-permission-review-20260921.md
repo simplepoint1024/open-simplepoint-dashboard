@@ -15,7 +15,7 @@
 - 隔离 H2 实验：SELF 用户不能通过 `findById` 读取同租户另一用户的记录，但将其 ID 放入新增对象后，可以覆盖原记录的业务字段，并把创建人改成自己。使用其他租户记录的 ID，也成功覆盖了该记录的业务字段；`tenantId` 的 `updatable=false` 只保持租户列不变，没有阻止其他列更新。
 - HTTP 可达链路示例：`DataScopeController.add` 接收实体并直接调用 `service.create`。因此创建权限与编辑权限的分离可能失效；作用于权限策略实体时，影响更大。实际利用前提包括具有对应新增入口权限、获知目标 ID、且没有其他专用校验拒绝该对象。
 
-依据：[BaseServiceImpl.java](../../simplepoint-core/src/main/java/org/simplepoint/core/base/service/impl/BaseServiceImpl.java)（194、211、322 行）、[DataScopeController.java](../../simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/plugin/rbac/core/rest/controller/DataScopeController.java)（81–85 行）、[UuidStringIdentifierGenerator.java](../../simplepoint-core/src/main/java/org/simplepoint/core/base/generator/UuidStringIdentifierGenerator.java)（40 行）。
+依据：[BaseServiceImpl.java](../../simplepoint-core/src/main/java/org/simplepoint/core/base/service/impl/BaseServiceImpl.java)（194、211、322 行）、[DataScopeController.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/core/rest/controller/DataScopeController.java)（81–85 行）、[UuidStringIdentifierGenerator.java](../../simplepoint-core/src/main/java/org/simplepoint/core/base/generator/UuidStringIdentifierGenerator.java)（40 行）。
 
 建议：公共新增入口拒绝调用方指定 ID，区分外部 create 与内部预分配 ID 的 insert。不能只改 UUID 生成器，因为调用流水等内部功能确实需要预分配 ID。新增应使用明确的插入语义，更新必须加载原记录并检查权限；单条和批量保持一致。
 
@@ -25,7 +25,7 @@
 
 隔离单元实验：`Tenant#name=VISIBLE` 时，公共字段策略返回不可写，但当前租户所有者仍能通过该方法修改名称。这不是跨租户越权；是同一实体在不同入口上的字段权限语义不一致。
 
-依据：[TenantServiceImpl.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantServiceImpl.java)（158–186 行）、[TenantController.java](../../simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/TenantController.java)（127–130 行）。
+依据：[TenantServiceImpl.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantServiceImpl.java)（158–186 行）、[TenantController.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/TenantController.java)（127–130 行）。
 
 建议：抽取可供专用命令复用的字段写入校验，结合原始请求中实际出现的字段处理；不要依赖前端只读表单。若所有者确实需要豁免，应在统一策略中声明，使 schema、普通修改和专用修改一致。
 
@@ -36,7 +36,7 @@
 - 隔离 Jackson 3 实验：隐藏 `Organization#description` 后，实体 JSON 不含 description，选择项 DTO 仍输出原文；隐藏 `Tenant#name` 后，`NamedTenantVo.tenantName` 仍输出原文。
 - 组织 `/options` 的 keyword 分支直接调用专用搜索，没有复用公共查询字段权限检查。除响应投影外，查询是否能通过隐藏字段推断匹配结果也应一并补验。
 
-依据：[OrganizationController.java](../../simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/OrganizationController.java)（69–104 行）、[OrganizationServiceImpl.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/OrganizationServiceImpl.java)（123–175、258–284 行）、[OrganizationOptionVo.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/vo/OrganizationOptionVo.java)、[NamedTenantVo.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/vo/NamedTenantVo.java)。
+依据：[OrganizationController.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/OrganizationController.java)（69–104 行）、[OrganizationServiceImpl.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/OrganizationServiceImpl.java)（123–175、258–284 行）、[OrganizationOptionVo.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/vo/OrganizationOptionVo.java)、[NamedTenantVo.java](../../simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/vo/NamedTenantVo.java)。
 
 建议：所有包含实体数据的 DTO 声明来源字段，Map 输出执行显式投影。选择器需要最小身份字段时，明确字段不可读后的降级/拒绝行为，不应默认为选择器可以绕开隐藏规则。
 

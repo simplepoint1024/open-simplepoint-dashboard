@@ -106,6 +106,23 @@ class JdbcEventStoreTest {
   }
 
   @Test
+  void duplicateNumericPayloadComparesTheWireValueRatherThanTheJsonNodeImplementation() {
+    var source = event();
+    var payload = JsonNodeFactory.instance.objectNode().put("rate", 0.1d);
+    var message = new EventMessage(source.eventId(), source.eventType(), source.schemaVersion(),
+        source.producer(), source.tenantId(), source.resourceId(), source.generation(),
+        source.operationId(), source.correlationId(), source.occurredAt(), payload);
+    store.receive(subscription, message);
+    store.receive(subscription, message);
+    assertEquals(1, store.count("INBOX", "PENDING"));
+    payload.put("rate", 0.2d);
+    var changed = new EventMessage(source.eventId(), source.eventType(), source.schemaVersion(),
+        source.producer(), source.tenantId(), source.resourceId(), source.generation(),
+        source.operationId(), source.correlationId(), source.occurredAt(), payload);
+    assertThrows(IllegalArgumentException.class, () -> store.receive(subscription, changed));
+  }
+
+  @Test
   void crashLeaseAndStaleWorkerCannotOverwriteNewOwner() {
     transaction.executeWithoutResult(status -> store.publish(event()));
     EventJob old = store.claim("OUTBOX");

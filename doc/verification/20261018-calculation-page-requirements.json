@@ -1,0 +1,46 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-17T20:03:10.457364+00:00",
+  "changes": [
+    "发布影响检查读取真实计算列；旧无公式占位字段维持缺省语义",
+    "合并存续历史页面主字段的条件必填要求，相同条件去重，不同条件使用 OR",
+    "不可变发布意图保存合并规则，会话重载和重试使用原命令",
+    "计算模式要求完整的页面观察；缺失观察拒绝准备，普通无计算模式保留既有预算"
+  ],
+  "quality": {
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 278,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "checkstyleMain": "passed",
+      "testResultSha256": "fbd703fcdac35eb1ece1df74f46d4028dfb6bb628693cd9693896f18cabef4f0"
+    },
+    "simplepoint-service-app": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "checkstyleMain": "passed",
+      "testResultSha256": "98826044551231a58118b8e2643aceb84b74cb3112b4323e48a237206cb170a7"
+    }
+  },
+  "totalTests": 329,
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormPublicationRequirementsCompilerTest.java": "1d9c046dd9d975d3b59a5a36d5b95d2a9e0c1b7d53202a5fcf8dd4c8287e5e50",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/ApplicationFormPageBindingStateServiceTest.java": "f0513a6a385cb23cc044a432e8dfe2d90c42f4f1d2163d26bc150d75ea88a4b2",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormPublicationImpactServiceTest.java": "d95403101c211368b5a23160859ed8ab6f56b1a2ac19bbcb1577a19a0714d29f",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationValidationProjection.java": "5a666984f85aa52e8be590c25ab77c71f92975b584d4434e35b2c43b528440ee",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormInstalledCalculation.java": "b28bbcf188547b60706ca601b69c4b03393e1153cb52782fd2ce47f1d7c80f72",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWritePolicyPublicationStateService.java": "aafed2bf0f6e6a0072bafff071864f036c87b038ad737a4ad681760cc7035f95",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWritePolicyImpact.java": "d18ada034f40d60e1c202699ee9c533cb8ca5f1431d15e929d520b8889aa8f8d",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormPublicationRequirementsCompiler.java": "db19b2e099cc65d7b60b058f5375ca95b97660fd00db4dc76d194696e2a504d1",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormPublicationImpactService.java": "807ded686bf246f6b89c94d764b49eaa48a7469610dfa2bc8489375ce9b06fa0",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjection.java": "ae13089a1bc9e03d89f7749daf80a7652477b546ba7e600c3ed1600ee41dbeff"
+  },
+  "limitations": [
+    "历史页面选项、长度和正则的计算后统一校验尚未补齐",
+    "APP 运行时试算、流程预检、设计器计算编辑集成和 B1–B5 尚未完成",
+    "公式发布保护仍保留，176 项最终计算验收未完成"
+  ]
+}

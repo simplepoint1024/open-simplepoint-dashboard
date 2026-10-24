@@ -41,7 +41,7 @@ function TenantMembersContent({scope}: {scope: string}) {
   const {t, ensure} = useI18n();
   const operation = useOperationScope(scope);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(50);
   const [editor, setEditor] = useState<Editor>();
   const editorRef = useRef<Editor | undefined>(undefined);
   const mode = editor?.mode;
@@ -242,7 +242,7 @@ function TenantMembersContent({scope}: {scope: string}) {
           pageSize,
           total: query.data?.page?.totalElements ?? 0,
           showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
+          pageSizeOptions: [50, 100, 200, 500],
           onChange: (nextPage, nextSize) => {
             setPage(nextSize === pageSize ? nextPage - 1 : 0); setSelectedKeys([]);
             setPageSize(nextSize);

@@ -1,0 +1,1543 @@
+{
+  "date": "2026-10-17",
+  "verifiedAt": "2026-10-17T13:34:41.588Z",
+  "deploymentVerified": true,
+  "wholeGoalComplete": false,
+  "version": "20261017-calculation-foundation1",
+  "sourceDigest": "fee5de5b391514ae94ba081aca754c5d9e597b07231c5fc8933dc21421fafccc",
+  "scope": "Deploy DNA calculation write foundations with public calculation publication still blocked; verify existing office APP/DNA/workflow business paths",
+  "services": [
+    {
+      "service": "common",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 317,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "auditing",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 246,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "dna",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 296,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "ai",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 326,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "app",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 262,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "workflow",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 298,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "host",
+      "version": "20261017-calculation-foundation1",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 226,
+      "jarHashesMatch": true
+    }
+  ],
+  "allNineServiceHealth": "passing",
+  "rabbitmq": "healthy",
+  "quality": {
+    "tests": 560,
+    "failures": 0,
+    "skipped": 0,
+    "modules": [
+      {
+        "module": "simplepoint-plugin-dna-runtime-implementation",
+        "tests": 124,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-dna-runtime-api",
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-app-form-implementation",
+        "tests": 233,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-calculation",
+        "tests": 79,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-service-dna",
+        "tests": 41,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-service-app",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "frontendTypecheck": "passed",
+    "platformUiAudit": {
+      "reviewed": 40,
+      "unreviewed": 0
+    },
+    "frontendPackaging": "all seven service distribution gates passed"
+  },
+  "fix": {
+    "file": "ApplicationFormPostgresSchemaTest.java",
+    "description": "Upgrade test omitted the existing detail_bindings_json migration; include it twice before validating Hibernate mappings. Isolated PostgreSQL upgrade/bootstrap tests now run without skips."
+  },
+  "infrastructure": {
+    "passed": true,
+    "at": "2026-10-17T13:18:47.014Z",
+    "table": "app_forms.simpoint_dna_record_calculations_v1",
+    "beforeExists": false,
+    "afterChecksum": "94c8d421bb333fff1b61ef5eb84f1a45991485b24af4ca79b3e8288e361ddefc",
+    "steps": [
+      {
+        "operation": "CREATE_TABLE",
+        "checksum": "e0d8d27c96677feea0b4ee2203dc549151911dc78c9efb78edbffb3b8cd93386"
+      },
+      {
+        "operation": "CREATE_INDEX",
+        "checksum": "8c7fdb3fe0764fc87a99e33f1669a0923cc575ea49c8c683e279c300a482fd88"
+      },
+      {
+        "operation": "COMMENT_TABLE",
+        "checksum": "f8106693e1a7c31f59cb8aa471f6a3efb573d160dbe9a8cc36e988ee45f0b518"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "7e08419825c2991919f2ac03b24ff04981208507bc9994f94bf6eb4a9861cc0e"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "e33fff7a9d570eacfc66bc7eebeb49bf0820f8d55066c1a38690f08db97d088c"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "1f597192456c10b10948dff902945422d211d7d34ecf437faf11f9ed5f15decc"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "d09e124c75c019f3a7fe179035e26a56afd4ed7a52001af2d31488a8ea88427d"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "ad4c96fca6447257f024639278b78e27962335d14caaf4d8d3c4b58fe140fdd0"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "2da7b0a7d8e58cb4ae83470be610bb37f4949f1c588068a20eee2221d9cf6ed8"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "4ee79e97f0abf13d1c528929f64a012b0f739d2427fb67c68d4ae2f1d0a0ab19"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "bf064416265d687283f4cfc783efa3ae0bd4a55d25b0ad16eb78e72788e0d300"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "989b5de3834585984e5d9d1c299300c6925ec9025d0a4eaa6a17f4d3f27990b2"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "e0d96b7902d04cc62b726bce3297e5ab55dbb97a2101fda7b18f25dbd3142726"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "851c0f1d9171b904fee65cd7da11b0d731e3a8ec911f11d3736743d7020d9959"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "b51e53ac79d579e409f244da2ad0a6a57c4bca6b043e00b164a0b874b5ef84eb"
+      },
+      {
+        "operation": "COMMENT_COLUMN",
+        "checksum": "2164f4ee1c0d39bb0be78c3bbd4ffd1caf1cfb42caec6cefd12ceaa96c930008"
+      }
+    ],
+    "definitions": 0,
+    "generatedBy": "Packaged RecordCalculationSchema and PostgresqlRuntimeSchemaDialect",
+    "businessRowsModified": false,
+    "backupRestore": {
+      "passed": true,
+      "dumpSha256": "91c9bc2b6192765888aa1f9fce5c4e347eb154adf5241c6941fa3e0c50fe7515",
+      "postgresVersion": "18.6",
+      "network": "no TCP listener; private owner-only Unix socket",
+      "extensions": [
+        {
+          "extname": "pg_trgm",
+          "extversion": "1.6"
+        },
+        {
+          "extname": "plpgsql",
+          "extversion": "1.0"
+        },
+        {
+          "extname": "vector",
+          "extversion": "0.8.7"
+        }
+      ],
+      "allBusinessTablesRestored": 5,
+      "businessRowCountsMatch": true,
+      "writeFencesMatch": true,
+      "temporaryClusterRemoved": true
+    },
+    "preservation": {
+      "passed": true,
+      "at": "2026-10-17T13:30:21.176Z",
+      "models": 5,
+      "allBusinessRowCountsUnchanged": true,
+      "allWriteFencesUnchanged": true,
+      "activeSchemaVersionsUnchanged": true
+    },
+    "managementReplay": {
+      "passed": true,
+      "at": "2026-10-17T13:30:21.004Z",
+      "results": [
+        {
+          "modelId": "10decc0c-6184-460c-93a6-6c4019686378",
+          "status": "ACTIVE",
+          "activeVersion": 1,
+          "lockVersionUnchanged": true,
+          "replayedTwice": true
+        },
+        {
+          "modelId": "33ecdf3c-61c9-403f-a5e4-a12127fe4a94",
+          "status": "ACTIVE",
+          "activeVersion": 1,
+          "lockVersionUnchanged": true,
+          "replayedTwice": true
+        },
+        {
+          "modelId": "5fee675f-e1e1-412c-be25-86225445f6ba",
+          "status": "ACTIVE",
+          "activeVersion": 1,
+          "lockVersionUnchanged": true,
+          "replayedTwice": true
+        },
+        {
+          "modelId": "61858755-5cf7-4680-a9c4-004065d8209d",
+          "status": "ACTIVE",
+          "activeVersion": 1,
+          "lockVersionUnchanged": true,
+          "replayedTwice": true
+        },
+        {
+          "modelId": "f764e3a5-af65-4887-b05c-88504bff0cbf",
+          "status": "ACTIVE",
+          "activeVersion": 1,
+          "lockVersionUnchanged": true,
+          "replayedTwice": true
+        }
+      ]
+    }
+  },
+  "business": {
+    "cases": [
+      {
+        "code": "office_meeting_room",
+        "id": "158a16abddd843f4f1daef0ffe6d189b3a2d5baa38935122d8a8b54c00c30e61",
+        "title": "【1017基础部署验收】平台季度方案评审",
+        "commandKey": "37d031a2-4b00-409d-a63e-8116a59d3662",
+        "recordId": "ac503944-1eca-5071-bfad-eda86b2cca60",
+        "processInstanceId": "fbefa928-ca2e-11f1-a1bf-be5a927d3e22",
+        "approvals": [
+          {
+            "actor": "administration",
+            "taskId": "fbf26851-ca2e-11f1-a1bf-be5a927d3e22",
+            "taskName": "行政核实场地及会务安排"
+          }
+        ],
+        "status": "COMPLETED"
+      },
+      {
+        "code": "office_daily_report",
+        "id": "3abbca22e7a7c444d2ffebf6e8c7aceb5be4b6bcc4abf9949b05d6c571598e61",
+        "title": "【1017基础部署验收】平台研发工作日报",
+        "commandKey": "fdcba724-cce1-409d-8535-d660d883baa3",
+        "recordId": "d7fdde03-b06a-5f95-8c43-8409aa8c7566",
+        "processInstanceId": "0988cd19-ca2f-11f1-a1bf-be5a927d3e22",
+        "approvals": [
+          {
+            "actor": "manager",
+            "taskId": "0988cd22-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "部门负责人确认日报"
+          }
+        ],
+        "status": "COMPLETED"
+      },
+      {
+        "code": "office_expense_claim",
+        "id": "80b3c4b245c143344e473a8844c8f06b5811ea5539595ef49e7086fa4911a5fc",
+        "title": "【1017基础部署验收】客户现场交付差旅报销（普通）",
+        "commandKey": "6087f90e-1991-4c48-8749-99e5d39fda62",
+        "recordId": "2270e790-34a5-5253-92dd-3fa2147a76b6",
+        "processInstanceId": "18a6953a-ca2f-11f1-a1bf-be5a927d3e22",
+        "approvals": [
+          {
+            "actor": "manager",
+            "taskId": "18a70a74-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "actor": "finance",
+            "taskId": "18d0b28e-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "财务复核"
+          }
+        ],
+        "status": "COMPLETED"
+      },
+      {
+        "code": "office_expense_claim",
+        "id": "02dd0ad384b8d0773a891352f6833f1d388fcc12bd31609ae9fdfdf6eb13fdaa",
+        "title": "【1017基础部署验收】客户现场交付差旅报销（大额）",
+        "commandKey": "c1745a79-3111-4b9f-bb2f-7aa118dd802c",
+        "recordId": "386ce9f6-2235-5ddb-8193-a37f90ea4182",
+        "processInstanceId": "26dfc9c6-ca2f-11f1-a1bf-be5a927d3e22",
+        "approvals": [
+          {
+            "actor": "manager",
+            "taskId": "26dff0e0-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "actor": "director",
+            "taskId": "2709c00a-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "分管负责人审批"
+          },
+          {
+            "actor": "finance",
+            "taskId": "272f2262-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "财务复核"
+          }
+        ],
+        "status": "COMPLETED"
+      },
+      {
+        "code": "office_expense_claim",
+        "id": "6b1979556d9c1360c3d1346bc4fb0104a86cb6805a254f37637d1156f7de69bb",
+        "title": "【1017基础部署验收】报销驳回与修订申请",
+        "commandKey": "b86cd0d3-cef0-4953-bba2-8c1dd7dbc43d",
+        "recordId": "1752380f-855a-5b2d-9916-5023450472b1",
+        "processInstanceId": "35e2b6fa-ca2f-11f1-a1bf-be5a927d3e22",
+        "status": "REJECTED"
+      },
+      {
+        "code": "office_expense_claim",
+        "id": "447f2fbdb698df3ddfc1ff03ff8e42a22f357a77e3162b7061ccb9212fb26206",
+        "title": "【1017基础部署验收】报销补充材料后重新申请",
+        "commandKey": "5e275266-52e8-46a5-b204-c389324a9242",
+        "recordId": "7d0bb9bf-1dd4-5e72-8cbf-f38b6828aabc",
+        "processInstanceId": "4505882a-ca2f-11f1-a1bf-be5a927d3e22",
+        "approvals": [
+          {
+            "actor": "manager",
+            "taskId": "45058834-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "actor": "finance",
+            "taskId": "452f575e-ca2f-11f1-a1bf-be5a927d3e22",
+            "taskName": "财务复核"
+          }
+        ],
+        "status": "COMPLETED"
+      }
+    ],
+    "checks": [
+      {
+        "name": "meeting end must follow start",
+        "at": "2026-10-17T13:30:54.942Z"
+      },
+      {
+        "name": "daily report requires detail rows",
+        "at": "2026-10-17T13:30:55.007Z"
+      },
+      {
+        "name": "daily hours must equal exact detail sum",
+        "at": "2026-10-17T13:30:55.088Z"
+      },
+      {
+        "name": "expense cannot tamper with routing amount",
+        "at": "2026-10-17T13:30:55.209Z"
+      },
+      {
+        "name": "expense requires attachments",
+        "at": "2026-10-17T13:30:55.322Z"
+      },
+      {
+        "name": "expense rejects forged storage reference",
+        "at": "2026-10-17T13:30:55.791Z"
+      },
+      {
+        "name": "meeting: employee → administration → completed, immutable record",
+        "at": "2026-10-17T13:31:19.166Z"
+      },
+      {
+        "name": "daily: parent + two detail rows → manager → completed",
+        "at": "2026-10-17T13:31:44.492Z"
+      },
+      {
+        "name": "expense <= 5000: manager → finance, attachment bytes verified",
+        "at": "2026-10-17T13:32:08.537Z"
+      },
+      {
+        "name": "expense > 5000: manager → director → finance, exact amount routing",
+        "at": "2026-10-17T13:32:33.752Z"
+      },
+      {
+        "name": "rejection → linked new revision → completed; original business evidence preserved",
+        "at": "2026-10-17T13:33:23.864Z"
+      },
+      {
+        "name": "administration cannot access financial form; applicant cannot approve any stage",
+        "at": "2026-10-17T13:33:23.886Z"
+      }
+    ],
+    "crud": {
+      "passed": true,
+      "at": "2026-10-17T13:30:52.636Z",
+      "recordIds": [
+        "0fd3a019-1d25-505c-b75b-e558ec8c8b81",
+        "5a0432f9-78d7-5f4c-b692-4331a5607c28"
+      ],
+      "unicodeRoundTrip": true,
+      "detailPrependEditDelete": true,
+      "newestBeforePagination": true,
+      "updatingOlderRecordDoesNotMoveItFirst": true,
+      "cleanedRecordIds": [
+        "0fd3a019-1d25-505c-b75b-e558ec8c8b81",
+        "5a0432f9-78d7-5f4c-b692-4331a5607c28"
+      ],
+      "activeTemporaryRecords": 0
+    },
+    "authorization": {
+      "passed": true,
+      "at": "2026-10-17T13:34:10.687Z",
+      "noGrantChanges": true,
+      "checks": [
+        {
+          "role": "manager",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "manager",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "employee",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "business-form",
+          "status": 403
+        }
+      ]
+    },
+    "browsers": [
+      {
+        "passed": true,
+        "at": "2026-10-17T13:31:23.908Z",
+        "actor": "manager",
+        "mode": "pending",
+        "taskId": "0988cd22-ca2f-11f1-a1bf-be5a927d3e22",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 723,
+            "scroll": 723,
+            "detailScrollers": [
+              {
+                "width": 659,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": false,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T13:31:29.046Z",
+        "actor": "manager",
+        "mode": "completed",
+        "taskId": "0988cd22-ca2f-11f1-a1bf-be5a927d3e22",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": true,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T13:33:03.838Z",
+        "actor": "finance",
+        "mode": "pending",
+        "taskId": "452f575e-ca2f-11f1-a1bf-be5a927d3e22",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 723,
+            "scroll": 723,
+            "detailScrollers": [
+              {
+                "width": 659,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": false,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T13:33:10.840Z",
+        "actor": "finance",
+        "mode": "completed",
+        "taskId": "452f575e-ca2f-11f1-a1bf-be5a927d3e22",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": true,
+        "downloadVerified": true,
+        "transports": []
+      }
+    ],
+    "databaseAndEvents": {
+      "passed": true,
+      "at": "2026-10-17T13:34:10.085Z",
+      "physicalTables": [
+        {
+          "form_id": "3b24f99d-03e7-4ac9-a139-f161078976c5",
+          "display_name": "会议室申请",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_7qckhtbbv5923v0q48a15zy35z",
+          "rows": 3
+        },
+        {
+          "form_id": "65dfdb3e-6466-492c-9f1b-6241446f4362",
+          "display_name": "日报填写",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_0gvv60rrc48r6979kc80cpgrvr",
+          "rows": 3
+        },
+        {
+          "form_id": "6ddc39a7-8687-41de-8b85-7efca89117a8",
+          "display_name": "财务报销",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_31gp3naq7q8t0akh0081jxg84x",
+          "rows": 13
+        },
+        {
+          "form_id": "ab18bf52-8875-3cc8-aed6-afda6306f825",
+          "display_name": "费用明细",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_1kxkfkrre980ztbs5144kzwjmm",
+          "rows": 26,
+          "orphans": 0
+        },
+        {
+          "form_id": "d605a077-bd7d-3ffc-b390-0182ceca30c9",
+          "display_name": "工作明细",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_2zxsknzrf184pbw9c649a4bxnt",
+          "rows": 6,
+          "orphans": 0
+        }
+      ],
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "id": "158a16abddd843f4f1daef0ffe6d189b3a2d5baa38935122d8a8b54c00c30e61",
+          "title": "【1017基础部署验收】平台季度方案评审",
+          "commandKey": "37d031a2-4b00-409d-a63e-8116a59d3662",
+          "recordId": "ac503944-1eca-5071-bfad-eda86b2cca60",
+          "processInstanceId": "fbefa928-ca2e-11f1-a1bf-be5a927d3e22",
+          "approvals": [
+            {
+              "actor": "administration",
+              "taskId": "fbf26851-ca2e-11f1-a1bf-be5a927d3e22",
+              "taskName": "行政核实场地及会务安排"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 0
+        },
+        {
+          "code": "office_daily_report",
+          "id": "3abbca22e7a7c444d2ffebf6e8c7aceb5be4b6bcc4abf9949b05d6c571598e61",
+          "title": "【1017基础部署验收】平台研发工作日报",
+          "commandKey": "fdcba724-cce1-409d-8535-d660d883baa3",
+          "recordId": "d7fdde03-b06a-5f95-8c43-8409aa8c7566",
+          "processInstanceId": "0988cd19-ca2f-11f1-a1bf-be5a927d3e22",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "0988cd22-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "部门负责人确认日报"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "80b3c4b245c143344e473a8844c8f06b5811ea5539595ef49e7086fa4911a5fc",
+          "title": "【1017基础部署验收】客户现场交付差旅报销（普通）",
+          "commandKey": "6087f90e-1991-4c48-8749-99e5d39fda62",
+          "recordId": "2270e790-34a5-5253-92dd-3fa2147a76b6",
+          "processInstanceId": "18a6953a-ca2f-11f1-a1bf-be5a927d3e22",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "18a70a74-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "finance",
+              "taskId": "18d0b28e-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "02dd0ad384b8d0773a891352f6833f1d388fcc12bd31609ae9fdfdf6eb13fdaa",
+          "title": "【1017基础部署验收】客户现场交付差旅报销（大额）",
+          "commandKey": "c1745a79-3111-4b9f-bb2f-7aa118dd802c",
+          "recordId": "386ce9f6-2235-5ddb-8193-a37f90ea4182",
+          "processInstanceId": "26dfc9c6-ca2f-11f1-a1bf-be5a927d3e22",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "26dff0e0-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "director",
+              "taskId": "2709c00a-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "分管负责人审批"
+            },
+            {
+              "actor": "finance",
+              "taskId": "272f2262-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "6b1979556d9c1360c3d1346bc4fb0104a86cb6805a254f37637d1156f7de69bb",
+          "title": "【1017基础部署验收】报销驳回与修订申请",
+          "commandKey": "b86cd0d3-cef0-4953-bba2-8c1dd7dbc43d",
+          "recordId": "1752380f-855a-5b2d-9916-5023450472b1",
+          "processInstanceId": "35e2b6fa-ca2f-11f1-a1bf-be5a927d3e22",
+          "status": "REJECTED",
+          "finalStatus": "REJECTED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "447f2fbdb698df3ddfc1ff03ff8e42a22f357a77e3162b7061ccb9212fb26206",
+          "title": "【1017基础部署验收】报销补充材料后重新申请",
+          "commandKey": "5e275266-52e8-46a5-b204-c389324a9242",
+          "recordId": "7d0bb9bf-1dd4-5e72-8cbf-f38b6828aabc",
+          "processInstanceId": "4505882a-ca2f-11f1-a1bf-be5a927d3e22",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "45058834-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "finance",
+              "taskId": "452f575e-ca2f-11f1-a1bf-be5a927d3e22",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        }
+      ],
+      "pendingTestTasks": 0,
+      "events": [
+        {
+          "owner": "app",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 90
+        },
+        {
+          "owner": "app",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        }
+      ],
+      "quarantine": 0,
+      "notifications": [
+        {
+          "status": "SENT",
+          "count": 51
+        }
+      ],
+      "checks": [
+        "meeting end must follow start",
+        "daily report requires detail rows",
+        "daily hours must equal exact detail sum",
+        "expense cannot tamper with routing amount",
+        "expense requires attachments",
+        "expense rejects forged storage reference",
+        "meeting: employee → administration → completed, immutable record",
+        "daily: parent + two detail rows → manager → completed",
+        "expense <= 5000: manager → finance, attachment bytes verified",
+        "expense > 5000: manager → director → finance, exact amount routing",
+        "rejection → linked new revision → completed; original business evidence preserved",
+        "administration cannot access financial form; applicant cannot approve any stage"
+      ]
+    },
+    "preUpgradeHistory": {
+      "passed": true,
+      "at": "2026-10-17T13:34:11.801Z",
+      "physicalTables": [
+        {
+          "form_id": "3b24f99d-03e7-4ac9-a139-f161078976c5",
+          "display_name": "会议室申请",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_7qckhtbbv5923v0q48a15zy35z",
+          "rows": 3
+        },
+        {
+          "form_id": "65dfdb3e-6466-492c-9f1b-6241446f4362",
+          "display_name": "日报填写",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_0gvv60rrc48r6979kc80cpgrvr",
+          "rows": 3
+        },
+        {
+          "form_id": "6ddc39a7-8687-41de-8b85-7efca89117a8",
+          "display_name": "财务报销",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_31gp3naq7q8t0akh0081jxg84x",
+          "rows": 13
+        },
+        {
+          "form_id": "ab18bf52-8875-3cc8-aed6-afda6306f825",
+          "display_name": "费用明细",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_1kxkfkrre980ztbs5144kzwjmm",
+          "rows": 26,
+          "orphans": 0
+        },
+        {
+          "form_id": "d605a077-bd7d-3ffc-b390-0182ceca30c9",
+          "display_name": "工作明细",
+          "status": "ACTIVE",
+          "schema_name": "app_forms",
+          "table_name": "spf_2zxsknzrf184pbw9c649a4bxnt",
+          "rows": 6,
+          "orphans": 0
+        }
+      ],
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "id": "4e8a7b3b4a3960362d8ed93df83fcd8c7d1f41e690b889f8e7d78532855bd055",
+          "title": "【1017部署验收】平台季度方案评审",
+          "commandKey": "8cab03db-0dd9-4bd4-87d9-4c9663e84fae",
+          "recordId": "664db165-6578-526d-9aec-4ab40e65a22a",
+          "processInstanceId": "a1448ea7-ca13-11f1-be93-960132c0ff22",
+          "approvals": [
+            {
+              "actor": "administration",
+              "taskId": "a1463c60-ca13-11f1-be93-960132c0ff22",
+              "taskName": "行政核实场地及会务安排"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 0
+        },
+        {
+          "code": "office_daily_report",
+          "id": "40151050f337f7ca261a739cfe642b9bb1c26acda00fe6d66c4c692eb46337be",
+          "title": "【1017部署验收】平台研发工作日报",
+          "commandKey": "1dd0c015-b4d8-4cc8-9d9a-ec9244ae7719",
+          "recordId": "c0336b12-aedb-571c-a21d-79c2d202c2d2",
+          "processInstanceId": "afbaa518-ca13-11f1-be93-960132c0ff22",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "afbacc31-ca13-11f1-be93-960132c0ff22",
+              "taskName": "部门负责人确认日报"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "ebe23d6be7fe57e44dd4708d45bacafa910c12cfc5b22eefacbcc76549fa5d62",
+          "title": "【1017部署验收】客户现场交付差旅报销（普通）",
+          "commandKey": "4f0c7461-9478-4f12-80fe-f9bfb168ca59",
+          "recordId": "9fbc7a14-62e0-54d1-916e-aafc77a73cf8",
+          "processInstanceId": "7cd12b69-ca16-11f1-a2bc-3ece022d9517",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "7cd30033-ca16-11f1-a2bc-3ece022d9517",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "finance",
+              "taskId": "7d242d7d-ca16-11f1-a2bc-3ece022d9517",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "be22ba38b8206ba8bae6b90019c854a387cc8c7fee6dec3d559d55efba519752",
+          "title": "【1017部署验收】客户现场交付差旅报销（大额）",
+          "commandKey": "7242a64e-afe9-4ef6-b2d0-f8fdbba4f138",
+          "recordId": "415c540d-91bb-5848-aa4b-7142b3ed9a72",
+          "processInstanceId": "98bc50bf-ca18-11f1-ae93-62f76fb4f5a0",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "98be4c99-ca18-11f1-ae93-62f76fb4f5a0",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "director",
+              "taskId": "98f7d333-ca18-11f1-ae93-62f76fb4f5a0",
+              "taskName": "分管负责人审批"
+            },
+            {
+              "actor": "finance",
+              "taskId": "9920df0b-ca18-11f1-ae93-62f76fb4f5a0",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "0559db6ee269a2f6818475be0dea3bd9870c51eabda11e539a16f2ee5813a3ce",
+          "title": "【1017部署验收】报销驳回与修订申请",
+          "commandKey": "012f4849-0011-4950-a8b4-4cbb0ebaf428",
+          "recordId": "257329f9-04c7-55ba-88da-9b0093546324",
+          "processInstanceId": "a64ce943-ca18-11f1-ae93-62f76fb4f5a0",
+          "status": "REJECTED",
+          "finalStatus": "REJECTED",
+          "detailRows": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "ccb0d117c796fab7313dbef1196414bc8cda174f43489d12b420a38b70e6f568",
+          "title": "【1017部署验收】报销补充材料后重新申请",
+          "commandKey": "60e6a886-e13a-4fe2-a283-c54af11b9872",
+          "recordId": "b04da477-a5b4-5e10-83df-b12180520a33",
+          "processInstanceId": "b4e0e7f3-ca18-11f1-ae93-62f76fb4f5a0",
+          "approvals": [
+            {
+              "actor": "manager",
+              "taskId": "b4e0e7fd-ca18-11f1-ae93-62f76fb4f5a0",
+              "taskName": "部门负责人审核"
+            },
+            {
+              "actor": "finance",
+              "taskId": "b5243297-ca18-11f1-ae93-62f76fb4f5a0",
+              "taskName": "财务复核"
+            }
+          ],
+          "status": "COMPLETED",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2
+        }
+      ],
+      "pendingTestTasks": 0,
+      "events": [
+        {
+          "owner": "app",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 90
+        },
+        {
+          "owner": "app",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        }
+      ],
+      "quarantine": 0,
+      "notifications": [
+        {
+          "status": "SENT",
+          "count": 51
+        }
+      ],
+      "checks": [
+        "meeting end must follow start",
+        "daily report requires detail rows",
+        "daily hours must equal exact detail sum",
+        "expense cannot tamper with routing amount",
+        "expense requires attachments",
+        "expense rejects forged storage reference",
+        "meeting: employee → administration → completed, immutable record",
+        "daily: parent + two detail rows → manager → completed",
+        "expense <= 5000: manager → finance, attachment bytes verified",
+        "expense > 5000: manager → director → finance, exact amount routing",
+        "rejection → linked new revision → completed; original business evidence preserved",
+        "administration cannot access financial form; applicant cannot approve any stage"
+      ]
+    },
+    "detailEditing": {
+      "passed": true,
+      "at": "2026-10-17T13:31:01.580Z",
+      "forms": [
+        {
+          "code": "office_daily_report",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1006,
+            "scrollWidth": 1860,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        },
+        {
+          "code": "office_expense_claim",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1021,
+            "scrollWidth": 1780,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        }
+      ],
+      "propertyTabsWithIcons": true,
+      "businessMutations": 0
+    },
+    "modelDefinition": {
+      "passed": true,
+      "at": "2026-10-17T13:31:05.572Z",
+      "fieldCount": 11,
+      "structuredSchema": true,
+      "indexesTab": true,
+      "rawJsonTextarea": false,
+      "dnaWrites": 0
+    }
+  },
+  "calculatorPreview": {
+    "passed": true,
+    "at": "2026-10-17T13:30:50.628Z",
+    "checks": [
+      "live catalog: 63 functions, version 1",
+      "exact decimal aggregate preview: 28.53 + 15.68 = 44.21",
+      "reject forged output",
+      "reject unknown reference",
+      "reject dependency cycle",
+      "reject division by zero",
+      "reject too many rows",
+      "ordinary business user cannot use designer calculator",
+      "form ownership resolved before trial",
+      "preview leaves saved business form draft unchanged"
+    ],
+    "result": {
+      "values": {
+        "total": "44.21"
+      },
+      "details": {
+        "lines": [
+          {
+            "amount": "28.53"
+          },
+          {
+            "amount": "15.68"
+          }
+        ]
+      }
+    },
+    "functions": 63,
+    "previewOnly": true,
+    "publicationEnabled": false
+  },
+  "frontendAssets": {
+    "passed": true,
+    "at": "2026-10-17T13:30:48.589Z",
+    "services": [
+      {
+        "service": "common",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "3ab11eb9926f7935538d94bb3c2e7b6a39f8e5030973b394ac2b4eb8a4286efc",
+        "entrySha256": "8c2c6189972b672176ca92134b41f3950e14ddde2e8c78bf7681515be3fb50e5"
+      },
+      {
+        "service": "auditing",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "95f3291c51eb1871043f1db005540c48aec529f2f0952b423f3a9451a080cc53",
+        "entrySha256": "9aa7097bd60fd9b86b6185eee749bd5dd8d0c5eba8d1c38990e7d6a8a7e95564"
+      },
+      {
+        "service": "dna",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "dc542609ec0f2f8922702a36eca8643e05d9862466bfef6b4b12df364a6d04a3",
+        "entrySha256": "35532cb19e57c42e436dc89d4f3dbee54f1855af66aaecdf1fedacebb14d958b"
+      },
+      {
+        "service": "ai",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "0a7ed6270819118b81ebb50d5514fb4003d46dbb4aa27dd784a109667304046a",
+        "entrySha256": "f0bbbce2857342129d56dfe9fe8ec5fcff13adb40812369605baa85df7e52d2c"
+      },
+      {
+        "service": "app",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "bc99ddc3875d794ca1a4a15ab8273d29b56cf55a33ddcadb90adc787e7cedc73",
+        "entrySha256": "886bd1ca4172d85459733f11db0a8b533b7f02da0c6b531daf8d1cf49c0f4245"
+      },
+      {
+        "service": "workflow",
+        "manifestStatus": 200,
+        "entryStatus": 200,
+        "manifestSha256": "1c7c6616ba4a76523fefb2071100a31c4fd9d290e10e42374d66081486c097c2",
+        "entrySha256": "9e2e4151dece6fe7cf3cb291856484aa7004cd9be79f9c1dae2bd53191593e43"
+      }
+    ]
+  },
+  "limitations": [
+    "Formula publication remains intentionally rejected at APP/DNA boundaries.",
+    "Calculation dependency read permissions, historical provenance, atomic activation/backfill, designer/runtime integration and final 175-case business matrix are still incomplete.",
+    "560 automated tests and office flow regression do not certify unfinished formula publication or the full delivery goal."
+  ],
+  "artifactHashes": {
+    "old-snapshots.json": "fb65c946b709333179844d2248eb4ae67d0bd6ba47f0aa1343b1124275842f24",
+    "live-details.json": "61182f382e4a549f749c1709b22cb12876e253dca89ac8f9cce17edd4c9b8671",
+    "model-definition.json": "69e664d2f170049832f9a3951201c09bccb5b56a96511defbe6e7acf862d9a0f",
+    "quality.json": "163dff60a0736fd301da624f8caefee09b2f9348c85f609b9fcafba914b8ef3a",
+    "deployment.json": "cec7dd000d1f9f6184565c0df3edd78397616d018051db256616bed47fa635ed",
+    "storage-upgrade.json": "a14570d3b89ef88d5a7519e87a7db41e1d0d42b2f369d7d7d786a19fb2e3d95c",
+    "restore-check.json": "d3237e6478751d769f6dacf19021b4c2b5ed63aff7f9e7b2d349a23d949d061e",
+    "storage-preserved.json": "53284d240889782bdca1eb0192b89b8355df809c5ff39e2afcfc33ace3e9638b",
+    "prepare-storage-live.json": "bc73425776d0c950e4575f17abcb60607a388a9f03c2d002ac38792d0efb7430",
+    "live-records.json": "72dc2387194b0865fd322c635e26e8d5e19229efeb71b616ebaad5ba19f6de3f",
+    "live-flows.json": "858c735dbe72d0c5526e8193b3e433b953c61ce9e6c0906485bbfbb22428890b",
+    "scope-live.json": "74ff94c2537af7e78e942b3882a5dbbc3ee54aa6dbed1ed33918f04f70add4f9",
+    "calculation-live.json": "57e4c1a74efba6ef34bc7eff847c1db371f013051f56e80355079a32b94fbb37",
+    "assets-live.json": "2b1a7719ac3750b903fe780563c10b486478bf320341abdf38d989fc14cddbd4",
+    "final-check.json": "b50a32931dd19644f951143e87838066a101abeed41edca38f9e08e7fdb8905e",
+    "office_daily_report-pending-browser.json": "f26cae4b2cff75720014a74e11e8d83805cab3ea1608fadef7fb86c624cd4c92",
+    "office_daily_report-completed-browser.json": "0b797e884ec4ba8552daa04a830b10f388962bfb04b5c00ab09cf4572b5c6149",
+    "office_expense_claim-pending-browser.json": "fd609da9357ec928a0e15842b22a2fcc41021273d875294535be3873aabf5bfe",
+    "office_expense_claim-completed-browser.json": "4c6de2719e2e2a70e97d26ed7516477dc5b26c1a719ab04b5a8384a0010228c2"
+  },
+  "screenshots": [
+    {
+      "path": "doc/verification/20261017-calculation-foundation-phone.png",
+      "sha256": "d7c3279a9f7fa9b67a0a99b2966dbc990be7b8b9a64fdca5a73b171e64022dfe"
+    },
+    {
+      "path": "doc/verification/20261017-calculation-foundation-model.png",
+      "sha256": "a10f244f19269bb1eca3e8d035e6ce4a0c7ff1629a7426b7cd4644325177ce16"
+    }
+  ]
+}

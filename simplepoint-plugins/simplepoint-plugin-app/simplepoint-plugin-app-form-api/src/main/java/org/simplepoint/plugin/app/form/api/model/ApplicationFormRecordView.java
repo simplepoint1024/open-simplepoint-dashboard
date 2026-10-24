@@ -10,12 +10,20 @@ public record ApplicationFormRecordView(
     long version,
     FormRecordState state,
     Map<String, Object> values,
-    Map<String, Object> systemValues
+    Map<String, Object> systemValues,
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+    Map<String, FormRecordReferenceLabel> systemLabels
 ) {
 
   /** Compatibility for existing frozen submissions without captured base fields. */
   public ApplicationFormRecordView(String id, long version, FormRecordState state, Map<String, Object> values) {
     this(id, version, state, values, Map.of());
+  }
+
+  /** Preserves immutable snapshots and callers without presentation metadata. */
+  public ApplicationFormRecordView(String id, long version, FormRecordState state,
+      Map<String, Object> values, Map<String, Object> systemValues) {
+    this(id, version, state, values, systemValues, Map.of());
   }
 
   /** Defensively copies nullable dynamic values. */
@@ -24,5 +32,6 @@ public record ApplicationFormRecordView(
         ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(values));
     systemValues = systemValues == null
         ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(systemValues));
+    systemLabels = systemLabels == null ? Map.of() : Map.copyOf(systemLabels);
   }
 }

@@ -11,7 +11,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.jupiter.api.*;
 import org.simplepoint.core.*;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.*;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.*;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
@@ -60,7 +60,7 @@ class PlatformAccountDatabaseTest {
   }
 
   PlatformAccountServiceImpl service(Session session) {
-    return new PlatformAccountServiceImpl(session, mock(UsersService.class), stepUp, tenants, versions,
+    return new PlatformAccountServiceImpl(session, mock(UserManagementService.class), stepUp, tenants, versions,
         mock(org.simplepoint.api.security.service.DetailsProviderService.class));
   }
 
@@ -257,7 +257,7 @@ class PlatformAccountDatabaseTest {
     var manager = new org.springframework.orm.jpa.JpaTransactionManager(factory);
     var shared = org.springframework.orm.jpa.SharedEntityManagerCreator.createSharedEntityManager(factory);
     var proxy = new org.springframework.aop.framework.ProxyFactory(
-        new PlatformStepUpService(shared, mock(PasswordEncoder.class)));
+        new PlatformStepUpService(shared, mock(PasswordEncoder.class), mock(org.simplepoint.security.authentication.AuthenticationSecretCipher.class)));
     proxy.setProxyTargetClass(true);
     proxy.addAdvice(new org.springframework.transaction.interceptor.TransactionInterceptor(manager,
         new org.springframework.transaction.annotation.AnnotationTransactionAttributeSource()));
@@ -281,8 +281,10 @@ class PlatformAccountDatabaseTest {
     // RFC test secret; the six-digit SHA1 code for counter 1 is 287082.
     root.setTwoFactorSecret("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
     em.flush();
+    var cipher = mock(org.simplepoint.security.authentication.AuthenticationSecretCipher.class);
+    when(cipher.decrypt(root.getId(), root.getTwoFactorSecret())).thenReturn("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
     var verifier = new PlatformStepUpService(em, passwords,
-        java.time.Clock.fixed(java.time.Instant.ofEpochSecond(59), java.time.ZoneOffset.UTC));
+        java.time.Clock.fixed(java.time.Instant.ofEpochSecond(59), java.time.ZoneOffset.UTC), cipher);
     var command = identity(true);
     command.setConfirmationCode("287082");
     verifier.verify(root.getId(), command);
@@ -293,7 +295,7 @@ class PlatformAccountDatabaseTest {
   @Test
   void invalidStepUpIsRateLimitedAndDoesNotChangeIdentity() {
     PasswordEncoder passwords = mock(PasswordEncoder.class);
-    PlatformStepUpService verifier = new PlatformStepUpService(em, passwords);
+    PlatformStepUpService verifier = new PlatformStepUpService(em, passwords, mock(org.simplepoint.security.authentication.AuthenticationSecretCipher.class));
     var command = identity(true);
     for (int i = 0; i < 5; i++) {
       assertThatThrownBy(() -> verifier.verify(root.getId(), command)).isInstanceOf(AccessDeniedException.class);

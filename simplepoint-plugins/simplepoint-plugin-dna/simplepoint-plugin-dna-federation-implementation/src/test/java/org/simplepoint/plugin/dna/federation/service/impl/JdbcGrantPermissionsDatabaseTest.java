@@ -23,10 +23,12 @@ import org.simplepoint.data.jpa.convert.StringSetConvert;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationJdbcConnectionUser;
 import org.simplepoint.plugin.dna.federation.repository.JpaFederationJdbcConnectionUserRepository;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserDirectory;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 
-/** Real JPA converted-set update; the permissions action must never overwrite other grant fields. */
+/**
+ * Real JPA converted-set update; the permissions action must never overwrite other grant fields.
+ */
 class JdbcGrantPermissionsDatabaseTest {
   private static SessionFactory factory;
   private Session session;
@@ -35,14 +37,21 @@ class JdbcGrantPermissionsDatabaseTest {
 
   @BeforeAll
   static void database() {
-    var registry = new StandardServiceRegistryBuilder()
-        .applySetting("hibernate.connection.url", "jdbc:h2:mem:jdbc-grant-permissions;DB_CLOSE_DELAY=-1")
-        .applySetting("hibernate.connection.username", "sa")
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop").build();
-    factory = new MetadataSources(registry).addAnnotatedClass(FederationJdbcConnectionUser.class)
-        .getMetadataBuilder().applyAttributeConverter(
-            new StringSetConvert(new com.fasterxml.jackson.databind.ObjectMapper()), true)
-        .build().buildSessionFactory();
+    var registry =
+        new StandardServiceRegistryBuilder()
+            .applySetting(
+                "hibernate.connection.url", "jdbc:h2:mem:jdbc-grant-permissions;DB_CLOSE_DELAY=-1")
+            .applySetting("hibernate.connection.username", "sa")
+            .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+            .build();
+    factory =
+        new MetadataSources(registry)
+            .addAnnotatedClass(FederationJdbcConnectionUser.class)
+            .getMetadataBuilder()
+            .applyAttributeConverter(
+                new StringSetConvert(new com.fasterxml.jackson.databind.ObjectMapper()), true)
+            .build()
+            .buildSessionFactory();
   }
 
   @BeforeEach
@@ -52,8 +61,12 @@ class JdbcGrantPermissionsDatabaseTest {
     var repositories = new JpaRepositoryFactory(session);
     repositories.setRepositoryBaseClass(BaseRepositoryImpl.class);
     repository = repositories.getRepository(JpaFederationJdbcConnectionUserRepository.class);
-    service = new FederationJdbcConnectionUserServiceImpl(repository, mock(DetailsProviderService.class),
-        mock(JdbcDataSourceDefinitionService.class), mock(UsersService.class), session);
+    service =
+        new FederationJdbcConnectionUserServiceImpl(
+            repository,
+            mock(DetailsProviderService.class),
+            mock(JdbcDataSourceDefinitionService.class),
+            mock(UserDirectory.class));
     var context = new AuthorizationContext();
     context.setUserId("permission-actor");
     context.setDataScopeType("ALL");
@@ -64,13 +77,19 @@ class JdbcGrantPermissionsDatabaseTest {
   void cleanup() {
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (session != null) {
-      if (session.getTransaction().isActive()) session.getTransaction().rollback();
+      if (session.getTransaction().isActive()) {
+        session.getTransaction().rollback();
+      }
       session.close();
     }
   }
 
   @AfterAll
-  static void closeDatabase() {if (factory != null) factory.close();}
+  static void closeDatabase() {
+    if (factory != null) {
+      factory.close();
+    }
+  }
 
   private FederationJdbcConnectionUser grant() {
     var grant = new FederationJdbcConnectionUser();
@@ -92,8 +111,13 @@ class JdbcGrantPermissionsDatabaseTest {
   void fieldOnlyUpdatePreservesConcurrentMetadataAndUsesRealSetConversion() {
     var original = grant();
     // The action's loaded entity is deliberately stale relative to an independent metadata write.
-    session.createMutationQuery("update FederationJdbcConnectionUser g set g.description = :description where g.id = :id")
-        .setParameter("description", "concurrent metadata").setParameter("id", original.getId()).executeUpdate();
+    session
+        .createMutationQuery(
+            "update FederationJdbcConnectionUser g set g.description = :description where g.id ="
+                + " :id")
+        .setParameter("description", "concurrent metadata")
+        .setParameter("id", original.getId())
+        .executeUpdate();
     var result = service.updateOperationPermissions(original.getId(), Set.of("query", "explain"));
     assertThat(result.getOperationPermissions()).containsExactlyInAnyOrder("QUERY", "EXPLAIN");
     assertThat(original.getOperationPermissions()).containsExactlyInAnyOrder("METADATA", "QUERY");
@@ -112,32 +136,43 @@ class JdbcGrantPermissionsDatabaseTest {
     var original = grant();
     original.setDeletedAt(Instant.now());
     session.flush();
-    assertThat(repository.updateOperationPermissions(original.getId(), Set.of("EXPLAIN"), Instant.now(), "actor"))
+    assertThat(
+            repository.updateOperationPermissions(
+                original.getId(), Set.of("EXPLAIN"), Instant.now(), "actor"))
         .isZero();
-    assertThat(session.find(FederationJdbcConnectionUser.class, original.getId()).getOperationPermissions())
+    assertThat(
+            session
+                .find(FederationJdbcConnectionUser.class, original.getId())
+                .getOperationPermissions())
         .containsExactlyInAnyOrder("METADATA", "QUERY");
   }
 
   @Test
   void deniedRowAndReadonlyFieldLeaveDatabasePermissionsUnchanged() {
-    var original = grant();
+    final var original = grant();
     var context = new AuthorizationContext();
     context.setUserId("permission-actor");
     context.setDataScopeType("SELF");
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
-    assertThatThrownBy(() -> service.updateOperationPermissions(original.getId(), Set.of("EXPLAIN")))
+    assertThatThrownBy(
+            () -> service.updateOperationPermissions(original.getId(), Set.of("EXPLAIN")))
         .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     context = new AuthorizationContext();
     context.setUserId("permission-actor");
     context.setDataScopeType("ALL");
-    context.setFieldPermissions(java.util.Map.of(
-        FederationJdbcConnectionUser.class.getName() + "#operationPermissions", "READ_ONLY"));
+    context.setFieldPermissions(
+        java.util.Map.of(
+            FederationJdbcConnectionUser.class.getName() + "#operationPermissions", "READ_ONLY"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
-    assertThatThrownBy(() -> service.updateOperationPermissions(original.getId(), Set.of("EXPLAIN")))
+    assertThatThrownBy(
+            () -> service.updateOperationPermissions(original.getId(), Set.of("EXPLAIN")))
         .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     session.flush();
     session.clear();
-    assertThat(session.find(FederationJdbcConnectionUser.class, original.getId()).getOperationPermissions())
+    assertThat(
+            session
+                .find(FederationJdbcConnectionUser.class, original.getId())
+                .getOperationPermissions())
         .containsExactlyInAnyOrder("METADATA", "QUERY");
   }
 }

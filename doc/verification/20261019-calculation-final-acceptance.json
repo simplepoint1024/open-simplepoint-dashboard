@@ -1,0 +1,994 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": true,
+  "recordedAt": "2026-10-19T08:28:20.200422+00:00",
+  "scope": "Calculation delivery plan A–D and its fixed 176-entry acceptance matrix; no claim that the unrelated full repository build is clean.",
+  "coverage": {
+    "requirements": 32,
+    "functions": 63,
+    "components": 38,
+    "total": 176,
+    "passed": 176,
+    "skipped": 0
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-19T08:11:38.388Z",
+    "version": "20261019-calculation-integration13",
+    "sourceDigest": "2b0e56bd6fe2507c62c810e73ebfea01a93c9d2025b80238be61b29d637a9119",
+    "services": [
+      {
+        "service": "authorization",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 258,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "dna",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 296,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 262,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "mcp-gateway",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 180,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261019-calculation-integration13",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  },
+  "quality": {
+    "security": {
+      "passed": true,
+      "modules": {
+        "simplepoint-security-core": {
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "checkstyleMain": "passed",
+          "reports": [
+            {
+              "file": "TEST-org.simplepoint.security.ResourceScopePolicyTest.xml",
+              "tests": 4,
+              "sha256": "bb00efec4fd2a6867312353335bc6bb642aa3f7127ff7dfb237e2ef91b2e03b3"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.context.AuthorizationContextCacheSecurityTest.xml",
+              "tests": 8,
+              "sha256": "f73e793d75fef7ec32b0d608f3c5462859d253741a87c32b20db8e67fb0058d3"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.context.AuthorizationContextRejectionTest.xml",
+              "tests": 4,
+              "sha256": "28d996d175ad5f6f45faf4dc66096a1ba2e5f11dc91fdd7e387f59d989a98ba2"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.context.AuthorizationContextResolverTest.xml",
+              "tests": 1,
+              "sha256": "001c9db9a8ff04cd3ccdbd72615435e5be1a3730a0c88ccc589bdbe7ca6a6de1"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.entity.EntityFieldsTest.xml",
+              "tests": 9,
+              "sha256": "0e39bb5b6e2206285a7fc397d8e622d4fe2c966f9976e8db51773cb397557629"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.entity.ResourceScopeTypesConverterTest.xml",
+              "tests": 2,
+              "sha256": "ba850bd9684a6b58ca3c295f8754003f25fab3541b08e89682773a9ec98eba05"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.entity.UserTest.xml",
+              "tests": 9,
+              "sha256": "7b6e07a6f2449c3a4babaaca9ea4fbfd047225bab6932e7362597bb195a9802d"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.identity.UserDisplayNameTest.xml",
+              "tests": 2,
+              "sha256": "249629b1f09565f1ad6beb0aa8c67432f43947fb96868999e437caac91ab0d38"
+            }
+          ]
+        },
+        "simplepoint-security-oauth2-resource": {
+          "tests": 29,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "checkstyleMain": "passed",
+          "reports": [
+            {
+              "file": "TEST-org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest.xml",
+              "tests": 7,
+              "sha256": "bd74cafecb0f810103b0b122c4e5cfc9f63913006dd6bde856bd0a197b32ed7e"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest.xml",
+              "tests": 4,
+              "sha256": "902d7ede585b3579ff95afefba1a35df736bd3d350c90139a5cc8d53d097b201"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest.xml",
+              "tests": 4,
+              "sha256": "8a36a44c456ed5793c845b37b59660e3ef35077702e2fc13e3a13ac934c6d20c"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest.xml",
+              "tests": 13,
+              "sha256": "4649ab3c6842cd54c03c62779079982d3ddbef4bfa5bc81cbf7ff3b7b45b1cd3"
+            },
+            {
+              "file": "TEST-org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest.xml",
+              "tests": 1,
+              "sha256": "e9491aa0695d9fc53af5270a3e8a044114e876286502b6c0de5d0ab718cb1a53"
+            }
+          ]
+        }
+      }
+    },
+    "realDatabaseAndFieldPolicy": {
+      "passed": true,
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "1f308e8376f572d3b9671e1162c00f5c686c215d098ae8169d89c2a0c9455e15"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "0bdfcda9362db81c3194d805d24b8dcb97f68ba4aff480e785cebec9806f7f9a"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordInvariantValidatorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "3eecd8bc3e8a27f28202430c27bec1d413cda8ebabc2fc993982b46565c38d0c"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordIdentityLabelsTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "6a7dceaeb75135444adc24064d57e097a98757006f54bebb0efbfa9e2caa79d5"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordServiceImplTest",
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "defc74c445776de2be2c169466386724a509f26e0f7e885fe8109f76d22b101c"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormFieldValidationsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "c5a6575b5160ef2fcb099900e40dfc1d525527701e693fea21158abf79a465f7"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormFieldWritePolicyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "921f6131391eafe5dab92b87c18dfd72cee47c14135f977c8f96b06c6464490f"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordSchemaServiceImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "c385a086129f0962adac3729ea8b5d266217ae13199827951159212e41cc2f1b"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordPayloadCompilerTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "7627a8870243a8bcd1315efa0cfae8768d4bd7d79973599ff5ef485554dcc549"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordSystemFieldsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "1168cb9c25786ff7ccc3f623bfaf6243b1aaa36f811f19c304bf989a508573c0"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationWriteProjectionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "d28c3d14478aa6d4f76013babd3864304022cd81bc79c0b6f5b20e604a1d8ad7"
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordProjectionReadsTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "af4bbcfb13f2e5f9ae31c03e939b9328f3d629cd3a006ef5bdd5fa31866cf8c8"
+        }
+      ],
+      "total": 58
+    },
+    "databases": [
+      "isolated PostgreSQL 17",
+      "isolated MySQL 8.4"
+    ],
+    "temporaryDatabaseContainersRemoved": true,
+    "frontend": {
+      "typecheck": "all eight module configurations passed",
+      "uiAudit": "strict 40/40 passed",
+      "translations": "nine tests and generated-bundle consistency passed",
+      "federationBudgets": "all six remote modules passed"
+    },
+    "distribution": "all nine installDist distributions and verifyFrontendDistribution passed with frontend packaging enabled",
+    "fullRepositoryBuild": "Not passed; unrelated pre-existing style findings remain explicitly recorded in 20261019-calculation-full-build-findings.json. Targeted required gates above passed.",
+    "logs": {
+      "/tmp/sp-calculation-security-rejection-tests.log": "c8253498472002d3848cb6e7ca477134c36a34efc501373af69067b85d0552c6",
+      "/tmp/sp-calculation-final-record-policy-tests.log": "8c79e454fba6e429bf5ca0bc16458af9d71d0daa3252491f905b25b829017f24",
+      "/tmp/sp-calculation-integration13-distribution.log": "9165ae1d10a80320a40382850c0c1c1d2428973be931d1e8fc80db330fc3dca2",
+      "/tmp/sp-calculation-integration13-types.log": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08",
+      "/tmp/sp-calculation-integration13-ui.log": "c1e4cc0384a4fa93ad79f64ddcef4d5a50870d6e70fd165319199ff7dc96ca20",
+      "/tmp/sp-calculation-integration13-i18n.log": "77a1725f6c66e1dde3134023aa799ad629c8ca37868e465e2e5d7993ade3cfdc",
+      "/tmp/sp-calculation-integration13-bundles.log": "23d0d0678dc9b0064e8aebeae10c7cb18242f72f5529d9fd7fbdcb5e422df9b5",
+      "/tmp/sp-calculation-integration13-verify.log": "0ad9f97a1dd4d98a29575fb27e3c944e85e31234f7b5e9fe1d4cabd7d8a9ff0e",
+      "/tmp/sp-calculation-security-boundaries13.log": "94c3ce5a8500f07a4572d146b1c773480961a274cafa412a78e03a0df12ae5bf",
+      "/tmp/sp-calculation-browser-revocation13.log": "24b61df03fd460a16c416d1443772aac810d5b8c40aae52fbbf47e1187fefb30",
+      "/tmp/sp-calculation-browser-load13.log": "45805ce64284d7a5990a46ff0d0579ed6f85f8596b254a7e50d52eea12142989",
+      "/tmp/sp-calculation-field-access13.log": "bdadc56b51dc41c1ac7e8bc8d79bb22f9475b0f37e745fe8363fcd0908ec2056",
+      "/tmp/sp-calculation-browser-final-entries13.log": "a0f6cdeda53fe2a92ba892ef64402185ee4eddd381427aabfeba303a6b2b3ab1",
+      "/tmp/sp-calculation-deployed-assets13.log": "82412c7f46a10f1a87f160a8a32551158bd86f7d2bac642da0cb4729fe3faa0c",
+      "/tmp/sp-calculation-final-inventory13.log": "f252e412f3bb81d435b9e852eef934987f62c3aba43064eb9912294887e4c0bf",
+      "/tmp/sp-calculation-final-health13.log": "d632c52e41420ba697edbf04e54fe8810499bf6fb59506b8c07583f8e74100d7"
+    }
+  },
+  "checks": {
+    "directRuntimeAndAuthorization": {
+      "passed": true,
+      "checks": [
+        {
+          "name": "no-design-authority",
+          "status": 403
+        },
+        {
+          "name": "foreign-tenant-context",
+          "status": 403,
+          "code": "SECURITY_ACCESS_DENIED",
+          "messageKey": "common.error.authorizationDenied"
+        },
+        {
+          "name": "internal-dna-create",
+          "status": 403,
+          "code": "TENANT_CONTEXT_REQUIRED",
+          "messageKey": "dna.runtime.error.TENANT_CONTEXT_REQUIRED"
+        },
+        {
+          "name": "internal-dna-update",
+          "status": 403,
+          "code": "TENANT_CONTEXT_REQUIRED",
+          "messageKey": "dna.runtime.error.TENANT_CONTEXT_REQUIRED"
+        },
+        {
+          "name": "internal-dna-transaction",
+          "status": 403,
+          "code": "TENANT_CONTEXT_REQUIRED",
+          "messageKey": "dna.runtime.error.TENANT_CONTEXT_REQUIRED"
+        },
+        {
+          "name": "nonparticipant-workflow-diagram",
+          "status": 403,
+          "code": "WORKFLOW_FORBIDDEN",
+          "messageKey": "workflow.error.FORBIDDEN"
+        },
+        {
+          "name": "nonparticipant-business-snapshot",
+          "status": 403,
+          "code": "RESOURCE_ACCESS_DENIED",
+          "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+        },
+        {
+          "name": "forged-mapped-process-amount",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "forged-root-result",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "forged-child-result",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "submitted-parent-lock",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "submitted-child-lock",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "lifecycle-downgrade",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "system-audit-forgery",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "employee-foreign-owner-department-read",
+          "status": 404,
+          "code": "RECORD_NOT_FOUND",
+          "messageKey": "app.error.RECORD_NOT_FOUND"
+        },
+        {
+          "name": "manager-foreign-owner-department-read",
+          "status": 404,
+          "code": "RECORD_NOT_FOUND",
+          "messageKey": "app.error.RECORD_NOT_FOUND"
+        }
+      ],
+      "temporaryCrossDepartmentRecordDeleted": true,
+      "internalBoundary": "Well-formed create/update/transaction commands use a real physical model/schema and record. Browser headers cannot construct the internal trusted context: all return 403 TENANT_CONTEXT_REQUIRED. Real database tests separately exercise trusted single/transaction/owned-aggregate writes and installed calculation policies.",
+      "foreignWorkspace": "403 SECURITY_ACCESS_DENIED with common.error.authorizationDenied; no remote exception message classification or identity disclosure",
+      "forgedWorkflowValues": "Mapped process amount, parent computed amount and child computed amount rejected; submission history unchanged",
+      "lifecycle": "Submitted parent/detail writes, lifecycle downgrade and audit-field forgery rejected without aggregate changes"
+    },
+    "retainedRevocation": {
+      "passed": true,
+      "denials": [
+        {
+          "path": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/20706f4d-c959-497b-b302-82657a83620a/records/schema",
+          "status": 403
+        },
+        {
+          "path": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/20706f4d-c959-497b-b302-82657a83620a/records/query",
+          "status": 403
+        }
+      ],
+      "sameLoginSession": true,
+      "cachedDetailAndRowsRemoved": true,
+      "temporaryGrantRevoked": true
+    },
+    "publishedOperationPolicies": {
+      "passed": true,
+      "apiChecks": [
+        {
+          "name": "create-hidden",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "edit-global-read-only",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "edit-read-only",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "edit-hidden",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "computed-output",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        {
+          "name": "old-page-policy-bypass",
+          "status": 409,
+          "code": "RUNTIME_VERSION_CONFLICT",
+          "messageKey": "app.error.RUNTIME_VERSION_CONFLICT"
+        }
+      ],
+      "browser": {
+        "passed": true,
+        "editReadOnly": [
+          "subject",
+          "quantity",
+          "total"
+        ],
+        "editHidden": [
+          "rate"
+        ],
+        "createHidden": [
+          "subject"
+        ],
+        "emptyPreview": {
+          "status": 400,
+          "response": {
+            "code": "RECORD_INVALID",
+            "message": "Required form record fields are missing: 数量, 比率",
+            "messageKey": "app.error.RECORD_INVALID",
+            "timestamp": "2026-10-19T08:24:25.769358698Z"
+          }
+        },
+        "validPreview": "7",
+        "discardedWithoutWrite": true
+      },
+      "originalDefinitionRestoredThroughNewImmutableVersion": 20,
+      "all65RecordValuesUnchanged": true,
+      "validFixture": "The hidden/read-only subject is optional; required quantity/rate remain writable on create. Invalid hidden required-without-default configuration was correctly rejected and is not counted as a successful publication.",
+      "emptyInputValidation": "With this policy, pristine create preview returns RECORD_INVALID for missing quantity/rate. The driver verifies the identical empty command independently, expects only that specific 400, then fills permitted inputs and requires trusted result 7 before discarding. Read-only edit preview must return 200."
+    },
+    "largeAggregate": {
+      "passed": true,
+      "layouts": [
+        {
+          "viewport": 1440,
+          "drawerWidth": 1085,
+          "drawerScroll": 1085,
+          "tableWidth": 1021,
+          "tableScroll": 2500,
+          "height": 305,
+          "scrollHeight": 2652,
+          "left": 1479,
+          "top": 2347
+        },
+        {
+          "viewport": 768,
+          "drawerWidth": 713,
+          "drawerScroll": 713,
+          "tableWidth": 649,
+          "tableScroll": 2500,
+          "height": 305,
+          "scrollHeight": 2652,
+          "left": 1851,
+          "top": 2347
+        },
+        {
+          "viewport": 390,
+          "drawerWidth": 541,
+          "drawerScroll": 541,
+          "tableWidth": 477,
+          "tableScroll": 2500,
+          "height": 305,
+          "scrollHeight": 2652,
+          "left": 2023,
+          "top": 2347
+        }
+      ],
+      "preview": {
+        "inputChanges": 21,
+        "sentRequests": 1,
+        "expected": "656.80"
+      },
+      "discardPreservesRecord": true
+    },
+    "deployedEntries": {
+      "passed": true,
+      "pages": [
+        {
+          "name": "cal_expense",
+          "pageId": "ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+          "reload": true,
+          "detail": true
+        },
+        {
+          "name": "cal_daily",
+          "pageId": "672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+          "reload": true,
+          "detail": true
+        },
+        {
+          "name": "cal_delivery",
+          "pageId": "63617986-54fe-4bea-b47a-3c3fc8607d74",
+          "reload": true,
+          "detail": true
+        },
+        {
+          "name": "cal_assets",
+          "pageId": "2d58b2e5-25c6-4b47-813c-c82f18713454",
+          "reload": true,
+          "detail": true
+        },
+        {
+          "name": "cal_ledger",
+          "pageId": "89601d0b-15b1-45f0-9555-fe0984567a58",
+          "reload": true,
+          "detail": true
+        },
+        {
+          "name": "all_components",
+          "pageId": "065e2ac8-9055-400c-a261-73b35c3aa0fa",
+          "reload": true,
+          "detail": true
+        }
+      ],
+      "failedSubmissionActions": [
+        {
+          "label": "关闭",
+          "disabled": false
+        },
+        {
+          "label": "业务快照",
+          "disabled": true
+        },
+        {
+          "label": "流程进度",
+          "disabled": true
+        },
+        {
+          "label": "重试原提交",
+          "disabled": true
+        },
+        {
+          "label": "修改后重新提交",
+          "disabled": true
+        },
+        {
+          "label": "切换为卡片",
+          "disabled": false
+        },
+        {
+          "label": "筛选与视图",
+          "disabled": false
+        },
+        {
+          "label": "刷新",
+          "disabled": false
+        },
+        {
+          "label": "全屏",
+          "disabled": false
+        },
+        {
+          "label": "表格设置",
+          "disabled": false
+        },
+        {
+          "label": "",
+          "disabled": true
+        },
+        {
+          "label": "",
+          "disabled": true
+        }
+      ],
+      "workflow": {
+        "instanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+        "reload": true,
+        "diagram": true
+      },
+      "actualReload": "CDP Page.reload, new-document marker, restored URL and mounted data/diagram assertions; B5 retains the account card preference",
+      "servedAssets": [
+        {
+          "module": "common",
+          "count": 103,
+          "everyHashMatches": true
+        },
+        {
+          "module": "audit",
+          "count": 45,
+          "everyHashMatches": true
+        },
+        {
+          "module": "dna",
+          "count": 76,
+          "everyHashMatches": true
+        },
+        {
+          "module": "ai",
+          "count": 49,
+          "everyHashMatches": true
+        },
+        {
+          "module": "app",
+          "count": 54,
+          "everyHashMatches": true
+        },
+        {
+          "module": "workflow",
+          "count": 54,
+          "everyHashMatches": true
+        }
+      ],
+      "servedAssetTotal": 381
+    },
+    "finalCleanup": {
+      "passed": true,
+      "health": {
+        "services": [
+          {
+            "service": "authorization",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "common",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "auditing",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "dna",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "ai",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "app",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "workflow",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "mcp-gateway",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          },
+          {
+            "service": "host",
+            "healthy": true,
+            "version": "20261019-calculation-integration13"
+          }
+        ],
+        "recordedAt": "2026-10-19T08:26:59.734Z",
+        "queues": [
+          {
+            "name": "sp.events.common.resource-offline.grants",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.dna.resource-offline.projection",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.app.resource-offline.common",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.app.resource-offline.dna",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          }
+        ],
+        "durableEvents": {
+          "jobs": [
+            {
+              "owner": "app",
+              "direction": "INBOX",
+              "state": "DONE",
+              "count": 94
+            },
+            {
+              "owner": "app",
+              "direction": "OUTBOX",
+              "state": "DONE",
+              "count": 47
+            },
+            {
+              "owner": "common",
+              "direction": "INBOX",
+              "state": "DONE",
+              "count": 47
+            },
+            {
+              "owner": "common",
+              "direction": "OUTBOX",
+              "state": "DONE",
+              "count": 47
+            },
+            {
+              "owner": "dna",
+              "direction": "INBOX",
+              "state": "DONE",
+              "count": 47
+            },
+            {
+              "owner": "dna",
+              "direction": "OUTBOX",
+              "state": "DONE",
+              "count": 47
+            }
+          ],
+          "quarantined": 0
+        },
+        "temporaryGrantRevoked": true,
+        "operationsRuntimeVersion": 20,
+        "operationsRecordCount": 65,
+        "passed": true
+      },
+      "businessRecords": 236,
+      "operationsRecords": 65,
+      "submissions": 104,
+      "terminalSuccessfulSubmissions": 103,
+      "deliberateTerminalRejections": 1,
+      "forms": [
+        {
+          "name": "cal_expense",
+          "pageId": "ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+          "records": 10,
+          "submissions": 8
+        },
+        {
+          "name": "cal_daily",
+          "pageId": "672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+          "records": 9,
+          "submissions": 8
+        },
+        {
+          "name": "cal_delivery",
+          "pageId": "63617986-54fe-4bea-b47a-3c3fc8607d74",
+          "records": 17,
+          "submissions": 16
+        },
+        {
+          "name": "cal_assets",
+          "pageId": "2d58b2e5-25c6-4b47-813c-c82f18713454",
+          "records": 5,
+          "submissions": 5
+        },
+        {
+          "name": "cal_ledger",
+          "pageId": "89601d0b-15b1-45f0-9555-fe0984567a58",
+          "records": 192,
+          "submissions": 65
+        },
+        {
+          "name": "all_components",
+          "pageId": "065e2ac8-9055-400c-a261-73b35c3aa0fa",
+          "records": 3,
+          "submissions": 2
+        }
+      ],
+      "noAbandonedRunningWorkflows": true,
+      "retainedNegativeEvidence": "One intentional unique-constraint rejection remains terminal FAILED, has no workflow/snapshot and cannot recover/re-submit. Completed/rejected/withdrawn/canceled flow histories remain as evidence."
+    }
+  },
+  "compatibility": [
+    "Deploy the common authorization-context provider with additive checked methods before consumers. Older providers are not silently used to bypass typed rejection handling.",
+    "Durable rejected record receipts require the integration12-or-later journal reader. Do not roll back to a reader that cannot understand the versioned rejection envelope.",
+    "Cross-data-source writes and sharded/batch writes remain explicitly deferred. Published formula backfill batches are included.",
+    "Workflow transfer/delegation is not an existing public lifecycle operation and is not claimed; current public lifecycle operations are covered by the prior final-boundaries report."
+  ],
+  "evidenceReview": {
+    "complete": true,
+    "method": "Reviewed current source assertions, API checkpoints, real database XML, deployment/source identity, actual browser screenshots and preserved business histories. The structural matrix audit alone does not establish acceptance.",
+    "productionSourceSinceDistribution": "No production source differs from the packaged snapshot; later changes are verification helpers, documentation and the strengthened real database receipt test."
+  },
+  "sourceFiles": [
+    {
+      "path": "scripts/business/calculation-acceptance/security-boundaries.mjs",
+      "sha256": "1cf6731b77dd74be414428fb04fd3396aac4f8ede8a2e7d029aff9ea089b86f5"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/field-access.mjs",
+      "sha256": "a8f2f8258d3e586237d3f6916798f15780664c9d78822e9e5fb47cf843707f37"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/browser-revocation.mjs",
+      "sha256": "66732dfdb2340e0046d18a688fff7f22546448cbca0a04f1b109b4c31e15dff7"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/browser-load.mjs",
+      "sha256": "4a3a1016d4cc5f88794e89e387ae387e4cdc22679f0d32826fbde932e3e9edb0"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/browser-final-entries.mjs",
+      "sha256": "5afee47b75d1e059b512ed3b1f7c8ac7066273f8d2600162655f8a977080db49"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/deployed-assets.mjs",
+      "sha256": "dccfd099db16e88edfafd22533fc5ee3f2d457c2756aacabb5e68a65ee73d961"
+    },
+    {
+      "path": "scripts/business/calculation-acceptance/final-inventory.mjs",
+      "sha256": "ceb4ac8e73b13df3f0cf62a2107a1971aabb25ba9ac7575c87ea6cfd199f6c27"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextRejection.java",
+      "sha256": "8e7127c59695f185164e0513190603e016c173978c8f08b8b3cfb3210759955e"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextErrorDecoder.java",
+      "sha256": "a9093921e1cd74fc4f828dfa20fca1865a4c545ad7ba85bae654ce75cfe940b5"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextService.java",
+      "sha256": "cdc23e97c7226fec297fba3bd1d84083898536842937b7de08c464b959ce3a84"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextResolver.java",
+      "sha256": "ed49ac1a3f443d9dc083ca6bcc558793f0f4af92c6a321acf398d33988b03731"
+    },
+    {
+      "path": "simplepoint-react/libs/components/SimpleTable/useSimpleTableController.ts",
+      "sha256": "72520ecd8b8741c89560f95420cf114c7b40cf1aff13b5496cc89c6d23ad56d2"
+    },
+    {
+      "path": "simplepoint-react/libs/components/SimpleTable/types.ts",
+      "sha256": "0affbb4ae553e28c7bd9a7564e3d303df55f38bf94c3039d5eac26483071d927"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/FormRuntime/index.tsx",
+      "sha256": "3289162a571379c3218cf57e6358c208cfdbd18446da2bb6942f17dc893287c6"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/FormRuntime/RecordTable.tsx",
+      "sha256": "4eb7f53b76f7c17cb0a4f052bdc61925fdf276619df370059f36d705200f36aa"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java",
+      "sha256": "8ff1e55cd51d32d1b28aaf360c56cd0ab792f42200d16bac37b176e6bb45f269"
+    }
+  ],
+  "privateArtifacts": {
+    "deployment": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/deployment.json",
+      "sha256": "3757fe0e2ee2501b331b54e6f0a249f6b21a4b57397dfa4b29e5f0187a223376"
+    },
+    "quality": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/quality.json",
+      "sha256": "384f8c7c3c49565fc0d7ccd02bda74e59de1e0c637ed07e20c804a1095b2f39e"
+    },
+    "record-policy-quality": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/record-policy-quality.json",
+      "sha256": "6aceb71ef16cdbf03711c4a2e197c4a345803ddf65f15136834cb078f7438034"
+    },
+    "security-boundaries": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/security-boundaries.json",
+      "sha256": "2130be4c776c48ecdfbf70974b334b0dab457b45fbb78adba5f606dcc937dcc6"
+    },
+    "field-access": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/field-access.json",
+      "sha256": "c00bda7b1db740d2b5704916cf0ec37851f601b48935e0d6e5974e8ed00f610f"
+    },
+    "browser-revocation": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/browser-revocation.json",
+      "sha256": "627650cbf8eb5176a271208aca0699f7d6d71b39af92fa5900a516cf6de7618b"
+    },
+    "browser-load": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/browser-load.json",
+      "sha256": "6928ba99e760d131f690877cffb9c0b3b5eef99de28dda6275b2d51509e931b4"
+    },
+    "browser-final-entries": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/browser-final-entries.json",
+      "sha256": "af3b553b350d92a498275e876c7ee7490a339a0ea31c446a39cd0992397efd7a"
+    },
+    "deployed-assets": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/deployed-assets.json",
+      "sha256": "4c27835b5dd4906aaec8a971eb6bef41e6e5676b4ecd56b4f93d13cf9ad7bdaf"
+    },
+    "final-inventory": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/final-inventory.json",
+      "sha256": "55d1a360793dd65a7d76f5afffaedeeb3a1a0032309cced4e5b40bda70bd208c"
+    },
+    "final-health": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration13/final-health.json",
+      "sha256": "d3e1a71e72130d22a612d50712153da37a43f88832e43ea82370ca0e362a98a3"
+    },
+    "calculation-retained-revocation": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-retained-revocation.png",
+      "sha256": "c0f8c34229da9eba20c77f915fb5f108f7e64cc3de1d1d465873f8a07f100e07"
+    },
+    "calculation-large-detail-390": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-large-detail-390.png",
+      "sha256": "31c8b043a0497c80d1ae9cf8064b11afe6ceb28dcf8681b34d30b8c563a7a40e"
+    },
+    "calculation-terminal-rejection": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-terminal-rejection.png",
+      "sha256": "a3f84dff9e53360cfaba0745c4ca1dda9fb768c27f5aa001582ef236eb42b42b"
+    },
+    "calculation-restored-workflow": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-restored-workflow.png",
+      "sha256": "7eb270198e4ac3680b2776b738dca37bad94a8ad81743423c7808cec31594a5c"
+    }
+  }
+}

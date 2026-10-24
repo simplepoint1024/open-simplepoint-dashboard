@@ -34,17 +34,21 @@ public class FormRecordPayloadCompiler {
       final Map<String, Object> existing,
       final Map<String, Object> requested,
       final FormRecordState currentState,
-      final FormRecordState targetState
-  ) {
+      final FormRecordState targetState) {
     validatedValues(document, existing, requested, currentState, targetState);
     return project(document, requested, targetState);
   }
 
-  /** Server-only prospective values for integration preflight; never bypasses the write-time validation. */
+  /**
+   * Server-only prospective values for integration preflight; never bypasses the write-time
+   * validation.
+   */
   Map<String, Object> validatedValues(
-      final ApplicationFormDocument document, final Map<String, Object> existing,
-      final Map<String, Object> requested, final FormRecordState currentState, final FormRecordState targetState
-  ) {
+      final ApplicationFormDocument document,
+      final Map<String, Object> existing,
+      final Map<String, Object> requested,
+      final FormRecordState currentState,
+      final FormRecordState targetState) {
     if (requested == null || requested.size() > MAX_VALUES || targetState == null) {
       throw invalid("Form record values are invalid");
     }
@@ -53,6 +57,8 @@ public class FormRecordPayloadCompiler {
     }
     Map<String, FormFieldDefinition> fields = new HashMap<>();
     document.fields().forEach(field -> fields.put(field.fieldId(), field));
+    final Set<String> calculated = document.fields().stream().filter(field -> field.storageMode() == FormStorageMode.COMPUTED)
+        .map(FormFieldDefinition::fieldId).collect(java.util.stream.Collectors.toUnmodifiableSet());
     Map<String, Object> merged = new LinkedHashMap<>();
     if (existing != null) {
       merged.putAll(existing);
@@ -70,26 +76,48 @@ public class FormRecordPayloadCompiler {
     }
     FormComponentValues.validate(document, requested);
     applyDefaults(fields, merged);
-    if (targetState == FormRecordState.SUBMITTED) FormComponentValues.validate(document, merged);
-    List<FormSubmissionRequirements.Requirement> requirements = FormSubmissionRequirements.compile(document).stream()
-        .map(requirement -> requirement.forState(targetState)).toList();
+    if (targetState == FormRecordState.SUBMITTED) {
+      var inputs = new LinkedHashMap<>(merged);
+      calculated.forEach(inputs::remove);
+      FormComponentValues.validate(document, inputs);
+    }
+    List<FormSubmissionRequirements.Requirement> requirements =
+        FormSubmissionRequirements.compile(document).stream()
+            .map(requirement -> requirement.forState(targetState))
+            .filter(requirement -> !requirement.requiresCalculatedValues(calculated))
+            .toList();
     if (currentState == null) {
-      requirements.stream().filter(requirement -> requirement.field().effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY)
-          .filter(requirement -> requirement.missing(merged)).findFirst().ifPresent(requirement -> {
-            throw invalid("A required create-only field must be filled before saving: " + requirement.field().fieldId());
-          });
+      requirements.stream()
+          .filter(
+              requirement ->
+                  requirement.field().effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY)
+          .filter(requirement -> requirement.missing(merged))
+          .findFirst()
+          .ifPresent(
+              requirement -> {
+                throw invalid(
+                    "A required create-only field must be filled before saving: "
+                        + requirement.field().fieldId());
+              });
     }
     fields.values().stream()
-        .filter(field -> targetState == FormRecordState.SUBMITTED || !field.allowsWrite(targetState))
+        .filter(field -> field.storageMode() != FormStorageMode.COMPUTED)
+        .filter(
+            field -> targetState == FormRecordState.SUBMITTED || !field.allowsWrite(targetState))
         .forEach(field -> validateChoice(field, merged.get(field.fieldId())));
     validateSubmission(requirements, merged);
     if (targetState == FormRecordState.SUBMITTED) {
-      requirements.stream().filter(requirement -> requirement.field().storageMode() == FormStorageMode.ATTACHMENT)
-          .filter(requirement -> requirement.field().submitRequired())
-          .filter(requirement -> FormAttachmentValues.parse(merged.get(requirement.field().fieldId())).isEmpty())
-          .findFirst().ifPresent(requirement -> {
-            throw invalid("请上传附件：" + requirement.field().label());
-          });
+      requirements.stream()
+          .filter(requirement -> requirement.field().storageMode() == FormStorageMode.ATTACHMENT)
+          .filter(requirement -> requirement.predicate().matches(merged))
+          .filter(
+              requirement ->
+                  FormAttachmentValues.parse(merged.get(requirement.field().fieldId())).isEmpty())
+          .findFirst()
+          .ifPresent(
+              requirement -> {
+                throw invalid("请上传附件：" + requirement.field().label());
+              });
     }
     return java.util.Collections.unmodifiableMap(merged);
   }
@@ -98,23 +126,25 @@ public class FormRecordPayloadCompiler {
   public Map<String, Object> project(
       final ApplicationFormDocument document,
       final Map<String, Object> requested,
-      final FormRecordState targetState
-  ) {
+      final FormRecordState targetState) {
     if (requested == null || requested.size() > MAX_VALUES || targetState == null) {
       throw invalid("Form record values are invalid");
     }
     Map<String, FormFieldDefinition> fields = new HashMap<>();
     document.fields().forEach(field -> fields.put(field.fieldId(), field));
     Map<String, Object> storage = new LinkedHashMap<>();
-    requested.forEach((fieldId, value) -> {
-      FormFieldDefinition field = fields.get(fieldId);
-      if (field == null || field.storageMode() == FormStorageMode.COMPUTED) {
-        throw invalid("Form record contains an unknown or computed field");
-      }
-      if (persistent(field)) {
-        storage.put(field.storageCode(), field.type() == FormFieldType.JSON && empty(value) ? null : value);
-      }
-    });
+    requested.forEach(
+        (fieldId, value) -> {
+          FormFieldDefinition field = fields.get(fieldId);
+          if (field == null || field.storageMode() == FormStorageMode.COMPUTED) {
+            throw invalid("Form record contains an unknown or computed field");
+          }
+          if (persistent(field)) {
+            storage.put(
+                field.storageCode(),
+                field.type() == FormFieldType.JSON && empty(value) ? null : value);
+          }
+        });
     storage.put(FormStorageProjectionCompiler.RECORD_STATE_CODE, targetState.name());
     return storage;
   }
@@ -142,9 +172,9 @@ public class FormRecordPayloadCompiler {
     }
     try {
       String actual = FormChoiceValues.canonical(field.type(), value);
-      if (field.choices().stream().anyMatch(choice -> actual.equals(
-          FormChoiceValues.canonical(field.type(), choice.value())
-      ))) {
+      if (field.choices().stream()
+          .anyMatch(
+              choice -> actual.equals(FormChoiceValues.canonical(field.type(), choice.value())))) {
         return;
       }
     } catch (IllegalArgumentException | ArithmeticException exception) {
@@ -154,20 +184,20 @@ public class FormRecordPayloadCompiler {
   }
 
   private static void applyDefaults(
-      final Map<String, FormFieldDefinition> fields,
-      final Map<String, Object> values
-  ) {
-    fields.values().forEach(field -> {
-      if (!values.containsKey(field.fieldId()) && field.defaultValue() != null) {
-        values.put(field.fieldId(), value(field.defaultValue()));
-      }
-    });
+      final Map<String, FormFieldDefinition> fields, final Map<String, Object> values) {
+    fields
+        .values()
+        .forEach(
+            field -> {
+              if (field.storageMode() != FormStorageMode.COMPUTED && !values.containsKey(field.fieldId()) && field.defaultValue() != null) {
+                values.put(field.fieldId(), value(field.defaultValue()));
+              }
+            });
   }
 
   private static void validateSubmission(
       final List<FormSubmissionRequirements.Requirement> requirements,
-      final Map<String, Object> values
-  ) {
+      final Map<String, Object> values) {
     Set<String> missing = new LinkedHashSet<>();
     requirements.stream()
         .filter(requirement -> requirement.missing(values))

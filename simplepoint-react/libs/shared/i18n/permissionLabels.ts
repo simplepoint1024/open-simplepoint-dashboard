@@ -1,6 +1,7 @@
+import {resolveLocalizedText, type LocalizedText} from './localizedText.ts';
 import type {TranslateFn} from './translator';
 
-export interface PermissionMetadataField {title: string; type?: string; values?: string[]}
+export interface PermissionMetadataField {title: string; titleLocalization?: LocalizedText | null; type?: string; values?: string[]}
 export interface PermissionMetadataPage {title: string; models: Array<{model: string; properties: Record<string, PermissionMetadataField>}>}
 export interface PermissionPresentation {
   pages: Record<string, PermissionMetadataPage>;
@@ -14,7 +15,7 @@ export const accessTypes = ['EDITABLE', 'VISIBLE', 'MASKED', 'HIDDEN'];
 export const contextNames = ['user.id', 'tenant.id', 'user.organizationId', 'user.organizationIds'];
 const safeText = (value?: string) => !!value && !value.startsWith('i18n:') && !/^[\w.$#/-]+$/.test(value);
 
-export function permissionLabels(t: TranslateFn, data?: PermissionPresentation) {
+export function permissionLabels(t: TranslateFn, data?: PermissionPresentation, locale = 'zh-CN') {
   // Build an index only for a requested page/global snapshot, not once per displayed field row.
   const modelIndexes = new Map<string, Map<string, PermissionMetadataPage['models'][number]>>();
   const unknown = () => t('permissions.unavailable', '名称暂不可用');
@@ -26,6 +27,7 @@ export function permissionLabels(t: TranslateFn, data?: PermissionPresentation) 
     return raw && raw !== code ? title(raw) : unknown();
   };
   const field = (name: string, metadata?: PermissionMetadataField, pageCode?: string) => {
+    if (metadata?.titleLocalization) return resolveLocalizedText(metadata.titleLocalization, locale, undefined, 'TENANT', metadata.title).text;
     const raw = metadata?.title;
     if (raw?.startsWith('i18n:')) {const label = translated(raw.slice(5)); if (label) return label;}
     const namespace = pageCode?.replace(/\.view$/, '');

@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import {newestFirst} from './defaultOrder';
 import {RowActionContext} from '../Table/Actions';
 import {
@@ -117,8 +118,8 @@ const DataTable = <T extends object = Record<string, unknown>>(
     storageKey,
     toolbarExtra,
     includeToolbarInScroll = false,
-    fitContainer = false,
     scroll,
+    fitContainer = scroll?.y == null,
     loading,
     query,
     dataSource = [],
@@ -128,7 +129,7 @@ const DataTable = <T extends object = Record<string, unknown>>(
 
   const rootRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const [localPage, setLocalPage] = useState({current: 1, pageSize: 10});
+  const [localPage, setLocalPage] = useState({current: 1, pageSize: DEFAULT_TABLE_PAGE_SIZE});
   const [toolbarHeight, setToolbarHeight] = useState(42);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -275,7 +276,7 @@ const DataTable = <T extends object = Record<string, unknown>>(
   const normalizedPagination = useMemo(() => {
     if (pagination === false) return false;
     const configured = pagination && typeof pagination === 'object' ? pagination : {};
-    const pageSize = queryController.size ?? configured.pageSize ?? configured.defaultPageSize ?? 10;
+    const pageSize = queryController.size ?? configured.pageSize ?? configured.defaultPageSize ?? DEFAULT_TABLE_PAGE_SIZE;
     const cardLocal = displaySettings.viewMode === 'cards' && query?.mode !== 'remote'
       && (configured.total ?? dataSource.length) <= queryController.data.length;
     return {
@@ -283,8 +284,7 @@ const DataTable = <T extends object = Record<string, unknown>>(
       current: localPage.current,
       pageSize: localPage.pageSize,
       ...configured,
-      pageSizeOptions: pageSizeOptions(query?.mode === 'remote' ? query.schema['x-query'].maxPageSize : undefined,
-        configured.pageSizeOptions),
+      pageSizeOptions: pageSizeOptions(query?.mode === 'remote' ? query.schema['x-query'].maxPageSize : undefined),
       ...(query?.mode === 'local' ? {pageSize, total: queryController.data.length,
         current: Math.min(queryController.page, Math.max(1, Math.ceil(queryController.data.length / pageSize)))} : {}),
       ...(cardLocal ? {pageSize: queryController.size ?? localPage.pageSize,
@@ -302,7 +302,7 @@ const DataTable = <T extends object = Record<string, unknown>>(
     && !dataSource.some(record => Array.isArray((record as any).children) && (record as any).children.length);
   const viewMode = cardsSupported ? displaySettings.viewMode : 'table';
   const currentPage = normalizedPagination ? normalizedPagination.current ?? 1 : 1;
-  const currentSize = normalizedPagination ? normalizedPagination.pageSize ?? 10 : dataSource.length;
+  const currentSize = normalizedPagination ? normalizedPagination.pageSize ?? DEFAULT_TABLE_PAGE_SIZE : dataSource.length;
   const total = normalizedPagination ? normalizedPagination.total ?? queryController.data.length : queryController.data.length;
   const remotePage = query?.mode === 'remote' || total > queryController.data.length;
   const cardData = pagination === false || remotePage ? queryController.data
@@ -336,14 +336,16 @@ const DataTable = <T extends object = Record<string, unknown>>(
   }, [includeToolbarInScroll, showToolbar]);
   const effectiveScroll = {
     ...scroll,
-    ...((fitContainer || isFullscreen) && scroll?.y == null ? {y: '100%'} : {}),
+    ...(isFullscreen || fitContainer && scroll?.y == null ? {y: '100%'} : {}),
     ...(hasFixedColumns ? {x: scroll?.x ?? 'max-content'} : {}),
-    ...(includeToolbarInScroll && showToolbar && typeof scroll?.y === 'number'
+    ...(!isFullscreen && includeToolbarInScroll && showToolbar && typeof scroll?.y === 'number'
       ? {y: Math.max(40, scroll.y - toolbarHeight)} : {}),
   };
 
   return (
-    <div ref={rootRef} className={['sp-data-table-root', fitContainer && 'sp-data-table-fit'].filter(Boolean).join(' ')} data-query-mode={query?.mode}>
+    <div ref={rootRef} style={{'--sp-table-body-height': fitContainer || effectiveScroll.y == null ? 'auto'
+      : typeof effectiveScroll.y === 'number' ? `${effectiveScroll.y}px` : effectiveScroll.y} as React.CSSProperties}
+      className={['sp-data-table-root', fitContainer && 'sp-data-table-fit'].filter(Boolean).join(' ')} data-query-mode={query?.mode}>
       {showToolbar && (
         <div ref={toolbarRef} className="sp-data-table-toolbar">
           <div className="sp-data-table-toolbar-extra">
@@ -438,7 +440,7 @@ const DataTable = <T extends object = Record<string, unknown>>(
           }};
         }}
         onChange={(page, filters, sorter, extra) => {
-          if (extra.action === 'paginate') setLocalPage({current: page.current ?? 1, pageSize: page.pageSize ?? 10});
+          if (extra.action === 'paginate') setLocalPage({current: page.current ?? 1, pageSize: page.pageSize ?? DEFAULT_TABLE_PAGE_SIZE});
           if (query) queryController.onChange(page, filters, sorter, extra);
           if (!query || extra.action === 'paginate') onChange?.(page, filters, sorter, extra);
         }}

@@ -17,6 +17,13 @@ final class H2RecordWriteFenceFixture {
   static RuntimeSchemaDialect prepare(final DataSource source, final String tenant, final String model) throws Exception {
     String table = "simpoint_dna_record_write_fences_v1";
     try (var connection = source.getConnection(); var statement = connection.createStatement()) {
+      statement.execute("CREATE TABLE simpoint_dna_record_publications_v1 (id VARCHAR(36) PRIMARY KEY, "
+          + "tenant_id VARCHAR(255), model_id VARCHAR(64), target_revision BIGINT, publication_fingerprint VARCHAR(64), "
+          + "record_version BIGINT, phase VARCHAR(32), intent_checksum VARCHAR(64), intent_json CLOB, "
+          + "checkpoint_checksum VARCHAR(64), checkpoint_json CLOB, deleted_at TIMESTAMP)");
+      statement.execute("CREATE TABLE simpoint_dna_record_calculations_v1 (id VARCHAR(36) PRIMARY KEY, "
+          + "tenant_id VARCHAR(255), model_id VARCHAR(64), policy_revision BIGINT, definition_checksum VARCHAR(64), "
+          + "definition_json CLOB, deleted_at TIMESTAMP)");
       statement.execute("CREATE TABLE " + table + " (id VARCHAR(36) PRIMARY KEY, tenant_id VARCHAR(255), "
           + "model_id VARCHAR(64), write_revision BIGINT, previous_revision BIGINT, "
           + "publication_fingerprint VARCHAR(64), deleted_at TIMESTAMP)");

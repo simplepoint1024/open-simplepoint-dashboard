@@ -213,7 +213,7 @@ export const SqlConsoleResults = ({
             scroll={{x: 'max-content', y: Math.max(80, gridHeight
               - (statementExecutions.length > 1 ? 210 : 0)
               - (queryResult.truncated ? 100 : 0))}}
-            pagination={{defaultPageSize: 50, showSizeChanger: true, size: 'small', pageSizeOptions: [20, 50, 100, 200]}}
+            pagination={{defaultPageSize: 50, showSizeChanger: true, size: 'small', pageSizeOptions: [50, 100, 200, 500]}}
             columns={resultColumns}
             dataSource={resultData}
           />

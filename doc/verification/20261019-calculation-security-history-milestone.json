@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "checks": {
+    "transitiveFieldPermissions": {
+      "passed": true,
+      "cases": [
+        {
+          "name": "hidden-child-source",
+          "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+          "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+          "rejected": [
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            }
+          ],
+          "hiddenRoot": [
+            "total_amount",
+            "tax_total",
+            "base_amount",
+            "payable_amount",
+            "risk_level"
+          ],
+          "hiddenDetail": [
+            "amount",
+            "tax_amount",
+            "net_amount"
+          ]
+        },
+        {
+          "name": "masked-parent-source",
+          "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+          "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+          "rejected": [
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            }
+          ],
+          "hiddenRoot": [
+            "total_amount",
+            "tax_total",
+            "base_amount",
+            "payable_amount",
+            "risk_level"
+          ],
+          "hiddenDetail": [
+            "amount",
+            "tax_amount",
+            "net_amount"
+          ]
+        },
+        {
+          "name": "hidden-child-source",
+          "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+          "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+          "rejected": [
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            }
+          ],
+          "hiddenRoot": [
+            "total_amount",
+            "tax_total",
+            "base_amount",
+            "payable_amount",
+            "risk_level"
+          ],
+          "hiddenDetail": [
+            "amount",
+            "tax_amount",
+            "net_amount"
+          ]
+        },
+        {
+          "name": "masked-parent-source",
+          "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+          "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+          "rejected": [
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            }
+          ],
+          "hiddenRoot": [
+            "total_amount",
+            "tax_total",
+            "base_amount",
+            "payable_amount",
+            "risk_level"
+          ],
+          "hiddenDetail": [
+            "amount",
+            "tax_amount",
+            "net_amount"
+          ]
+        },
+        {
+          "name": "masked-calculated-target",
+          "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+          "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+          "rejected": [
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            },
+            {
+              "status": 403,
+              "code": "RESOURCE_ACCESS_DENIED",
+              "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+            }
+          ],
+          "hiddenRoot": [
+            "base_amount",
+            "payable_amount",
+            "risk_level"
+          ]
+        }
+      ],
+      "scope": [
+        "list",
+        "detail",
+        "trusted preview",
+        "submission snapshot",
+        "workflow snapshot",
+        "filter/count",
+        "sort",
+        "write"
+      ],
+      "temporaryPoliciesRestoredAndRemoved": true
+    }
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration2/permissions.json": "f39ad496035548908d6d46b9df4ea07808d8def5684eff0851cbb652dcd19fc9"
+  },
+  "reproduction": "scripts/business/calculation-acceptance/permissions.mjs"
+}

@@ -149,7 +149,8 @@ GET /common/platform/dictionaries/options?dictionaryCode=...
 
 `Table` 组件会读取字段 schema 中的：
 
-- `x-ui.x-list-visible`：决定列是否默认可见
+- `x-ui.x-list-visible`：决定字段是否进入列表和列设置的可选集合；个人偏好不能恢复被排除的字段。
+- `x-ui.x-list-default-visible`：可选字段的初始显示状态（布尔值，缺省为 `true`）；`false` 允许用户按需勾选，适用于审计名称等辅助列。已保存的个人选择优先，列表和卡片共用。
 - `oneOf` / `anyOf`：把枚举值展示为标签
 - `title`：作为列名
 

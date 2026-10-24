@@ -80,7 +80,7 @@ public class FormSubmissionPreparationService {
             ? workflow.startForm(authority, definitionId, definitionVersion)
             : source.form();
     FormSubmissionMapping.requireBinding(
-        form, processForm, contexts.forResource(form.resourceCode()));
+        form, processForm, contexts.forForm(form));
     var mapped = Set.copyOf(processForm.binding().variableMappings().values());
     var variables =
         processForm.formContract().variables().stream()

@@ -24,10 +24,24 @@ public class ObjectStorageRemoteProperties {
 
   private String scheme = "http";
 
+  private String baseUrl;
+
   /**
    * Base Url.
    */
   public String baseUrl() {
+    if (baseUrl != null && !baseUrl.isBlank()) {
+      if (serviceName != null && !serviceName.isBlank()) {
+        throw new IllegalArgumentException("Configure one object-storage endpoint mode");
+      }
+      var uri = java.net.URI.create(baseUrl);
+      if (!java.util.Set.of("http", "https").contains(uri.getScheme())
+          || uri.getHost() == null || uri.getUserInfo() != null
+          || uri.getQuery() != null || uri.getFragment() != null) {
+        throw new IllegalArgumentException("Invalid object-storage endpoint");
+      }
+      return baseUrl;
+    }
     return scheme + "://" + serviceName;
   }
 }

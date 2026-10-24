@@ -147,7 +147,7 @@ class KnowledgeDocumentQueriesTest {
           .as("public query field %s", field)
           .isInstanceOf(InvalidQueryException.class);
     }
-    assertThatThrownBy(() -> service.limit("kb", Map.of(), PageRequest.of(0, 101)))
+    assertThatThrownBy(() -> service.limit("kb", Map.of(), PageRequest.of(0, 501)))
         .isInstanceOf(InvalidQueryException.class);
     var schema =
         new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(service.querySchema("kb"));

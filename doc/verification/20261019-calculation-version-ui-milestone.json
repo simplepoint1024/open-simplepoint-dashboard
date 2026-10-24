@@ -1,0 +1,1596 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T07:09:12.943137+00:00",
+  "deployment": ".simplepoint/deploy203/release-20261019-calculation-integration11/deployment.json",
+  "checks": {
+    "columnOrderAndAccountPreferences": {
+      "passed": true,
+      "pointerOrder": [
+        "2326b3bb-3f93-4e93-8e62-a2ced9bbfc5f",
+        "2af6c6c0-1f37-4de6-9bbf-7f82a2b88831",
+        "12b814ff-cac8-456b-afa0-fef82f10d76c",
+        "375c7ffc-37ac-4eea-877d-56d29ca71f64",
+        "d38f20d7-9ffd-45e0-a3eb-39d5f1803283",
+        "subject",
+        "quantity",
+        "rate",
+        "total",
+        "normalized_total",
+        "ce997950-ad1d-4585-8225-f735ff7d5063",
+        "844e04cb-4e1f-4412-9194-fec1838bdc17",
+        "096a9344-ae73-4cf3-9773-9882759790e7",
+        "9bee2a9c-1d82-4041-8392-9f5f59aa0c0c",
+        "18759777-853a-4215-b833-1313d339d9ea",
+        "938857d3-e4a8-4e0a-962e-f8055012fe5c",
+        "313fe6d1-ffd2-4fe0-b9a9-f42280406455",
+        "9c373c54-c11a-4376-bbd3-10879312304a",
+        "015d2bf5-c82a-49ed-b548-734d65aeb37f",
+        "148864a2-3e8c-4300-824e-f7db1027483b",
+        "0fa7a44c-07dd-43b9-9919-29110f3171cd",
+        "6283a255-e6b0-4f45-87ba-254e6eb7cde3",
+        "23125982-b3d9-423b-8952-ef828cce8723",
+        "47e090f5-c55c-4721-a565-1d8f18227803"
+      ],
+      "keyboardOrder": [
+        "2af6c6c0-1f37-4de6-9bbf-7f82a2b88831",
+        "2326b3bb-3f93-4e93-8e62-a2ced9bbfc5f",
+        "12b814ff-cac8-456b-afa0-fef82f10d76c",
+        "375c7ffc-37ac-4eea-877d-56d29ca71f64",
+        "d38f20d7-9ffd-45e0-a3eb-39d5f1803283",
+        "subject",
+        "quantity",
+        "rate",
+        "total",
+        "normalized_total",
+        "ce997950-ad1d-4585-8225-f735ff7d5063",
+        "844e04cb-4e1f-4412-9194-fec1838bdc17",
+        "096a9344-ae73-4cf3-9773-9882759790e7",
+        "9bee2a9c-1d82-4041-8392-9f5f59aa0c0c",
+        "18759777-853a-4215-b833-1313d339d9ea",
+        "938857d3-e4a8-4e0a-962e-f8055012fe5c",
+        "313fe6d1-ffd2-4fe0-b9a9-f42280406455",
+        "9c373c54-c11a-4376-bbd3-10879312304a",
+        "015d2bf5-c82a-49ed-b548-734d65aeb37f",
+        "148864a2-3e8c-4300-824e-f7db1027483b",
+        "0fa7a44c-07dd-43b9-9919-29110f3171cd",
+        "6283a255-e6b0-4f45-87ba-254e6eb7cde3",
+        "23125982-b3d9-423b-8952-ef828cce8723",
+        "47e090f5-c55c-4721-a565-1d8f18227803"
+      ],
+      "canvasUnchanged": true,
+      "draftRestored": true,
+      "tableSizeRestored": 20,
+      "freshLogin": true,
+      "cardRows": 2,
+      "cardPages": [
+        {
+          "label": "desktop-first-page",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-next-page",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "responsive-768",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 502,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 487,
+            "scrollWidth": 487,
+            "height": 668,
+            "scrollHeight": 668
+          }
+        },
+        {
+          "label": "responsive-390",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 124,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 109,
+            "scrollWidth": 109,
+            "height": 436,
+            "scrollHeight": 802
+          }
+        },
+        {
+          "label": "responsive-1440",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "persisted-cards",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-first-page",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-next-page",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "responsive-768",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 502,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 487,
+            "scrollWidth": 487,
+            "height": 668,
+            "scrollHeight": 668
+          }
+        },
+        {
+          "label": "responsive-390",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 124,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 109,
+            "scrollWidth": 109,
+            "height": 436,
+            "scrollHeight": 802
+          }
+        },
+        {
+          "label": "responsive-1440",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "persisted-cards",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-first-page",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-next-page",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "responsive-768",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 502,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 487,
+            "scrollWidth": 487,
+            "height": 668,
+            "scrollHeight": 668
+          }
+        },
+        {
+          "label": "responsive-390",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 124,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 109,
+            "scrollWidth": 109,
+            "height": 436,
+            "scrollHeight": 802
+          }
+        },
+        {
+          "label": "responsive-1440",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "persisted-cards",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-first-page",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "desktop-next-page",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "responsive-768",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 502,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 487,
+            "scrollWidth": 487,
+            "height": 668,
+            "scrollHeight": 668
+          }
+        },
+        {
+          "label": "responsive-390",
+          "query": {
+            "page": 4,
+            "size": 2,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de"
+          ],
+          "geometry": {
+            "width": 283,
+            "columns": 1
+          },
+          "bounds": {
+            "width": 269,
+            "scrollWidth": 269,
+            "height": 628,
+            "scrollHeight": 642
+          }
+        },
+        {
+          "label": "responsive-1440",
+          "query": {
+            "page": 1,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+            "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+            "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+            "a3332813-137e-528a-af33-347bdb635027",
+            "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+            "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+            "2fed826a-863b-5578-98a8-a47f7781d10f",
+            "4de62708-e02f-5387-91d4-291bdc67dc7c"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "persisted-cards",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        },
+        {
+          "label": "new-login-account-preference",
+          "query": {
+            "page": 0,
+            "size": 8,
+            "fieldIds": [],
+            "filter": null,
+            "sorts": []
+          },
+          "total": 192,
+          "ids": [
+            "6c4ca05e-0e6e-5ae0-bb02-687c612c8910",
+            "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+            "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+            "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+            "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+            "374bc558-4de9-5114-893d-04c969ff22fa",
+            "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+            "4f0906c6-dce6-591f-ac0c-427b896597f0"
+          ],
+          "geometry": {
+            "width": 1174,
+            "columns": 4
+          },
+          "bounds": {
+            "width": 1159,
+            "scrollWidth": 1159,
+            "height": 748,
+            "scrollHeight": 748
+          }
+        }
+      ],
+      "visualReview": "390px real screenshot: collapsed navigation, usable content width, field/body scroll remain bounded."
+    },
+    "publishedWorkflowDiagrams": {
+      "passed": true,
+      "cases": {
+        "expense-4800": {
+          "passed": true,
+          "instanceId": "92328f13-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "submit",
+            "manager_review",
+            "amount_check",
+            "amount_gate",
+            "standard",
+            "finance_review",
+            "complete",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "start_label",
+            "manager_review",
+            "amount_gate",
+            "amount_gate_label",
+            "director_review",
+            "finance_review",
+            "end",
+            "end_label",
+            "submit",
+            "amount_check",
+            "large",
+            "standard",
+            "director_approved",
+            "complete"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 990,
+              "height": 433
+            },
+            {
+              "width": 663,
+              "height": 399
+            }
+          ],
+          "at": "2026-10-19T06:54:44.185Z"
+        },
+        "expense-5000": {
+          "passed": true,
+          "instanceId": "a11c27df-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "submit",
+            "manager_review",
+            "amount_check",
+            "amount_gate",
+            "standard",
+            "finance_review",
+            "complete",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "start_label",
+            "manager_review",
+            "amount_gate",
+            "amount_gate_label",
+            "director_review",
+            "finance_review",
+            "end",
+            "end_label",
+            "submit",
+            "amount_check",
+            "large",
+            "standard",
+            "director_approved",
+            "complete"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1048,
+              "height": 433
+            },
+            {
+              "width": 873,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:45.464Z"
+        },
+        "expense-6800": {
+          "passed": true,
+          "instanceId": "b012e00b-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "submit",
+            "manager_review",
+            "amount_check",
+            "amount_gate",
+            "large",
+            "director_review",
+            "director_approved",
+            "finance_review",
+            "complete",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "start_label",
+            "manager_review",
+            "amount_gate",
+            "amount_gate_label",
+            "director_review",
+            "finance_review",
+            "end",
+            "end_label",
+            "submit",
+            "amount_check",
+            "large",
+            "standard",
+            "director_approved",
+            "complete"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 632,
+              "height": 399
+            }
+          ],
+          "at": "2026-10-19T06:54:52.896Z"
+        },
+        "expense-currency-route": {
+          "passed": true,
+          "instanceId": "bee3247f-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "submit",
+            "manager_review",
+            "amount_check",
+            "amount_gate",
+            "large",
+            "director_review",
+            "director_approved",
+            "finance_review",
+            "complete",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "start_label",
+            "manager_review",
+            "amount_gate",
+            "amount_gate_label",
+            "director_review",
+            "finance_review",
+            "end",
+            "end_label",
+            "submit",
+            "amount_check",
+            "large",
+            "standard",
+            "director_approved",
+            "complete"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:53.659Z"
+        },
+        "daily-overtime": {
+          "passed": true,
+          "instanceId": "cdf4dec3-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "manager",
+            "hours_check",
+            "hours_gate",
+            "over_time",
+            "overtime",
+            "overtime_done",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "manager",
+            "hours_gate",
+            "overtime",
+            "end",
+            "begin",
+            "hours_check",
+            "over_time",
+            "finish",
+            "overtime_done"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:54.358Z"
+        },
+        "delivery-parallel": {
+          "passed": true,
+          "instanceId": "dd049d2f-cb82-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "split",
+            "delivery_in",
+            "quality_in",
+            "delivery",
+            "quality",
+            "delivery_out",
+            "join",
+            "quality_out",
+            "check_score",
+            "score_gate",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "split",
+            "join",
+            "delivery",
+            "quality",
+            "score_gate",
+            "remediation",
+            "end",
+            "begin",
+            "delivery_in",
+            "quality_in",
+            "delivery_out",
+            "quality_out",
+            "check_score",
+            "low_score",
+            "finish",
+            "remediation_done"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 399
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:55.057Z"
+        },
+        "assets-standard": {
+          "passed": true,
+          "instanceId": "0b8dccf2-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "department",
+            "budget_check",
+            "budget_gate",
+            "purchase_in",
+            "purchase",
+            "asset_in",
+            "asset",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "department",
+            "purchase",
+            "asset",
+            "budget_gate",
+            "budget_exception",
+            "end",
+            "begin",
+            "budget_check",
+            "over_budget",
+            "purchase_in",
+            "budget_approved",
+            "asset_in",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 510,
+              "height": 399
+            }
+          ],
+          "at": "2026-10-19T06:54:55.914Z"
+        },
+        "assets-budget-exception": {
+          "passed": true,
+          "instanceId": "1a22dd4b-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "department",
+            "budget_check",
+            "budget_gate",
+            "over_budget",
+            "budget_exception",
+            "budget_approved",
+            "purchase",
+            "asset_in",
+            "asset",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "department",
+            "purchase",
+            "asset",
+            "budget_gate",
+            "budget_exception",
+            "end",
+            "begin",
+            "budget_check",
+            "over_budget",
+            "purchase_in",
+            "budget_approved",
+            "asset_in",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1048,
+              "height": 433
+            },
+            {
+              "width": 1033,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:57.092Z"
+        },
+        "function-ledger-confirmation": {
+          "passed": true,
+          "instanceId": "296b5f2d-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "submit",
+            "review",
+            "complete",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "start_label",
+            "review",
+            "end",
+            "end_label",
+            "submit",
+            "complete"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 995,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:57.809Z"
+        },
+        "parallel-multi-instance": {
+          "passed": true,
+          "instanceId": "192400a6-cb83-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "review",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "review",
+            "end",
+            "begin",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1083,
+              "height": 433
+            },
+            {
+              "width": 720,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:58.593Z"
+        },
+        "sequential-multi-instance": {
+          "passed": true,
+          "instanceId": "ea8cb4ed-cb83-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "review",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "review",
+            "end",
+            "begin",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1083,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:59.277Z"
+        },
+        "standard-loop-before": {
+          "passed": true,
+          "instanceId": "feac3922-cb83-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "review",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "review",
+            "end",
+            "begin",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1083,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:54:59.943Z"
+        },
+        "standard-loop-after": {
+          "passed": true,
+          "instanceId": "0eba54eb-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "review",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "review",
+            "end",
+            "begin",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1083,
+              "height": 433
+            },
+            {
+              "width": 873,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:55:00.740Z"
+        },
+        "nested-subprocess": {
+          "passed": true,
+          "instanceId": "1db998cb-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "outer",
+            "outer_start",
+            "outer_in",
+            "inner",
+            "inner_start",
+            "inner_in",
+            "review",
+            "inner_out",
+            "inner_end",
+            "outer_out",
+            "outer_end",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "outer",
+            "outer_start",
+            "inner",
+            "inner_start",
+            "review",
+            "inner_end",
+            "inner_in",
+            "inner_out",
+            "outer_end",
+            "outer_in",
+            "outer_out",
+            "end",
+            "begin",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 399
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 658,
+              "height": 399
+            }
+          ],
+          "at": "2026-10-19T06:55:08.528Z"
+        },
+        "inclusive-gateway": {
+          "passed": true,
+          "instanceId": "2c6405d2-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "split",
+            "positive",
+            "bounded",
+            "delivery",
+            "quality",
+            "delivery_done",
+            "join",
+            "quality_done",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "start",
+            "split",
+            "join",
+            "delivery",
+            "quality",
+            "end",
+            "begin",
+            "positive",
+            "bounded",
+            "delivery_done",
+            "quality_done",
+            "finish"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 1053,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:55:09.464Z"
+        },
+        "descriptive-diagram": {
+          "passed": true,
+          "instanceId": "3d88c099-cb84-11f1-853b-0e9991497b98",
+          "activityIds": [
+            "start",
+            "begin",
+            "review",
+            "finish",
+            "end"
+          ],
+          "visibleIds": [
+            "pool",
+            "finance",
+            "start",
+            "review",
+            "document_ref",
+            "document_ref_label",
+            "archive_ref",
+            "archive_ref_label",
+            "end",
+            "group",
+            "group_label",
+            "note",
+            "begin",
+            "finish",
+            "note_link"
+          ],
+          "sizes": [
+            {
+              "width": 680,
+              "height": 433
+            },
+            {
+              "width": 1098,
+              "height": 433
+            },
+            {
+              "width": 658,
+              "height": 433
+            }
+          ],
+          "at": "2026-10-19T06:55:16.830Z"
+        }
+      },
+      "count": 16
+    },
+    "versionedCalculationHistory": {
+      "passed": true,
+      "oldFormVersion": 1,
+      "newFormVersion": 2,
+      "newWorkflowVersion": 2,
+      "backfilled": [
+        {
+          "id": "e0e8c359-77ae-5268-a41a-2849315428d3",
+          "version": 1,
+          "total": "42",
+          "normalized": "52"
+        },
+        {
+          "id": "f31fa656-3482-5c8f-8d10-b9a8006a3598",
+          "version": 1,
+          "total": "26",
+          "normalized": "36"
+        },
+        {
+          "id": "37f01779-53e3-5899-b211-884493a2699a",
+          "version": 3,
+          "total": "42",
+          "normalized": "52"
+        }
+      ],
+      "pendingSubmission": "1fe93f898f5fe65e1007a032ab9fc06748899f7cdbcf04873eb91a1d4793795a",
+      "oldPendingInstance": "4d053bcb-cb8a-11f1-9c18-aaeb4e50ef6f",
+      "oldPendingTask": "4d0737a4-cb8a-11f1-9c18-aaeb4e50ef6f",
+      "oldValues": {
+        "total": "21",
+        "normalized_total": "31"
+      },
+      "currentValues": {
+        "total": "42",
+        "normalized_total": "52"
+      },
+      "oldPageAttempt": {
+        "status": 409,
+        "code": "RUNTIME_VERSION_CONFLICT"
+      },
+      "layoutAndFieldLabelChanged": true,
+      "immutableDefinitionsUnchanged": true,
+      "pendingCompletedThroughRealBrowser": true,
+      "actualDownloads": [
+        {
+          "kind": "pending",
+          "bytes": 42,
+          "sha256": "f77df1d906bb535277b6b7d37db1365bc784ddc84f2182f93137ab2e2bc07813"
+        },
+        {
+          "kind": "completed",
+          "bytes": 42,
+          "sha256": "f77df1d906bb535277b6b7d37db1365bc784ddc84f2182f93137ab2e2bc07813"
+        }
+      ],
+      "widths": [
+        {
+          "kind": "pending",
+          "width": 1440,
+          "bounded": true
+        },
+        {
+          "kind": "pending",
+          "width": 768,
+          "bounded": true
+        },
+        {
+          "kind": "pending",
+          "width": 390,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 1440,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 768,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 390,
+          "bounded": true
+        }
+      ],
+      "formProjectionCompared": "Actual form.document, including v1 field labels and layout; read-only recheck after publication and approval passed."
+    }
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration10/browser-cards.json": "f7316eb331fca25376ed3d785ee777450b2fbd592cba2ec1e7acbf78d6773de8",
+    ".simplepoint/deploy203/release-20261019-calculation-integration11/browser-column-order.json": "c91f765e7d69994682ea516329bfce9408569d1682af0c8f82a2aee91508db0d",
+    ".simplepoint/deploy203/release-20261019-calculation-integration11/versioned-history.json": "c3df2a81b6d07fef20f1ebf17fa8cc78142dd4f65f469b58de97fa2b0766fad6",
+    ".simplepoint/deploy203/release-20261019-calculation-integration10/browser-workflow-diagrams.json": "2b9719bc6dbdc1196971d659d90348358a69eb156daf015cad82104c73e8f2d6"
+  }
+}

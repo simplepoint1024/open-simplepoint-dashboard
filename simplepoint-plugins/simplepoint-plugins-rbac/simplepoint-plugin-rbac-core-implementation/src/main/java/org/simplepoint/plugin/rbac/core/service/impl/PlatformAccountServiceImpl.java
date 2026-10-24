@@ -15,7 +15,7 @@ import org.simplepoint.core.schema.AnnotatedTableSchemaProvider;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.PlatformAccountCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PlatformAccountView;
 import org.simplepoint.plugin.rbac.core.api.service.PlatformAccountService;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.PlatformIdentity;
@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PlatformAccountServiceImpl implements PlatformAccountService {
   private final EntityManager em;
-  private final UsersService users;
+  private final UserManagementService users;
   private final PlatformStepUpService stepUp;
   private final TenantRepository tenants;
   private final ResourceAuthorizationVersionService versions;
@@ -45,7 +45,7 @@ public class PlatformAccountServiceImpl implements PlatformAccountService {
   /** Wires persisted identity checks and bounded platform query projections. */
   public PlatformAccountServiceImpl(
       EntityManager em,
-      UsersService users,
+      UserManagementService users,
       PlatformStepUpService stepUp,
       TenantRepository tenants,
       ResourceAuthorizationVersionService versions,

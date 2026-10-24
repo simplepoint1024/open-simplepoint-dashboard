@@ -52,7 +52,8 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         schemaCodec,
-        auditPublisher
+        auditPublisher,
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
     );
     PhysicalModelEntity model = model();
     SchemaMigrationEntity migration = migration();
@@ -97,7 +98,8 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         schemaCodec,
-        auditPublisher
+        auditPublisher,
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
     );
     PhysicalModelEntity model = model();
     model.setStatus(PhysicalModelStatus.MIGRATING);
@@ -147,7 +149,8 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         mock(PhysicalSchemaCodec.class),
-        mock(DnaRuntimeAuditPublisher.class)
+        mock(DnaRuntimeAuditPublisher.class),
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
     );
     PhysicalModelEntity model = model();
     model.setStatus(PhysicalModelStatus.VALIDATING);

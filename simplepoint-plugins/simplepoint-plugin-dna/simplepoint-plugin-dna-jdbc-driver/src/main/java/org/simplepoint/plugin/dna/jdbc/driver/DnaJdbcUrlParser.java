@@ -8,21 +8,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Parses DNA JDBC driver URLs and connection properties.
- */
+/** Parses DNA JDBC driver URLs and connection properties. */
 final class DnaJdbcUrlParser {
 
   static final String URL_PREFIX = "jdbc:simplepoint:dna:";
 
-  private DnaJdbcUrlParser() {
-  }
+  private DnaJdbcUrlParser() {}
 
   static boolean accepts(final String url) {
     return url != null && url.startsWith(URL_PREFIX);
   }
 
-  static DnaJdbcModels.ConnectionConfig parse(final String url, final Properties properties) throws SQLException {
+  static DnaJdbcModels.ConnectionConfig parse(final String url, final Properties properties)
+      throws SQLException {
     if (!accepts(url)) {
       throw new SQLException("不支持的 DNA JDBC URL: " + url);
     }
@@ -38,35 +36,35 @@ final class DnaJdbcUrlParser {
     }
     final URI baseUri = normalizeBaseUri(endpointUri);
     Map<String, String> queryValues = parseQuery(endpointUri.getRawQuery());
-    String loginSubject = firstNonBlank(
-        properties == null ? null : properties.getProperty("user"),
-        properties == null ? null : properties.getProperty("username"),
-        queryValues.get("user")
-    );
-    String password = firstNonBlank(
-        properties == null ? null : properties.getProperty("password"),
-        queryValues.get("password")
-    );
-    String catalogCode = firstNonBlank(
-        properties == null ? null : properties.getProperty("catalogCode"),
-        queryValues.get("catalogCode")
-    );
-    final String tenantId = firstNonBlank(
-        properties == null ? null : properties.getProperty("tenantId"),
-        queryValues.get("tenantId")
-    );
-    final String contextId = firstNonBlank(
-        properties == null ? null : properties.getProperty("contextId"),
-        queryValues.get("contextId")
-    );
-    final String schema = firstNonBlank(
-        properties == null ? null : properties.getProperty("schema"),
-        queryValues.get("schema")
-    );
+    String loginSubject =
+        firstNonBlank(
+            properties == null ? null : properties.getProperty("user"),
+            properties == null ? null : properties.getProperty("username"),
+            queryValues.get("user"));
+    String password =
+        firstSecret(
+            properties == null ? null : properties.getProperty("password"),
+            queryValues.get("password"));
+    String catalogCode =
+        firstNonBlank(
+            properties == null ? null : properties.getProperty("catalogCode"),
+            queryValues.get("catalogCode"));
+    final String tenantId =
+        firstNonBlank(
+            properties == null ? null : properties.getProperty("tenantId"),
+            queryValues.get("tenantId"));
+    final String contextId =
+        firstNonBlank(
+            properties == null ? null : properties.getProperty("contextId"),
+            queryValues.get("contextId"));
+    final String schema =
+        firstNonBlank(
+            properties == null ? null : properties.getProperty("schema"),
+            queryValues.get("schema"));
     if (isBlank(loginSubject)) {
       throw new SQLException("DNA JDBC 连接缺少 user");
     }
-    if (isBlank(password)) {
+    if (password == null || password.isEmpty()) {
       throw new SQLException("DNA JDBC 连接缺少 password");
     }
     Properties mergedProperties = mergeUrlProperties(properties, queryValues);
@@ -79,18 +77,15 @@ final class DnaJdbcUrlParser {
         trimToNull(tenantId),
         trimToNull(contextId),
         trimToNull(schema),
-        mergedProperties
-    );
+        mergedProperties);
   }
 
   /**
-   * Merges URL query parameters into the connection properties. Properties passed
-   * explicitly via {@link java.sql.DriverManager} take precedence over URL values.
+   * Merges URL query parameters into the connection properties. Properties passed explicitly via
+   * {@link java.sql.DriverManager} take precedence over URL values.
    */
   private static Properties mergeUrlProperties(
-      final Properties driverProperties,
-      final Map<String, String> queryValues
-  ) {
+      final Properties driverProperties, final Map<String, String> queryValues) {
     Properties merged = new Properties();
     for (Map.Entry<String, String> entry : queryValues.entrySet()) {
       merged.setProperty(entry.getKey(), entry.getValue());
@@ -111,14 +106,7 @@ final class DnaJdbcUrlParser {
     String path = uri.getPath();
     try {
       return new URI(
-          uri.getScheme(),
-          uri.getUserInfo(),
-          uri.getHost(),
-          uri.getPort(),
-          null,
-          null,
-          null
-      );
+          uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), null, null, null);
     } catch (URISyntaxException ex) {
       throw new SQLException("DNA JDBC URL 基础地址不合法", ex);
     }
@@ -146,6 +134,15 @@ final class DnaJdbcUrlParser {
 
   private static String decode(final String value) {
     return URLDecoder.decode(value, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  private static String firstSecret(final String... values) {
+    for (String value : values) {
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
   }
 
   private static String firstNonBlank(final String... values) {

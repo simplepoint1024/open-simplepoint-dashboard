@@ -33,14 +33,14 @@ class ApplicationFormRecordSchemaServiceImplTest {
     when(resolver.resolve("app-a", "page-a")).thenReturn(published);
     when(resolver.capabilities(published)).thenReturn(
         new ApplicationFormRuntimeCapabilities(false, false, false, false));
-    when(contexts.forResource("app.runtime.page.one")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(documents.compile(published)).thenReturn(new ApplicationFormRuntimeDocument(
         "1", List.of(), List.of(), List.of()));
     var service = new ApplicationFormRecordSchemaServiceImpl(resolver, documents, contexts);
     var buttons = (List<?>) service.schema("app-a", "page-a").get("buttons");
     assertThat(buttons).extracting(button -> String.valueOf(((Map<?, ?>) button).get("key")))
-        .containsExactly("view");
+        .containsExactly("view", "history");
 
     when(resolver.capabilities(published)).thenReturn(
         new ApplicationFormRuntimeCapabilities(false, false, false, true));
@@ -61,7 +61,7 @@ class ApplicationFormRecordSchemaServiceImplTest {
     when(resolver.capabilities(form)).thenReturn(
         new ApplicationFormRuntimeCapabilities(true, false, true, false)
     );
-    when(contexts.forResource("app.runtime.page.one")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(documents.compile(form)).thenReturn(new ApplicationFormRuntimeDocument(
         ApplicationFormApiVersion.DOCUMENT_V1,
@@ -93,13 +93,17 @@ class ApplicationFormRecordSchemaServiceImplTest {
     assertThat(properties.keySet()).containsExactly(
         "id", "version", "recordState", "tenantId", "createOrgDeptId", "createdBy", "createdAt", "updatedBy", "updatedAt", "deletedAt", "name-field"
     );
+    var creator = (Map<String, Object>) properties.get("createdBy");
+    assertThat(creator).containsEntry("x-reference-labels", "$displayLabels");
+    assertThat((Map<String, Object>) creator.get("x-ui"))
+        .containsEntry("x-list-visible", true).containsEntry("x-list-default-visible", false);
     Map<String, Object> query = (Map<String, Object>) schema.get("x-query");
     assertThat((Map<String, Object>) query.get("fields"))
         .containsKeys("recordState", "name-field")
         .doesNotContainKeys("id", "version");
     assertThat((List<Map<String, Object>>) result.get("buttons"))
         .extracting(button -> button.get("key"))
-        .containsExactly("view", "add", "delete");
+        .containsExactly("view", "add", "delete", "history");
   }
 
   @Test
@@ -125,7 +129,7 @@ class ApplicationFormRecordSchemaServiceImplTest {
     when(resolver.resolve("app-a", "page-a")).thenReturn(form);
     when(resolver.capabilities(form)).thenReturn(
         new ApplicationFormRuntimeCapabilities(true, true, true, false));
-    when(contexts.forResource("app.runtime.page.one")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(documents.compile(form)).thenReturn(new ApplicationFormRuntimeDocument(
         "1", fields, List.of(), List.of()));
@@ -172,7 +176,7 @@ class ApplicationFormRecordSchemaServiceImplTest {
         )).toList(), List.of(), List.of(), List.of()));
     when(resolver.resolve("app-a", "page-a")).thenReturn(form);
     when(resolver.capabilities(form)).thenReturn(new ApplicationFormRuntimeCapabilities(true, true, true, false));
-    when(contexts.forResource("app.runtime.page.one")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(documents.compile(form)).thenReturn(new ApplicationFormRuntimeDocument("1", fields, List.of(), List.of()));
     var result = new ApplicationFormRecordSchemaServiceImpl(resolver, documents, contexts).schema("app-a", "page-a");
@@ -208,7 +212,7 @@ class ApplicationFormRecordSchemaServiceImplTest {
     var context = mock(DnaInvocationContext.class);
     when(resolver.resolve("app-a", "page-a")).thenReturn(form);
     when(resolver.capabilities(form)).thenReturn(new ApplicationFormRuntimeCapabilities(true, true, false, false));
-    when(contexts.forResource("app.runtime.page.one")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(documents.compile(form)).thenReturn(new ApplicationFormRuntimeDocument("1", List.of(
         choiceField("name-field", FormFieldType.STRING, "a"), choiceField("second-field", FormFieldType.STRING, "b")), List.of(), List.of()));

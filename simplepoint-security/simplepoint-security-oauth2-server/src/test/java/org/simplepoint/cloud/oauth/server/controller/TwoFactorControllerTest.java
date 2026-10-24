@@ -1,127 +1,52 @@
 package org.simplepoint.cloud.oauth.server.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
-import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationToken;
-import org.simplepoint.cloud.oauth.server.service.TotpService;
+import org.simplepoint.cloud.oauth.server.provider.PendingMfaAuthentication;
+import org.simplepoint.plugin.rbac.authentication.MfaVerificationService;
 import org.simplepoint.security.entity.User;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.ExtendedModelMap;
 
-@ExtendWith(MockitoExtension.class)
 class TwoFactorControllerTest {
-
-  @Mock
-  private AuthenticationManager authenticationManager;
-
-  @Mock
-  private TotpService totpService;
-
-  @Mock
-  private LoginAuthenticationSuccessHandler authenticationSuccessHandler;
-
-  @Mock
-  private LoginAuditEventPublisher loginAuditEventPublisher;
-
-  private TwoFactorController controller;
-
-  @BeforeEach
-  void setUp() {
-    controller = new TwoFactorController(
-        authenticationManager,
-        totpService,
-        authenticationSuccessHandler,
-        loginAuditEventPublisher
-    );
+  MfaVerificationService verification = mock(MfaVerificationService.class);
+  LoginAuthenticationSuccessHandler success = mock(LoginAuthenticationSuccessHandler.class);
+  LoginAuditEventPublisher audit = mock(LoginAuditEventPublisher.class);
+  TwoFactorController controller = new TwoFactorController(verification, success, audit);
+  MockHttpServletRequest request = new MockHttpServletRequest("POST", "/two-factor/verify");
+  MockHttpServletResponse response = new MockHttpServletResponse();
+  @AfterEach void clear() { SecurityContextHolder.clearContext(); }
+  @Test void onlyPendingUnexpiredChallengeCanBeCompleted() throws Exception {
+    assertThat(controller.verify("123456", new ExtendedModelMap(), request, response)).isEqualTo("redirect:/login");
+    SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("alice", null, java.util.List.of()));
+    assertThat(controller.showVerificationPage()).isEqualTo("redirect:/login");
+    SecurityContextHolder.getContext().setAuthentication(new PendingMfaAuthentication("alice", 0, Instant.EPOCH));
+    assertThat(controller.verify("123456", new ExtendedModelMap(), request, response)).isEqualTo("redirect:/login");
+    verifyNoInteractions(verification, success, audit);
   }
-
-  @AfterEach
-  void tearDown() {
-    SecurityContextHolder.clearContext();
-  }
-
-  @Test
-  void verifyDelegatesToAuthenticationManager() throws Exception {
-    User user = twoFactorEnabledUser();
-    Authentication currentAuthentication = new UsernamePasswordAuthenticationToken(
-        user,
-        user.getPassword(),
-        user.getAuthorities()
-    );
-    Authentication verifiedAuthentication = new UsernamePasswordAuthenticationToken(
-        user,
-        user.getPassword(),
-        user.getAuthorities()
-    );
-    SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-    when(authenticationManager.authenticate(any(TwoFactorAuthenticationToken.class)))
-        .thenReturn(verifiedAuthentication);
-    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/two-factor/verify");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    ExtendedModelMap model = new ExtendedModelMap();
-
-    String view = controller.verify("123456", model, request, response);
-
-    assertThat(view).isNull();
-    assertThat(SecurityContextHolder.getContext().getAuthentication()).isSameAs(verifiedAuthentication);
-    verify(authenticationManager).authenticate(argThat(authentication ->
-        authentication instanceof TwoFactorAuthenticationToken token
-            && token.getPrincipal() == user
-            && "123456".equals(token.getCredentials())
-    ));
-    verify(authenticationSuccessHandler).onAuthenticationSuccessDelegate(request, response, verifiedAuthentication);
-    verifyNoInteractions(loginAuditEventPublisher);
-  }
-
-  @Test
-  void verifyRejectsFailedAuthentication() {
-    User user = twoFactorEnabledUser();
-    Authentication currentAuthentication = new UsernamePasswordAuthenticationToken(
-        user,
-        user.getPassword(),
-        user.getAuthorities()
-    );
-    SecurityContextHolder.getContext().setAuthentication(currentAuthentication);
-    when(authenticationManager.authenticate(any(TwoFactorAuthenticationToken.class)))
-        .thenThrow(new BadCredentialsException("Invalid code"));
-    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/two-factor/verify");
-    MockHttpServletResponse response = new MockHttpServletResponse();
-    ExtendedModelMap model = new ExtendedModelMap();
-
-    String view = controller.verify("000000", model, request, response);
-
-    assertThat(view).isEqualTo("two-factor-verify");
-    assertThat(model.getAttribute("error")).isEqualTo("Invalid authentication code");
-    assertThat(SecurityContextHolder.getContext().getAuthentication()).isSameAs(currentAuthentication);
-    verify(loginAuditEventPublisher).publishFailure(eq(request), eq(currentAuthentication), any(BadCredentialsException.class));
-  }
-
-  private static User twoFactorEnabledUser() {
-    User user = new User();
-    user.setUsername("demo");
-    user.setPassword("secret");
-    user.setTwoFactorEnabled(Boolean.TRUE);
-    user.setTwoFactorSecret("SECRET");
-    return user;
+  @Test void validFactorUsesSanitizedIdentityAndFailureNeverCompletesLogin() throws Exception {
+    var pending = new PendingMfaAuthentication("alice", 0, Instant.now().plusSeconds(60));
+    SecurityContextHolder.getContext().setAuthentication(pending);
+    when(verification.verify(pending.challenge(), "wrong")).thenThrow(new BadCredentialsException("Invalid code"));
+    assertThat(controller.verify("wrong", new ExtendedModelMap(), request, response)).isEqualTo("two-factor-verify");
+    assertThat(SecurityContextHolder.getContext().getAuthentication()).isSameAs(pending);
+    verifyNoInteractions(success);
+    verify(audit).publishFailure(eq(request), eq(pending), any(BadCredentialsException.class));
+    User user = new User(); user.setId("alice"); user.setPassword("hash"); user.setTwoFactorSecret("ciphertext");
+    when(verification.verify(pending.challenge(), "123456")).thenReturn(user);
+    assertThat(controller.verify("123456", new ExtendedModelMap(), request, response)).isNull();
+    verify(success).complete(eq(request), eq(response), argThat(auth -> auth.isAuthenticated()
+        && ((User) auth.getPrincipal()).getPassword() == null
+        && ((User) auth.getPrincipal()).getTwoFactorSecret() == null && auth.getCredentials() == null));
   }
 }

@@ -1,4 +1,8 @@
 dependencies {
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
+    runtimeOnly(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-module"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
+
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
     implementation(project(":simplepoint-core"))

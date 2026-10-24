@@ -14,7 +14,7 @@ const rowActionIcons: Readonly<Record<string, string>> = {
   download: 'DownloadOutlined', history: 'HistoryOutlined', design: 'FormOutlined',
 };
 
-type Props<T> = Pick<TableProps<T>, 'buttons' | 'onButtonEvents' | 'isButtonDisabled'> & {
+type Props<T> = Pick<TableProps<T>, 'buttons' | 'onButtonEvents' | 'isButtonDisabled' | 'isButtonVisible'> & {
   appearance?: 'toolbar' | 'row';
   selectedKeys: Key[];
   selectedRows: T[];
@@ -24,7 +24,7 @@ type Props<T> = Pick<TableProps<T>, 'buttons' | 'onButtonEvents' | 'isButtonDisa
 };
 
 /** One platform renderer for permission-filtered toolbar and record-detail actions. */
-export default function TableActions<T>({buttons, selectedKeys, selectedRows, onButtonEvents, isButtonDisabled, menu, appearance}: Props<T>) {
+export default function TableActions<T>({buttons, selectedKeys, selectedRows, onButtonEvents, isButtonDisabled, isButtonVisible, menu, appearance}: Props<T>) {
   const rowContext = useContext(RowActionContext);
   const rowAppearance = appearance ? appearance === 'row' : rowContext;
   const {t, ensure} = useI18n();
@@ -35,7 +35,7 @@ export default function TableActions<T>({buttons, selectedKeys, selectedRows, on
     const text = typeof value === 'string' ? value : fallback;
     return resolveResourceLabel(text, fallback, t);
   };
-  const actions = buttons?.map(button => {
+  const actions = buttons?.filter(button => isButtonVisible?.(button, selectedRows) !== false).map(button => {
       const {argumentMinSize: min, argumentMaxSize: max, sort: _sort, color, variant, text, icon, title, iconOnly, children,
         authority: _authority, path: _path, ...rest} = button as TableButtonProps & {authority?: string; path?: string};
       const size = selectedKeys.length;

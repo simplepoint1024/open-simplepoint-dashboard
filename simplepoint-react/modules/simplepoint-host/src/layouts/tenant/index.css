@@ -1,85 +1,14 @@
-.tenant-home-page {
-  height: 100%;
-  overflow: auto;
-  padding: 16px;
-  background: var(--ant-color-bg-layout, #f5f5f5);
-}
-
-.tenant-home-empty {
-  display: grid;
-  place-items: center;
-}
-
-.tenant-home-hero {
-  min-height: 190px;
-  margin-bottom: 16px;
-  padding: 28px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  border-radius: 16px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 85% 10%, rgba(255, 255, 255, .22), transparent 30%),
-    linear-gradient(115deg, #102f57, #1677a8 58%, #21a89a);
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 16px 38px rgba(13, 60, 102, .18);
-}
-
-.tenant-home-identity {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 18px;
-}
-
-.tenant-home-logo {
-  flex: 0 0 auto;
-  padding: 6px;
-  background: rgba(255, 255, 255, .94);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, .16);
-}
-
-.tenant-home-logo img { object-fit: contain; }
-.tenant-home-copy { min-width: 0; }
-.tenant-home-copy h2.ant-typography { margin: 0; color: #fff; }
-.tenant-home-copy p.ant-typography { margin: 8px 0 0; max-width: 760px; color: rgba(255, 255, 255, .78); }
-.tenant-home-actions { flex: 0 0 auto; }
-.tenant-home-card { height: 100%; border-radius: 12px; }
-.tenant-resource-mode { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0); }
-.tenant-resource-sync-steps { margin: 0; padding-left: 22px; }
-.tenant-resource-sync-steps ul { max-height: 120px; overflow-y: auto; padding-left: 20px; }
-.tenant-resource-breadcrumb { display: flex; margin-bottom: 12px; }
-
-.tenant-owner-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.tenant-owner-primary {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.tenant-owner-contact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin-top: 9px;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, .65));
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 768px) {
-  .tenant-home-page { padding: 10px; }
-  .tenant-home-hero { padding: 20px; align-items: flex-start; flex-direction: column; }
-  .tenant-home-identity { align-items: flex-start; }
-  .tenant-home-logo { width: 58px !important; height: 58px !important; line-height: 58px !important; }
-}
+.tenant-page-state {height: 100%; min-height: 0; padding: 24px; box-sizing: border-box; display: grid; align-content: center; background: var(--ant-color-bg-container);}
+.tenant-resource-page, .tenant-package-page {display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; overflow: hidden; background: var(--ant-color-bg-container);}
+.tenant-settings-identity {display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 4px 8px 18px; border-bottom: 1px solid var(--ant-color-border-secondary);}
+.tenant-settings-identity strong {font-size: 18px; overflow-wrap: anywhere;}
+.tenant-settings-identity p {margin: 0; color: var(--ant-color-text-secondary); line-height: 1.6; overflow-wrap: anywhere;}
+.tenant-settings-heading {display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px;}
+.tenant-settings-heading h3 {display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;}
+.tenant-settings-actions {display: flex; justify-content: flex-end; margin-top: 20px;}
+.tenant-owner-details {display: flex; align-items: flex-start; gap: 24px;}
+.tenant-owner-details .ant-descriptions {flex: 1; min-width: 0;}
+.tenant-resource-sync-steps {margin: 0; padding-left: 22px;}
+.tenant-resource-sync-steps ul {max-height: 120px; overflow-y: auto; padding-left: 20px;}
+.tenant-resource-breadcrumb {display: flex; margin-bottom: 12px;}
+@media (max-width: 600px) {.tenant-owner-details {flex-direction: column; gap: 16px;}}

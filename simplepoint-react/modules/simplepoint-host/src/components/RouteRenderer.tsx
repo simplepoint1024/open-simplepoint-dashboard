@@ -1,3 +1,4 @@
+import {resolveHostComponent} from '@/utils/hostComponent';
 import {JSX} from 'react';
 import {Navigate, Route, useLocation} from 'react-router';
 import {IframeView} from './IframeView';
@@ -11,6 +12,7 @@ import {OrgTenantRequired} from '@/views/errors/OrgTenantRequired';
 import {Home} from '@/views/home';
 import type {RouteInfo} from '@/store/routes';
 import {TenantHome} from '@/layouts/tenant';
+import {TenantResourcesPage, TenantPackagesPage} from '@/layouts/tenant/pages';
 import {
     AI_WORKBENCH_ROOT_PATH,
     LEGACY_AI_WORKSPACE_PATH,
@@ -96,7 +98,14 @@ export function renderRoutes(
                 return {key, path, element: <OrgTenantRequired/>};
             }
 
-            if (component === 'host/TenantHome') {
+            const hostComponent = resolveHostComponent(component, path);
+            if (hostComponent === 'resources') {
+                return {key, path, element: <TenantResourcesPage/>};
+            }
+            if (hostComponent === 'packages') {
+                return {key, path, element: <TenantPackagesPage/>};
+            }
+            if (hostComponent === 'settings') {
                 return {key, path, element: <TenantHome/>};
             }
 

@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.rbac.core.service.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -8,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
 import org.simplepoint.security.entity.User;
 
@@ -24,17 +25,19 @@ class UserAutoRegistrationInitializerTest {
     User existing = new User();
     existing.setId("user-1");
     existing.setEmail(configured.getEmail());
-    UsersService usersService = mock(UsersService.class);
-    when(usersService.loadUserByUsername(configured.getEmail())).thenReturn(existing);
+    UserManagementService usersService = mock(UserManagementService.class);
+    SystemUserBootstrap bootstrap = mock(SystemUserBootstrap.class);
+    when(usersService.loadUserByPhoneOrEmail(configured.getEmail())).thenReturn(existing);
 
     var contribution = new UserAutoRegistrationInitializer()
-        .userRegistrationBootstrapContribution(usersService, properties, mock(org.simplepoint.plugin.rbac.core.api.repository.UserRepository.class))
+        .userRegistrationBootstrapContribution(usersService, bootstrap, properties)
         .contribution();
     assertThat(contribution.version()).isEqualTo("3");
     contribution.action().run();
 
-    verify(usersService).loadUserByUsername(configured.getEmail());
+    verify(usersService).loadUserByPhoneOrEmail(configured.getEmail());
     verify(usersService, never()).create(configured);
+    verify(bootstrap, never()).createBootstrapAccount(configured);
   }
 
   @Test
@@ -44,14 +47,30 @@ class UserAutoRegistrationInitializerTest {
     configured.setEmail("member@example.com");
     configured.setPassword("secret");
     properties.setUsers(Set.of(configured));
-    UsersService usersService = mock(UsersService.class);
-    when(usersService.loadUserByUsername(configured.getEmail())).thenThrow(new IllegalStateException("missing"));
+    UserManagementService usersService = mock(UserManagementService.class);
+    SystemUserBootstrap bootstrap = mock(SystemUserBootstrap.class);
 
     var contribution = new UserAutoRegistrationInitializer()
-        .userRegistrationBootstrapContribution(usersService, properties, mock(org.simplepoint.plugin.rbac.core.api.repository.UserRepository.class))
+        .userRegistrationBootstrapContribution(usersService, bootstrap, properties)
         .contribution();
     contribution.action().run();
 
-    verify(usersService).create(configured);
+    verify(bootstrap).createBootstrapAccount(configured);
+    verify(usersService, never()).create(configured);
+  }
+
+  @Test
+  void failedBootstrapLookupDoesNotAttemptAccountCreation() throws Exception {
+    var properties = new UserRegistrationProperties();
+    var configured = new User();
+    configured.setEmail("root@example.test");
+    properties.setUsers(Set.of(configured));
+    var users = mock(UserManagementService.class);
+    var bootstrap = mock(SystemUserBootstrap.class);
+    when(users.loadUserByPhoneOrEmail(configured.getEmail())).thenThrow(new IllegalStateException("database unavailable"));
+    var contribution = new UserAutoRegistrationInitializer().userRegistrationBootstrapContribution(users, bootstrap,
+        properties).contribution();
+    assertThatThrownBy(() -> contribution.action().run()).hasMessageContaining("database unavailable");
+    verify(bootstrap, never()).createBootstrapAccount(configured);
   }
 }

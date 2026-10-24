@@ -1,4 +1,6 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
+    implementation(project(":simplepoint-calculation"))
     implementation("com.google.re2j:re2j:1.8")
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
     implementation(project(":simplepoint-platform:simplepoint-platform-resource-api"))
@@ -19,16 +21,24 @@ dependencies {
 
 tasks.test {
     systemProperty(
+        "simplepoint.app-form.cancellation-progress-migration",
+        rootProject.file("doc/deployment/sql/20261019-app-form-cancellation-progress.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.publication-recovery-migration",
+        rootProject.file("doc/deployment/sql/20261018-app-form-publication-recovery.sql").absolutePath
+    )
+    systemProperty(
+        "simplepoint.app-form.details-migration",
+        rootProject.file("doc/deployment/sql/20261014-app-form-details.sql").absolutePath
+    )
+    systemProperty(
         "simplepoint.app-form.policy-protocol-migration",
         rootProject.file("doc/deployment/sql/20261014-app-form-policy-protocol.sql").absolutePath
     )
     systemProperty(
         "simplepoint.app-form.policy-cancellation-migration",
         rootProject.file("doc/deployment/sql/20261014-app-form-policy-cancellation.sql").absolutePath
-    )
-    systemProperty(
-        "simplepoint.app-form.bootstrap-schema",
-        rootProject.file("simplepoint-services/simplepoint-service-app/src/main/resources/schema.sql").absolutePath
     )
     systemProperty(
         "simplepoint.app-form.policy-publication-migration",
@@ -46,4 +56,12 @@ tasks.test {
         "simplepoint.app-form.migration",
         rootProject.file("doc/deployment/sql/20261013-app-form-domain.sql").absolutePath
     )
+}
+
+// A disposable PostgreSQL run must never reuse a cached skip.
+tasks.withType<Test>().configureEach {
+    val postgres = providers.environmentVariable("APP_FORM_TEST_POSTGRES_URL").isPresent
+    inputs.property("appFormPostgres", postgres)
+    outputs.upToDateWhen { !postgres }
+    outputs.doNotCacheIf("Uses a disposable PostgreSQL form database") { postgres }
 }

@@ -17,6 +17,7 @@ import org.simplepoint.events.api.EventMessage;
 public final class EventCodec {
   public static final int MAX_BYTES = 32768;
   private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
+      .enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
       .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
   /** Serializes with a bounded wire size. */

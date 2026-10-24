@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Request and response models used by the external DNA JDBC driver gateway.
- */
+/** Request and response models used by the external DNA JDBC driver gateway. */
 public final class FederationJdbcDriverModels {
 
-  private FederationJdbcDriverModels() {
-  }
+  private FederationJdbcDriverModels() {}
 
   /**
    * Driver authentication and routing request.
@@ -20,14 +17,29 @@ public final class FederationJdbcDriverModels {
    * @param catalogCode optional default datasource catalog code
    * @param tenantId optional tenant id
    * @param contextId optional permission context id
+   * @param oneTimeCode optional configured second factor
    */
   public record DriverRequest(
       String loginSubject,
       String password,
       String catalogCode,
       String tenantId,
-      String contextId
-  ) {
+      String contextId,
+      String oneTimeCode) {
+    /** Preserves source compatibility for clients without a configured second factor. */
+    public DriverRequest(
+        String loginSubject,
+        String password,
+        String catalogCode,
+        String tenantId,
+        String contextId) {
+      this(loginSubject, password, catalogCode, tenantId, contextId, null);
+    }
+
+    @Override
+    public String toString() {
+      return "DriverRequest[credentials=REDACTED]";
+    }
   }
 
   /**
@@ -43,26 +55,23 @@ public final class FederationJdbcDriverModels {
       String defaultSchema,
       String catalogCode,
       List<Object> parameters,
-      Integer maxRows
-  ) {
-    /**
-     * Query Request.
-     */
+      Integer maxRows) {
+    /** Query Request. */
     public QueryRequest(final String sql, final String defaultSchema) {
       this(sql, defaultSchema, null, null, null);
     }
 
-    /**
-     * Query Request.
-     */
+    /** Query Request. */
     public QueryRequest(final String sql, final String defaultSchema, final String catalogCode) {
       this(sql, defaultSchema, catalogCode, null, null);
     }
 
-    /**
-     * Query Request.
-     */
-    public QueryRequest(final String sql, final String defaultSchema, final String catalogCode, final List<Object> parameters) {
+    /** Query Request. */
+    public QueryRequest(
+        final String sql,
+        final String defaultSchema,
+        final String catalogCode,
+        final List<Object> parameters) {
       this(sql, defaultSchema, catalogCode, parameters, null);
     }
   }
@@ -74,12 +83,7 @@ public final class FederationJdbcDriverModels {
    * @param typeName JDBC type name
    * @param jdbcType JDBC type code
    */
-  public record JdbcColumn(
-      String name,
-      String typeName,
-      int jdbcType
-  ) {
-  }
+  public record JdbcColumn(String name, String typeName, int jdbcType) {}
 
   /**
    * Generic tabular result for JDBC metadata queries.
@@ -87,10 +91,7 @@ public final class FederationJdbcDriverModels {
    * @param columns columns
    * @param rows rows
    */
-  public record TabularResult(
-      List<JdbcColumn> columns,
-      List<List<Object>> rows
-  ) {
+  public record TabularResult(List<JdbcColumn> columns, List<List<Object>> rows) {
 
     /**
      * Creates an immutable tabular result.
@@ -100,9 +101,16 @@ public final class FederationJdbcDriverModels {
      */
     public TabularResult {
       columns = columns == null ? List.of() : List.copyOf(columns);
-      rows = rows == null ? List.of() : rows.stream()
-          .map(row -> row == null ? List.<Object>of() : Collections.unmodifiableList(new ArrayList<>(row)))
-          .toList();
+      rows =
+          rows == null
+              ? List.of()
+              : rows.stream()
+                  .map(
+                      row ->
+                          row == null
+                              ? List.<Object>of()
+                              : Collections.unmodifiableList(new ArrayList<>(row)))
+                  .toList();
     }
   }
 
@@ -126,7 +134,5 @@ public final class FederationJdbcDriverModels {
       String loginSubject,
       String databaseProductName,
       String databaseProductVersion,
-      String currentSchema
-  ) {
-  }
+      String currentSchema) {}
 }

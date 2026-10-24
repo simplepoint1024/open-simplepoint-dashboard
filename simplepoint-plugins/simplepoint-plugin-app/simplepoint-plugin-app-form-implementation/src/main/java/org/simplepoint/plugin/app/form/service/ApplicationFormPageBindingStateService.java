@@ -246,6 +246,13 @@ public class ApplicationFormPageBindingStateService {
   /** Claims a stored policy decision before schema or resource preparation can run again. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public BindingClaim claimPolicyRecovery(final String applicationId, final String formId, final String releaseId) {
+    return claimPolicyRecovery(applicationId, formId, releaseId, null);
+  }
+
+  /** Rechecks a worker's selected identity under the normal page/form/binding lock order. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public BindingClaim claimPolicyRecovery(final String applicationId, final String formId, final String releaseId,
+      final FormPublicationRecoveryState.Candidate candidate) {
     FormActor actor = requestContext.requireActor();
     ApplicationFormPageBindingEntity binding = requireBinding(actor.tenantId(), releaseId, false);
     if (!applicationId.equals(binding.getApplicationId()) || !formId.equals(binding.getFormId())) {
@@ -254,11 +261,21 @@ public class ApplicationFormPageBindingStateService {
     final ApplicationPageTarget page = pageAccess.requirePageForUpdate(actor.tenantId(), applicationId, binding.getPageId());
     final ApplicationFormEntity form = requireForm(actor.tenantId(), applicationId, formId, true);
     entityManager.refresh(binding, LockModeType.PESSIMISTIC_WRITE);
-    boolean present = !entityManager.createQuery("select p.id from ApplicationFormWritePolicyPublicationEntity p "
-            + "where p.tenantId = :tenant and p.bindingId = :binding", String.class)
-        .setParameter("tenant", actor.tenantId()).setParameter("binding", binding.getId()).getResultList().isEmpty();
-    if (!present) {
+    var policy = entityManager.createQuery("from ApplicationFormWritePolicyPublicationEntity p "
+            + "where p.tenantId = :tenant and p.bindingId = :binding", ApplicationFormWritePolicyPublicationEntity.class)
+        .setParameter("tenant", actor.tenantId()).setParameter("binding", binding.getId()).getResultStream().findFirst().orElse(null);
+    if (policy == null) {
       return null;
+    }
+    entityManager.refresh(policy);
+    if (candidate != null && (!candidate.policyId().equals(policy.getId()) || candidate.version() != policy.getLockVersion()
+        || !candidate.tenantId().equals(actor.tenantId()) || !candidate.actorId().equals(actor.actorId())
+        || !candidate.applicationId().equals(applicationId) || !candidate.formId().equals(formId) || !candidate.bindingId().equals(releaseId)
+        || !candidate.actorId().equals(policy.getRecoveryActorId())
+        || !java.util.Objects.equals(candidate.roleId(), policy.getRecoveryRoleId())
+        || !java.util.Objects.equals(candidate.roleId(), org.simplepoint.core.AuthorizationContextHolder.getContext().getAttribute("X-Role-Id"))
+        || policy.getRecoveryNotBefore() == null || policy.getRecoveryNotBefore().isAfter(now()))) {
+      return new BindingClaim(false, null, view(binding));
     }
     if (binding.getStatus() == ApplicationFormPageBindingStatus.ACTIVE || TERMINAL_STATES.contains(binding.getStatus())
         || binding.getLeaseUntil() != null && binding.getLeaseUntil().isAfter(now())) {
@@ -267,6 +284,10 @@ public class ApplicationFormPageBindingStateService {
     FormWritePolicyPublicationGuard.requireAvailable(entityManager, actor.tenantId(), formId, binding.getPageId(), binding.getId());
     claimExecution(binding);
     binding.setStatus(ApplicationFormPageBindingStatus.ACTIVATING);
+    if (candidate != null) {
+      policy.setRecoveryNotBefore(now().plusSeconds(30));
+      policy.setRecoveryError(null);
+    }
     entityManager.flush();
     return new BindingClaim(true, work(binding, page, form), view(binding));
   }
@@ -799,7 +820,7 @@ public class ApplicationFormPageBindingStateService {
         page.sortOrder(),
         binding.getGeneration(),
         binding.getPolicyProtocolVersion(),
-        page.navigationGroupName()
+        page.navigationGroupName(), page.presentation()
     );
   }
 
@@ -874,8 +895,17 @@ public class ApplicationFormPageBindingStateService {
       int sortOrder,
       long generation,
       int policyProtocolVersion,
-      String navigationGroupName
+      String navigationGroupName,
+      org.simplepoint.plugin.app.form.api.model.PageResourcePresentation presentation
   ) {
+    public BindingWork(String bindingId, String executionToken, String tenantId,
+        String applicationId, String pageId, String formId, int formVersion,
+        String physicalModelId, String managedKey, String pageName, String pageDescription,
+        int sortOrder, long generation, int policyProtocolVersion, String navigationGroupName) {
+      this(bindingId, executionToken, tenantId, applicationId, pageId, formId, formVersion,
+          physicalModelId, managedKey, pageName, pageDescription, sortOrder, generation,
+          policyProtocolVersion, navigationGroupName, null);
+    }
     /** Preserves existing publication callers and parent identities. */
     public BindingWork(String bindingId, String executionToken, String tenantId,
         String applicationId, String pageId, String formId, int formVersion,

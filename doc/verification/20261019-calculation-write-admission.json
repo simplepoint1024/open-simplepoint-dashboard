@@ -1,0 +1,116 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-19T03:14:50.152421+00:00",
+  "changes": [
+    "从不可变表单定义编译中立字段写入规则，DNA 直接写/试算/事务使用原记录生命周期；新增明细使用新增语义",
+    "真实 PostgreSQL/MySQL 验证提交后禁止修改、事务全部回滚及无孤立回执/快照",
+    "候选源码解除公式发布临时拦截，标准发布校验仍拒绝非法引用和循环；未部署"
+  ],
+  "quality": {
+    "simplepoint-plugin-dna-runtime-api": {
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "1661281d73ec40605bedf6cfb4317f66fdbd2d3d37228e611274f83e9e28f9fa"
+    },
+    "simplepoint-plugin-dna-runtime-implementation": {
+      "tests": 196,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "c56b939e5052bd87b4221fb11ffcdef1d090fb051108e4b8f84b252d3e0ac2b7"
+    },
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 297,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "45b874c4e2d2ce3ccde4bd1b127cde9fc71fc8e1999d5e039d20a13e5918306b"
+    },
+    "simplepoint-service-app": {
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "c2463904f31cee3e64dae0ee6d0bb49ad1b949e2105f0389c8549d10e71ca44f"
+    }
+  },
+  "totalTests": 603,
+  "executionLogs": [
+    {
+      "name": "sp-calculation-field-write-final.log",
+      "sha256": "7e5eeaf7e1b0365e39029749761a6af3e0dd3d1afe7e383ab5d4ee36a49e7035"
+    },
+    {
+      "name": "sp-calculation-app-publication-final.log",
+      "sha256": "3b3baee502e66be48ae0057b8b7cc9bc871d9ffab0c3297c3ac80a4106c39bfb"
+    }
+  ],
+  "sources": [
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationDefinition.java",
+      "sha256": "8408832678d4c676cb3e08a856c48f9e2097001ef576b1b52366c60a63f1b280"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordFieldWriteRule.java",
+      "sha256": "d96e1c941333922279785f17525b1c41f66843f44f06cf24a9b96801468571ba"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/test/java/org/simplepoint/plugin/dna/runtime/api/record/RecordFieldWriteRuleTest.java",
+      "sha256": "a637dcaf068fa6d27d1d231b7c191b5b69b7b1e8f30494676fa8fec586d81d55"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationCompiler.java",
+      "sha256": "ee99fc5ef67e87fee542e28485c946ce6ae26ac808ca7c47d0d01d781e26568f"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationEvaluator.java",
+      "sha256": "e31cf69cfab21d1fd55a746303fbe79d0ded2d4a9b9b1f340e3fdcf56d651972"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationWriteSupport.java",
+      "sha256": "90e45f09bfb63cee77d858f129c2f5603cc6e4bdc9a05ed463330daba2205f19"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordFieldWriteValidation.java",
+      "sha256": "01eebef1a566492bc4f92647ff09678bdbf7b24e004907f39b6ce15cc6f918ea"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/CalculatedTransactionDatabaseAssertions.java",
+      "sha256": "b78af55d96e5fc24682083c50f6b869f3072c0876e5319ec31e0481d790fbd72"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java",
+      "sha256": "1e9f365cf843dffc6a5a2444bacfc76f2dcdd33b8ffe50440d685c5b4afe7ff0"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordFieldWriteValidationTest.java",
+      "sha256": "66a68b3a60a4fc8a4bf28935a5c30ff384ce11eaa24c770a9d3cce780231ce53"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjection.java",
+      "sha256": "2a1302a88603d8d1f6055426ec93ab5942f566a01df0abdf4e7a39818cbad1e4"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationWriteProjection.java",
+      "sha256": "048b0ce914e9696cc860ad7c7779279653845bb67f2c26e084837a26dcf52c61"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormDocumentValidator.java",
+      "sha256": "bca56ff7a7c6c86b2471cd542a53541d5d2de9267fe7b632cd6fd16d1421fcd9"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationDefinitionTest.java",
+      "sha256": "22758ca83ea77b9487edf8c641ff49b2978a1ac5ff35ad54bec674879c4422b2"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationWriteProjectionTest.java",
+      "sha256": "5c19cc89c5242b4610e448f906aca64554af81411a26f3a9e292b6c4004cf47c"
+    }
+  ],
+  "limits": [
+    "真实公式发布、回填、审批及浏览器终验仍未完成",
+    "176 项最终矩阵未计为通过"
+  ]
+}

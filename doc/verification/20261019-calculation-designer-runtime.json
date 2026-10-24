@@ -1,0 +1,412 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-19T02:55:41.301264+00:00",
+  "changes": [
+    "独立公式编辑器以宿主适配接入主表和明细字段；可视化/文本双向、目录、错误、复制引用及持久字段能力",
+    "计算结果通过授权后端试算适配，保持只读且不写入用户编辑缓冲",
+    "同一运行时适配复用于业务 CRUD 和流程提交；请求取消并按输入、页签、关闭及授权范围隔离",
+    "公式字段支持列表默认排序和操作显示配置；预览关闭时立即停用请求"
+  ],
+  "quality": {
+    "typecheck": {
+      "status": "passed",
+      "logSha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    "productionBuild": {
+      "status": "passed",
+      "logSha256": "e970af6ac9365499c9e95d3738aa919220f7f9642438859f8f844224d7da2c43"
+    },
+    "models": {
+      "status": "passed",
+      "logSha256": "ee280a3621a277675e1cdaaa7ab07ffed15d63e045d4e223cd56e95deb79cc48",
+      "tests": 89
+    },
+    "browser": {
+      "status": "passed",
+      "logSha256": "dfe0a7afcb4a9249b7f3a506eecb1b181e1ea99c0718594dfde7ec8c06823bdc",
+      "assertions": [
+        "PASS: borderless icon toolbar, group icons, draggable/collapsible inspectors and restored width/tab state",
+        "PASS: typed data editor, exact defaults, storage constraints, local invalid drafts, modal retention/discard, independent fields and ordered index lifecycle",
+        "PASS: calculator field mode, invalid function rejection, visual/text roundtrip, read-only trusted preview and stable storage identity",
+        "PASS: platform condition tree, exact rule literals, compound NOT preservation, precedence, remove/undo and cross-scene preview",
+        "PASS: PC/iPad/Phone viewport widths, phone responsive fields, and retained trial input across switches",
+        "PASS: grouped icon palette, right-click target identity, nested half-width grids, horizontal properties and bounded scrolling at 1600/1024px",
+        "PASS: matrix 2x3 cells, icon property tabs and detail validation and platform detail-row add/edit/remove with Unicode values",
+        "PASS: 12 requested components, safe Markdown, runtime inputs, icon property drawer, field operation matrix and keyboard list ordering with complete undo",
+        "PASS: published calculator readonly output, newest-input wins, retained-page fencing, close/reopen isolation and no preview writes",
+        "PASS: application/form creation, real pointer drag, nested scenes, draft recovery/conflicts, publication response-loss and reload recovery, immutable resumed version, published CRUD and readonly/background lifecycle"
+      ]
+    },
+    "uiAudit": {
+      "status": "passed",
+      "logSha256": "bdb8a012462382995eeea59aa156aee41dc613169d95e77f2d6c61bbc49a39c1"
+    },
+    "bundles": {
+      "status": "passed",
+      "logSha256": "3f44412040dade8df0c459c54f1d704b814c4e55203ff7ffbdfd980d795fcb93"
+    },
+    "standaloneSyntax": {
+      "status": "passed",
+      "logSha256": "818e401f6bf83515606b3d28e4744b2628033b335027eaa3003fc2ae7b22996b"
+    },
+    "standaloneEditor": {
+      "status": "passed",
+      "logSha256": "36a4a3ab827888fe44ba7bd5e911183f879db539158f27f8a6c0ff89a74a5c48"
+    }
+  },
+  "sources": [
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/CalculationFieldEditor.tsx",
+      "sha256": "9f56a6b0e13f2aacceecdca7619e90959c716511767505bd0924ebacac7a3eff"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/Canvas.tsx",
+      "sha256": "af2839c0c18a3a7ed94bf4aebb6b7104f9040cafc327b38f828406d2760f7022"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/DataSchemaEditor.tsx",
+      "sha256": "d98b1a92312632e2ccd653b51dac159438fad8442863710707b834cd28e3d3f1"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/FieldEditor.tsx",
+      "sha256": "3469d0e00b2f058d3ec32eabca16c1631fdd930c884afe48702f5ef1c31e8852"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/FormProperties.tsx",
+      "sha256": "28b4ca657d405f947874962d11f1cc7251eae3847940035b42b842eb1e295e88"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/Preview.tsx",
+      "sha256": "cbbb89fc5be5bcaf862190136df94804fb0988f3a87f597bf9dc9d90180e6428"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/Properties.tsx",
+      "sha256": "119d8070747ccd2d4a4ab770e58861cb883a4eee51828af2a1d4a18020afbf61"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/RuleEditor.tsx",
+      "sha256": "16e7c871be84c0a4114556ddb014b650a2a03d856e1bce1efbb9bb8b64c69db6"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/calculationModel.test.mjs",
+      "sha256": "dd598fcd367a5c09904558a69775dd86e2cf179a04f8f5562fd250f9c56e4ac9"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/calculationModel.ts",
+      "sha256": "52c416d6df973015167ef9d72a6e020c41143f7a72fec49da9e1dff004a43f21"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/contracts.ts",
+      "sha256": "857bb6ddd662d5bb93f634eb5ca4d5cd9d67fa6be6b4974f1e2c751edebd0556"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/dataModel.test.mjs",
+      "sha256": "2044ba98d6222b43bdc4bcae01dda8b0b0d4978fa8895d4de520abc164028a95"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/dataModel.ts",
+      "sha256": "261643a61d5be1f0d70e0d4be9557403adff9dd97d6709d65f4e7baf2bc470d1"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/draftState.ts",
+      "sha256": "7a195d4512b0672dba3d046d2eeb0f4354b463521baca62fd87d872377e1e14a"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/extensions.test.mjs",
+      "sha256": "1b8376f226717c4d6afe4d05bc8d16e5e41be205bcafb8b9ee5b5b983aa5211c"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/fieldCapabilities.ts",
+      "sha256": "d699ea5e7c119c21fe258460e819df1e19dbbd7d34c325731ca128ba6bbb8e67"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/fieldValidation.ts",
+      "sha256": "04478201f5107a66a4502b85c4bf75024261ecc1b51aa20afad9a09c2812b3ea"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/formPresentation.test.mjs",
+      "sha256": "9bd1c1787dbe159b3a200b3a56b86cbd85be4f3e2e57854c0a2f2a005463d0a0"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/formPresentation.ts",
+      "sha256": "b72c60ab7adfe379a8ec7ee5eb7031218539bbd185e41fee35765f4e4d4d3c8a"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/index.tsx",
+      "sha256": "e4d3ef2df9d1ca97f267fbc9eac18dd9ee289606c7bfb52477cb7841c5867343"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/labels.ts",
+      "sha256": "6cb9b6cbc381a6bb92ad1440cf5a9aeebccdd358571a6c16ae9155741fced640"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/model.test.mjs",
+      "sha256": "d18313cb3bf3d1a09a79346d18156214153d93dc7077474ba2a6041f34ed3432"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/model.ts",
+      "sha256": "4e1674525b846d30841c6371a3d99b89b557580df416c5cf4f260ec12c412242"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/presentation.ts",
+      "sha256": "8b19512b5ccf4247ff5851f347db2c20a1aae662131ad9b43a0572a981122b26"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/ruleModel.test.mjs",
+      "sha256": "1764f6d4eea2a57da9b9ab24548fe98388880b37e8cb2ad285fc5bb03e683d54"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/ruleModel.ts",
+      "sha256": "e4d3d220e6ef893ef0a087144a92b8eb85786d1b255d2fdd242cc2a8bb049ded"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormDesigner/style.css",
+      "sha256": "7a5384712b57c66f7525fb0ccc7a31c24be6d97d710f28c702ddaffaef3d895f"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/Published.tsx",
+      "sha256": "333183c3aab743c1d4ed83a6b73c30667b9f27512d19369923ba7c4aa0f10dfc"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/RecordMetadata.tsx",
+      "sha256": "15785a67fcd3334f4076620ecd1e6e087cbf0fb50c4f84cb419aff9a768c4bf2"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/SceneForm.tsx",
+      "sha256": "1ea563c6e74a89fad2c1b2d2d8475a14bf1aa655757cb884b155039d082d239a"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/SceneLayout.tsx",
+      "sha256": "ffe21d11c7534a9cfef0cfed6cf4417f77aeed23cd5b78ce4068fff4d39eac8c"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/aggregateValidation.test.mjs",
+      "sha256": "b13c8f8d031b9867c3e6551c57e6be951a8296058a12a6d76e1a1eafba387ac3"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/aggregateValidation.ts",
+      "sha256": "7001c1490c90f0328a9e2e571495ab5d0d35c4a8412eac4892c900e044678c35"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/calculationPreview.test.mjs",
+      "sha256": "3886a8bb2b1af14d1afefe3246e93e1aa1cd2190707eee23ae519240b0e4cd3b"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/calculationPreview.ts",
+      "sha256": "d87fa998d7a71c31deca6a887c4f6502f7e97e4dbb22660ff0b31c44256af5e8"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/choiceValues.test.mjs",
+      "sha256": "0fdb9bc4a8bf90bf28cac4bc2beb84f9bd6d9910711858e443bc12e709ee23ce"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/choiceValues.ts",
+      "sha256": "2b09941d52ef8f29e66f143d6e2897ff2794c8c3959b7714ed00a9648ba39f8b"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/componentRegistry.ts",
+      "sha256": "0501d8609c05c16182516fcbbed7c8ccfb3c2b550f5aeef995a7532e15420daf"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/conditions.test.mjs",
+      "sha256": "f4bbc7997b49944a32a4db1d10010aaa025795313407b3f61d039bdfe7448bf0"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/conditions.ts",
+      "sha256": "75a492a0495c63693a9ffe6978c12e984d86985d829614c4f7e3169c06f181f9"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/contracts.ts",
+      "sha256": "bb4ff0bd4e21c45a9afdad4552deb24ad0b31ced42f056a160cddcc520c57ab4"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/fieldNullability.ts",
+      "sha256": "fdc6e6e2aaf95dcba1b8f3db7c09d1be760924ace2f9a8971ced8cd1015bc310"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/fieldSchema.ts",
+      "sha256": "7c1cfaf42fb552377013e57ed202436e6b69bcb9e2d4bd28432f40d7f769ef56"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/index.tsx",
+      "sha256": "1aa1d400ec6bb6c56d8da501ba0f59d929112d695e69f4cff5b645018b61b5f6"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/literals.ts",
+      "sha256": "a93d172d01fa867894bb801d70288d86ab8cc97792eb7d4ea90557f2b7f8104d"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/model.test.mjs",
+      "sha256": "79777664a17b17f13e704d0effc0ebb7195d927332525ea4f75d27a4814b8d7b"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/model.ts",
+      "sha256": "2f51743877996654e58c45bef84c5d1425573533c5bc6bd1e76254df8fd8f3f2"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/recordEditorUiSchema.ts",
+      "sha256": "09acbb990573d3439eebb6c79f631eb18d753e824f6cb31bcdc633be6a3e8661"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/recordTableModel.test.mjs",
+      "sha256": "fabcdf01aeada3e70e1b79f30839ece338917f882e91d9cb7d912441a2da9802"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/recordTableModel.ts",
+      "sha256": "0d665b5327fb2b0ec2662dc80b30ff9303a928af2f21503d1dd173dbc0842120"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/sceneState.test.mjs",
+      "sha256": "63938268acbcd3869b8d27e5555833b635832f38780fa9c50de057849bf785dc"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/sceneState.ts",
+      "sha256": "effeecd190a54a7927c3b1f093447f5a882b0f298ca067306c7eb4384f9d2114"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/style.css",
+      "sha256": "1f1246184f334b5fa3207e44c9aac9148052c761aa02eb6e16080f6a5692e453"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/useCalculationPreview.ts",
+      "sha256": "3ab7628436ea8cf4d21e6333eadea84eee0f7a0e86e1fd81a096df8d03e2eb96"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/useRecordCalculationPreview.ts",
+      "sha256": "0034855ef42290a3ac7bcf1314111afe48604953298ddeecdf05f1a0f4cc7df6"
+    },
+    {
+      "path": "simplepoint-react/libs/components/FormRuntime/writePolicy.ts",
+      "sha256": "0851c0ae66fdf0b2565f84712b6e639d39a64314fc3ba20fb3548a0c68afe4ae"
+    },
+    {
+      "path": "simplepoint-react/libs/calculation/src/index.ts",
+      "sha256": "478e64c869e8a4b8b0200359d7937f81a01fc2e7cd1e627f4333ee4f17c7e88d"
+    },
+    {
+      "path": "simplepoint-react/libs/calculation-editor/src/index.tsx",
+      "sha256": "6c7826d37dad4a94b5d28f84cc1dbd26737d4a496edff54e58235489b4bbf131"
+    },
+    {
+      "path": "simplepoint-react/libs/calculation/src/generated/CalculationLexer.ts",
+      "sha256": "8da8258430fe6ecb125295357390d10f28ce676ec3c2b6190fcaeeccdaefb9d6"
+    },
+    {
+      "path": "simplepoint-react/libs/calculation/src/generated/CalculationParser.ts",
+      "sha256": "98f02f2e20e23bc9dd058d5998e526c6e3bf6abc04e819a49b2e7dead36ca0a0"
+    },
+    {
+      "path": "simplepoint-react/libs/calculation/src/generated/CalculationVisitor.ts",
+      "sha256": "78da3986232914c51fdf7edbcdb006f21b0e4d4541b04b205fd1453182229720"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ApplicationForms.tsx",
+      "sha256": "de0ac63ec88e3eca15a9c91a46829908789fc71235f2bd75683375e4bc41be92"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/FormEditor.tsx",
+      "sha256": "4e4f0c96204b81b5957d5bd538b924ade816e0d57cb84e2f77a57ca65c4c9873"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/FormPublication.tsx",
+      "sha256": "08b2ee37211f14d71201749369d48a1723b00dc94f4f84ab651cf903211525bf"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PageFormDesigner.tsx",
+      "sha256": "a4cfcdbb059ea5309597f652ca07852ca99dc98f52020e9d1e169fe148ea855b"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublicationInspection.tsx",
+      "sha256": "6b5881eb20396ace7d71b51420758377c52da0619449af83c54c6f445375a1db"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/PublishedFormData.tsx",
+      "sha256": "3721d6679238a9d1b22ea4483713243b4c37e417a25119c550c2e3822a592cb1"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ReleaseHistory.tsx",
+      "sha256": "31335c8f8fc4047645bfa7babf9c44a31780390f62add67c9412732d3d4eff9d"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/ResourceLifecycle.tsx",
+      "sha256": "7fc1de75468d9ba7d760a71fb78f2292114ced9efcf202125f77ecc53f780aa1"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/designPage.ts",
+      "sha256": "df1829b91d675f73f104aa9d5a5f4a0aab155bda1dbf750809035cbd74817e63"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/publication.test.mjs",
+      "sha256": "ad24e3f6fb6de6205c60ae3204dc8fc48ed5f18f5e35b9eeae66085fbf95eb07"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/publication.ts",
+      "sha256": "0e63c7064f73faea149aa640042fc8d176ee77439c8bb473bf9bfcfed6883663"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/style.css",
+      "sha256": "cd296883ce4955c792c4b6e1b244f6624e0818b0cd440562f2f39e7f87db494b"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/useDesignerCalculationPreview.ts",
+      "sha256": "7b494868cd92f4dc67c08621ef5b8acd6431483d9f05d3ccd84f4948f79eabef"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/useFormDraft.ts",
+      "sha256": "f65f0d6d51d18047db482f5f7951f4478733400825b14332cee075f22dcad38d"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/Workbench/forms/useFormPublication.ts",
+      "sha256": "01e5355d608c877bf9d348669b1c525508ed6ee99abba739be5299678c25f729"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/FormRuntime/RecordTable.tsx",
+      "sha256": "9690d2f93851e0d93f69b7e1d62de754efca4e871bab5d45150e38c2fe4d5086"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/FormRuntime/index.tsx",
+      "sha256": "d9ebcf4ca12e8fe2d599aff09677a37d056d8d45c06de078b89a21718211a0df"
+    },
+    {
+      "path": "simplepoint-react/modules/simplepoint-app/src/views/FormRuntime/recordCards.ts",
+      "sha256": "ce31cb40d88deae571ebf75cdd0351e3a1645796009ee9df08df20f4241e19e0"
+    },
+    {
+      "path": "simplepoint-react/libs/components/ApplicationWorkflow/SubmissionDialog.tsx",
+      "sha256": "5b545905b751bfb8dab400766c2f786d5a410276adc2d46139347f75f1cb0b35"
+    },
+    {
+      "path": "simplepoint-react/libs/components/SimpleTable/index.tsx",
+      "sha256": "2a011786a313d3b450409da676b43d930c5e93b96e5587834c1eebbc37006d9f"
+    },
+    {
+      "path": "simplepoint-react/scripts/calculation-runtime-fixture.mjs",
+      "sha256": "2e05e9d29a45a00b6d27176bf999079369db4b36bc46ed31a7647015307496d0"
+    },
+    {
+      "path": "simplepoint-react/scripts/smoke-calculation-editor.mjs",
+      "sha256": "4bf7c0c51df597a46e1df9fda5cd140c46dee1328f871c02b5cecbc8cde0dc08"
+    },
+    {
+      "path": "simplepoint-react/scripts/smoke-calculation-runtime.mjs",
+      "sha256": "38a31231e11d91b27e516b13a5e4dfb9e0ab1fd50fbda3cb4e9e6878243963fa"
+    },
+    {
+      "path": "simplepoint-react/scripts/smoke-form-calculation-designer.mjs",
+      "sha256": "14c6733be783c57f5c478e5fa1565fdbfb901e0ead4430fe04b87840b14342ad"
+    },
+    {
+      "path": "simplepoint-react/scripts/form-publication-fixture.mjs",
+      "sha256": "9b905e347cb8f5854c37a01fce08e68cea9bf7c1d0b8653ca0871411a5eac248"
+    },
+    {
+      "path": "simplepoint-react/scripts/smoke-form-designer.mjs",
+      "sha256": "fe867ee2ae8bc61ec52b56c15f4f451010e74a63d62cf52dc9671f35819734c6"
+    }
+  ],
+  "limits": [
+    "浏览器使用独立 HTTP fixture 和标记输出验证交互，不能代替后端公式运算或真实业务发布验收",
+    "流程提交与明细公式的真实浏览器业务联调仍须完成；本批尚未部署",
+    "公式发布保护仍开启；最终 176 项矩阵保持未终验"
+  ]
+}

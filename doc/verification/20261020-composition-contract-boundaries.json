@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-20",
+  "phase": "S2 migrated i18n/resource contract boundaries; full goal incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service:check :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api:check :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-rest:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api:check :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:check :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-security:simplepoint-security-core:check :simplepoint-core:test :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "moduleBoundaries": "passed",
+  "testReports": [
+    {
+      "module": "simplepoint-core",
+      "tests": 347,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-core",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totalTests": 812,
+  "checkstyleViolations": {
+    "simplepoint-security/simplepoint-security-core/build/reports/checkstyle/main.xml": 0,
+    "simplepoint-security/simplepoint-security-core/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/build/reports/checkstyle/main.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/build/reports/checkstyle/main.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/reports/checkstyle/main.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/reports/checkstyle/main.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml": 0,
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-rest/build/reports/checkstyle/main.xml": 0
+  },
+  "coverage": [
+    "Narrow i18n lookup and resource registration interfaces share implementations with local management APIs",
+    "Real Spring router registration exports only public contracts; crafted removeAll RPC rejected",
+    "Version 2 registration DTOs contain no entity/audit state; wire dispatch creates domain-owned i18n entities",
+    "Resource synchronization preserves child declaration input while persisting parent relationship",
+    "Recursive actual-module RPC signature/DTO field check prevents entities/framework persistence types outside two explicitly pending legacy contracts",
+    "Common regression includes resource permission/paging/navigation scenarios; core and authorization regressions"
+  ],
+  "limitations": [
+    "UsersService and TenantService remain documented legacy entity RPC contracts; the architecture check explicitly excludes them pending migration",
+    "DNA cross-store user query and credential verification ownership still need migration",
+    "Implicit platform bootstrap consumers still need module graph declarations",
+    "Local service identity and transaction isolation are incomplete",
+    "No deployment, frontend distribution or complete standalone acceptance performed",
+    "v2 resource/i18n registration requires coordinated provider and consumer upgrade"
+  ],
+  "sha256": {
+    "simplepoint-core/src/main/java/org/simplepoint/core/locale/I18nMessageService.java": "d85c28bda37375ddabed580e8a0074a5f55fa9f78ed73b34c32813b5f8ce6c08",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RemoteContractBoundaryTest.java": "6e10eb0d35e70dffc1bd641a0ca5fa491cf8542a25c1aedc48487a6c41304207",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/configuration/I18nModuleMessageAutoConfiguration.java": "8b77d62c1b5c80b611099687e97167b11a81c72d381c2ef6de8df3ad36b2e5eb",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/model/MessageDeclaration.java": "1b911d569a10e513431c75401b6a619a10af5c959061abe86ea700c1fef44207",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/model/NamespaceDeclaration.java": "a7f6f857db463cd27634963814faf0f470d39f4b325e1a0da5c69d358aedf245",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/service/I18nLanguageDirectory.java": "7c3558f060a2b5eb84e73da2c9a5a88ca24a12085d814635a72979622a164fd5",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/service/I18nLanguageService.java": "ceb4bf6d359d61de1a2570df835efe368209992204e91b0a0bcf105032ab8ae8",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/service/I18nMessageManagementService.java": "fd70a3a117d6f7ba2164a4f04672a4dd81666e48a1e1d0111cfdd34ef5598995",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api/src/main/java/org/simplepoint/plugin/i18n/api/service/I18nMessageRegistrationService.java": "8df2cb5d1a804f8403be4642a7b81edec6d41c3d6a7414866334f3f92d1b7d5a",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java": "80461aff57c767ed270ca3de111995d1098fc15ba31e96565ad7b22981233c5c",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-rest/src/main/java/org/simplepoint/plugin/i18n/rest/controller/I18nMessagesController.java": "307a3f04068c2c17718ff98ef6646d8a8d886aa3c3abba6dd561fb1f87e71e83",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/build.gradle.kts": "c56526bdaffbf9e1b70c3ba5a5cc3b168c79f5ea7851c4292ce7e73910c98941",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/src/main/java/org/simplepoint/plugin/i18n/initialize/I18nAutoRegistrationInitializer.java": "6d24cb6ca07bc708d09163ddc31589f3da8f74df183288e3744e840223210a0a",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/src/main/java/org/simplepoint/plugin/i18n/service/impl/I18nMessageRegistrationServiceImpl.java": "4a252dcd60451e5e2a3fa5d5c642b24f9109c42e346115cc5834fe5a9fa231b5",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/src/main/java/org/simplepoint/plugin/i18n/service/impl/I18nMessageServiceImpl.java": "f7b097003277f4159175e6ce4479b6700b1262782bae4df0600b06d2e1e5802d",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service/src/test/java/org/simplepoint/plugin/i18n/service/impl/I18nRemoteBoundaryTest.java": "2de15b1c0e82c3a2f5ba738538485356ce74c1c9cc0ce5efa12f38294529cf9a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "a14f5d64684ecefe8b38246e35443601bae6cc79235d6a25093c26c7ed1aef70",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build.gradle.kts": "9465ba62980adfc86b4d752aed34242e68d16f5527f28194aca0fc07024c82d5",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/main/java/org/simplepoint/plugin/rbac/resource/api/configuration/ResourceAutoConfiguration.java": "a750294c330376a8eb969d0ee1967466153453123d8c9ab84313a77fb886b2e8",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/configuration/ResourceAutoConfigurationTest.java": "5ce7a09d57f4fa81afc67e5e49e505f70bbc17646b9206dbc91ba293e1b59fa7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/configuration/ResourceRegistrationBoundaryTest.java": "5687d3b7f4ddc38e8010a350b9b7a20566f52f02f7767cf6a306037f15f9e29b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceDirectoryQuery.java": "576c4980d154b6065f36e2df9276d2fafaeefeb02974526f8c236e1ff371a2ee",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRuntimeQuery.java": "c465cb06884900a4f2f44ec914afe717b43ce8b2d48c77d06e550a6bc3d64cd4",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "5dce488733810050792b89ef8f6dd7528e8f4261929f59940fe3f4d39817ee6f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ManagedTenantResourceRoutesTest.java": "c0293ea975324ebc1827e434ee105f58b3995f9c6e30d7a8355a4c381508f9a7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImplTest.java": "e569a00abaed8e4cac90642a6b1b9b1da6ba45c7c1681709cd74e477d0750843",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/ResourceDeclaration.java": "b18a38b58b16968a94adb407c9527aa61d3a32e72dd7727480449ac0cce423c9",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceRegistrationService.java": "cb27f267b978b02cdffff62989032871b1a3af85876d82470b2922ac9854f36c",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceService.java": "9a63dfd1556414a5a6b645f0ed24e5efde9574bd3ae7495f03236d8f4e2a9e06",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/authentication/AuthenticationSecretCipherTest.java": "0bae4c865ded59ba134c6d3100872903d28812a944f0558da3c60a0707b7c899",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextCacheSecurityTest.java": "0bf676b1b1b0622a9eecdca346c3b40704b565e67b33251f64beb999a461d0f5",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextRejectionTest.java": "18c7d5ae8274cd3a623c6c80761b07b286cdc18db09434f3ab8ece487830804d",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextResolverTest.java": "a8752c73ea2e2ef3279b1546dd1db5f7cc59af8d9ee8c268f611ed3a5b201742",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/entity/EntityFieldsTest.java": "6a94bc14d648c4b27c6a8a2c593d8c9b2d7add00650d62f6ed296e3963e1e478"
+  }
+}

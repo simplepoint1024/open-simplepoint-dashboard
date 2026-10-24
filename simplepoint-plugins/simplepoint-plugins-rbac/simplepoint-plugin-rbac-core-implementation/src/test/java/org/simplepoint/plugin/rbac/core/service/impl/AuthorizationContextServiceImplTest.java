@@ -7,11 +7,9 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,14 +26,13 @@ import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
-import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.security.entity.DataScope;
 import org.simplepoint.security.entity.DataScopeType;
 import org.simplepoint.security.entity.FieldAccessType;
@@ -52,65 +49,69 @@ import org.springframework.security.authentication.BadCredentialsException;
 @ExtendWith(MockitoExtension.class)
 class AuthorizationContextServiceImplTest {
 
-  @Mock
-  UsersService usersService;
+  @Mock UserManagementService usersService;
+
+  @Mock ObjectProvider<ResourceService> resourceServiceProvider;
+
+  @Mock TenantResourceCatalog catalog;
+
+  @Mock ObjectProvider<TenantRepository> tenantRepositoryProvider;
+
+  @Mock ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
+
+  @Mock ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
+
+  @Mock ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider;
+
+  @Mock ObjectProvider<OrganizationRepository> organizationRepositoryProvider;
 
   @Mock
-  ObjectProvider<ResourceService> resourceServiceProvider;
+  ObjectProvider<org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository>
+      roleScopeBindingRepositoryProvider;
 
   @Mock
-  ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
+  ObjectProvider<org.simplepoint.plugin.rbac.core.api.repository.PlatformIdentityRepository>
+      platformIdentityProvider;
 
   @Mock
-  ObjectProvider<TenantRepository> tenantRepositoryProvider;
-
-  @Mock
-  ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
-
-  @Mock
-  ObjectProvider<DataScopeRepository> dataScopeRepositoryProvider;
-
-  @Mock
-  ObjectProvider<FieldScopeRepository> fieldScopeRepositoryProvider;
-
-  @Mock
-  ObjectProvider<OrganizationRepository> organizationRepositoryProvider;
-
-  @Mock
-  ObjectProvider<org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository> roleScopeBindingRepositoryProvider;
-
-  @Mock
-  ObjectProvider<org.simplepoint.plugin.rbac.core.api.repository.PlatformIdentityRepository> platformIdentityProvider;
-
-  @Mock
-  ObjectProvider<org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository> tenantMembershipProvider;
+  ObjectProvider<org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository>
+      tenantMembershipProvider;
 
   AuthorizationContextServiceImpl service;
 
   @BeforeEach
   void setUp() {
-    org.mockito.Mockito.lenient().when(roleResourceGrantRepositoryProvider.getIfAvailable())
+    org.mockito.Mockito.lenient()
+        .when(roleResourceGrantRepositoryProvider.getIfAvailable())
         .thenReturn(mock(RoleResourceGrantRepository.class));
-    service = new AuthorizationContextServiceImpl(
-        usersService,
-        resourceServiceProvider,
-        tenantPackageRelevanceRepositoryProvider,
-        tenantRepositoryProvider,
-        roleResourceGrantRepositoryProvider,
-        dataScopeRepositoryProvider,
-        fieldScopeRepositoryProvider,
-        organizationRepositoryProvider,
-        roleScopeBindingRepositoryProvider,
-        platformIdentityProvider,
-        tenantMembershipProvider
-    );
+    service =
+        new AuthorizationContextServiceImpl(
+            usersService,
+            resourceServiceProvider,
+            tenantRepositoryProvider,
+            roleResourceGrantRepositoryProvider,
+            dataScopeRepositoryProvider,
+            fieldScopeRepositoryProvider,
+            organizationRepositoryProvider,
+            roleScopeBindingRepositoryProvider,
+            platformIdentityProvider,
+            tenantMembershipProvider);
+    service.setTenantResourceCatalog(catalog);
+    // Policy assembly is tested here; tenant-only eligibility has real database coverage.
+    org.mockito.Mockito.lenient()
+        .when(catalog.authorization(any(), anyCollection(), anyBoolean(), any()))
+        .thenAnswer(
+            call ->
+                new TenantResourceCatalog.AuthorizationSelection(
+                    Set.copyOf(call.<java.util.Collection<String>>getArgument(1)), null));
   }
 
   @Test
   void platformRoleAllowsPlatformWorkspaceWithoutRootOrTenantRoles() {
     User user = new User();
     user.setSuperAdmin(false);
-    var repository = mock(org.simplepoint.plugin.rbac.core.api.repository.PlatformIdentityRepository.class);
+    var repository =
+        mock(org.simplepoint.plugin.rbac.core.api.repository.PlatformIdentityRepository.class);
     var identity = new org.simplepoint.security.entity.PlatformIdentity();
     identity.setUserId("operator");
     identity.setRoles(Set.of(org.simplepoint.security.entity.PlatformRole.ACCOUNT_ADMIN));
@@ -125,10 +126,14 @@ class AuthorizationContextServiceImplTest {
     assertThat(context.getScopeType()).isEqualTo(AuthorizationScopeType.PLATFORM);
     assertThat(context.getIsAdministrator()).isFalse();
     assertThat(context.getRoles()).isEmpty();
-    assertThat(context.getResources()).contains("platform.access", "platform.accounts.view")
+    assertThat(context.getResources())
+        .contains("platform.access", "platform.accounts.view")
         .doesNotContain("platform.identity.manage", "platform.audit.view");
     assertThat(context.getAttribute("X-Tenant-Id")).isNull();
-    assertThatThrownBy(() -> service.calculate("__platform__", "operator", null, Map.of("X-Role-Id", "tenant-role")))
+    assertThatThrownBy(
+            () ->
+                service.calculate(
+                    "__platform__", "operator", null, Map.of("X-Role-Id", "tenant-role")))
         .isInstanceOf(AccessDeniedException.class);
   }
 
@@ -144,12 +149,14 @@ class AuthorizationContextServiceImplTest {
     User user = new User();
     user.setOrgId("legacy-global-org");
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    var memberships = mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository.class);
+    final var memberships =
+        mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository.class);
     var membership = new org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance();
     membership.setOrgId("tenant-local-org");
     when(tenantMembershipProvider.getIfAvailable()).thenReturn(memberships);
-    when(memberships.findByTenantIdAndUserIdAndDeletedAtIsNull("t1", "u1")).thenReturn(Optional.of(membership));
-    var tenants = mock(TenantRepository.class);
+    when(memberships.findByTenantIdAndUserIdAndDeletedAtIsNull("t1", "u1"))
+        .thenReturn(Optional.of(membership));
+    final var tenants = mock(TenantRepository.class);
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
@@ -159,7 +166,8 @@ class AuthorizationContextServiceImplTest {
     var context = service.calculate("t1", "u1", null, Map.of("X-Org-Dept-Id", "forged"));
     assertThat(context.getAttribute("X-Org-Dept-Id")).isEqualTo("tenant-local-org");
     membership.setEnabled(false);
-    assertThatThrownBy(() -> service.calculate("t1", "u1", null, null)).isInstanceOf(AccessDeniedException.class);
+    assertThatThrownBy(() -> service.calculate("t1", "u1", null, null))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
@@ -179,19 +187,12 @@ class AuthorizationContextServiceImplTest {
   }
 
   @Test
-  void calculate_defaultTenantString_treatedAsNull() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-
-    AuthorizationContext ctx = service.calculate("default", "u1", "ctx1", null);
-
-    assertThat(ctx.getUserId()).isEqualTo("u1");
-    assertThat(ctx.getContextId()).isEqualTo("ctx1");
-    assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PERSONAL);
-    assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PERSONAL_MEMBER);
-    assertThat(ctx.getAttribute("X-Tenant-Id")).isNull();
+  void missingPersonalDirectoryFailsClosed() {
+    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(new User()));
+    assertThatThrownBy(() -> service.calculate("default", "u1", "ctx1", null))
+        .isInstanceOf(AccessDeniedException.class)
+        .hasMessageContaining("租户资源目录");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider, catalog);
   }
 
   @Test
@@ -199,7 +200,7 @@ class AuthorizationContextServiceImplTest {
     User user = new User();
     user.setSuperAdmin(true);
     when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
+    platformResources();
 
     AuthorizationContext ctx = service.calculate(null, "admin", "ctx-admin", null);
 
@@ -216,14 +217,10 @@ class AuthorizationContextServiceImplTest {
     user.setSuperAdmin(true);
     user.setOrgId("org-from-user");
     when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
+    platformResources();
 
-    AuthorizationContext ctx = service.calculate(
-        null,
-        "admin",
-        "ctx-admin",
-        Map.of("X-Org-Dept-Id", "forged-org")
-    );
+    AuthorizationContext ctx =
+        service.calculate(null, "admin", "ctx-admin", Map.of("X-Org-Dept-Id", "forged-org"));
 
     assertThat(ctx.getAttribute("X-Org-Dept-Id")).isNull();
   }
@@ -234,7 +231,7 @@ class AuthorizationContextServiceImplTest {
     user.setSuperAdmin(true);
     ResourceService resourceService = mock(ResourceService.class);
     when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "admin")).thenReturn(List.of());
+    platformResources();
     when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
     when(resourceService.findPublicAccessCodes()).thenReturn(Set.of());
     when(resourceService.findAllAccessibleCodes(AuthorizationScopeType.PLATFORM, true))
@@ -243,11 +240,8 @@ class AuthorizationContextServiceImplTest {
 
     AuthorizationContext context = service.calculate(null, "admin", "ctx-admin", null);
 
-    assertThat(context.getResources()).containsExactlyInAnyOrder(
-        "system.settings",
-        "platform.tenants",
-        "platform.access"
-    );
+    assertThat(context.getResources())
+        .containsExactlyInAnyOrder("system.settings", "platform.tenants", "platform.access");
   }
 
   @Test
@@ -262,16 +256,25 @@ class AuthorizationContextServiceImplTest {
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findPersonalTenantByOwnerId("u1")).thenReturn(Optional.of(personalTenant));
+    when(tenantRepository.findPersonalTenantByOwnerId("u1"))
+        .thenReturn(Optional.of(personalTenant));
     when(tenantRepository.hasUser("personal-1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("personal-1", "u1")).thenReturn(List.of());
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("personal-1"),
+            org.mockito.ArgumentMatchers.eq(Set.of()),
+            org.mockito.ArgumentMatchers.eq(true),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(Set.of("personal.items.view"), null));
 
     AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", null);
 
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.PERSONAL);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.PERSONAL_OWNER);
     assertThat(ctx.getAttribute("X-Tenant-Id")).isEqualTo("personal-1");
+    assertThat(ctx.getResources()).containsExactly("personal.items.view");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
   }
 
   @Test
@@ -293,31 +296,57 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void realOwnerIgnoresRoleRowAndFieldRestrictionsOnlyInsideOwnedTenant() {
-    User user = new User(); user.setSuperAdmin(false);
-    var tenants = mock(TenantRepository.class);
-    var tenant = new Tenant(); tenant.setOwnerId("u1"); tenant.setTenantType(TenantType.ORGANIZATION);
+    User user = new User();
+    user.setSuperAdmin(false);
+    final var tenants = mock(TenantRepository.class);
+    var tenant = new Tenant();
+    tenant.setOwnerId("u1");
+    tenant.setTenantType(TenantType.ORGANIZATION);
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
     when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
     when(tenants.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1"))
         .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_TENANT_OWNER")));
-    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("organizations.view", "roles.view"));
-    var grants = mock(RoleResourceGrantRepository.class);
+    when(usersService.loadResourcesInRoleIds(List.of("role1")))
+        .thenReturn(Set.of("organizations.view", "roles.view"));
+    final var grants = mock(RoleResourceGrantRepository.class);
     when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
-    var scopeRepo = mock(DataScopeRepository.class);
-    var fieldRepo = mock(FieldScopeRepository.class);
-    var grant = new RoleResourceGrant(); grant.setRoleId("role1"); grant.setTenantId("tenant1");
-    grant.setResourceCode("organizations.view"); grant.setDataScopeId("restricted"); grant.setFieldScopeId("hidden");
+    final var scopeRepo = mock(DataScopeRepository.class);
+    final var fieldRepo = mock(FieldScopeRepository.class);
+    var grant = new RoleResourceGrant();
+    grant.setRoleId("role1");
+    grant.setTenantId("tenant1");
+    grant.setResourceCode("organizations.view");
+    grant.setDataScopeId("restricted");
+    grant.setFieldScopeId("hidden");
     // These same bindings become effective immediately once this user is no longer the real owner.
-    org.mockito.Mockito.lenient().when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
-    org.mockito.Mockito.lenient().when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(scopeRepo);
-    org.mockito.Mockito.lenient().when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(fieldRepo);
-    var data = new DataScope(); data.setType(DataScopeType.SELF); data.setTenantId("tenant1");
-    org.mockito.Mockito.lenient().when(scopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("restricted", "tenant1")).thenReturn(Optional.of(data));
-    var entry = new FieldScopeEntry(); entry.setTenantId("tenant1"); entry.setResource("Organization"); entry.setField("id"); entry.setAccess(FieldAccessType.HIDDEN);
-    var fields = new FieldScope(); fields.setEntries(List.of(entry)); fields.setTenantId("tenant1");
-    org.mockito.Mockito.lenient().when(fieldRepo.findByIdAndTenantIdAndDeletedAtIsNull("hidden", "tenant1")).thenReturn(Optional.of(fields));
+    org.mockito.Mockito.lenient()
+        .when(grants.findByRoleIdIn(List.of("role1")))
+        .thenReturn(List.of(grant));
+    org.mockito.Mockito.lenient()
+        .when(dataScopeRepositoryProvider.getIfAvailable())
+        .thenReturn(scopeRepo);
+    org.mockito.Mockito.lenient()
+        .when(fieldScopeRepositoryProvider.getIfAvailable())
+        .thenReturn(fieldRepo);
+    var data = new DataScope();
+    data.setType(DataScopeType.SELF);
+    data.setTenantId("tenant1");
+    org.mockito.Mockito.lenient()
+        .when(scopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("restricted", "tenant1"))
+        .thenReturn(Optional.of(data));
+    var entry = new FieldScopeEntry();
+    entry.setTenantId("tenant1");
+    entry.setResource("Organization");
+    entry.setField("id");
+    entry.setAccess(FieldAccessType.HIDDEN);
+    var fields = new FieldScope();
+    fields.setEntries(List.of(entry));
+    fields.setTenantId("tenant1");
+    org.mockito.Mockito.lenient()
+        .when(fieldRepo.findByIdAndTenantIdAndDeletedAtIsNull("hidden", "tenant1"))
+        .thenReturn(Optional.of(fields));
 
     var owner = service.calculate("tenant1", "u1", null, Map.of("X-Role-Id", "role1"));
     assertThat(owner.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
@@ -332,82 +361,64 @@ class AuthorizationContextServiceImplTest {
     var member = service.calculate("tenant1", "u1", null, Map.of("X-Actor-Role", "TENANT_OWNER"));
     assertThat(member.getActorRole()).isNotEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(member.getResourceDataScopes().get("organizations.view").type()).isEqualTo("SELF");
-    assertThat(member.getResourceFieldPermissions().get("organizations.view")).containsEntry("Organization#id", "HIDDEN");
-    assertThatThrownBy(() -> service.calculate("other-tenant", "u1", null, null)).isInstanceOf(AccessDeniedException.class);
+    assertThat(member.getResourceFieldPermissions().get("organizations.view"))
+        .containsEntry("Organization#id", "HIDDEN");
+    assertThatThrownBy(() -> service.calculate("other-tenant", "u1", null, null))
+        .isInstanceOf(AccessDeniedException.class);
   }
 
   @Test
-  void calculate_tenantOwner_addsPackageAndPublicResources() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    final TenantRepository tenantRepository = mock(TenantRepository.class);
-    final TenantPackageRelevanceRepository tenantPackageRepo = mock(TenantPackageRelevanceRepository.class);
-    final ResourceService resourceService = mock(ResourceService.class);
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("u1");
-    tenant.setTenantType(TenantType.ORGANIZATION);
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
-    when(tenantRepository.getTenantAuthorizationVersion("tenant1")).thenReturn(7L);
-    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of());
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
-    when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.view"));
-    allowAllScopes(resourceService);
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(tenantPackageRepo);
-    when(tenantPackageRepo.findResourceCodesByTenantId("tenant1")).thenReturn(Set.of("package.resource"));
-
+  void tenantOwnerUsesTenantEntitlementsAndCarriesExclusiveDeadline() {
+    tenantActor("tenant1", "u1", "u1", false);
+    var deadline = java.time.Instant.parse("2026-10-24T00:00:00Z");
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(Set.of()),
+            org.mockito.ArgumentMatchers.eq(true),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(
+                Set.of("public.view", "package.resource"), deadline));
     AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
-
-    assertThat(ctx.getResources()).contains("public.view", "package.resource");
+    assertThat(ctx.getResources()).containsExactlyInAnyOrder("public.view", "package.resource");
     assertThat(ctx.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
     assertThat(ctx.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
-    assertThat(ctx.getVersion()).isEqualTo(7L);
-    verify(tenantPackageRepo).findResourceCodesByTenantId("tenant1");
+    assertThat(ctx.getValidUntil()).isEqualTo(deadline);
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
   }
 
   @Test
-  void platformAdministratorInOrganizationReceivesItsWorkspacePackagePages() {
-    User user = new User();
-    user.setSuperAdmin(true);
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    tenant.setTenantType(TenantType.ORGANIZATION);
-    TenantRepository tenants = mock(TenantRepository.class);
-    TenantPackageRelevanceRepository packages = mock(TenantPackageRelevanceRepository.class);
-    ResourceService resources = mock(ResourceService.class);
-    when(usersService.findByIdForAuthorization("admin")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
-    when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantPackageRelevanceRepositoryProvider.getIfAvailable()).thenReturn(packages);
-    when(packages.findResourceCodesByTenantId("tenant1"))
-        .thenReturn(Set.of("workspace.settings.view", "workspace.resources.view"));
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
-    allowAllScopes(resources);
-
-    AuthorizationContext context = service.calculate("tenant1", "admin", null, null);
-
+  void platformAdministratorInOrganizationStillUsesOnlyTenantEligibleResources() {
+    tenantActor("tenant1", "admin", "owner", true);
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(Set.of()),
+            org.mockito.ArgumentMatchers.eq(true),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(
+                Set.of("workspace.settings.view"), null));
+    var context = service.calculate("tenant1", "admin", null, null);
     assertThat(context.getScopeType()).isEqualTo(AuthorizationScopeType.TENANT);
-    assertThat(context.getResources()).contains("workspace.settings.view", "workspace.resources.view");
-    assertThat(context.getAttribute("X-Tenant-Id")).isEqualTo("tenant1");
+    assertThat(context.getResources())
+        .containsExactlyInAnyOrder("workspace.settings.view", "platform.access");
+    assertThat(context.asAuthorities())
+        .extracting(org.springframework.security.core.GrantedAuthority::getAuthority)
+        .doesNotContain("ROLE_Administrator");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
   }
 
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(strings={"SELF", "EXPRESSION"})
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"SELF", "EXPRESSION"})
   void pagePoliciesResolveOnlyForEffectiveTenantResources(String policyType) {
     User user = new User();
     Tenant tenant = new Tenant();
-    tenant.setOwnerId("actual-owner"); tenant.setTenantType(TenantType.ORGANIZATION);
-    TenantRepository tenants = mock(TenantRepository.class);
-    ResourceService resources = mock(ResourceService.class);
-    RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
-    DataScopeRepository dataScopes = mock(DataScopeRepository.class);
-    FieldScopeRepository fieldScopes = mock(FieldScopeRepository.class);
+    tenant.setOwnerId("actual-owner");
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    final TenantRepository tenants = mock(TenantRepository.class);
+    final RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
+    final DataScopeRepository dataScopes = mock(DataScopeRepository.class);
+    final FieldScopeRepository fieldScopes = mock(FieldScopeRepository.class);
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
     when(tenants.findById("tenant1")).thenReturn(Optional.of(tenant));
@@ -415,43 +426,59 @@ class AuthorizationContextServiceImplTest {
     when(usersService.loadRolesByUserId("tenant1", "u1"))
         .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
     when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("users.view"));
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
-    allowAllScopes(resources);
     when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
-    var bindings = mock(org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository.class);
+    var bindings =
+        mock(org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository.class);
     RoleScopeBinding binding = new RoleScopeBinding();
-    binding.setTenantId("tenant1"); binding.setRoleId("role1");
+    binding.setTenantId("tenant1");
+    binding.setRoleId("role1");
     when(roleScopeBindingRepositoryProvider.getIfAvailable()).thenReturn(bindings);
     when(bindings.findByTenantIdAndRoleIdIn("tenant1", List.of("role1")))
         .thenReturn(policyType.equals("EXPRESSION") ? List.of() : List.of(binding));
     RoleResourceGrant pageGrant = new RoleResourceGrant();
-    pageGrant.setTenantId("tenant1"); pageGrant.setRoleId("role1");
-    pageGrant.setResourceCode("users.view"); pageGrant.setDataScopeId("data1");
-    pageGrant.setFieldScopeId("field1"); pageGrant.setPagePolicy(true);
+    pageGrant.setTenantId("tenant1");
+    pageGrant.setRoleId("role1");
+    pageGrant.setResourceCode("users.view");
+    pageGrant.setDataScopeId("data1");
+    pageGrant.setFieldScopeId("field1");
+    pageGrant.setPagePolicy(true);
     RoleResourceGrant obsolete = new RoleResourceGrant();
-    obsolete.setTenantId("tenant1"); obsolete.setRoleId("role1");
-    obsolete.setResourceCode("obsolete.view"); obsolete.setDataScopeId("missing"); obsolete.setPagePolicy(true);
+    obsolete.setTenantId("tenant1");
+    obsolete.setRoleId("role1");
+    obsolete.setResourceCode("obsolete.view");
+    obsolete.setDataScopeId("missing");
+    obsolete.setPagePolicy(true);
     when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(pageGrant, obsolete));
-    DataScope data = new DataScope(); data.setTenantId("tenant1"); data.setType(DataScopeType.valueOf(policyType));
-    data.setResourceCode("users.view"); data.setExpression("email CONTAINS \"@example.test\"");
+    DataScope data = new DataScope();
+    data.setTenantId("tenant1");
+    data.setType(DataScopeType.valueOf(policyType));
+    data.setResourceCode("users.view");
+    data.setExpression("email CONTAINS \"@example.test\"");
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopes);
     when(dataScopes.findByIdAndTenantIdAndDeletedAtIsNull("data1", "tenant1"))
         .thenReturn(Optional.of(data));
-    FieldScope field = new FieldScope(); field.setTenantId("tenant1");
-    FieldScopeEntry entry = new FieldScopeEntry(); entry.setTenantId("tenant1");
-    entry.setResource(User.class.getName()); entry.setField("email");
-    entry.setAccess(FieldAccessType.HIDDEN); field.setEntries(List.of(entry));
+    FieldScope field = new FieldScope();
+    field.setTenantId("tenant1");
+    FieldScopeEntry entry = new FieldScopeEntry();
+    entry.setTenantId("tenant1");
+    entry.setResource(User.class.getName());
+    entry.setField("email");
+    entry.setAccess(FieldAccessType.HIDDEN);
+    field.setEntries(List.of(entry));
     when(fieldScopeRepositoryProvider.getIfAvailable()).thenReturn(fieldScopes);
     when(fieldScopes.findByIdAndTenantIdAndDeletedAtIsNull("field1", "tenant1"))
         .thenReturn(Optional.of(field));
 
     AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
 
-    assertThat(context.getResourceDataScopes()).containsKey("users.view")
+    assertThat(context.getResourceDataScopes())
+        .containsKey("users.view")
         .doesNotContainKey("obsolete.view");
-    assertThat(context.getResourceDataScopes().get("users.view").type()).isEqualTo(policyType.equals("EXPRESSION") ? "DENY" : "SELF");
+    assertThat(context.getResourceDataScopes().get("users.view").type())
+        .isEqualTo(policyType.equals("EXPRESSION") ? "DENY" : "SELF");
     if (policyType.equals("EXPRESSION")) {
-      assertThat(context.getResourceDataScopes().get("users.view").expressions()).containsExactly(data.getExpression());
+      assertThat(context.getResourceDataScopes().get("users.view").expressions())
+          .containsExactly(data.getExpression());
       assertThat(context.getDataScopeType()).isEqualTo("SELF");
       assertThat(context.getFieldPermissions()).isNullOrEmpty();
     }
@@ -467,20 +494,27 @@ class AuthorizationContextServiceImplTest {
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
     tenant.setTenantType(TenantType.ORGANIZATION);
-    TenantRepository tenants = mock(TenantRepository.class);
-    ResourceService resources = mock(ResourceService.class);
-    RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
-    DataScopeRepository scopes = mock(DataScopeRepository.class);
-    OrganizationRepository organizations = mock(OrganizationRepository.class);
-    var memberships = mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository.class);
+    final TenantRepository tenants = mock(TenantRepository.class);
+    final RoleResourceGrantRepository grants = mock(RoleResourceGrantRepository.class);
+    final DataScopeRepository scopes = mock(DataScopeRepository.class);
+    final OrganizationRepository organizations = mock(OrganizationRepository.class);
+    final var memberships =
+        mock(org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository.class);
     var membership = new org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance();
-    membership.setTenantId("tenant1"); membership.setUserId("u1"); membership.setOrgId("org1");
+    membership.setTenantId("tenant1");
+    membership.setUserId("u1");
+    membership.setOrgId("org1");
     var own = new org.simplepoint.plugin.rbac.tenant.api.entity.Organization();
-    own.setId("org1"); own.setTenantId("tenant1"); own.setEnabled(true);
-    var rule = new DataScope(); rule.setTenantId("tenant1");
+    own.setId("org1");
+    own.setTenantId("tenant1");
+    own.setEnabled(true);
+    var rule = new DataScope();
+    rule.setTenantId("tenant1");
     rule.setType(DataScopeType.DEPT_AND_BELOW);
-    var grant = new RoleResourceGrant(); grant.setTenantId("tenant1");
-    grant.setRoleId("role1"); grant.setResourceCode("organizations.view");
+    var grant = new RoleResourceGrant();
+    grant.setTenantId("tenant1");
+    grant.setRoleId("role1");
+    grant.setResourceCode("organizations.view");
     grant.setDataScopeId("scope1");
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
@@ -493,8 +527,6 @@ class AuthorizationContextServiceImplTest {
         .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
     when(usersService.loadResourcesInRoleIds(List.of("role1")))
         .thenReturn(Set.of("organizations.view"));
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resources);
-    allowAllScopes(resources);
     when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grants);
     when(grants.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(scopes);
@@ -503,8 +535,11 @@ class AuthorizationContextServiceImplTest {
     when(organizationRepositoryProvider.getIfAvailable()).thenReturn(organizations);
     when(organizations.findByIdAndTenantId("org1", "tenant1")).thenReturn(Optional.of(own));
     when(organizations.findIdsByParentIds(anyCollection(), eq("tenant1")))
-        .thenAnswer(call -> ((java.util.Collection<?>) call.getArgument(0)).contains("org1")
-            ? List.of("child") : List.of());
+        .thenAnswer(
+            call ->
+                ((java.util.Collection<?>) call.getArgument(0)).contains("org1")
+                    ? List.of("child")
+                    : List.of());
 
     AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
 
@@ -517,93 +552,62 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void customTenantContextDropsPlatformGrantsMissingFromCurrentCatalog() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("owner");
-    tenant.setTenantType(TenantType.ORGANIZATION);
+    Tenant tenant = tenantActor("tenant1", "u1", "owner", false);
     tenant.setResourceMode(TenantResourceMode.CUSTOM);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
-    ResourceService resourceService = mock(ResourceService.class);
-    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
-    service.setTenantResourceCatalog(catalog);
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1"))
         .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(usersService.loadResourcesInRoleIds(List.of("role1")))
-        .thenReturn(Set.of("platform.allowed", "platform.revoked", "tenant.tenant1.alias"));
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
-    when(resourceService.findPublicAccessCodes()).thenReturn(List.of());
-    when(resourceService.filterAccessibleCodes(anyCollection(), eq(AuthorizationScopeType.TENANT), eq(false)))
-        .thenAnswer(call -> call.getArgument(0));
-    when(catalog.mode("tenant1")).thenReturn(TenantResourceMode.CUSTOM);
-    when(catalog.effectivePlatformCodes(eq("tenant1"), anyCollection()))
-        .thenReturn(new LinkedHashSet<>(Set.of("platform.allowed")));
-    when(catalog.grantableCodes(eq("tenant1"), anyCollection()))
-        .thenReturn(Set.of("tenant.tenant1.alias"));
-
-    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
-    assertThat(context.getResources()).contains("platform.allowed", "tenant.tenant1.alias")
-        .doesNotContain("platform.revoked");
+    var requested = Set.of("platform.allowed", "platform.revoked", "tenant.tenant1.alias");
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(requested);
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(requested),
+            org.mockito.ArgumentMatchers.eq(false),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(
+                Set.of("platform.allowed", "tenant.tenant1.alias"), null));
+    var context = service.calculate("tenant1", "u1", null, null);
+    assertThat(context.getResources())
+        .containsExactlyInAnyOrder("platform.allowed", "tenant.tenant1.alias");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
+    org.mockito.Mockito.verify(catalog).authorization("tenant1", requested, false, "u1");
   }
 
   @Test
   void platformCatalogModeRetainsOnlyValidatedManagedRoleGrants() {
-    User user = new User();
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("owner");
-    tenant.setTenantType(TenantType.ORGANIZATION);
+    Tenant tenant = tenantActor("tenant1", "u1", "owner", false);
     tenant.setResourceMode(TenantResourceMode.PLATFORM);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
-    ResourceService resourceService = mock(ResourceService.class);
-    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
-    service.setTenantResourceCatalog(catalog);
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1"))
         .thenReturn(List.of(new RoleGrantedAuthority("role1", "ROLE_USER")));
-    when(usersService.loadResourcesInRoleIds(List.of("role1")))
-        .thenReturn(Set.of("app.runtime.page.allowed", "app.runtime.page.retired"));
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
-    when(resourceService.findPublicAccessCodes()).thenReturn(List.of());
-    when(resourceService.filterAccessibleCodes(anyCollection(), eq(AuthorizationScopeType.TENANT), eq(false)))
-        .thenReturn(Set.of());
-    when(catalog.mode("tenant1")).thenReturn(TenantResourceMode.PLATFORM);
-    when(catalog.managedGrantableCodes(eq("tenant1"), anyCollection()))
-        .thenReturn(Set.of("app.runtime.page.allowed"));
-
-    AuthorizationContext context = service.calculate("tenant1", "u1", null, null);
-
-    assertThat(context.getResources()).contains("app.runtime.page.allowed")
-        .doesNotContain("app.runtime.page.retired");
+    var requested = Set.of("app.runtime.page.allowed", "app.runtime.page.retired");
+    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(requested);
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(requested),
+            org.mockito.ArgumentMatchers.eq(false),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(
+                Set.of("app.runtime.page.allowed"), null));
+    var context = service.calculate("tenant1", "u1", null, null);
+    assertThat(context.getResources()).containsExactlyInAnyOrder("app.runtime.page.allowed");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
+    org.mockito.Mockito.verify(catalog).authorization("tenant1", requested, false, "u1");
   }
 
   @Test
-  void tenantOwnerReceivesActiveManagedResourcesWithoutAStoredRoleGrant() {
-    User user = new User();
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("owner");
-    tenant.setTenantType(TenantType.ORGANIZATION);
-    TenantRepository tenantRepository = mock(TenantRepository.class);
-    TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
-    service.setTenantResourceCatalog(catalog);
-    when(usersService.findByIdForAuthorization("owner")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "owner")).thenReturn(true);
-    when(usersService.loadRolesByUserId("tenant1", "owner")).thenReturn(List.of());
-    when(catalog.activeManagedGrantableCodes("tenant1"))
-        .thenReturn(Set.of("app.runtime.page.owner"));
-
-    AuthorizationContext context = service.calculate("tenant1", "owner", null, null);
-
-    assertThat(context.getResources()).contains("app.runtime.page.owner");
+  void tenantOwnerReceivesActiveManagedResourcesWithoutStoredRoleGrant() {
+    tenantActor("tenant1", "owner", "owner", false);
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(Set.of()),
+            org.mockito.ArgumentMatchers.eq(true),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(
+                Set.of("app.runtime.page.owner"), null));
+    assertThat(service.calculate("tenant1", "owner", null, null).getResources())
+        .containsExactly("app.runtime.page.owner");
   }
 
   @Test
@@ -621,7 +625,6 @@ class AuthorizationContextServiceImplTest {
     when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
     when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
     when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
     when(usersService.loadResourcesInRoleIds(List.of("role-admin")))
         .thenReturn(Set.of(AuthorizationResourceNamespaces.TENANT_ADMIN));
 
@@ -634,59 +637,51 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void calculate_withRoles_loadsResources() {
+    tenantActor("tenant1", "u1", "owner", false);
     User user = new User();
     user.setSuperAdmin(false);
     RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
-    when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of("users.view", "users.edit"));
+    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
+    when(usersService.loadResourcesInRoleIds(List.of("role1")))
+        .thenReturn(Set.of("users.view", "users.edit"));
 
-    AuthorizationContext ctx = service.calculate(null, "u1", null, null);
+    AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
     assertThat(ctx.getResources()).contains("users.view", "users.edit");
     assertThat(ctx.getRoles()).contains("ROLE_USER");
   }
 
   @Test
-  void calculate_tenantContext_mergesTenantAndGlobalRoles() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    final RoleGrantedAuthority tenantRole = new RoleGrantedAuthority("role-tenant", "ROLE_TENANT");
-    final RoleGrantedAuthority globalRole = new RoleGrantedAuthority("role-global", "ROLE_GLOBAL");
-    final TenantRepository tenantRepository = mock(TenantRepository.class);
-    Tenant tenant = new Tenant();
-    tenant.setOwnerId("owner");
-
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenantRepository);
-    when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    when(tenantRepository.hasUser("tenant1", "u1")).thenReturn(true);
-    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(tenantRole));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(globalRole));
-    when(usersService.loadResourcesInRoleIds(List.of("role-tenant", "role-global")))
-        .thenReturn(Set.of("tenant.resource", "global.resource"));
-
-    AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
-
-    assertThat(ctx.getRoles()).containsExactly("ROLE_TENANT", "ROLE_GLOBAL");
-    assertThat(ctx.getResources()).contains("tenant.resource", "global.resource");
-    verify(usersService).loadRolesByUserId("tenant1", "u1");
-    verify(usersService).loadRolesByUserId(null, "u1");
+  void tenantContextDoesNotImportGlobalRolesOrPermissions() {
+    tenantActor("tenant1", "u1", "owner", false);
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role-tenant", "ROLE_TENANT")));
+    when(usersService.loadResourcesInRoleIds(List.of("role-tenant")))
+        .thenReturn(Set.of("tenant.resource"));
+    var context = service.calculate("tenant1", "u1", null, null);
+    assertThat(context.getRoles()).containsExactly("ROLE_TENANT");
+    assertThat(context.getResources()).containsExactly("tenant.resource");
+    org.mockito.Mockito.verify(usersService, org.mockito.Mockito.never())
+        .loadRolesByUserId(null, "u1");
   }
 
   @Test
   void calculate_selectedRole_usesOnlyThatRole() {
+    tenantActor("tenant1", "u1", "owner", false);
     User user = new User();
     user.setSuperAdmin(false);
     final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
     final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
-    when(usersService.loadResourcesInRoleIds(List.of("role2"))).thenReturn(Set.of("manager.resource"));
+    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role1, role2));
+    when(usersService.loadResourcesInRoleIds(List.of("role2")))
+        .thenReturn(Set.of("manager.resource"));
 
-    AuthorizationContext ctx = service.calculate(null, "u1", "ctx1", Map.of("X-Role-Id", "role2"));
+    AuthorizationContext ctx =
+        service.calculate("tenant1", "u1", "ctx1", Map.of("X-Role-Id", "role2"));
 
     assertThat(ctx.getRoles()).containsExactly("ROLE_MANAGER");
     assertThat(ctx.getResources()).containsExactly("manager.resource");
@@ -695,41 +690,98 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void calculate_selectedRoleNotOwned_throwsAccessDeniedException() {
+    tenantActor("tenant1", "u1", "owner", false);
     User user = new User();
     user.setSuperAdmin(false);
     RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_USER");
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
+    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
 
-    assertThatThrownBy(() -> service.calculate(null, "u1", "ctx1", Map.of("X-Role-Id", "role-missing")))
+    assertThatThrownBy(
+            () -> service.calculate("tenant1", "u1", "ctx1", Map.of("X-Role-Id", "role-missing")))
         .isInstanceOf(AccessDeniedException.class)
         .hasMessage("当前用户未拥有指定角色");
   }
 
   @Test
-  void calculate_publicResources_alwaysIncluded() {
-    User user = new User();
-    user.setSuperAdmin(false);
-    ResourceService resourceService = mock(ResourceService.class);
+  void tenantPublicPermissionsAreResolvedOnlyFromTheTenantCatalog() {
+    tenantActor("tenant1", "u1", "owner", false);
+    when(catalog.authorization(
+            org.mockito.ArgumentMatchers.eq("tenant1"),
+            org.mockito.ArgumentMatchers.eq(Set.of()),
+            org.mockito.ArgumentMatchers.eq(false),
+            org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new TenantResourceCatalog.AuthorizationSelection(Set.of("tenant.public"), null));
+    assertThat(service.calculate("tenant1", "u1", null, null).getResources())
+        .containsExactly("tenant.public");
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
+  }
 
-    when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of());
-    when(resourceServiceProvider.getIfAvailable()).thenReturn(resourceService);
-    when(resourceService.findPublicAccessCodes()).thenReturn(Set.of("public.resource"));
-    allowAllScopes(resourceService);
+  @Test
+  void concurrentOwnerTransferDoesNotStampOldOwnerPolicyWithTheNewCacheRevision() {
+    var tenant = tenantActor("tenant1", "u1", "u1", false);
+    final var tenants = tenantRepositoryProvider.getIfAvailable();
+    var revision = new java.util.concurrent.atomic.AtomicLong(1);
+    when(tenants.getTenantAuthorizationVersion("tenant1")).thenAnswer(call -> revision.get());
+    when(usersService.loadRolesByUserId("tenant1", "u1"))
+        .thenAnswer(
+            call -> {
+              tenant.setOwnerId("new-owner");
+              revision.set(2L);
+              return List.of();
+            });
+    var first = service.calculate("tenant1", "u1", null, null);
+    assertThat(first.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(first.getVersion()).isEqualTo(1L);
+    var refreshed = service.calculate("tenant1", "u1", null, null);
+    assertThat(refreshed.getActorRole()).isNotEqualTo(AuthorizationActorRole.TENANT_OWNER);
+    assertThat(refreshed.getVersion()).isEqualTo(2L);
+  }
 
-    AuthorizationContext ctx = service.calculate(null, "u1", null, null);
+  @Test
+  void unavailableTenantCatalogFailsClosedEvenForAdministrator() {
+    tenantActor("tenant1", "admin", "admin", true);
+    service.setTenantResourceCatalog(null);
+    assertThatThrownBy(() -> service.calculate("tenant1", "admin", null, null))
+        .isInstanceOf(AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(resourceServiceProvider);
+  }
 
-    assertThat(ctx.getResources()).contains("public.resource");
+  private Tenant tenantActor(String id, String userId, String owner, boolean administrator) {
+    var user = new User();
+    user.setSuperAdmin(administrator);
+    org.mockito.Mockito.lenient()
+        .when(usersService.findByIdForAuthorization(userId))
+        .thenReturn(Optional.of(user));
+    final var tenants = mock(TenantRepository.class);
+    when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
+    var tenant = new Tenant();
+    tenant.setId(id);
+    tenant.setTenantType(TenantType.ORGANIZATION);
+    tenant.setOwnerId(owner);
+    when(tenants.findById(id)).thenReturn(Optional.of(tenant));
+    if (!administrator) {
+      when(tenants.hasUser(id, userId)).thenReturn(true);
+    }
+    return tenant;
+  }
+
+  private void platformResources() {
+    var resources = mock(ResourceService.class);
+    org.mockito.Mockito.lenient()
+        .when(resourceServiceProvider.getIfAvailable())
+        .thenReturn(resources);
+    org.mockito.Mockito.lenient()
+        .when(resources.filterAccessibleCodes(anyCollection(), any(), anyBoolean()))
+        .thenAnswer(call -> call.getArgument(0));
   }
 
   private void allowAllScopes(ResourceService resourceService) {
     when(resourceService.filterAccessibleCodes(
-        anyCollection(),
-        any(AuthorizationScopeType.class),
-        anyBoolean()
-    )).thenAnswer(invocation -> invocation.getArgument(0));
+            anyCollection(), any(AuthorizationScopeType.class), anyBoolean()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Test
@@ -738,13 +790,15 @@ class AuthorizationContextServiceImplTest {
     user.setSuperAdmin(false);
     Tenant tenant = new Tenant();
     tenant.setOwnerId("owner");
-    TenantRepository tenants = mock(TenantRepository.class);
+    final TenantRepository tenants = mock(TenantRepository.class);
     when(tenantRepositoryProvider.getIfAvailable()).thenReturn(tenants);
     when(tenants.findById("t1")).thenReturn(Optional.of(tenant));
     when(tenants.hasUser("t1", "u1")).thenReturn(true);
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId("t1", "u1")).thenReturn(List.of(new RoleGrantedAuthority("r1", "ROLE_MEMBER")));
-    var bindings = mock(org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository.class);
+    when(usersService.loadRolesByUserId("t1", "u1"))
+        .thenReturn(List.of(new RoleGrantedAuthority("r1", "ROLE_MEMBER")));
+    var bindings =
+        mock(org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository.class);
     var binding = new org.simplepoint.security.entity.RoleScopeBinding();
     binding.setTenantId("t1");
     binding.setRoleId("r1");
@@ -754,7 +808,7 @@ class AuthorizationContextServiceImplTest {
     grant.setTenantId("t1");
     grant.setRoleId("r1");
     grant.setDataScopeId("legacy-all");
-    var grants = roleResourceGrantRepositoryProvider.getIfAvailable();
+    final var grants = roleResourceGrantRepositoryProvider.getIfAvailable();
     when(grants.findByRoleIdIn(List.of("r1"))).thenReturn(List.of(grant));
 
     var context = service.calculate("t1", "u1", null, null);
@@ -763,18 +817,23 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void calculate_mergesSelfAndCustomDataScopes() {
+    tenantActor("tenant1", "u1", "owner", false);
     User user = new User();
     user.setSuperAdmin(false);
     final RoleGrantedAuthority role1 = new RoleGrantedAuthority("role1", "ROLE_USER");
     final RoleGrantedAuthority role2 = new RoleGrantedAuthority("role2", "ROLE_MANAGER");
     RoleResourceGrant grant1 = new RoleResourceGrant();
+    grant1.setTenantId("tenant1");
     grant1.setDataScopeId("scope-self");
     RoleResourceGrant grant2 = new RoleResourceGrant();
+    grant2.setTenantId("tenant1");
     grant2.setDataScopeId("scope-custom");
     DataScope selfScope = new DataScope();
+    selfScope.setTenantId("tenant1");
     selfScope.setId("scope-self");
     selfScope.setType(DataScopeType.SELF);
     DataScope customScope = new DataScope();
+    customScope.setTenantId("tenant1");
     customScope.setId("scope-custom");
     customScope.setType(DataScopeType.CUSTOM);
     customScope.setCustomDeptIds(Set.of("dept-a", "dept-b"));
@@ -782,15 +841,18 @@ class AuthorizationContextServiceImplTest {
     DataScopeRepository dataScopeRepo = mock(DataScopeRepository.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role1, role2));
+    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role1, role2));
     when(usersService.loadResourcesInRoleIds(List.of("role1", "role2"))).thenReturn(Set.of());
     when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grantRepository);
-    when(grantRepository.findByRoleIdIn(List.of("role1", "role2"))).thenReturn(List.of(grant1, grant2));
+    when(grantRepository.findByRoleIdIn(List.of("role1", "role2")))
+        .thenReturn(List.of(grant1, grant2));
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopeRepo);
-    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-self", null)).thenReturn(Optional.of(selfScope));
-    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-custom", null)).thenReturn(Optional.of(customScope));
+    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-self", "tenant1"))
+        .thenReturn(Optional.of(selfScope));
+    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-custom", "tenant1"))
+        .thenReturn(Optional.of(customScope));
 
-    AuthorizationContext ctx = service.calculate(null, "u1", null, null);
+    AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
     assertThat(ctx.getDataScopeType()).isEqualTo(DataScopeType.CUSTOM.name());
     assertThat(ctx.getDeptIds()).containsExactlyInAnyOrder("dept-a", "dept-b");
@@ -799,26 +861,30 @@ class AuthorizationContextServiceImplTest {
 
   @Test
   void calculate_allDataScopeOverridesRestrictiveScopes() {
+    tenantActor("tenant1", "u1", "owner", false);
     User user = new User();
     user.setSuperAdmin(false);
     final RoleGrantedAuthority role = new RoleGrantedAuthority("role1", "ROLE_ADMIN");
     RoleResourceGrant grant = new RoleResourceGrant();
+    grant.setTenantId("tenant1");
     grant.setDataScopeId("scope-all");
     DataScope allScope = new DataScope();
+    allScope.setTenantId("tenant1");
     allScope.setId("scope-all");
     allScope.setType(DataScopeType.ALL);
     RoleResourceGrantRepository grantRepository = mock(RoleResourceGrantRepository.class);
     DataScopeRepository dataScopeRepo = mock(DataScopeRepository.class);
 
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
-    when(usersService.loadRolesByUserId(null, "u1")).thenReturn(List.of(role));
+    when(usersService.loadRolesByUserId("tenant1", "u1")).thenReturn(List.of(role));
     when(usersService.loadResourcesInRoleIds(List.of("role1"))).thenReturn(Set.of());
     when(roleResourceGrantRepositoryProvider.getIfAvailable()).thenReturn(grantRepository);
     when(grantRepository.findByRoleIdIn(List.of("role1"))).thenReturn(List.of(grant));
     when(dataScopeRepositoryProvider.getIfAvailable()).thenReturn(dataScopeRepo);
-    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-all", null)).thenReturn(Optional.of(allScope));
+    when(dataScopeRepo.findByIdAndTenantIdAndDeletedAtIsNull("scope-all", "tenant1"))
+        .thenReturn(Optional.of(allScope));
 
-    AuthorizationContext ctx = service.calculate(null, "u1", null, null);
+    AuthorizationContext ctx = service.calculate("tenant1", "u1", null, null);
 
     assertThat(ctx.getDataScopeType()).isEqualTo(DataScopeType.ALL.name());
     assertThat(ctx.getDeptIds()).isEmpty();

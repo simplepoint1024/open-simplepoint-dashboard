@@ -1,89 +1,83 @@
 package org.simplepoint.calculation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StandardFunctionsTest {
-  static Stream<Arguments> examples() {
-    return Stream.of(
-        example("IF(TRUE,\"yes\",1/0)", "yes"),
-        example("IFERROR(TEXT(1,\"unknown\"),\"fallback\")", "fallback"),
-        example("AND(TRUE,1,0)", false),
-        example("OR(FALSE,0,1)", true),
-        example("NOT(0)", true),
-        example("ISBLANK(NULL)", true),
-        example("ISNUMBER(\"1\")", false),
-        example("ISTEXT(\"1\")", true),
-        example("COALESCE(NULL,\"\",\"available\")", "available"),
-        example("SUM(1,2,3)", new BigDecimal("6")),
-        example("AVERAGE(1,2,3)", new BigDecimal("2")),
-        example("MIN(1,-2,3)", new BigDecimal("-2")),
-        example("MAX(1,-2,3)", new BigDecimal("3")),
-        example("COUNT(1,\"two\",\"3\",NULL)", new BigDecimal("2")),
-        example("COUNTA(0,FALSE,\"\",NULL)", new BigDecimal("2")),
-        example("PRODUCT(1.2,3)", new BigDecimal("3.6")),
-        example("ABS(-1.25)", new BigDecimal("1.25")),
-        example("SIGN(-0.1)", new BigDecimal("-1")),
-        example("INT(-1.1)", new BigDecimal("-2")),
-        example("ROUND(1.235,2)", new BigDecimal("1.24")),
-        example("ROUNDUP(-1.231,2)", new BigDecimal("-1.24")),
-        example("ROUNDDOWN(-1.239,2)", new BigDecimal("-1.23")),
-        example("TRUNC(-1.9)", new BigDecimal("-1")),
-        example("MOD(-3,2)", new BigDecimal("1")),
-        example("POWER(2,-3)", new BigDecimal("0.125")),
-        example("SQRT(9)", new BigDecimal("3")),
-        example("PI()", new BigDecimal("3.1415926535897932384626433832795028842")),
-        example("SIN(0)", BigDecimal.ZERO),
-        example("COS(0)", BigDecimal.ONE),
-        example("TAN(0)", BigDecimal.ZERO),
-        example("EXP(0)", BigDecimal.ONE),
-        example("LN(1)", BigDecimal.ZERO),
-        example("LOG10(100)", new BigDecimal("2")),
-        example("VALUE(\"1.25\")", new BigDecimal("1.25")),
-        example("NUMBER(TRUE)", BigDecimal.ONE),
-        example("BOOLEAN(0)", false),
-        example("STRING(TRUE)", "TRUE"),
-        example("TEXT(0.125,\"0.0%\")", "12.5%"),
-        example("LEN(\"汉😀日\")", new BigDecimal("3")),
-        example("LOWER(\"ABC汉\")", "abc汉"),
-        example("UPPER(\"abc汉\")", "ABC汉"),
-        example("TRIM(\"  a   b  \")", "a b"),
-        example("CLEAN(\"a\tb\")", "ab"),
-        example("EXACT(\"a\",\"A\")", false),
-        example("CONCAT(\"a\",1,TRUE)", "a1TRUE"),
-        example("CONCATENATE(\"a\",\"b\")", "ab"),
-        example("TEXTJOIN(\",\",TRUE,\"a\",\"\",NULL,\"b\")", "a,b"),
-        example("LEFT(\"😀汉日\",2)", "😀汉"),
-        example("RIGHT(\"汉日😀\")", "😀"),
-        example("MID(\"汉😀日\",2,1)", "😀"),
-        example("REPT(\"汉\",3)", "汉汉汉"),
-        example("SUBSTITUTE(\"a-b-b\",\"b\",\"x\",2)", "a-b-x"),
-        example("REPLACE(\"汉😀日\",2,1,\"字\")", "汉字日"),
-        example("FIND(\"汉\",\"汉字汉\",2)", new BigDecimal("3")),
-        example("SEARCH(\"x\",\"İ😀X\")", new BigDecimal("3")),
-        example("DATE(2024,2,30)", LocalDate.of(2024, 3, 1)),
-        example("DATEVALUE(\"2024-02-29\")", LocalDate.of(2024, 2, 29)),
-        example("TODAY()", LocalDate.of(2026, 10, 16)),
-        example("NOW()", LocalDateTime.of(2026, 10, 16, 0, 0)),
-        example("YEAR(\"2024-02-29\")", new BigDecimal("2024")),
-        example("MONTH(\"2024-02-29\")", new BigDecimal("2")),
-        example("DAY(\"2024-02-29\")", new BigDecimal("29")),
-        example("DAYS(\"2024-03-01\",\"2024-02-28\")", new BigDecimal("2")));
+  static Stream<Arguments> examples() throws IOException {
+    return acceptanceRows().stream().map(parts -> Arguments.of(parts[1], expected(parts[2], parts[3])));
   }
 
-  private static Arguments example(String expression, Object expected) {
-    return Arguments.of(expression, expected);
+  private static List<String[]> acceptanceRows() throws IOException {
+    try (var reader = new BufferedReader(new InputStreamReader(
+        Objects.requireNonNull(StandardFunctionsTest.class.getResourceAsStream("/function-acceptance.tsv")),
+        StandardCharsets.UTF_8))) {
+      return reader.lines().filter(line -> !line.isBlank() && !line.startsWith("#"))
+          .map(line -> Arrays.stream(line.split("\\t", -1)).map(String::translateEscapes).toArray(String[]::new))
+          .toList();
+    }
+  }
+
+  private static Object expected(String type, String value) {
+    return switch (type) {
+      case "NUMBER" -> new BigDecimal(value);
+      case "BOOLEAN" -> Boolean.valueOf(value);
+      case "DATE" -> LocalDate.parse(value);
+      case "DATETIME" -> LocalDateTime.parse(value);
+      case "STRING" -> value;
+      default -> throw new IllegalArgumentException("Unknown acceptance value type");
+    };
+  }
+
+  @Test
+  void everyRegisteredFunctionHasExactlyOneReusableAcceptanceExample() throws Exception {
+    var rows = acceptanceRows();
+    var names = new HashSet<String>();
+    for (var row : rows) {
+      assertEquals(4, row.length);
+      assertTrue(names.add(row[0]), "Duplicate function example: " + row[0]);
+      assertTrue(row[1].startsWith(row[0] + "("));
+    }
+    assertEquals(StandardFunctions.all().stream().map(FormulaFunction::name).collect(Collectors.toSet()), names);
+  }
+
+  @Test
+  void everyRegisteredFunctionRejectsCallsOutsideItsArityContract() {
+    var engine = new FormulaEngine();
+    for (var function : StandardFunctions.all()) {
+      if (function.minArguments() > 0) {
+        var missing = assertThrows(FormulaException.class,
+            () -> engine.compile(function.name() + "(" + String.join(",", Collections.nCopies(function.minArguments() - 1, "1")) + ")"));
+        assertEquals("ARGUMENT_COUNT", missing.code(), function.name());
+      }
+      var excess = assertThrows(FormulaException.class,
+          () -> engine.compile(function.name() + "(" + String.join(",", Collections.nCopies(function.maxArguments() + 1, "1")) + ")"));
+      assertEquals(function.maxArguments() == 256 ? "INVALID_AST" : "ARGUMENT_COUNT", excess.code(), function.name());
+    }
   }
 
   @ParameterizedTest(name = "{0}")

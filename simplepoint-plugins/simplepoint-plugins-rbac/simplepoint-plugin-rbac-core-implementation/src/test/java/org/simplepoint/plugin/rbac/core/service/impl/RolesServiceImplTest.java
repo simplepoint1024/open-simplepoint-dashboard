@@ -39,7 +39,6 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
-import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
 import org.simplepoint.security.service.ResourceService;
@@ -51,41 +50,33 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class RolesServiceImplTest {
 
-  @Mock
-  RoleRepository roleRepository;
+  @Mock RoleRepository roleRepository;
+
+  @Mock DetailsProviderService detailsProviderService;
+
+  @Mock JsonSchemaDetailsService jsonSchemaDetailsService;
+
+  @Mock JsonSchemaGenerator jsonSchemaGenerator;
+
+  @Mock RoleResourceGrantRepository roleResourceGrantRepository;
+
+  @Mock TenantRepository tenantRepository;
+
+  @Mock ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @Mock
-  DetailsProviderService detailsProviderService;
+  org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService
+      resourceGrantLogRemoteService;
 
-  @Mock
-  JsonSchemaDetailsService jsonSchemaDetailsService;
+  @Mock ResourceService resourceService;
 
-  @Mock
-  JsonSchemaGenerator jsonSchemaGenerator;
+  @Mock ScopePolicyValidator scopePolicyValidator;
 
-  @Mock
-  RoleResourceGrantRepository roleResourceGrantRepository;
+  @Mock RoleScopeBindingService roleScopeBindingService;
 
-  @Mock
-  TenantRepository tenantRepository;
+  @Mock org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog tenantResources;
 
-  @Mock
-  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
-
-  @Mock
-  org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService resourceGrantLogRemoteService;
-
-  @Mock
-  ResourceService resourceService;
-
-  @Mock
-  ScopePolicyValidator scopePolicyValidator;
-
-  @Mock
-  RoleScopeBindingService roleScopeBindingService;
-
-  @InjectMocks
-  RolesServiceImpl service;
+  @InjectMocks RolesServiceImpl service;
 
   MockedStatic<AuthorizationContextHolder> authorizationContextHolder;
 
@@ -97,24 +88,27 @@ class RolesServiceImplTest {
     properties.putObject("authority");
     properties.putObject("roleName");
     lenient().when(roleRepository.getDomainClass()).thenReturn((Class) Role.class);
-    lenient().when(detailsProviderService.getDialect(JsonSchemaDetailsService.class))
+    lenient()
+        .when(detailsProviderService.getDialect(JsonSchemaDetailsService.class))
         .thenReturn(jsonSchemaDetailsService);
-    lenient().when(detailsProviderService.getDialect(JsonSchemaGenerator.class))
+    lenient()
+        .when(detailsProviderService.getDialect(JsonSchemaGenerator.class))
         .thenReturn(jsonSchemaGenerator);
     lenient().when(jsonSchemaGenerator.generateSchema(Role.class)).thenReturn(schema);
-    lenient().when(detailsProviderService.getDialects(ModifyDataAuditingService.class)).thenReturn(List.of());
-    lenient().when(resourceService.findAllByCodes(any())).thenAnswer(invocation -> {
-      Collection<String> codes = invocation.getArgument(0);
-      return codes.stream().map(code -> {
-        Resource resource = new Resource();
-        resource.setCode(code);
-        resource.setGrantable(true);
-        resource.setDisabled(false);
-        return resource;
-      }).toList();
-    });
+    lenient()
+        .when(detailsProviderService.getDialects(ModifyDataAuditingService.class))
+        .thenReturn(List.of());
+    service.setTenantResourceCatalog(tenantResources);
+    lenient()
+        .when(roleRepository.lockForAuthorization(any(), any()))
+        .thenAnswer(call -> Optional.of(roleWithTenant(call.getArgument(1))));
+    lenient()
+        .when(tenantResources.grantableCodes(any(), any()))
+        .thenAnswer(call -> Set.copyOf(call.<Collection<String>>getArgument(1)));
     authorizationContextHolder = mockStatic(AuthorizationContextHolder.class);
-    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantAdminContext());
+    authorizationContextHolder
+        .when(AuthorizationContextHolder::getContext)
+        .thenReturn(tenantAdminContext());
   }
 
   @AfterEach
@@ -133,6 +127,7 @@ class RolesServiceImplTest {
     AuthorizationContext ctx = new AuthorizationContext();
     ctx.setIsAdministrator(true);
     ctx.setUserId("user1");
+    ctx.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
     ctx.setContextId("context1");
     ctx.setResources(Set.of());
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
@@ -155,17 +150,21 @@ class RolesServiceImplTest {
   void overviewManagementScopeRequiresOwnerAndRechecksRevocation() {
     var context = new AuthorizationContext();
     context.setUserId("user1");
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
     context.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
     context.setIsAdministrator(false);
     authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
     var tenant = new org.simplepoint.plugin.rbac.tenant.api.entity.Tenant();
-    tenant.setId("tenant1"); tenant.setOwnerId("user1");
+    tenant.setId("tenant1");
+    tenant.setOwnerId("user1");
     when(tenantRepository.findById("tenant1")).thenReturn(Optional.of(tenant));
     assertThat(service.requireManagementTenant()).isEqualTo("tenant1");
     tenant.setOwnerId("another-owner");
     assertThatThrownBy(() -> service.requireManagementTenant())
         .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
-    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(tenantAdminContext());
+    authorizationContextHolder
+        .when(AuthorizationContextHolder::getContext)
+        .thenReturn(tenantAdminContext());
     assertThat(service.requireManagementTenant()).isEqualTo("tenant1");
   }
 
@@ -185,6 +184,95 @@ class RolesServiceImplTest {
 
     assertThatThrownBy(() -> service.authorized("r999"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(
+      strings = {"PLATFORM", "missing-scope", "missing-tenant", "blank-user"})
+  void grantEndpointsRequireAnExplicitSelectedTenant(String invalid) {
+    var context = new AuthorizationContext();
+    context.setUserId(invalid.equals("blank-user") ? " " : "user1");
+    context.setIsAdministrator(true);
+    if (!invalid.equals("missing-scope")) {
+      context.setScopeType(
+          invalid.equals("PLATFORM")
+              ? org.simplepoint.core.AuthorizationScopeType.PLATFORM
+              : org.simplepoint.core.AuthorizationScopeType.TENANT);
+    }
+    if (!invalid.equals("missing-tenant")) {
+      context.setAttributes(Map.of("X-Tenant-Id", "tenant1"));
+    }
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+    var dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("page.view"));
+    assertThatThrownBy(() -> service.authorize(dto))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> service.unauthorized("r1", Set.of("page.view")))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> service.authorized("r1"))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(service::requireManagementTenant)
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(
+        tenantRepository,
+        tenantResources,
+        roleRepository,
+        roleResourceGrantRepository,
+        resourceService);
+  }
+
+  @Test
+  void personalGrantUsesOnlyItsExplicitTenantWithoutDefaultSpaceLookup() {
+    var context = tenantAdminContext();
+    context.replaceScopeType(org.simplepoint.core.AuthorizationScopeType.PERSONAL);
+    authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+    when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
+    var dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("page.view"));
+    service.authorize(dto);
+    verify(tenantResources).grantableCodes("tenant1", Set.of("page.view"));
+    org.mockito.Mockito.verifyNoInteractions(tenantRepository, resourceService);
+  }
+
+  @Test
+  void roleRemovedBeforeLockCannotReceiveOrLoseGrants() {
+    when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
+    when(roleRepository.lockForAuthorization("tenant1", "r1")).thenReturn(Optional.empty());
+    var dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("paid.view"));
+    assertThatThrownBy(() -> service.authorize(dto))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    assertThatThrownBy(() -> service.unauthorized("r1", Set.of("paid.view")))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(roleResourceGrantRepository);
+    verify(roleRepository, org.mockito.Mockito.never()).unauthorized(any(), any(), any());
+  }
+
+  @Test
+  void directGrantRejectsUnavailableTenantCodeWithoutConsultingPlatformResources() {
+    when(roleRepository.findById("r1")).thenReturn(Optional.of(roleWithTenant("r1")));
+    when(tenantResources.grantableCodes("tenant1", Set.of("paid.view"))).thenReturn(Set.of());
+    var dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("paid.view"));
+    assertThatThrownBy(() -> service.authorize(dto))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(resourceService, roleResourceGrantRepository);
+    verify(tenantResources).lockForGrantModification("tenant1");
+  }
+
+  @Test
+  void missingTenantCatalogCannotUsePlatformGrantFallback() {
+    service.setTenantResourceCatalog(null);
+    var dto = new RoleResourceGrantDto();
+    dto.setRoleId("r1");
+    dto.setResourceCodes(Set.of("paid.view"));
+    assertThatThrownBy(() -> service.authorize(dto))
+        .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(resourceService, roleResourceGrantRepository);
   }
 
   @Test
@@ -215,7 +303,8 @@ class RolesServiceImplTest {
     RoleResourceGrant saved = new RoleResourceGrant();
     when(roleResourceGrantRepository.saveAll(any())).thenReturn(List.of(saved));
     doThrow(new RuntimeException("audit unavailable"))
-        .when(resourceGrantLogRemoteService).record(any());
+        .when(resourceGrantLogRemoteService)
+        .record(any());
 
     Collection<RoleResourceGrant> result = service.authorize(dto);
 
@@ -265,11 +354,13 @@ class RolesServiceImplTest {
     authorizationContextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
     Role role = roleWithTenant("new-role");
     Pageable pageable = PageRequest.of(0, 20);
-    when(roleRepository.limit(Map.of("deletedAt", "is:null"), pageable)).thenAnswer(invocation -> {
-      assertThat(DataScopeContext.get()).isNotNull();
-      assertThat(DataScopeContext.get().isAllData()).isTrue();
-      return new PageImpl<>(List.of(role), pageable, 1);
-    });
+    when(roleRepository.limit(Map.of("deletedAt", "is:null"), pageable))
+        .thenAnswer(
+            invocation -> {
+              assertThat(DataScopeContext.get()).isNotNull();
+              assertThat(DataScopeContext.get().isAllData()).isTrue();
+              return new PageImpl<>(List.of(role), pageable, 1);
+            });
 
     Page<Role> result = service.limit(Map.of(), pageable);
 
@@ -311,6 +402,7 @@ class RolesServiceImplTest {
     AuthorizationContext context = new AuthorizationContext();
     context.setIsAdministrator(false);
     context.setUserId("user1");
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
     context.setContextId("context1");
     context.setResources(Set.of());
     context.setAttributes(Map.of("X-Tenant-Id", "tenant1"));

@@ -1,3 +1,6 @@
+import ApplicationNavigation from './ApplicationNavigation';
+import {localizedTextSchema, localizedDraft} from '@simplepoint/shared/i18n/localizedSchema';
+import {resolveLocalizedText, type LocalizedText} from '@simplepoint/shared/i18n/localizedText';
 import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import DataTable from '@simplepoint/components/DataTable';
 import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
@@ -20,9 +23,11 @@ const PageFormDesigner = lazy(() => import('./forms/PageFormDesigner'));
 type ApplicationSummary = {
   id: string;
   name: string;
+  nameLocalization?: LocalizedText;
   description?: string;
   status: 'DRAFT' | 'PUBLISHED';
   mainPageName: string;
+  mainPageNameLocalization?: LocalizedText;
   attachedPageCount: number;
   updatedAt: string;
 };
@@ -30,6 +35,7 @@ type ApplicationSummary = {
 type ApplicationPage = {
   id: string;
   name: string;
+  nameLocalization?: LocalizedText;
   description?: string;
   kind: 'MAIN' | 'ATTACHED';
   status: 'DRAFT' | 'PUBLISHED';
@@ -40,8 +46,8 @@ type ApplicationPage = {
 
 type ApplicationDetail = {application: ApplicationSummary; pages: ApplicationPage[]};
 type Permissions = {canCreateApplication: boolean; canAddPage: boolean; canDesignForm: boolean};
-type CreateApplicationValues = {name: string; description?: string; mainPageName: string; navigationGroup?: boolean};
-type CreatePageValues = {name: string; description?: string};
+type CreateApplicationValues = {name: string; description?: string; mainPageName: string; navigationGroup?: boolean; nameLocalization?: LocalizedText; mainPageNameLocalization?: LocalizedText};
+type CreatePageValues = {name: string; description?: string; nameLocalization?: LocalizedText};
 
 const endpoint = '/app/applications';
 
@@ -60,6 +66,7 @@ function WorkbenchSession() {
   const [applicationValues, setApplicationValues] = useState<Partial<CreateApplicationValues>>({});
   const [pageValues, setPageValues] = useState<Partial<CreatePageValues>>({});
   const [createOpen, setCreateOpen] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const [addPageOpen, setAddPageOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -82,7 +89,11 @@ function WorkbenchSession() {
   const load = table.refresh;
   const detailQuery = useData(['app', 'detail', detailId], ({signal}) => get<ApplicationDetail>(endpoint + '/' + encodeURIComponent(detailId!), undefined, {signal}),
     {enabled: Boolean(detailId), retry: false});
-  const detail = detailQuery.data, detailLoading = detailQuery.isFetching;
+  const detailLoading = detailQuery.isFetching;
+  const detail = useMemo(() => detailQuery.data ? {...detailQuery.data,
+    application: {...detailQuery.data.application, name: resolveLocalizedText(detailQuery.data.application.nameLocalization, locale, undefined, 'TENANT', detailQuery.data.application.name).text},
+    pages: detailQuery.data.pages.map(page => ({...page, name: resolveLocalizedText(page.nameLocalization, locale, undefined, 'TENANT', page.name).text})),
+  } : undefined, [detailQuery.data, locale]);
   const openDetail = useCallback((id: string) => {if (!locked && operation.isSelected() && !error && id) setDetailId(id);},
     [locked, operation.isSelected, error]);
 
@@ -99,7 +110,7 @@ function WorkbenchSession() {
     const controller = operation.begin(); if (!controller) return; setWriteError('');
     savingRef.current = true; setSaving(true);
     try {
-      const created = await post<ApplicationDetail>(endpoint, values, {notifyOnError: false, signal: controller.signal});
+      const created = await post<ApplicationDetail>(endpoint, {...values, name: values.nameLocalization?.defaultValue ?? values.name, mainPageName: values.mainPageNameLocalization?.defaultValue ?? values.mainPageName}, {notifyOnError: false, signal: controller.signal});
       if (!operation.current(controller.signal)) return;
       setCreateOpen(false);
       setApplicationValues({});
@@ -120,7 +131,7 @@ function WorkbenchSession() {
     const captured = pageTarget.id, controller = operation.begin(); if (!controller) return; setWriteError('');
     savingRef.current = true; setSaving(true);
     try {
-      await post(endpoint + '/' + encodeURIComponent(captured) + '/pages', values, {notifyOnError: false, signal: controller.signal});
+      await post(endpoint + '/' + encodeURIComponent(captured) + '/pages', {...values, name: values.nameLocalization?.defaultValue ?? values.name}, {notifyOnError: false, signal: controller.signal});
       if (!operation.current(controller.signal)) return;
       setAddPageOpen(false);
       setPageValues({});
@@ -142,11 +153,11 @@ function WorkbenchSession() {
 
   const columns: ColumnsType<ApplicationSummary> = useMemo(() => [
     {title: t('app.application.name', '应用名称'), dataIndex: 'name', key: 'name',
-      render: (name: string) => name},
+      render: (name: string, row) => resolveLocalizedText(row.nameLocalization, locale, undefined, 'TENANT', name).text},
     {title: t('app.application.description', '说明'), dataIndex: 'description',
       key: 'description', ellipsis: true, render: (value?: string) => value || '—'},
     {title: t('app.application.mainPage', '主页面'), dataIndex: 'mainPageName',
-      key: 'mainPageName', width: 180},
+      key: 'mainPageName', width: 180, render: (name: string, row) => resolveLocalizedText(row.mainPageNameLocalization, locale, undefined, 'TENANT', name).text},
     {title: t('app.application.attachedPages', '附属页面'), dataIndex: 'attachedPageCount',
       key: 'attachedPageCount', width: 120},
     {title: t('app.application.status', '状态'), dataIndex: 'status',
@@ -233,18 +244,19 @@ function WorkbenchSession() {
         okButtonProps={{disabled: !permissions?.canCreateApplication || !!permissionsQuery.error || error}}
         okText={t('app.create', '创建')}>
         {writeError && <Alert showIcon type="error" title={writeError}/>}
-        <SForm ref={appForm} hideSubmit disabled={saving} schema={{type: 'object', required: ['name', 'mainPageName'], properties: {
-          name: {type: 'string', pattern: '\\S', maxLength: 120, title: t('app.application.name', '应用名称')},
+        <SForm ref={appForm} hideSubmit disabled={saving} schema={{type: 'object', required: ['nameLocalization', 'mainPageNameLocalization'], properties: {
+          nameLocalization: localizedTextSchema(t('app.application.name', '应用名称'), 100),
           description: {type: 'string', maxLength: 500, title: t('app.application.description', '说明')},
-          mainPageName: {type: 'string', pattern: '\\S', maxLength: 120, title: t('app.application.mainPage', '主页面')},
+          mainPageNameLocalization: localizedTextSchema(t('app.application.mainPage', '主页面'), 100),
           navigationGroup: {type: 'boolean', default: false, title: t('app.application.navigationGroup', '独立菜单目录')},
-        }}} uiSchema={{description: {'ui:widget': 'textarea'}}} formData={applicationValues}
+        }}} uiSchema={{description: {'ui:widget': 'textarea'}}} formData={{...applicationValues, mainPageNameLocalization: localizedDraft(applicationValues.mainPageName ?? '', applicationValues.mainPageNameLocalization, locale)}}
           onChange={({formData}) => {if (!savingRef.current) {setApplicationValues(formData ?? {}); setDirty(true);}}}
           onSubmit={({formData}) => void createApplication(formData as CreateApplicationValues)}/>
       </Modal>
 
       <Drawer rootClassName="app-application-details" title={detail?.application.name ?? t('app.application.detail', '应用详情')}
-        open={Boolean(detailId) && operation.selected} width={720} onClose={() => {if (!savingRef.current && !addPageOpen) setDetailId(undefined);}}
+        styles={{body: {display: 'flex', flexDirection: 'column', overflow: 'hidden'}}}
+        open={Boolean(detailId) && operation.selected && !navigationOpen} width={720} onClose={() => {if (!savingRef.current && !addPageOpen) setDetailId(undefined);}}
         loading={detailLoading} closable={!saving && !addPageOpen} maskClosable={!saving && !addPageOpen} keyboard={!saving && !addPageOpen}>
         {detailQuery.isError && <Alert type="error" showIcon title={t('app.application.detailFailed', '应用详情加载失败')}
           action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retryDetail', sort: 10,
@@ -255,6 +267,9 @@ function WorkbenchSession() {
           </Space>
           <Space style={{width: '100%', justifyContent: 'space-between', marginBottom: 12}}>
             <Typography.Title level={5} style={{margin: 0}}>{t('app.page.list', '页面')}</Typography.Title>
+            {permissions?.canDesignForm && !permissionsQuery.error && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+              {key: 'navigation', sort: 0, icon: 'FolderOutlined', text: t('app.navigation.title', '应用目录与名称'), disabled: saving || addPageOpen || !!detailQuery.error},
+            ]} onButtonEvents={{navigation: () => {if (!savingRef.current && !addPageOpen && operation.isSelected()) setNavigationOpen(true);}}}/>}
             {permissions?.canAddPage && !permissionsQuery.error && <TableActions selectedKeys={[]} selectedRows={[]}
               buttons={[{key: 'add', sort: 0, text: t('app.page.create', '添加页面'),
                 icon: 'PlusOutlined', argumentMinSize: 0, argumentMaxSize: 0, disabled: saving || addPageOpen || !!detailQuery.error || !operation.selected}]}
@@ -268,10 +283,13 @@ function WorkbenchSession() {
               name: {type: 'string'}, description: {type: 'string'}, kind: {type: 'string', enum: ['MAIN', 'ATTACHED']},
               status: {type: 'string', enum: ['DRAFT', 'PUBLISHED']},
             }}}
-            columns={pageColumns} dataSource={detail.pages} pagination={{pageSize: 20, disabled: saving || addPageOpen}}/>
+            columns={pageColumns} dataSource={detail.pages} pagination={{defaultPageSize: 50, disabled: saving || addPageOpen}}/>
 
         </>}
       </Drawer>
+
+      {navigationOpen && detailId && <ApplicationNavigation key={detailId} applicationId={detailId}
+        onClose={() => setNavigationOpen(false)} onSaved={() => {void detailQuery.refetch(); void load();}}/>}
 
       <Modal wrapClassName="app-page-create" title={t('app.page.create', '添加页面')} open={addPageOpen && operation.selected}
         confirmLoading={saving} destroyOnHidden={!addPageOpen} closable={!saving} maskClosable={!saving} keyboard={!saving}
@@ -281,8 +299,8 @@ function WorkbenchSession() {
         okText={t('app.create', '创建')}>
         <Typography.Paragraph>{pageTarget?.name}</Typography.Paragraph>
         {writeError && <Alert showIcon type="error" title={writeError}/>}
-        <SForm ref={pageForm} hideSubmit disabled={saving} schema={{type: 'object', required: ['name'], properties: {
-          name: {type: 'string', pattern: '\\S', maxLength: 120, title: t('app.page.name', '页面名称')},
+        <SForm ref={pageForm} hideSubmit disabled={saving} schema={{type: 'object', required: ['nameLocalization'], properties: {
+          nameLocalization: localizedTextSchema(t('app.page.name', '页面名称'), 100),
           description: {type: 'string', maxLength: 500, title: t('app.page.description', '说明')},
         }}} uiSchema={{description: {'ui:widget': 'textarea'}}} formData={pageValues}
           onChange={({formData}) => {if (!savingRef.current) {setPageValues(formData ?? {}); setDirty(true);}}}

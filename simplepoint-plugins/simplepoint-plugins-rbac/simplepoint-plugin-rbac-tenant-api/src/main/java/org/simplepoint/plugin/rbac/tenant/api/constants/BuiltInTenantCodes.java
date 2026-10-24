@@ -15,6 +15,9 @@ public final class BuiltInTenantCodes {
 
   public static final String STORAGE_APPLICATION = "simplepoint-storage";
 
+  /** Explicit public distribution policy; publicAccess alone never makes a resource a tenant entitlement. */
+  public static final java.util.Set<String> BASELINE_APPLICATIONS = java.util.Set.of(CORE_APPLICATION, STORAGE_APPLICATION);
+
   public static final String ORGANIZATION_PACKAGE = "simplepoint-standard";
 
   public static final String PERSONAL_PACKAGE = "simplepoint-personal";

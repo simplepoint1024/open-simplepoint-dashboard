@@ -29,6 +29,7 @@ import {TabPanels} from './TabPanels';
 import {NavigationGuardContext} from './NavigationGuard';
 import {closeTargets} from './tabCache';
 import {useReleaseUpdate} from './useReleaseUpdate';
+import {useResponsiveSider} from './useResponsiveSider';
 import {useCurrentTenantProfile, useCurrentTenants} from '@/fetches/tenants.ts';
 import {getTenantId} from '@/store/tenant.ts';
 import {
@@ -82,7 +83,7 @@ const NavigateBar: React.FC<{
   data?: Array<RouteInfo>;
   remoteRegistryKey?: string;
 }> = ({children, data, remoteRegistryKey}) => {
-  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 768);
+  const [collapsed, setCollapsed] = useResponsiveSider();
   const navigate = useNavigate();
   const location = useLocation();
   const {t} = useI18n();
@@ -738,9 +739,10 @@ const NavigateBar: React.FC<{
     aboutMeItem(navigate, {
       enabled: tenantMenuEnabled,
       editable: currentTenantProfile?.profileEditable === true,
-      organization: currentTenantProfile?.tenantType === 'ORGANIZATION',
+      resourceManageable: currentTenantProfile?.resourceManageable === true,
+      packageManageable: currentTenantProfile?.packageManageable === true,
     }),
-  ], [currentTenantProfile?.profileEditable, currentTenantProfile?.tenantType, navigate, tenantMenuEnabled]);
+  ], [currentTenantProfile?.profileEditable, currentTenantProfile?.resourceManageable, currentTenantProfile?.packageManageable, navigate, tenantMenuEnabled]);
 
   return (
     <NavigationGuardContext.Provider value={confirmWorkspaceChange}>

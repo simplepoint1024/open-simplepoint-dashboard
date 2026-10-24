@@ -14,7 +14,7 @@ const env = {...Object.fromEntries(Object.entries(process.env).filter(([key]) =>
 const sql = text => execFileSync('psql', ['-X', '-qAt', '-v', 'ON_ERROR_STOP=1'], {env, input: text, encoding: 'utf8'}).trim();
 const root = new URL('../../', import.meta.url);
 const migration = readFileSync(new URL('doc/deployment/sql/20261011-workflow-personal-messages.sql', root), 'utf8');
-const structure = readFileSync(new URL('simplepoint-services/simplepoint-service-workflow/src/main/resources/schema.sql', root), 'utf8');
+const structure = readFileSync(new URL('simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/legacy.sql', root), 'utf8');
 const navigation = readFileSync(new URL('doc/deployment/sql/20261011-workflow-personal-navigation.sql', root), 'utf8');
 try {
   sql(`CREATE SCHEMA ${schema}`);

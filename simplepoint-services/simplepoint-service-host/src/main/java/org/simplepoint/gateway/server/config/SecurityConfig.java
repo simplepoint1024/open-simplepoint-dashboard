@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoderFactory;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.csrf.WebSessionServerCsrfTokenRepository;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -52,7 +53,11 @@ public class SecurityConfig {
       final ServerHttpSecurity http,
       final ReactiveClientRegistrationRepository clientRegistrationRepository
   ) {
-    http.csrf(ServerHttpSecurity.CsrfSpec::disable);
+    var csrfTokens = new WebSessionServerCsrfTokenRepository();
+    BrowserSessionLifetime lifetime = new BrowserSessionLifetime(csrfTokens);
+    http.addFilterBefore(lifetime, org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION);
+    http.csrf(csrf -> csrf.csrfTokenRepository(csrfTokens)
+        .requireCsrfProtectionMatcher(new BrowserCsrfMatcher()));
     http.authorizeExchange(exchanges -> exchanges
             // Allow access to login page and OAuth2-related paths
             .pathMatchers(
@@ -76,6 +81,7 @@ public class SecurityConfig {
 
         // Configure OAuth2 login with client registration repository and custom login page
         .oauth2Login(oauth2 -> oauth2
+            .authenticationSuccessHandler(lifetime::authenticated)
             .clientRegistrationRepository(clientRegistrationRepository)
             //.authenticationSuccessHandler(new SessionServerAuthenticationSuccessHandler())
 
@@ -88,6 +94,15 @@ public class SecurityConfig {
         );
 
     return http.build();
+  }
+
+  /** Restricts the browser session cookie to secure, HTTP-only, same-site transport. */
+  @Bean
+  public org.springframework.web.server.session.WebSessionIdResolver browserSessionCookie(
+      @org.springframework.beans.factory.annotation.Value("${simplepoint.security.session.secure-cookie:true}") boolean secure) {
+    var resolver = new org.springframework.web.server.session.CookieWebSessionIdResolver();
+    resolver.addCookieInitializer(cookie -> cookie.httpOnly(true).secure(secure).sameSite("Lax").path("/"));
+    return resolver;
   }
 
   private OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler(

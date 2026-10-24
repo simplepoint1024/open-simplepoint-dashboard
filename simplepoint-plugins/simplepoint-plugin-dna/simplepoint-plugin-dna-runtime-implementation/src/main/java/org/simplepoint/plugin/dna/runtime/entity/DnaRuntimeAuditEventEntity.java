@@ -16,6 +16,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventType;
 import org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditOutcome;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
@@ -61,7 +62,7 @@ import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
     @org.simplepoint.core.query.QueryField("durationMillis"),
     @org.simplepoint.core.query.QueryField("outcome"),
     @org.simplepoint.core.query.QueryField("errorCode")
-}, maxPageSize = 100)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class DnaRuntimeAuditEventEntity extends TenantBaseEntityImpl<String> {
 
   @Enumerated(EnumType.STRING)

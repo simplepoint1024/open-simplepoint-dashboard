@@ -1,0 +1,677 @@
+{
+  "date": "2026-10-21",
+  "scope": "APP form module migration and application catalogue entity ownership",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew -I /tmp/simplepoint-app-migration-checkstyle.gradle verifyAppMigrationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:test :simplepoint-services:simplepoint-service-app:test -Psimplepoint.frontend.skip=true --console=plain",
+    "SP_MIGRATIONS_POSTGRES_URL and APP_FORM_TEST_POSTGRES_URL point to an isolated loopback PostgreSQL migration_test database; USER/PASSWORD supplied through environment, omitted from this record"
+  ],
+  "totals": {
+    "tests": 385,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "testProjects": [
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "totals": {
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation",
+      "totals": {
+        "tests": 304,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateServiceTest",
+          "tests": 34,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormPostgresSchemaTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormPublicationServiceImplTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormPublicationStateServiceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordSchemaServiceImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordServiceImplTest",
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormRuntimeServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationFormServiceDatabaseTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.ApplicationResourceLifecycleTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.DefaultFormComponentRegistryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.DnaInvocationContextFactoryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormAggregateValidationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormAttachmentReferenceValidatorTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationCompilerTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationComponentConstraintsTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationDefinitionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationInputValidationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationPermissionsTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationPublicationProjectionTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationRuntimeProjectionTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationValidationProjectionTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormCalculationWriteProjectionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormChoiceValuesTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormDetailEngineTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormDnaResourceBindingCoordinatorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinatorTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormDocumentCodecTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormDocumentValidatorTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormFieldValidationsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormFieldWritePolicyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormJsonContractTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPageResourceCoordinatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPresentationAndAccessTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPublicationImpactServiceTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPublicationProgressProjectionTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPublicationRecoveryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPublicationRequirementsCompilerTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormPublicationValidatorTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordIdentityLabelsTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordInvariantValidatorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordPayloadCompilerTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordProjectionReadsTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRecordSystemFieldsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormResubmissionModeTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRuleEvaluatorTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormRuntimeDocumentCompilerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormSceneGraphValidatorTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormStandardComponentsTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormStorageProjectionCompilerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormSubmissionRecoveryTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormSubmissionRequirementsTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormTemporalContractTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormWritePolicyProjectionTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationCoordinatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-app",
+      "totals": {
+        "tests": 57,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.app.catalog.service.WorkspaceApplicationCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.catalog.service.WorkspaceApplicationQueriesTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationFormCalculationControllerTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationFormControllerHttpTest",
+          "tests": 17,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationFormExceptionHandlerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationFormRecordPreviewControllerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationFormWorkflowHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.controller.ApplicationResourceLifecycleSecurityTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.service.ApplicationFormReleaseCatalogTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.service.ApplicationFormWorkflowCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.service.CurrentFormPublicationRecoveryAuthorityTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.app.form.service.WorkspaceApplicationPageAccessPortTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "styleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/appMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/build/reports/checkstyle/appMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-services/simplepoint-service-app/build/reports/checkstyle/appMigration.xml",
+      "violations": 0
+    }
+  ],
+  "styleSources": [
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalogTest.java",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPortTest.java",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/ApplicationFormReleaseCatalogTest.java",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalogTest.java",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationQueriesTest.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalog.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPort.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationAccessPort.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalog.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplicationReadModel.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplication.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplicationPage.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/ApplicationFormPostgresSchemaTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java"
+  ],
+  "styleTaskContract": {
+    "configuration": "checkstyle/google_checks.xml",
+    "maxWarnings": 0,
+    "sources": "styleSources in this evidence",
+    "classpath": "owning project test compile classpath"
+  },
+  "boundaryGate": "verifyModuleBoundaries passed",
+  "database": {
+    "image": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+    "version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+    "remainingTestSchemas": 0,
+    "runningBeforeCleanup": true,
+    "oomKilled": false,
+    "cleanup": {
+      "containerAndAnonymousVolumeRemoved": true,
+      "temporaryCredentialFileRemoved": true,
+      "remainingTestSchemasBeforeRemoval": 0
+    }
+  },
+  "verifiedScenarios": [
+    "Fresh packaged PostgreSQL V1 installs 11 APP control tables and validates all 12 domain/catalogue entities without runnable service dependencies",
+    "JPA catalogue and form queries retain Unicode sample data through migration restart",
+    "Fresh baseline matches repeatable legacy initializer columns, type lengths, nullability/defaults, constraints and indexes",
+    "Tenant references, release idempotency and policy cancellation progress constraints reject invalid writes",
+    "APP and workflow share one schema with independent histories; restart applies zero migrations",
+    "Untracked legacy APP tables require explicit adoption",
+    "Existing PostgreSQL APP historical migration/replay and bootstrap tests pass",
+    "Previously completed workflow PostgreSQL migration tests rerun using shared disposable-schema fixture",
+    "Removed host root schema and old catalogue entity classes absent from processed build outputs"
+  ],
+  "foundAndFixed": [
+    "Initial full entity validation failed on missing detail_bindings_json in simpoint_app_form_versions. Added the existing additive detail contract to the new baseline and legacy initializer; final suite passes.",
+    "Moved application catalogue entities from runnable APP host to owning form domain. Existing directory, page access, workflow/release queries and tests now import owned entities."
+  ],
+  "limitations": [
+    "Only workflow and app-form currently declare real SQL migration contributions; incomplete platform coverage still blocks installation.",
+    "APP controllers/catalogue services/access adapters remain partly in runnable host; no complete standalone runtime claimed.",
+    "Other domain tests remain H2/unit tests; 385 is not a claim that every case ran against PostgreSQL.",
+    "Legacy initializer is compatibility initialization, not universal historical upgrade or verified Flyway adoption.",
+    "Shared event tables/native Flowable migration orchestration, legacy adoption, startup ordering and full topology acceptance remain pending.",
+    "No business database updates, deployment, frontend distribution build, commit or push performed."
+  ],
+  "sourceSha256": {
+    "doc/design/modular_service_composition_plan.md": "e81a9b4b0b7441b380a3d937d9d53b8508f98375aa495ff0e42e75f922198ce6",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "730a145ad20735c1a6ac533ba9f4cc96f7595aebd493e9fd02a7ae206fec9b14",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java": "27540611934f370878123a2ec3dffa3b2905f559e53cd518f3cebb985daedaf5",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java": "ed3cb7baf1710dadf834a07e6a1597ac8ff0ee6f5db8a95c8a10544e3baeacb4",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "893bcc6f4927bda6f689d1db71ae0976e9fa39d54b1f7e6de1aa31837981d3e0",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowModuleMigrationPostgresTest.java": "b1dcfa25fe46c32a51cfa945abeddd0d8e6d6172aba771cfc26a949001825a02",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/build.gradle.kts": "c9a07e58f59cc2b9b0d35400eba3b94d64070608dfcb002bfb3c3f771b1572dd",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java": "7fa86344cc1b528083d15197f302a7a7c5d2eda721c8cb93e580d9656c0b7866",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplication.java": "8654792b713715ecb07bce3a26afc6308b44d1c3deac28b5af64d55d67728b31",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplicationPage.java": "098cff0c23e3c56e6ff58fd1c6985a37a8f6988284918d10ecb169b53a191e26",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/entity/WorkspaceApplicationReadModel.java": "3bbd6891864535e04927d504703943b9dba3f4998dd171aa0af6f8dbcacc666e",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules/app-form/db/legacy.sql": "02b735cfce77961a372b7b7b3f3a2102209b25f35e1189e4258f6301e1fdbb95",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules/app-form/db/manifest.properties": "d4ba67caef45e8f79131ae50c76509b81ff46420a755ecf79831ded211df49c2",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules/app-form/db/postgresql/V1__app_form_foundation.sql": "d2cbedea1f9f58e5530d0ead2463c6f431e7986460a733a9df5874dbb345b5f0",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/ApplicationFormPostgresSchemaTest.java": "806b954493c6592e4aa9a340a499acddf31791b16b60d57007ffbf729af03cbd",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalog.java": "f492b385fb9bbefb209e38daa0e6034b5e66fa5dac9adf7db38222bd57a11a3a",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalog.java": "b305475db37c913522e858d115ba3908480db186c8fed1694fd1fb8ab16d69fd",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationAccessPort.java": "1948e79364e84cbafa75757c55c0a5a59267729f846510af82bb6d349d2bf7f3",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPort.java": "5a941694714904dadb6e570e575104d097824ad2b6ca8bd21eff7788cc969812",
+    "simplepoint-services/simplepoint-service-app/src/main/resources/application.properties": "403461b809d8d51f558b1187ddcce453d5f179f10ba7ddc54137c356fe2b9307",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalogTest.java": "9aae780c17f1af0f8116b3ba5be18534a84da731033e831df6808c0a56891ca7",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationQueriesTest.java": "6a88a606a917e33b6f55d3370c418bbeece0c8d1cd9071c123e7f97cff8c4448",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/ApplicationFormReleaseCatalogTest.java": "6bbdbeb4b45cbff9cdd1a29adcc38fe6320c6120b721a5a227b2fe7311476087",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalogTest.java": "44dcdfa1d57529ce8add32e2ff86fcc4374a1da3a20de99de55fcadc8bc6ba9b",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPortTest.java": "767c0890c8732de26007dee584a1e1fde79495d0c5861ce8d0558686ab1b1c19"
+  },
+  "removedPaths": [
+    "simplepoint-services/simplepoint-service-app/src/main/resources/schema.sql",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/catalog/entity/WorkspaceApplication.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/catalog/entity/WorkspaceApplicationPage.java",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/catalog/entity/WorkspaceApplicationReadModel.java"
+  ]
+}

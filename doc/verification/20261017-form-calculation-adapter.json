@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-17",
+  "scope": "Form calculation metadata, typed aggregate adapter, APP dependency permission projection, designer sample preview transport",
+  "baseCommit": "269032ea3b9d6efe3de22ea0831df2d99d5c9ba6",
+  "workingTreeChanges": true,
+  "wholeGoalComplete": false,
+  "deployed": true,
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 PATH=/home/ymsl/.jdks/ms-21.0.12.1/bin:$PATH ./gradlew :simplepoint-calculation:check :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-api:check :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:test :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:checkstyleMain :simplepoint-services:simplepoint-service-app:test :simplepoint-services:simplepoint-service-app:checkstyleMain -Psimplepoint.frontend.skip=true",
+  "result": "passed",
+  "localLog": "/tmp/sp-calculation-final-quality.log",
+  "testResults": {
+    "simplepoint-calculation": {
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation": {
+      "tests": 233,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    "simplepoint-services/simplepoint-service-app": {
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "qualityGates": [
+    "Standalone calculation runtime dependency isolation: ANTLR only",
+    "Regenerated TypeScript grammar matches checked-in sources",
+    "Calculation main/test Checkstyle",
+    "APP form API Checkstyle",
+    "APP form implementation main Checkstyle",
+    "APP service main Checkstyle",
+    "git diff --check"
+  ],
+  "newScenarios": [
+    "Optional formula metadata retains absent legacy JSON and checksums",
+    "Main/detail dependency validation including empty collections, unknown fields and conditional cycles",
+    "Exact decimal results, explicit rounding, integer range, nullable values, Unicode code points, RE2 constraints, declared choices and microsecond dates/times",
+    "Typed result adaptation runs before dependent formulas and cannot be bypassed by consumer IFERROR",
+    "APP query/mutation contexts and snapshot projection intersect all transitive source field grants across main/detail scopes",
+    "Hidden/masked sources hide derived results; own masked grants propagate to dependent formulas; legacy restrictive column grants survive",
+    "Designer function catalog has 63 descriptors from the actual compiler registry",
+    "HTTP preview with actual form validator/compiler preserves 28.53 + 15.68 = 44.21 and returns no ordinary source fields",
+    "HTTP method security rejects read-only and publish-only callers; form ownership resolved before evaluation",
+    "HTTP formula failures expose namespaced domain codes without submitted values",
+    "Calculated draft publication is rejected until transactional DNA execution and backfill exist"
+  ],
+  "remaining": [
+    "Trusted versioned calculation installation and backfill/activation in DNA",
+    "Atomic main/detail recalculation, original-intent idempotency, optimistic versions and submission capture",
+    "Direct DNA API protection and row/field policy enforcement for derived reads, filters, counts and sorts",
+    "Designer property-tab adapter, formula-aware copying/reference updates, runtime preview and persisted result display",
+    "Published business workflows using the new calculated fields and full component/function/process coverage"
+  ],
+  "deploymentVersion": "20261017-workflow-form5",
+  "deploymentEvidence": "20261017-deployment-acceptance.json"
+}

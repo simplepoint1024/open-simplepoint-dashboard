@@ -24,7 +24,8 @@ const rows = (values: Record<string, unknown>, rule: FormValidationConstraint): 
 /** Derived display totals remain ordinary submitted values, rechecked exactly by the server. */
 export function deriveFormTotals(document: ApplicationFormDocument, values: Record<string, unknown>) {
   const result = {...values};
-  for (const rule of document.constraints ?? []) if (rule.kind === 'DETAIL_SUM') {
+  for (const rule of document.constraints ?? []) if (rule.kind === 'DETAIL_SUM'
+    && !document.fields.some(field => field.fieldId === rule.fieldId && field.calculated)) {
     try {result[rule.fieldId!] = text(sum(rows(values, rule).map(row => row[rule.detailFieldId!])));}
     catch {result[rule.fieldId!] = undefined;}
   }
@@ -33,6 +34,10 @@ export function deriveFormTotals(document: ApplicationFormDocument, values: Reco
 
 export function aggregateIssues(document: ApplicationFormDocument, values: Record<string, unknown>) {
   return (document.constraints ?? []).filter(rule => {
+    // The server checks final computed values atomically; stale browser outputs cannot reject an input write.
+    const computed = (id?: string | null) => document.fields.some(field => field.fieldId === id && field.calculated);
+    if (computed(rule.fieldId) || computed(rule.otherFieldId) || document.details?.some(detail => detail.detailId === rule.detailId
+      && detail.fields.some(field => field.fieldId === rule.detailFieldId && field.calculated))) return false;
     const range = (value: unknown) => {
       const n = exactDecimal(value);
       return (rule.minimum == null || compareDecimals(n, exactDecimal(rule.minimum)) >= 0)

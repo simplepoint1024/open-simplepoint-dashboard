@@ -61,7 +61,7 @@ public final class JdbcEventStore implements EventPublisher {
   /** Commits reception before Rabbit acknowledgement. A duplicate cannot alter the original fact. */
   public void receive(EventSubscription subscription, EventMessage event) {
     subscription.validate(event);
-    codec.encode(event);
+    String encoded = codec.encode(event);
     try {
       transactions.executeWithoutResult(status -> insert("INBOX", subscription.id(), event));
     } catch (DuplicateKeyException duplicate) {
@@ -69,7 +69,8 @@ public final class JdbcEventStore implements EventPublisher {
       String stored = jdbc.queryForObject("select envelope from sp_event_jobs_v1 "
           + "where owner = ? and direction = 'INBOX' and subscription = ? and event_id = ?",
           String.class, owner, subscription.id(), event.eventId().toString());
-      if (!Objects.equals(codec.decode(stored.getBytes(StandardCharsets.UTF_8)), event)) {
+      if (!Objects.equals(codec.decode(stored.getBytes(StandardCharsets.UTF_8)),
+          codec.decode(encoded.getBytes(StandardCharsets.UTF_8)))) {
         throw new IllegalArgumentException("Event identity reused with different contents");
       }
     }

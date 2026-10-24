@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-10-20T11:02:21.557025+00:00",
+  "wholeGoalComplete": false,
+  "stageS1Complete": false,
+  "deployed": false,
+  "scope": "Actual domain artifact composition and Common regression; not running three deployed topologies",
+  "java": "21.0.12.1",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-composition:check :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-platform:simplepoint-platform-bootstrap-registry:checkstyleMain :simplepoint-services:simplepoint-service-common:test :simplepoint-service-router:simplepoint-service-router-core:test verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "build": "SUCCESSFUL",
+  "additionalStyleCommand": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-module:checkstyleMain :simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-module:checkstyleMain :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-module:checkstyleMain :simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-module:checkstyleMain :simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-module:checkstyleMain --console=plain",
+  "moduleCount": 20,
+  "publicRpcContractCount": 18,
+  "testSuites": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totalTests": 452,
+  "checkstyle": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-bootstrap-registry",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-module",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module",
+      "scope": "main",
+      "violations": 0
+    }
+  ],
+  "architectureEvidence": [
+    "Actual microservice, standalone and mixed deployment plans retain the same capability set",
+    "Whole org.simplepoint contract scan matches declared providers and rejects empty RPC markers",
+    "Cross-module repository references require the referenced module locally",
+    "Domain classpath does not import old runnable Common/App/Workflow/DNA application classes",
+    "Platform module defaults precede component conditions but cannot override explicit deployment settings"
+  ],
+  "compatibilityChanges": [
+    "Common reuses five domain assembly bundles",
+    "Mandatory runtime artifact dependencies declared for DNA cache bridge, AI dependencies, notification inbox and storage identity references",
+    "Initialization registry implementation and repository moved out of Common, preserving contract and persistence model",
+    "Empty security.schema RPC marker removed; local dialect interface and implementation remain"
+  ],
+  "regressionRepair": "Tenant member scope test asserted unspecified row order; now asserts exact visible member set without changing business sorting",
+  "limitations": [
+    "Common retains its existing startup entry; full selected-module production boot is not verified",
+    "Repository reference gate checks bytecode references, not all native SQL/table ownership",
+    "No real standalone, authentication topology, multi-database/event, frontend distribution or live Consul acceptance in this evidence",
+    "Host HTTP/authentication/gateway contributions and framework consumers still need assembly integration"
+  ],
+  "logSha256": {
+    "simplepoint-domain-composition-registry-final.log": "ba4a7549447fe827c353b99b29da497ce470d7b3bdb3d835b57cddc86aaaba1a",
+    "simplepoint-module-bundle-style.log": "5d51d589d4787012ec7404e4dede5cef511b8103e8f31eb2fdca7cad9637b237"
+  },
+  "sha256": {
+    "settings.gradle.kts": "a9801aec2a18729b84d5fb7f8af31ef008148263c858309227245c3e6f129fa9",
+    "simplepoint-api/src/main/java/org/simplepoint/api/security/service/JsonSchemaDetailsService.java": "cc8004a5e5d4ee84f2ea90e872c136ba3d933f29c2b1df129211aee9a0a04c33",
+    "simplepoint-data/simplepoint-data-json/simplepoint-data-json-schema/src/main/java/org/simplepoint/data/json/schema/service/DefaultJsonSchemaDetailsService.java": "9075def27b6e3a3482b51d2d62b44705b0dc96fddbff57a958a0b40ed8c293b9",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/build.gradle.kts": "5b589b1179e333f3a9f4994bc318658d50eb0f57078b72c247a34482540af955",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryModule.java": "d315c43ed46843c36bfccdc518171cab4bfac96a491736fbe376a5ba2a21b46a",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/repository/PlatformContributionRepository.java": "2743a2ac612a2d95ec9f5162d3ea2e6d4e7011f9ea8c34e2ffcda921985d845f",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/service/impl/PlatformContributionServiceImpl.java": "80c94801447fafb94374f1b083347b0685683ff9d2e21219506038b69042c5f4",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/resources/META-INF/simplepoint/modules.imports": "721ab439b361fb72418a3b61621beec5c78146267b81c144b2e5c961d8cdfa7a",
+    "simplepoint-platform/simplepoint-platform-composition/build.gradle.kts": "7a2640d19bd3262587ccde8281a28e0d260301faf34d13c3419f0923a45e6c0b",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java": "dd6fad572a77e352fa30eb30c89b0e7907a2a48bec309b08aa719a9733412a4f",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java": "b3c9a51a5c6af508c06642df6670f43297df5bc670c4681e5a7923a099ae2c81",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCompositionException.java": "55fd42387727475dde320eaf1868705c8430eb5c8f89f114eeaaf25166b6fc37",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDefaults.java": "c782032378a4aa283504afb5acd79b0fa06be4fed7a9297f00ca31c47a22ba87",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDependency.java": "860221d93ce0a95adcd011dfacb43481800536de7ca2cd1587ed36d53c9bf0c9",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDescriptor.java": "f2d4ec6973afe747564c4a7599665278354a56386a5b85ea451104da1ae37134",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModulePlan.java": "0a28ec9f130e6e0f124abb1b8d9829c894c8d2422fdabfc6db3a5d821bad4f6f",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/PlatformModule.java": "c3c5c65566ac556271c0d5607c1218bf43565aeeaf23048df561e9afbc072dce",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleCatalogTest.java": "c746585f0541e4aa04d5f58bd8604547ee297a9504af63219f1d51f0271db9df",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleDefaultsTest.java": "f731f93d3976f2dea05fa393ab5d5994cbacd4f46223151d5d5c7187267f7a1c",
+    "simplepoint-platform/simplepoint-platform-composition-spring/build.gradle.kts": "6463bade59d63afddbddd54b5ccfb2c4bcd7492f0a90501c13965b40c28f6621",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/EnablePlatformModules.java": "4b15cbdf9aaa298adb298e7bd2b75a2bfb13ebaeaa8da7ac076f88848b94706b",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleCapabilityValidator.java": "7df1c9d1c14358f61416edd6edd537160a5cff2bc0a9ea7b2ccb77675be96246",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/PlatformModuleRegistrar.java": "bb557aca49e0c9c7ffd9207fbd7c9b1a8a98d98c247b170d3fc2eebe8a89abb2",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/Greeting.java": "d82d2075632f17531ea499235bb6be173583c4e46725476a462b61124ea9b02d",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/first/FirstModule.java": "c13b5cbbc82c3cadc363e32e001066f1f87ee0d80e5dcbd44dda63f5aac60dfb",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/missing/MissingModule.java": "f8315ee80e06647ef758fccc83026372b0e01f6dd7f26ed1f80dfbd354df678f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/remote/RemoteModule.java": "f29302f09403128b5c8c1cd14eed5051dd99ddb765d050d8f7e1cf549d8b9dfc",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/second/SecondModule.java": "3477fc57ba90deed7fa37cb54fe23907657c1c82a0f62dcfbdf344a6a118e9af",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/undeclared/UndeclaredModule.java": "c6a95b86f5ef6bdface01f5f837f56e901b3103ba5cbab1df8788500a63c86de",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/unused/UnusedModule.java": "9099910a3091a25c7a60a076743a3aceba7d91fa0c1d348a14d019ebea416e22",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/PlatformModuleAssemblyTest.java": "b5fc5d062599a76ef7eea4d8dafa4c38481e703ae0ada571d3df24883b08a38c",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules/first.properties": "b3e122717f9f3fa902a3b2fac96123388978d874b53db5926552c76b40908eec",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules.imports": "08298d7ccc04439612ec3960dea8eac6bf11114fcf152459c6069e5c51451083",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "5176f7c48aa95fb59e94494b9958c6f48e4c23b2cc39c3cfb8f0a9663022c3a8",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "a538bfe9b8bbbf7ccb332ecb68a92ea422a776a235666d0827d3af15c281b7e4",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RepositoryOwnershipTest.java": "17d497230888179a34f6d5a1192a37fafbf252854e0c8c4e0847510ae6dbc656",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/build.gradle.kts": "ef16575cabdc97db9640073b9a4b611f87380e9d54f7e6345e2dade45de898e7",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/java/org/simplepoint/plugin/ai/catalog/module/AiCatalogModule.java": "47523f23f42c9ffedb2555f076f91414369f26587a8490433f8889d4785b5e4a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "c861162b48a8d3ea72c3e141d11d40f70c6909e2e176ed6207d3261262ee96a7",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build.gradle.kts": "19bf839871fe2d1509c3508c0d7a366a56f10a06ca88e72402627f493eca212b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/java/org/simplepoint/plugin/ai/core/module/AiCoreModule.java": "418cc60ceaa40d62411d5e03bd8abf0937befd3f646ef0a2a08d6ef34386d62b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "11314dbda0971359925d20167e043b3c52a8fac9d36806f35493f0b6fe8c533b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/build.gradle.kts": "53401b464ac5b3665217a012e1761711a9907c132a9f8ced217df252082c1428",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/module/AiKnowledgeModule.java": "cb7d555ec92514b7ae1bc89e29c34fb12c6d691ffe085bd373e0f6951478b568",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "2d6947c3cb3ed447f58a7aec161f9eb80c94bfd4fc685fc16d13e15b63f58189",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/build.gradle.kts": "3b192ee6da539c911e53acd7fc700e76bc1e373664e16ebb5d152887652ac7e9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/java/org/simplepoint/plugin/ai/mcp/module/AiMcpModule.java": "2665a1f2736bc094786459ee1754a6284030518ba1dd16f14be0f10284d51962",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "04b9af619e2444b4bcd3412c48210ef263a4c7f71d6d326b5d251a7c03c9dd8b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/build.gradle.kts": "ba7f9e507e3c8b926edd9dfc44949ead37de2685a0baf344ec4ba8557e27425b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/java/org/simplepoint/plugin/ai/runtime/module/AiRuntimeModule.java": "fc2bb51546f2aaefe3f10c4ad696839149402cc8d6970104b7a376f69c6d64ff",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "8f15539b58e42e1d3dbcf2bcdaf1b8cabdf789f1e2b6a62c6cbd2dcc69a01404",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/build.gradle.kts": "424f6e1d6064aceea7095d208febe670f7bbad66c33789afda35cde694904bdc",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java": "5c03a7fea1e2b34db546724d47294514fddb812174341451fe302cb22b98e3b3",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "ef7d0d00e8badc5a733a11cada982caffe354109b802edcb74f3c963ebbcbec7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/build.gradle.kts": "16216377dcdc02ff8889ac6271a1a94dfd07064742fc07d2c9d8a0e0601c7ba5",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/DnaCoreModule.java": "216828e6ab471c0ec0b5c6562517a0f1724f9c0017dac5a1d469221d41a658e8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "1fd532c80ee9a0531f2543e316a43682fbca7d3b6920086ebe7a5a051716fe0d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/build.gradle.kts": "dde4e1a8fce42073a8a72f0f9c822add0b8627b712ebf93c9eacdd07d747a3bd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java": "556cfac99349f069cb3dff33de685d61b046169469c9005c4c07709054900657",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "544bf6e0ee3f3218173ac2af13bbb67fc1d1a031f98eb35ed9554c9bf794586a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build.gradle.kts": "8a20a01f4911b4637cf2592d3a02492c531548b79b4ee2118f4f7419193d004d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java": "5df16b1bb4968bb4bd841b360118449a2c11d64061548793b14e04c72f12dfb9",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "01a259efcfc7af04a82ef1e4a02ea89c80a186d517b9ae958f0f8aa081e785ea",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/build.gradle.kts": "0975d3a8d9302f3bfe6d6767c978bc7b655288c1678b386ae0429550ece00c25",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/src/main/java/org/simplepoint/plugin/notification/module/NotificationModule.java": "61f07633326fdd75bdd1b31eed2a4542103333bebe66d01c5e58bb80e0ac7aa4",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/src/main/resources/META-INF/simplepoint/modules.imports": "e1746857bdaa0dddc47b2f9e3417ba68ef9293d6014639c6aa99b8271207abe0",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-module/build.gradle.kts": "26055f659f502ae5e6412f9ee581793a2dc4ae34f9627b2534bba68de0caf3e9",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-module/src/main/java/org/simplepoint/plugin/personal/module/PersonalModule.java": "e6c63875c6e5d82ac11d6394da9c2ded3e5096d526f2b652347596f82d9bbfd3",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-module/src/main/resources/META-INF/simplepoint/modules.imports": "8b8bc64d83d050bfc7c9518c7ad9df7fa41436dffaa69145c80579d8a2757d30",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build.gradle.kts": "21a2a5693ff882062e6a8037a6327441a0ccb8c7423368e0b4c70f58904fd20d",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java": "c3aeb42401bc8bc8c1bcfe1a631b69b69ea8def5e4a546ee5d6beb6d0167f08d",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "5aeb54dfac5a31bbf433eb4905853345a4df590aa33bef03fc5f05af886995ae",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/build.gradle.kts": "8dd5e212a36afa75db25751001701d4f0447a1f2c6b97536dc40da267a93654e",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditLoggingModule.java": "5a11f5ba510345f4a09b687d66543e4ed79e230ff2f75edb7e1df3154ea657c4",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "45c5071245605bee0e0d715692cefbe52c19e59dee70f8c1a44641b4dfc8b158",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-rate-limit-implementation/build.gradle.kts": "8e60fe91ff7a5f40ed8aec8fa503b875f8da89d7a3a94ef245ca9e84fa9e96b1",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-rate-limit-implementation/src/main/java/org/simplepoint/plugin/auditing/ratelimit/module/AuditRateLimitModule.java": "c976f481625484a81e87b1fc94138b28e468e2b240fe19e5be9a9d3f51cc3224",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-rate-limit-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "ddfce84bb60ec1b492c205af6eb3d0dc0deb3b6fb42044c514327e1aeb0c5188",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-implementation/build.gradle.kts": "c21f3f5a1f160e2ef631c92f4a88dbd9ab23d5134382286297e1b22d2ef16aca",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-implementation/src/main/java/org/simplepoint/plugin/auditing/redis/module/AuditRedisModule.java": "d221ecae4c49b5cc3c59828b13227e7c446e18f07da681bf50f94257dc8ae2d0",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "08f3b890414736c6883294c1e1f2c683d13232ee22e5cbaa55509b1734036975",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/build.gradle.kts": "77881014e4b16698418f6fdd27fda6e7d61072c335fb8a615a24c8623afbf9be",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java": "5fcd891f1c17b0b1721fb2912cd4418b912e029e0e03d6da16a5b2f92a374503",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/resources/META-INF/simplepoint/modules.imports": "e8d6a0274280fb0f429468883910b1354907e9b6f04c999368a21457ef452104",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/build.gradle.kts": "b961abbce394fa8557f7cdd9dd2d54528b7c73543f1389c0acdfe8b410df8637",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/java/org/simplepoint/plugin/oidc/module/OidcModule.java": "dcbdd46d1c11e8e3cd5ab9cd3b9f40ca2e0530bd64eb29675b7d218f556b95a9",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules.imports": "12ff82eaa3856a433276f94c79db08bf5caa79185d2bcbfa9942df7bd18087e5",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build.gradle.kts": "021226ac9471dda050a557241d8b56fc9728f72a45039c20d1f9021df17be102",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "edfae0c57689176a49b16ff473344693824201b1724dd99c32705fc6eaf55b10",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity.properties": "8f8b0e814a9650d880250e2b67e3095b1d3370488326e66c46e0db5d556db639",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules.imports": "e8ad238d29d8be47abbae1e97e92d0200fd35e2a0859403a8bac3ca89e2b6afc",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build.gradle.kts": "0fa5e7603de3097570afd99d3c1ee2305b711bbbfd0fb658f271535f3e51a79a",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java": "c3e559b9580d83770908c94a3e3d4dbc626312e56e647d28074517cae2bccee7",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "0b75e12b6b068b12b16e2b702a986742d2b7337bc0d2d8415b6311426778a714",
+    "simplepoint-services/simplepoint-service-common/build.gradle.kts": "a1260b9410a5c1b087f6412d1bb3ce586bf39284207f832789b9ca5dadce9e36",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantMemberQueryHttpTest.java": "7745146992955e68bad5694753242c43bc9dff407cbc21e0f3f76747a471e7d8"
+  }
+}

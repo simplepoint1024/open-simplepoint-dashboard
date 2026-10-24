@@ -33,6 +33,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
   private final RecordAuditSupport audit;
   private final RecordAdmissionController admission;
   private final RecordExecutionObserver observer;
+  private final RecordCalculationAccess calculations;
 
   /** Creates the record query service. */
   public RecordQueryServiceImpl(
@@ -43,7 +44,8 @@ public class RecordQueryServiceImpl implements RecordQueryService {
       final RuntimeCalciteRecordBackend backend,
       final RecordAuditSupport audit,
       final RecordAdmissionController admission,
-      final RecordExecutionObserver observer
+      final RecordExecutionObserver observer,
+      final RecordCalculationAccess calculations
   ) {
     this.requestContext = requestContext;
     this.modelResolver = modelResolver;
@@ -53,6 +55,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
     this.audit = audit;
     this.admission = admission;
     this.observer = observer;
+    this.calculations = calculations;
   }
 
   @Override
@@ -65,8 +68,8 @@ public class RecordQueryServiceImpl implements RecordQueryService {
           invocation.access(),
           query.filter()
       );
-      CalciteQueryResult pageResult = backend.query(invocation.model(), pagePlan, TIMEOUT_MS);
-      CalciteQueryResult countResult = backend.query(invocation.model(), countPlan, TIMEOUT_MS);
+      CalciteQueryResult pageResult = invocation.reader().apply(pagePlan);
+      CalciteQueryResult countResult = invocation.reader().apply(countPlan);
       List<RecordView> records = views(pageResult, pagePlan, invocation.model(), invocation.access());
       long total = countValue(countResult);
       audit.success(
@@ -84,10 +87,8 @@ public class RecordQueryServiceImpl implements RecordQueryService {
   public long count(final RecordCountQuery query) {
     return execute("count", query.physicalModelId(), query.schemaReference(), invocation -> {
       long startedAt = System.nanoTime();
-      long count = countValue(backend.query(
-          invocation.model(),
-          compiler.count(invocation.model(), invocation.access(), query.filter()),
-          TIMEOUT_MS
+      long count = countValue(invocation.reader().apply(
+          compiler.count(invocation.model(), invocation.access(), query.filter())
       ));
       audit.success(
           DnaRuntimeAuditEventType.RECORD_QUERIED,
@@ -106,7 +107,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
       long startedAt = System.nanoTime();
       RecordSelectPlan plan = compiler.lookup(invocation.model(), invocation.access(), query);
       List<RecordView> records = views(
-          backend.query(invocation.model(), plan, TIMEOUT_MS),
+          invocation.reader().apply(plan),
           plan,
           invocation.model(),
           invocation.access()
@@ -139,7 +140,10 @@ public class RecordQueryServiceImpl implements RecordQueryService {
     try (RecordAdmissionController.Permit ignored = admission.enter(
         invocation.access().actor().tenantId()
     )) {
-      T result = callback.apply(invocation);
+      T result = backend.read(invocation.model(), List.of(), invocation.access(), TIMEOUT_MS, session -> {
+        var rules = calculations.resolve(invocation.model(), invocation.access(), session.calculation());
+        return callback.apply(new Invocation(invocation.model(), rules.apply(invocation.model(), invocation.access()), session.query()));
+      });
       observer.record(
           operation,
           "succeeded",
@@ -175,7 +179,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
   ) {
     RuntimeActor actor = requestContext.requireActor();
     RuntimeRecordModel model = modelResolver.resolve(actor, modelId, schemaReference);
-    return new Invocation(model, accessPolicy.authorize(actor, model));
+    return new Invocation(model, accessPolicy.authorize(actor, model), null);
   }
 
   static List<RecordView> views(
@@ -215,6 +219,7 @@ public class RecordQueryServiceImpl implements RecordQueryService {
     return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
   }
 
-  private record Invocation(RuntimeRecordModel model, RecordAccessContext access) {
+  private record Invocation(RuntimeRecordModel model, RecordAccessContext access,
+      Function<RecordSelectPlan, CalciteQueryResult> reader) {
   }
 }

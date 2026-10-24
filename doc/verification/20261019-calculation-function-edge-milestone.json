@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "at": "2026-10-19T06:03:36.229947+00:00",
+  "checks": {
+    "everyFunctionEdges": {
+      "functions": 63,
+      "cases": 189,
+      "categories": [
+        "null",
+        "type/coercion",
+        "boundary"
+      ],
+      "java": {
+        "tests": 269,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "browserGrammarRoundTrip": {
+        "tests": 6,
+        "passed": true
+      }
+    },
+    "exactValuesAndClock": {
+      "passed": true,
+      "assertions": [
+        "Exact decimal arithmetic and 64-bit integers beyond JavaScript precision",
+        "Unicode code-point slicing, lengths and locale-independent conversion",
+        "Calendar dates and time zone aware browser input preserve their declared semantics",
+        "One clock snapshot per aggregate shared by parent and detail NOW results"
+      ]
+    }
+  },
+  "sourceSha256": {
+    "simplepoint-calculation/src/test/resources/function-boundaries.tsv": "0703d6627e0b44793324f27262302b93d1a0eeebb13345615aaed349639d126b",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/StandardFunctionBoundaryTest.java": "dd5d2cb6d499140cb4271be86015aab1b97c44ecc0e72d5fd322866e86673d78",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/FormulaEngineTest.java": "22162b4940b5631a5ba8d34de8d28b01af0b25afe0b2db692f04ebbc68998feb",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/FormulaAggregatePlanTest.java": "d40be8ae2a18a30c1d224155f849e44e0ad5045fa5b9328c94318ce6a803b054",
+    "simplepoint-react/libs/calculation/src/syntax.test.mjs": "380e40258338f760bf495d20a0b26072f49d9880828711fce75f79f1432a5fe7"
+  },
+  "logSha256": {
+    "/tmp/sp-calculation-function-edge-quality.log": "f1881bf3290f5a6d36a78b35d1928d6eb01d78afc924057bb141472294e48189",
+    "/tmp/sp-calculation-function-edge-syntax.log": "9f4a2fae02d4d00258123e52cb28f792b5cab877c019590ea39879febd92ef20"
+  }
+}

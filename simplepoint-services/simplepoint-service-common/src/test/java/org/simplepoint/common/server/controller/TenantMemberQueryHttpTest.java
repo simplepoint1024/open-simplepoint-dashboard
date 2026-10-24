@@ -275,7 +275,9 @@ class TenantMemberQueryHttpTest {
                 .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalElements").value(2))
-        .andExpect(jsonPath("$.content[0].name").value("Alpha"));
+        // Scope is the contract here; default ordering uses creation time and a stable ID.
+        .andExpect(jsonPath("$.content[*].name")
+            .value(org.hamcrest.Matchers.containsInAnyOrder("Alpha", "Beta")));
     mvc.perform(
             get("/tenant-members/organization-candidates")
                 .param("orgId", organization.getId())
@@ -365,7 +367,7 @@ class TenantMemberQueryHttpTest {
                 .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.schema['x-query'].fields.name").doesNotExist())
-        .andExpect(jsonPath("$.schema['x-query'].maxPageSize").value(100));
+        .andExpect(jsonPath("$.schema['x-query'].maxPageSize").value(500));
     for (String path : List.of("by-organization", "organization-candidates")) {
       for (String field : List.of("email", "name", "password", "revision", "tenantId")) {
         mvc.perform(
@@ -812,7 +814,7 @@ class TenantMemberQueryHttpTest {
     }
     mvc.perform(
             get("/tenant-members")
-                .param("size", "201")
+                .param("size", "501")
                 .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isBadRequest());
   }

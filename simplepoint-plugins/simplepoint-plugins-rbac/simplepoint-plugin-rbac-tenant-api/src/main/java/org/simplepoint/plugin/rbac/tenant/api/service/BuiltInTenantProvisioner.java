@@ -3,12 +3,13 @@ package org.simplepoint.plugin.rbac.tenant.api.service;
 import java.util.Collection;
 
 /**
- * Keeps built-in tenant entitlements aligned with the resource catalog and tenant lifecycle.
+ * Maintains built-in application membership and completes explicitly staged fresh tenants.
  */
 public interface BuiltInTenantProvisioner {
 
   /**
    * Adds newly synchronized resources to the matching built-in application.
+   * Completes directories for explicitly staged fresh bootstrap tenants without issuing package credits or role grants.
    *
    * @param resourceOwner owner of the synchronized resource catalog
    * @param tenantResourceCodes organization-tenant compatible resource codes
@@ -20,10 +21,4 @@ public interface BuiltInTenantProvisioner {
       Collection<String> personalResourceCodes
   );
 
-  /**
-   * Assigns the built-in personal package to a personal tenant when available.
-   *
-   * @param tenantId personal tenant identifier
-   */
-  void provisionPersonalTenant(String tenantId);
 }

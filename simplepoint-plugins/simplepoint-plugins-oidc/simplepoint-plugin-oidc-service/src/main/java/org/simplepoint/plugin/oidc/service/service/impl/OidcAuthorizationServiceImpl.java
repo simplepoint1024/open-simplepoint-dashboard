@@ -6,7 +6,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  */
 
-package  org.simplepoint.plugin.oidc.service.service.impl;
+package org.simplepoint.plugin.oidc.service.service.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -43,6 +43,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -52,34 +53,32 @@ import org.springframework.util.StringUtils;
  * <p>This service interacts with {@code AuthorizationRepository} to store and retrieve OAuth2
  * authorization data, and uses {@code RegisteredClientRepository} for client validation.
  * Additionally, it configures JSON serialization settings for secure storage.
- * </p>
  */
 @Component
+@Transactional
 public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService {
   private static final Logger log = LoggerFactory.getLogger(OidcAuthorizationServiceImpl.class);
-  /**
-   * Repository for storing OAuth2 authorization data.
-   */
+
+  /** Repository for storing OAuth2 authorization data. */
   private final JpaAuthorizationRepository authorizationRepository;
-  /**
-   * Repository for retrieving registered OAuth2 clients.
-   */
+
+  /** Repository for retrieving registered OAuth2 clients. */
   private final RegisteredClientRepository registeredClientRepository;
-  /**
-   * ObjectMapper instance for handling JSON serialization and deserialization.
-   */
+
+  /** ObjectMapper instance for handling JSON serialization and deserialization. */
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Constructs an instance of {@code Oauth2AuthorizationServiceImpl}.
    *
-   * @param authorizationRepository    the repository for storing authorization data
+   * @param authorizationRepository the repository for storing authorization data
    * @param registeredClientRepository the repository for retrieving registered clients
    * @throws IllegalArgumentException if any parameter is {@code null}
    */
   @SuppressWarnings("all")
-  public OidcAuthorizationServiceImpl(JpaAuthorizationRepository authorizationRepository,
-                                      RegisteredClientRepository registeredClientRepository) {
+  public OidcAuthorizationServiceImpl(
+      JpaAuthorizationRepository authorizationRepository,
+      RegisteredClientRepository registeredClientRepository) {
     Assert.notNull(authorizationRepository, "authorizationRepository cannot be null");
     Assert.notNull(registeredClientRepository, "registeredClientRepository cannot be null");
     this.authorizationRepository = authorizationRepository;
@@ -94,8 +93,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
     objectMapper.activateDefaultTyping(
         LaissezFaireSubTypeValidator.instance,
         ObjectMapper.DefaultTyping.NON_FINAL,
-        JsonTypeInfo.As.PROPERTY
-    );
+        JsonTypeInfo.As.PROPERTY);
   }
 
   @Override
@@ -111,12 +109,14 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
   }
 
   @Override
+  @Transactional(readOnly = true)
   public OAuth2Authorization findById(String id) {
     Assert.hasText(id, "id cannot be empty");
     return this.authorizationRepository.findById(id).map(this::toObject).orElse(null);
   }
 
   @Override
+  @Transactional(readOnly = true)
   public OAuth2Authorization findByToken(String token, OAuth2TokenType tokenType) {
     Assert.hasText(token, "token cannot be empty");
 
@@ -152,74 +152,84 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         this.registeredClientRepository.findById(entity.getRegisteredClientId());
     if (registeredClient == null) {
       throw new DataRetrievalFailureException(
-          "The RegisteredClient with id '" + entity.getRegisteredClientId()
+          "The RegisteredClient with id '"
+              + entity.getRegisteredClientId()
               + "' was not found in the RegisteredClientRepository.");
     }
 
-    OAuth2Authorization.Builder builder = OAuth2Authorization.withRegisteredClient(registeredClient)
-        .id(entity.getId())
-        .principalName(entity.getPrincipalName())
-        .authorizationGrantType(resolveAuthorizationGrantType(entity.getAuthorizationGrantType()))
-        .authorizedScopes(StringUtils.commaDelimitedListToSet(entity.getAuthorizedScopes()))
-        .attributes(attributes -> attributes.putAll(parseMap(entity.getAttributes())));
+    OAuth2Authorization.Builder builder =
+        OAuth2Authorization.withRegisteredClient(registeredClient)
+            .id(entity.getId())
+            .principalName(entity.getPrincipalName())
+            .authorizationGrantType(
+                resolveAuthorizationGrantType(entity.getAuthorizationGrantType()))
+            .authorizedScopes(StringUtils.commaDelimitedListToSet(entity.getAuthorizedScopes()))
+            .attributes(attributes -> attributes.putAll(parseMap(entity.getAttributes())));
     if (entity.getState() != null) {
       builder.attribute(OAuth2ParameterNames.STATE, entity.getState());
     }
 
     if (entity.getAuthorizationCodeValue() != null) {
-      OAuth2AuthorizationCode authorizationCode = new OAuth2AuthorizationCode(
-          entity.getAuthorizationCodeValue(),
-          entity.getAuthorizationCodeIssuedAt(),
-          entity.getAuthorizationCodeExpiresAt());
-      builder.token(authorizationCode,
+      OAuth2AuthorizationCode authorizationCode =
+          new OAuth2AuthorizationCode(
+              entity.getAuthorizationCodeValue(),
+              entity.getAuthorizationCodeIssuedAt(),
+              entity.getAuthorizationCodeExpiresAt());
+      builder.token(
+          authorizationCode,
           metadata -> metadata.putAll(parseMap(entity.getAuthorizationCodeMetadata())));
     }
 
     if (entity.getAccessTokenValue() != null) {
-      OAuth2AccessToken accessToken = new OAuth2AccessToken(
-          OAuth2AccessToken.TokenType.BEARER,
-          entity.getAccessTokenValue(),
-          entity.getAccessTokenIssuedAt(),
-          entity.getAccessTokenExpiresAt(),
-          StringUtils.commaDelimitedListToSet(entity.getAccessTokenScopes()));
-      builder.token(accessToken,
-          metadata -> metadata.putAll(parseMap(entity.getAccessTokenMetadata())));
+      OAuth2AccessToken accessToken =
+          new OAuth2AccessToken(
+              OAuth2AccessToken.TokenType.BEARER,
+              entity.getAccessTokenValue(),
+              entity.getAccessTokenIssuedAt(),
+              entity.getAccessTokenExpiresAt(),
+              StringUtils.commaDelimitedListToSet(entity.getAccessTokenScopes()));
+      builder.token(
+          accessToken, metadata -> metadata.putAll(parseMap(entity.getAccessTokenMetadata())));
     }
 
     if (entity.getRefreshTokenValue() != null) {
-      OAuth2RefreshToken refreshToken = new OAuth2RefreshToken(
-          entity.getRefreshTokenValue(),
-          entity.getRefreshTokenIssuedAt(),
-          entity.getRefreshTokenExpiresAt());
-      builder.token(refreshToken,
-          metadata -> metadata.putAll(parseMap(entity.getRefreshTokenMetadata())));
+      OAuth2RefreshToken refreshToken =
+          new OAuth2RefreshToken(
+              entity.getRefreshTokenValue(),
+              entity.getRefreshTokenIssuedAt(),
+              entity.getRefreshTokenExpiresAt());
+      builder.token(
+          refreshToken, metadata -> metadata.putAll(parseMap(entity.getRefreshTokenMetadata())));
     }
 
     if (entity.getOidcIdTokenValue() != null) {
-      OidcIdToken idToken = new OidcIdToken(
-          entity.getOidcIdTokenValue(),
-          entity.getOidcIdTokenIssuedAt(),
-          entity.getOidcIdTokenExpiresAt(),
-          parseMap(entity.getOidcIdTokenClaims()));
-      builder.token(idToken,
-          metadata -> metadata.putAll(parseMap(entity.getOidcIdTokenMetadata())));
+      OidcIdToken idToken =
+          new OidcIdToken(
+              entity.getOidcIdTokenValue(),
+              entity.getOidcIdTokenIssuedAt(),
+              entity.getOidcIdTokenExpiresAt(),
+              parseMap(entity.getOidcIdTokenClaims()));
+      builder.token(
+          idToken, metadata -> metadata.putAll(parseMap(entity.getOidcIdTokenMetadata())));
     }
 
     if (entity.getUserCodeValue() != null) {
-      OAuth2UserCode userCode = new OAuth2UserCode(
-          entity.getUserCodeValue(),
-          entity.getUserCodeIssuedAt(),
-          entity.getUserCodeExpiresAt());
+      OAuth2UserCode userCode =
+          new OAuth2UserCode(
+              entity.getUserCodeValue(),
+              entity.getUserCodeIssuedAt(),
+              entity.getUserCodeExpiresAt());
       builder.token(userCode, metadata -> metadata.putAll(parseMap(entity.getUserCodeMetadata())));
     }
 
     if (entity.getDeviceCodeValue() != null) {
-      OAuth2DeviceCode deviceCode = new OAuth2DeviceCode(
-          entity.getDeviceCodeValue(),
-          entity.getDeviceCodeIssuedAt(),
-          entity.getDeviceCodeExpiresAt());
-      builder.token(deviceCode,
-          metadata -> metadata.putAll(parseMap(entity.getDeviceCodeMetadata())));
+      OAuth2DeviceCode deviceCode =
+          new OAuth2DeviceCode(
+              entity.getDeviceCodeValue(),
+              entity.getDeviceCodeIssuedAt(),
+              entity.getDeviceCodeExpiresAt());
+      builder.token(
+          deviceCode, metadata -> metadata.putAll(parseMap(entity.getDeviceCodeMetadata())));
     }
 
     return builder.build();
@@ -243,8 +253,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         entity::setAuthorizationCodeValue,
         entity::setAuthorizationCodeIssuedAt,
         entity::setAuthorizationCodeExpiresAt,
-        entity::setAuthorizationCodeMetadata
-    );
+        entity::setAuthorizationCodeMetadata);
 
     OAuth2Authorization.Token<OAuth2AccessToken> accessToken =
         authorization.getToken(OAuth2AccessToken.class);
@@ -253,8 +262,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         entity::setAccessTokenValue,
         entity::setAccessTokenIssuedAt,
         entity::setAccessTokenExpiresAt,
-        entity::setAccessTokenMetadata
-    );
+        entity::setAccessTokenMetadata);
     if (accessToken != null && accessToken.getToken().getScopes() != null) {
       entity.setAccessTokenScopes(
           StringUtils.collectionToDelimitedString(accessToken.getToken().getScopes(), ","));
@@ -267,18 +275,15 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         entity::setRefreshTokenValue,
         entity::setRefreshTokenIssuedAt,
         entity::setRefreshTokenExpiresAt,
-        entity::setRefreshTokenMetadata
-    );
+        entity::setRefreshTokenMetadata);
 
-    OAuth2Authorization.Token<OidcIdToken> oidcIdToken =
-        authorization.getToken(OidcIdToken.class);
+    OAuth2Authorization.Token<OidcIdToken> oidcIdToken = authorization.getToken(OidcIdToken.class);
     setTokenValues(
         oidcIdToken,
         entity::setOidcIdTokenValue,
         entity::setOidcIdTokenIssuedAt,
         entity::setOidcIdTokenExpiresAt,
-        entity::setOidcIdTokenMetadata
-    );
+        entity::setOidcIdTokenMetadata);
     if (oidcIdToken != null) {
       entity.setOidcIdTokenClaims(writeMap(oidcIdToken.getClaims()));
     }
@@ -290,8 +295,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         entity::setUserCodeValue,
         entity::setUserCodeIssuedAt,
         entity::setUserCodeExpiresAt,
-        entity::setUserCodeMetadata
-    );
+        entity::setUserCodeMetadata);
 
     OAuth2Authorization.Token<OAuth2DeviceCode> deviceCode =
         authorization.getToken(OAuth2DeviceCode.class);
@@ -300,8 +304,7 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
         entity::setDeviceCodeValue,
         entity::setDeviceCodeIssuedAt,
         entity::setDeviceCodeExpiresAt,
-        entity::setDeviceCodeMetadata
-    );
+        entity::setDeviceCodeMetadata);
 
     return entity;
   }
@@ -323,11 +326,12 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
 
   private Map<String, Object> parseMap(String data) {
     try {
-      return this.objectMapper.readValue(data, new TypeReference<>() {
-      });
+      return this.objectMapper.readValue(data, new TypeReference<>() {});
     } catch (Exception ex) {
-      log.error("[OidcAuthorizationService] Failed to deserialize map. Data snippet: {}",
-          data != null ? data.substring(0, Math.min(300, data.length())) : "null", ex);
+      log.error(
+          "[OidcAuthorizationService] Failed to deserialize map. Data snippet: {}",
+          data != null ? data.substring(0, Math.min(300, data.length())) : "null",
+          ex);
       throw new IllegalArgumentException(ex.getMessage(), ex);
     }
   }
@@ -344,7 +348,8 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
       String authorizationGrantType) {
     if (AuthorizationGrantType.AUTHORIZATION_CODE.getValue().equals(authorizationGrantType)) {
       return AuthorizationGrantType.AUTHORIZATION_CODE;
-    } else if (AuthorizationGrantType.CLIENT_CREDENTIALS.getValue()
+    } else if (AuthorizationGrantType.CLIENT_CREDENTIALS
+        .getValue()
         .equals(authorizationGrantType)) {
       return AuthorizationGrantType.CLIENT_CREDENTIALS;
     } else if (AuthorizationGrantType.REFRESH_TOKEN.getValue().equals(authorizationGrantType)) {
@@ -352,7 +357,6 @@ public class OidcAuthorizationServiceImpl implements OAuth2AuthorizationService 
     } else if (AuthorizationGrantType.DEVICE_CODE.getValue().equals(authorizationGrantType)) {
       return AuthorizationGrantType.DEVICE_CODE;
     }
-    return new AuthorizationGrantType(
-        authorizationGrantType);              // Custom authorization grant type
+    return new AuthorizationGrantType(authorizationGrantType); // Custom authorization grant type
   }
 }

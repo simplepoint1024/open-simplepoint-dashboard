@@ -84,7 +84,7 @@ type RetrievalResult = {
 
 const emptyDocuments: Page<KnowledgeDocument> = {
   content: [],
-  page: {number: 0, size: 20, totalElements: 0, totalPages: 0},
+  page: {number: 0, size: 50, totalElements: 0, totalPages: 0},
 };
 
 const formatBytes = (bytes?: unknown) => {
@@ -106,7 +106,7 @@ const KnowledgeBasesSession = () => {
   const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBaseRow | null>(null);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [documentPage, setDocumentPage] = useState(0);
-  const [documentSize, setDocumentSize] = useState(20);
+  const [documentSize, setDocumentSize] = useState(50);
   const [documentQuery, setDocumentQuery] = useState<TableQueryState>({filters: {}});
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);

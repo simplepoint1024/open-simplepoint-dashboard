@@ -1,5 +1,6 @@
+import {asyncComponent} from '../AsyncComponent';
 import {Alert, Modal, Spin} from 'antd';
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {Suspense, useEffect, useState} from 'react';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -10,12 +11,12 @@ import SnapshotView from './SnapshotView';
 import SubmissionDialog from './SubmissionDialog';
 import {submissionUrl, type Submission} from './types';
 
-const Progress = lazy(() => import('../WorkflowRuntime/ProgressDrawer'));
-type Row = {id: string; processInstanceId?: string; canSnapshot: boolean; canRetry: boolean; canResubmit: boolean};
+const Progress = asyncComponent(() => import('../WorkflowRuntime/ProgressDrawer'));
+type Row = {id: string; processInstanceId?: string; canSnapshot: boolean; canProgress: boolean; canRetry: boolean; canResubmit: boolean};
 
 /** Standard server-schema table; recovery always resumes the existing accepted intent. */
-export default function SubmissionHistory({applicationId, pageId, onInteractionLockChange}: {
-  applicationId: string; pageId: string; onInteractionLockChange?: (locked: boolean) => void;
+export default function SubmissionHistory({applicationId, pageId, recordId, onInteractionLockChange}: {
+  applicationId: string; pageId: string; recordId?: string; onInteractionLockChange?: (locked: boolean) => void;
 }) {
   const {t} = useI18n(), selected = usePageSelected(), operation = useOperationScope(`${applicationId}:${pageId}`);
   const [snapshot, setSnapshot] = useState<string>(), [progress, setProgress] = useState<string>();
@@ -25,6 +26,7 @@ export default function SubmissionHistory({applicationId, pageId, onInteractionL
   useEffect(() => {onInteractionLockChange?.(tableLocked || operation.busy || !!snapshot || !!progress || !!resubmit);},
     [tableLocked, operation.busy, snapshot, progress, resubmit, onInteractionLockChange]);
   const url = submissionUrl(applicationId, pageId);
+  const historyUrl = recordId ? url.replace(/\/submissions$/, `/records/${encodeURIComponent(recordId)}/submissions`) : url;
   const recover = async (id: string, rework: boolean) => {
     const request = operation.begin(); if (!request) return;
     setError('');
@@ -38,23 +40,23 @@ export default function SubmissionHistory({applicationId, pageId, onInteractionL
       if (operation.current(request.signal)) setError(resolveApiErrorMessage(cause, t('app.submission.failed', '提交未完成')));
     } finally {operation.finish(request);}
   };
-  return <>
+  return <div style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0}}>
     {error && <Alert showIcon type="error" title={error}/>}
-    <SimpleTable<Row> key={revision} name={`app.submissions.${pageId}`} baseUrl={url} i18nNamespaces={['app-workbench', 'workflow']}
+    <SimpleTable<Row> key={revision} name={`app.submissions.${pageId}`} baseUrl={historyUrl} rowActions i18nNamespaces={['app-workbench', 'workflow']}
       onInteractionLockChange={setTableLocked}
-      columnOverrides={{id: {hidden: true}, processInstanceId: {hidden: true}, canSnapshot: {hidden: true}, canRetry: {hidden: true}, canResubmit: {hidden: true}}}
+      columnOverrides={{id: {hidden: true}, processInstanceId: {hidden: true}, canSnapshot: {hidden: true}, canProgress: {hidden: true}, canRetry: {hidden: true}, canResubmit: {hidden: true}}}
       isButtonDisabled={(button, _keys, rows) => operation.busy || !!snapshot || !!progress || !!resubmit || rows.length !== 1
-        || button.key === 'snapshot' && !rows[0].canSnapshot || button.key === 'progress' && !rows[0].processInstanceId
+        || button.key === 'snapshot' && !rows[0].canSnapshot || button.key === 'progress' && !rows[0].canProgress
         || button.key === 'retry' && !rows[0].canRetry || button.key === 'resubmit' && !rows[0].canResubmit}
       customButtonEvents={{snapshot: (_keys, rows) => setSnapshot(rows[0].id), progress: (_keys, rows) => setProgress(rows[0].processInstanceId),
         retry: (_keys, rows) => void recover(rows[0].id, false), resubmit: (_keys, rows) => void recover(rows[0].id, true)}}/>
     <Modal open={!!snapshot && selected} width="min(1050px, 94vw)" footer={null} destroyOnHidden
       title={t('app.submission.snapshot', '业务快照')} onCancel={() => setSnapshot(undefined)}>
-      {snapshot && <SnapshotView url={`${url}/${encodeURIComponent(snapshot)}/snapshot`}/>}
+      {snapshot && <SnapshotView url={`${historyUrl}/${encodeURIComponent(snapshot)}/snapshot`}/>}
     </Modal>
     {progress && <Suspense fallback={<Spin/>}><Progress id={progress} onClose={() => setProgress(undefined)}/></Suspense>}
     {resubmit && <SubmissionDialog applicationId={applicationId} pageId={pageId} previousSubmissionId={resubmit.id}
       definition={{id: resubmit.definitionId, version: resubmit.definitionVersion}}
       onAccepted={() => setRevision(value => value + 1)} onClose={() => setResubmit(undefined)}/>}
-  </>;
+  </div>;
 }

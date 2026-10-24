@@ -35,6 +35,9 @@ public class ServiceRouterConsulAutoConfiguration {
       final ObjectProvider<CapabilityRegistry> registryProvider
   ) {
     return registration -> {
+      // The actual registry is authoritative, including when exports are disabled or absent.
+      registration.getMetadata().remove(ServiceRouterDiscoveryMetadata.CAPABILITIES);
+      registration.getMetadata().remove(ServiceRouterDiscoveryMetadata.MAPPINGS);
       CapabilityRegistry registry = registryProvider.getIfAvailable();
       if (registry == null) {
         return;

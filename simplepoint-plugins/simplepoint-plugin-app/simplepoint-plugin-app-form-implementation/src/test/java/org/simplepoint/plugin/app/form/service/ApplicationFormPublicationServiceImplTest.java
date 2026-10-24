@@ -37,6 +37,10 @@ import org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationStateSe
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPhase;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyProgress;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationView;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
 
 class ApplicationFormPublicationServiceImplTest {
@@ -93,13 +97,66 @@ class ApplicationFormPublicationServiceImplTest {
   }
 
   @Test
+  void unfinishedBackfillDoesNotBecomeADataConflictOrActivateThePage() {
+    var work = bindingWork();
+    when(state.claim(any(), any(), any())).thenReturn(new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
+    when(pageBindings.claim(any(), any(), any())).thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(
+        true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
+    var progress = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of(),
+        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10, null));
+    when(policies.prepareTarget(any(), any())).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.PREPARED,
+        null, null, progress));
+    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
+    var result = service.publish("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
+    assertThat(result.pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
+    assertThat(result.progress()).isEqualTo(new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
+        1, org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase.APPLYING, "2", "10", "10"));
+    verify(policies).releaseBatch(work);
+    verify(pageBindings, never()).fail(any(), any(), any());
+    verify(pageBindings, never()).complete(any(), any(), any());
+    verify(pageResources, never()).activate(any());
+    verifyNoInteractions(dnaResources, inspections);
+  }
+
+  @Test
+  void unfinishedRestorationPreservesThePendingCancellationWithoutProjectingResources() {
+    var work = bindingWork();
+    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a")).thenReturn(
+        new ApplicationFormPageBindingStateService.BindingClaim(true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
+    var progress = new RecordWritePolicyCancellationView(false, 0, "a".repeat(64), null,
+        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 3, 10, 10, null));
+    when(policies.cancelTarget(work)).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.CANCELLING,
+        null, null, null, progress));
+    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
+    var result = service.cancel("app-a", "form-a", "binding-a");
+    assertThat(result.pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
+    assertThat(result.progress()).isEqualTo(new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
+        1, org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase.RESTORING, "3", "10", "10"));
+    verify(policies).releaseBatch(work);
+    verify(pageBindings, never()).fail(any(), any(), any());
+    verify(pageBindings, never()).complete(any(), any(), any());
+    verifyNoInteractions(dnaResources, pageResources, inspections);
+  }
+
+  @Test
   void blockedPublicationKeepsTheOriginalInspectionAndDoesNotProjectResources() {
+    blockedPublication(null);
+  }
+
+  @Test
+  void finalRejectionWithProgressStopsPendingDispatchAndReturnsItsInspection() {
+    blockedPublication(new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of("required", 3L),
+        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 3, 10, 10,
+            org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED)));
+  }
+
+  private void blockedPublication(RecordWritePolicyPublicationView inspection) {
     var work = bindingWork();
     when(state.claim(any(), any(), any())).thenReturn(new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
     when(pageBindings.claim(any(), any(), any())).thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(
         true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
     when(policies.prepareTarget(any(), any())).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.PREPARED,
-        null, null, null));
+        null, null, inspection));
     when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.FAILED));
     var report = new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection(Instant.now(), List.of(
         new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection.Issue("required",
@@ -107,6 +164,7 @@ class ApplicationFormPublicationServiceImplTest {
     when(inspections.get("app-a", "form-a", "binding-a")).thenReturn(report);
     var result = service.publish("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
     assertThat(result.inspection()).isSameAs(report);
+    verify(policies, never()).releaseBatch(any());
     verify(pageBindings).fail("binding-a", "binding-token", ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
     verifyNoInteractions(dnaResources);
     verify(pageResources, never()).activate(any());

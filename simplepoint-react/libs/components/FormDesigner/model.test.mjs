@@ -15,6 +15,12 @@ const empty = () => ({contractVersion: '1', fields: [], indexes: [], rules: [],
 const add = (document, type = 'field.text', parent = 'root', fieldId) => insertComponent(document, parent,
   locate(document, parent).node.children.length, registry.find(item => item.type === type), type, registry, fieldId);
 
+test('nested structural errors identify the failing component for navigation', () => {
+  const group = add(empty(), 'layout.group'), created = add(group.document, 'field.text', group.componentId);
+  locate(created.document, created.componentId).node.fieldId = 'missing';
+  assert.throws(() => validateStructure(created.document, registry), error => error.code === 'field' && error.componentId === created.componentId);
+});
+
 test('field controls have independent stable identities and removal never drops storage definitions', () => {
   const source = empty(), created = add(source), field = created.document.fields[0];
   assert.equal(source.fields.length, 0);
@@ -104,4 +110,22 @@ test('lost-save comparison ignores field order and canonical numeric spelling bu
   assert.equal(sameDesignDocument(server, second.document), true);
   server.scenes[0].root.children.reverse();
   assert.equal(sameDesignDocument(server, second.document), false);
+});
+
+test('copying a group remaps formulas to copied sibling fields and leaves external references intact', async () => {
+  const group = add(empty(), 'layout.group');
+  const first = add(group.document, 'field.text', group.componentId);
+  const second = add(first.document, 'field.text', group.componentId);
+  const original = structuredClone(second.document);
+  const groupNode = locate(original, group.componentId).node;
+  const sourceId = groupNode.children[0].fieldId, targetId = groupNode.children[1].fieldId;
+  const target = original.fields.find(field => field.fieldId === targetId);
+  target.storageMode = 'COMPUTED'; target.calculation = {languageVersion: '1', expression: `CONCAT([${sourceId}],"[${sourceId}]")`};
+  const copied = pasteComponent(original, 'root', copyComponent(original, group.componentId), registry);
+  const copiedGroup = locate(copied.document, copied.componentId).node;
+  const copiedTarget = copied.document.fields.find(field => field.fieldId === copiedGroup.children[1].fieldId);
+  const {parseFormula, formulaReferences} = await import('@simplepoint/calculation');
+  assert.deepEqual(formulaReferences(parseFormula(copiedTarget.calculation.expression)), new Set([copiedGroup.children[0].fieldId]));
+  assert.equal(parseFormula(copiedTarget.calculation.expression).children[1].text, `[${sourceId}]`);
+  assert.deepEqual(original.fields.find(field => field.fieldId === targetId).calculation, target.calculation);
 });

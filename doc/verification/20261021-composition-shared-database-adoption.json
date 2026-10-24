@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-21",
+  "scope": "Original PostgreSQL backup adoption rehearsal; not production deployment",
+  "tests": [
+    {
+      "module": "simplepoint-data/simplepoint-data-migrations",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-installation-host",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "database": "PostgreSQL 18.6 on the existing infrastructure",
+  "rehearsal": {
+    "tables": 202,
+    "rows": 36145,
+    "changedExistingData": [],
+    "adoptedModules": 21,
+    "laterMigrationsApplied": 12
+  },
+  "cli": {
+    "schemaReview": true,
+    "schemaAdoption": true,
+    "laterMigrations": true,
+    "schemaVerify": true,
+    "legacyReview": true,
+    "legacyAdoption": true,
+    "repeatSchemaAndLegacyAdoption": true,
+    "wrongDatabaseRejected": true,
+    "moduleClientsProvisioned": 21,
+    "resourceAuthorities": 6,
+    "dictionaryAuthorities": 2,
+    "bootstrapTransfers": 13,
+    "durableInstallationOperations": 2
+  },
+  "productionDatabaseModified": false,
+  "singleDomainActivated": false,
+  "remaining": [
+    "Installer orchestration and retirement/recovery for remaining infrastructure operations",
+    "Coordinated upgrade of existing unguarded microservice writers",
+    "Existing infrastructure configuration and runtime assets",
+    "Real runtime functional parity and fault recovery",
+    "Final domain deployment and browser verification"
+  ],
+  "sourceSha256": {
+    "doc/deployment/sql/20261021-composition-legacy-v1-preparation.sql": "be869b606916782127c329698d854d84fef6fb84e52a445a75a6174b6556ab05",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationEngine.java": "513d593ef11d7b9760000dfa1fd863a841f09b9548ad5f36a8461bda937f4992",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationException.java": "1a86e31507b911209c5ca61a22d716acf5205ec9a07dbec9a8b67dc2879d7fa2",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleSchemaAdoption.java": "354f3aac016cb3fe5ab9d030aebd841255f089a99de593a386a477b356c11574",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/OwnedMigrationResources.java": "871739ad316ff507f744e126fc3ce5d239a1ec5e250b36561e73376b1f06e4dd",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/PostgresSchemaContract.java": "f3670f79fe991240dc8dc13b92e7fa4d599cc6c4c21c34dd0c30a30d15e9cac1",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleMigrationContributorTest.java": "71df4ce11311c00c5de05af13d34c2049235df3b2b05b2d89b7233494bdb6b1e",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleMigrationEngineTest.java": "d68c7f83e97b7821246ce5eeb997788b202df8420c63fcdf006198bdd0f5eae6",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleSchemaAdoptionPostgresTest.java": "8108281dd3a81f0952ab3bb86a7791959065d369a730ca69e3a738c4d5e1b218",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/PostgresSchemaContractTest.java": "b94ac6a4b683aad1db017754c537824457ca9699ff71b684e603d0a89b14f003",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/one/OneModule.java": "298d479810f9702e2f91d3114310cb750962388df8eec50c4543ae2ef29c1803",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/stateless/StatelessModule.java": "3801fb246693af9e157b1e3d35dd013875aa04ec373505b037a6da850004d806",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/two/TwoModule.java": "14cae5e6bca7adc7132fa1a5b2b99c74f499e881b9d8b1d74143bafac193c5b5",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/BootstrapAdoptionInstallation.java": "22277eb66f6c46a65299b67543d3aa957e36381bf094b5159c9be37112d95a4a",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/BrokerInstallation.java": "83ab933897bf19d1b8a1c826bc5d8c1ed73139b4b0eed5a4e9806cd729eed5c6",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationArtifact.java": "921c6c741a9abdbd7d7da4e0a50c1da62744aa21445631eb236bd718077cceb4",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationAuthorities.java": "b04392319e17afed153e332216f14bc197f1d5583cea2462fc7a4498cf1230eb",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationFiles.java": "fcf74c463ddf536f2ca3750d656a4357d4f80a86d01032075eda3241bf7f90c9",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationMain.java": "101207adddc53cd1a57394e4fb2d87fbc14222f5f764b0feacc6dbd79968a9f2",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationOperation.java": "874ef6771287b641ca981094fe8f2867d2ae2c638ec1fadf8281d1a6f9290c9a",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationStorage.java": "b5388bab70052ead1dbcf84b1eb52b439bed8e7a5c970364b9e1ca87516ead8e",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/LegacyDataInstallation.java": "67a374744028b115da30d239b3a7b8b1fd6a55b04461b8476b259af56eb02231",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/SchemaAdoptionInstallation.java": "79b45a6878a23f5d204eaedc5a23e90b56352ba396e89cd42e867bf3e1e758a6",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/test/java/org/simplepoint/installation/host/BootstrapAdoptionInstallationTest.java": "551ab4ca2e209e6edba6bf905cfedd7b5fe3d53a7cf06bc626c9bd1d9807a896",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/test/java/org/simplepoint/installation/host/BrokerInstallationTest.java": "cb50cba126227aa425d539771ca1d429fa83d8fb34c102a93bf89e6a4864cc7a",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/test/java/org/simplepoint/installation/host/InstallationFilesTest.java": "3e12c18b98f8d7d47e7021a5ae35df6e8dc09e07f2e780472e712c281b8b9952"
+  }
+}

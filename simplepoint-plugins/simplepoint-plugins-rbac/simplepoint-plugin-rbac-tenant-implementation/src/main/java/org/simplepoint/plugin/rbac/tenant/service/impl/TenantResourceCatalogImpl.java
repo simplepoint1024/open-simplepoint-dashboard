@@ -4,34 +4,22 @@ import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.AuthorizationContextHolder;
-import org.simplepoint.core.AuthorizationScopeGuards;
-import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceOrigin;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceSetup;
+import org.simplepoint.plugin.rbac.tenant.api.error.TenantResourceSetupException;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
-import org.simplepoint.security.ResourceScopePolicy;
-import org.simplepoint.security.entity.Resource;
-import org.simplepoint.security.entity.ResourceScopeType;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceProvisioningService;
 import org.simplepoint.security.entity.ResourceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -48,262 +36,44 @@ import org.springframework.web.server.ResponseStatusException;
 public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   private final EntityManager em;
   private final TenantRepository tenants;
-  private final TenantPackageRelevanceRepository packages;
-  private final ResourceRepository platform;
+  private final TenantResourceProvisioningService provisioning;
 
-  /** Creates the catalog with live entitlement and authorization-version services. */
+  /**
+   * Directory management shares initialization/synchronization with ordinary tenant provisioning.
+   */
   public TenantResourceCatalogImpl(
-      EntityManager em,
-      TenantRepository tenants,
-      TenantPackageRelevanceRepository packages,
-      ResourceRepository platform) {
+      EntityManager em, TenantRepository tenants, TenantResourceProvisioningService provisioning) {
     this.em = em;
     this.tenants = tenants;
-    this.packages = packages;
-    this.platform = platform;
+    this.provisioning = provisioning;
   }
 
   @Override
   @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
   public void lockForGrantModification(String tenantId) {
-    if (em.find(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant.class, tenantId,
-        jakarta.persistence.LockModeType.PESSIMISTIC_WRITE) == null) {
+    if (tenantId == null
+        || tenantId.isBlank()
+        || em.createQuery(
+                "select t.id from Tenant t where t.id = :tenant and t.deletedAt is null",
+                String.class)
+            .setParameter("tenant", tenantId)
+            .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+            .getResultList()
+            .isEmpty()) {
       throw new org.springframework.security.access.AccessDeniedException("Tenant unavailable");
     }
-  }
-
-  @Override
-  public TenantResourceMode mode(String tenantId) {
-    if (tenantId == null || tenantId.isBlank()) {
-      return TenantResourceMode.PLATFORM;
-    }
-    return em
-        .createQuery(
-            "select t.resourceMode from Tenant t where t.id = :tenant", TenantResourceMode.class)
-        .setParameter("tenant", tenantId)
-        .setMaxResults(1)
-        .getResultList()
-        .stream()
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(TenantResourceMode.PLATFORM);
-  }
-
-  @Override
-  @Transactional
-  public TenantResourceMode selectMode(TenantResourceMode target) {
-    if (target == null) {
-      throw badRequest("请选择资源加载类型");
-    }
-    Tenant tenant = managerTenant();
-    em.lock(tenant, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-    em.refresh(tenant);
-    if (tenant.getResourceMode() == target) {
-      return target;
-    }
-    if (target == TenantResourceMode.CUSTOM) {
-      sync(tenant, false); // A failed first import leaves PLATFORM effective.
-    }
-    tenant.setResourceMode(target);
-    em.flush();
-    tenants.increaseAuthorizationVersion(List.of(tenant.getId()));
-    return target;
+    new TenantResourceReadQuery(em, tenantId).requireReady();
   }
 
   @Override
   @Transactional
   public SyncResult synchronize(boolean overwrite) {
-    Tenant tenant = lockedCustomManagerTenant();
-    return sync(tenant, overwrite);
+    return provisioning.synchronize(overwrite);
   }
 
   @Override
   public SyncPreview previewSynchronization(boolean overwrite) {
-    Tenant tenant = customManagerTenant();
-    Desired desired = desired(tenant.getId());
-    List<TenantResource> current = entries(tenant.getId());
-    Map<String, TenantResource> imported = new HashMap<>();
-    for (TenantResource entry : current) {
-      if (entry.isPlatformSource()) {
-        imported.put(entry.getPlatformResourceId(), entry);
-      }
-    }
-    List<SyncItem> additions =
-        desired.resources().values().stream()
-            .filter(source -> !imported.containsKey(source.getId()))
-            .limit(100)
-            .map(source -> new SyncItem(source.getId(), source.getCode(), source.getName()))
-            .toList();
-    int added =
-        (int) desired.resources().keySet().stream().filter(id -> !imported.containsKey(id)).count();
-    int refreshed = desired.resources().size() - added;
-    List<SyncItem> deactivations = new ArrayList<>();
-    int deactivated = 0;
-    Set<String> platformPaths = new HashSet<>();
-    desired.resources().values().stream()
-        .map(Resource::getPath)
-        .filter(Objects::nonNull)
-        .forEach(platformPaths::add);
-    for (TenantResource entry : current) {
-      boolean lostPlatform =
-          entry.isPlatformSource()
-              && !desired.resources().containsKey(entry.getPlatformResourceId());
-      boolean lostTarget =
-          !entry.isPlatformSource()
-              && entry.getTargetResourceId() != null
-              && !eligiblePageTarget(desired, entry.getTargetResourceId());
-      boolean pathConflict =
-          !entry.isPlatformSource()
-              && entry.getPath() != null
-              && platformPaths.contains(entry.getPath());
-      if (entry.isEnabled() && (lostPlatform || lostTarget || pathConflict)) {
-        deactivated++;
-        if (deactivations.size() < 100) {
-          deactivations.add(new SyncItem(entry.getId(), entry.getCode(), entry.getName()));
-        }
-      }
-    }
-    return new SyncPreview(
-        added, refreshed, deactivated, additions, List.copyOf(deactivations), overwrite);
-  }
-
-  private static boolean eligiblePageTarget(Desired desired, String targetId) {
-    Resource source = desired.resources().get(targetId);
-    return source != null
-        && source.getType() == ResourceType.PAGE
-        && Boolean.TRUE.equals(source.getGrantable())
-        && (desired.entitled().contains(source.getCode())
-            || Boolean.TRUE.equals(source.getPublicAccess()));
-  }
-
-  private SyncResult sync(Tenant tenant, boolean overwrite) {
-    String tenantId = tenant.getId();
-    Desired desired = desired(tenantId);
-    Set<String> entitled = desired.entitled();
-    Map<String, Resource> all = desired.resources();
-    Map<String, TenantResource> existing = new HashMap<>();
-    for (TenantResource entry : entries(tenantId)) {
-      if (entry.isPlatformSource()) {
-        existing.put(entry.getPlatformResourceId(), entry);
-      }
-    }
-    int added = 0;
-    int refreshed = 0;
-    int deactivated = 0;
-    for (Resource source : all.values()) {
-      TenantResource entry = existing.remove(source.getId());
-      final boolean newEntry = entry == null;
-      if (entry == null) {
-        entry = new TenantResource();
-        entry.setTenantId(tenantId);
-        entry.setId(source.getId());
-        entry.setPlatformResourceId(source.getId());
-        added++;
-      } else {
-        refreshed++;
-      }
-      // Security fields always follow platform entitlement, even for locally edited labels.
-      entry.setCode(source.getCode());
-      entry.setType(source.getType());
-      entry.setComponent(source.getComponent());
-      entry.setRouteKind(source.getRouteKind());
-      entry.setGrantable(
-          (entitled.contains(source.getCode()) || Boolean.TRUE.equals(source.getPublicAccess()))
-              && Boolean.TRUE.equals(source.getGrantable()));
-      if (overwrite) {
-        entry.setManualDisabled(false);
-      }
-      entry.setEnabled(!entry.isManualDisabled());
-      if (overwrite || !entry.isLocalModified() || entry.getName() == null) {
-        entry.setName(source.getName());
-        entry.setPath(source.getPath());
-        entry.setIcon(source.getIcon());
-        entry.setSort(source.getSort());
-        entry.setParentId(source.getParentId());
-        entry.setDescription(source.getDescription());
-        entry.setLocalModified(false);
-      }
-      entry.setUpdatedAt(Instant.now());
-      if (newEntry) {
-        em.persist(entry);
-      }
-    }
-    for (TenantResource revoked : existing.values()) {
-      if (revoked.isEnabled()) {
-        deactivated++;
-      }
-      revoked.setEnabled(false);
-      revoked.setGrantable(false);
-      revoked.setUpdatedAt(Instant.now());
-    }
-    Map<String, TenantResource> activePlatform = new HashMap<>();
-    Set<String> activePlatformPaths = new HashSet<>();
-    for (TenantResource entry : entries(tenantId)) {
-      if (entry.isPlatformSource() && entry.isEnabled() && entry.isGrantable()) {
-        activePlatform.put(entry.getId(), entry);
-      }
-      if (entry.isPlatformSource() && entry.isEnabled() && entry.getPath() != null) {
-        activePlatformPaths.add(entry.getPath());
-      }
-    }
-    for (TenantResource entry : entries(tenantId)) {
-      if (entry.isPlatformSource() || entry.getTargetResourceId() == null) {
-        continue;
-      }
-      boolean allowed =
-          activePlatform.containsKey(entry.getTargetResourceId())
-              && (entry.getPath() == null || !activePlatformPaths.contains(entry.getPath()));
-      TenantResource target = activePlatform.get(entry.getTargetResourceId());
-      if (target != null) {
-        // An alias customizes navigation, not executable code or a retired page's visibility.
-        entry.setComponent(target.getComponent());
-        if ("hidden".equalsIgnoreCase(target.getRouteKind())) {
-          entry.setRouteKind("hidden");
-        }
-      }
-      if (entry.isEnabled() && !allowed) {
-        deactivated++;
-      }
-      entry.setEnabled(allowed && !entry.isManualDisabled());
-      entry.setUpdatedAt(Instant.now());
-    }
-    em.flush();
-    tenants.increaseAuthorizationVersion(List.of(tenantId));
-    return new SyncResult(added, refreshed, deactivated);
-  }
-
-  private record Desired(Map<String, Resource> resources, Set<String> entitled) {}
-
-  private Desired desired(String tenantId) {
-    Set<String> entitled = new LinkedHashSet<>(packages.findResourceCodesByTenantId(tenantId));
-    Map<String, Resource> all = new LinkedHashMap<>();
-    Map<String, Resource> byId = new HashMap<>();
-    for (Resource resource : platform.loadAll()) {
-      if (resource.getDeletedAt() != null || Boolean.TRUE.equals(resource.getDisabled())) {
-        continue;
-      }
-      byId.put(resource.getId(), resource);
-      if (entitled.contains(resource.getCode())
-          || Boolean.TRUE.equals(resource.getPublicAccess())) {
-        if (ResourceScopePolicy.effectiveScopes(resource.getScopeTypes())
-            .contains(ResourceScopeType.TENANT)) {
-          all.put(resource.getId(), resource);
-        }
-      }
-    }
-    // Navigation parents are structural only unless the package also grants them.
-    for (Resource selected : List.copyOf(all.values())) {
-      Resource cursor = selected;
-      Set<String> seen = new HashSet<>();
-      while (cursor.getParentId() != null && seen.add(cursor.getParentId())) {
-        cursor = byId.get(cursor.getParentId());
-        if (cursor == null) {
-          break;
-        }
-        all.putIfAbsent(cursor.getId(), cursor);
-      }
-    }
-    return new Desired(all, entitled);
+    return provisioning.preview(overwrite);
   }
 
   @Override
@@ -316,34 +86,124 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   @Override
   public Map<String, Object> querySchema() {
     managerTenant();
-    return org.simplepoint.core.schema.ProjectionTableSchema.schema(
-        org.simplepoint.plugin.rbac.tenant.api.model.TenantResourceQuery.class,
-        "tenant.resources",
-        Map.of(
-            "type",
-                java.util.Arrays.stream(ResourceType.values())
-                    .map(
-                        value ->
-                            new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
-                                value.name(),
-                                "i18n:tenant.resources."
-                                    + value.name().toLowerCase(java.util.Locale.ROOT)))
-                    .toList(),
-            "origin",
-                List.of(
-                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
-                        "PLATFORM", "i18n:tenant.resources.platform"),
-                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
-                        "MANAGED", "i18n:tenant.resources.managed"),
-                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
-                        "TENANT", "i18n:tenant.resources.tenant"))));
+    var result =
+        new java.util.LinkedHashMap<>(
+            org.simplepoint.core.schema.ProjectionTableSchema.schema(
+                org.simplepoint.plugin.rbac.tenant.api.model.TenantResourceQuery.class,
+                "tenant.resources",
+                Map.of(
+                    "type",
+                        java.util.Arrays.stream(ResourceType.values())
+                            .map(
+                                value ->
+                                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
+                                        value.name(),
+                                        "i18n:tenant.resources."
+                                            + value.name().toLowerCase(java.util.Locale.ROOT)))
+                            .toList(),
+                    "origin",
+                        java.util.Arrays.stream(TenantResourceOrigin.values())
+                            .map(
+                                value ->
+                                    new org.simplepoint.core.schema.ProjectionTableSchema.Choice(
+                                        value.name(), "i18n:" + value.messageKey()))
+                            .toList())));
+    result.put(
+        "buttons",
+        List.of(
+            Map.of(
+                "key",
+                "sync",
+                "title",
+                "i18n:tenant.resources.checkUpdates",
+                "icon",
+                "SyncOutlined",
+                "sort",
+                0,
+                "argumentMinSize",
+                0,
+                "argumentMaxSize",
+                0),
+            Map.of(
+                "key",
+                "overwrite",
+                "title",
+                "i18n:tenant.resources.restorePresentation",
+                "icon",
+                "UndoOutlined",
+                "sort",
+                1,
+                "argumentMinSize",
+                0,
+                "argumentMaxSize",
+                0),
+            Map.of(
+                "key",
+                "add",
+                "title",
+                "i18n:tenant.resources.create",
+                "icon",
+                "PlusOutlined",
+                "sort",
+                2,
+                "argumentMinSize",
+                0,
+                "argumentMaxSize",
+                0),
+            Map.of(
+                "key",
+                "edit",
+                "title",
+                "i18n:table.button.edit",
+                "icon",
+                "EditOutlined",
+                "sort",
+                3,
+                "argumentMinSize",
+                1,
+                "argumentMaxSize",
+                1),
+            Map.of(
+                "key",
+                "delete",
+                "title",
+                "i18n:action.delete",
+                "icon",
+                "DeleteOutlined",
+                "sort",
+                4,
+                "argumentMinSize",
+                1,
+                "argumentMaxSize",
+                1,
+                "danger",
+                true)));
+    TenantResourceAvailabilityProjector.appendSchema(result);
+    appendLocalizedNameSchema(result);
+    return result;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void appendLocalizedNameSchema(Map<String, Object> result) {
+    String access = org.simplepoint.core.jackson.FieldPermissionPolicy.access(TenantResource.class, "name");
+    if (org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access) || "MASKED".equals(access)) return;
+    try {
+      var declaration = TenantResource.class.getDeclaredField("nameLocalization")
+          .getAnnotation(org.simplepoint.api.schema.LocalizedField.class);
+      var field = new java.util.LinkedHashMap<>(org.simplepoint.api.schema.LocalizedFieldSchema.describe(declaration));
+      field.put("title", "i18n:tenant.resources.name");
+      field.put("x-ui", Map.of("ui:field", "LocalizedText", "x-list-visible", false));
+      if (access != null) { field.put("x-field-access", access); field.put("readOnly", !"EDITABLE".equals(access)); }
+      var schema = (Map<String, Object>) result.get("schema");
+      ((Map<String, Object>) schema.get("properties")).put("nameLocalization", field);
+    } catch (NoSuchFieldException error) { throw new IllegalStateException(error); }
   }
 
   @Override
   public Page<TenantResource> query(
       Map<String, String> parameters, String parentId, boolean rootsOnly, Pageable pageable) {
     final Tenant tenant = managerTenant();
-    if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > 100) {
+    if (pageable == null || pageable.isUnpaged() || pageable.getPageSize() > TablePagination.MAX_PAGE_SIZE) {
       throw badRequest("每页最多 100 条资源");
     }
     var filters =
@@ -351,7 +211,8 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     String keyword = filters.remove("keyword");
     filters.remove("parentId");
     filters.remove("rootsOnly");
-    final Class<?> queryType = org.simplepoint.plugin.rbac.tenant.api.model.TenantResourceQuery.class;
+    final Class<?> queryType =
+        org.simplepoint.plugin.rbac.tenant.api.model.TenantResourceQuery.class;
     String search = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
     if (rootsOnly && parentId != null) {
       throw badRequest("根资源与上级资源筛选不能同时使用");
@@ -405,12 +266,25 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
             cb.and(
                 listFilter(cb, counted, tenant.getId(), search, parentId, rootsOnly),
                 input.predicate(cb, queryFields(cb, counted))));
-    return new PageImpl<>(content, pageable, em.createQuery(count).getSingleResult());
+    return new PageImpl<>(
+        new TenantResourceAvailabilityProjector(em, tenant.getId(), Instant.now()).project(content),
+        pageable,
+        em.createQuery(count).getSingleResult());
   }
 
   private Map<String, jakarta.persistence.criteria.Expression<?>> queryFields(
       jakarta.persistence.criteria.CriteriaBuilder cb,
       jakarta.persistence.criteria.Root<TenantResource> root) {
+    var origin =
+        cb.<String>selectCase()
+            .when(
+                cb.isNotNull(root.get("platformResourceId")), TenantResourceOrigin.PLATFORM.name());
+    for (TenantResourceOrigin source : TenantResourceOrigin.values()) {
+      if (source.managedOwner() != null) {
+        origin.when(cb.equal(root.get("managedOwner"), source.managedOwner()), source.name());
+      }
+    }
+    origin.when(cb.isNull(root.get("managedOwner")), TenantResourceOrigin.TENANT.name());
     return Map.of(
         "name",
         root.get("name"),
@@ -422,11 +296,14 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
         root.get("enabled"),
         "sort",
         root.get("sort"),
+        "createdAt",
+        root.get("createdAt"),
+        "updatedAt",
+        root.get("updatedAt"),
+        "lastSyncedAt",
+        root.get("lastSyncedAt"),
         "origin",
-        cb.<String>selectCase()
-            .when(cb.isNotNull(root.get("platformResourceId")), "PLATFORM")
-            .when(cb.isNotNull(root.get("managedOwner")), "MANAGED")
-            .otherwise("TENANT"));
+        origin.otherwise(cb.nullLiteral(String.class)));
   }
 
   @Override
@@ -436,7 +313,9 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     if (resource == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "资源不存在");
     }
-    return resource;
+    return new TenantResourceAvailabilityProjector(em, tenant.getId(), Instant.now())
+        .project(List.of(resource))
+        .getFirst();
   }
 
   @Override
@@ -447,7 +326,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
       String keyword,
       String selectedId,
       Pageable pageable) {
-    final Tenant tenant = customManagerTenant();
+    final Tenant tenant = managerTenant();
     if (kind == null || kind == PickerKind.PARENT && childType == null) {
       throw badRequest("候选项类型无效");
     }
@@ -467,6 +346,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     if (search.length() > 128) {
       throw badRequest("搜索词过长");
     }
+    var eligible = new TenantResourceReadQuery(em, tenant.getId()).eligibleResourceIds();
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(TenantResource.class);
     var root = query.from(TenantResource.class);
@@ -474,7 +354,15 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
         .select(root)
         .where(
             pickerFilter(
-                cb, query, root, tenant.getId(), kind, childType, excludedId, search, selectedId));
+                cb,
+                root,
+                tenant.getId(),
+                kind,
+                childType,
+                excludedId,
+                search,
+                selectedId,
+                eligible));
     query.orderBy(cb.asc(root.get("sort")), cb.asc(root.get("name")), cb.asc(root.get("id")));
     var content =
         em.createQuery(query)
@@ -488,30 +376,39 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
         .where(
             pickerFilter(
                 cb,
-                count,
                 counted,
                 tenant.getId(),
                 kind,
                 childType,
                 excludedId,
                 search,
-                selectedId));
+                selectedId,
+                eligible));
     return new PageImpl<>(content, pageable, em.createQuery(count).getSingleResult());
   }
 
   private jakarta.persistence.criteria.Predicate pickerFilter(
       jakarta.persistence.criteria.CriteriaBuilder cb,
-      jakarta.persistence.criteria.CommonAbstractCriteria query,
       jakarta.persistence.criteria.Root<TenantResource> root,
       String tenantId,
       PickerKind kind,
       ResourceType childType,
       String excludedId,
       String search,
-      String selectedId) {
+      String selectedId,
+      Set<String> eligible) {
     List<jakarta.persistence.criteria.Predicate> filters = new ArrayList<>();
     filters.add(listFilter(cb, root, tenantId, search, null, false));
+    var ids = new ArrayList<>(eligible);
+    List<jakarta.persistence.criteria.Predicate> allowed = new ArrayList<>();
+    for (int start = 0; start < ids.size(); start += 100) {
+      allowed.add(root.get("id").in(ids.subList(start, Math.min(start + 100, ids.size()))));
+    }
+    filters.add(cb.or(allowed.toArray(jakarta.persistence.criteria.Predicate[]::new)));
     filters.add(cb.isTrue(root.get("enabled")));
+    filters.add(cb.isFalse(root.get("manualDisabled")));
+    filters.add(cb.isFalse(root.get("formallyOffline")));
+    filters.add(cb.isTrue(root.get("sourceAvailable")));
     if (excludedId != null) {
       filters.add(cb.notEqual(root.get("id"), excludedId));
     }
@@ -532,50 +429,6 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
           cb.or(
               cb.isNull(root.get("routeKind")),
               cb.notEqual(cb.lower(root.get("routeKind")), "hidden")));
-      // Check live platform scope and entitlement before pagination/count; never hydrate an entire
-      // catalog.
-      var live = query.subquery(Integer.class);
-      var resource = live.from(Resource.class);
-      List<jakarta.persistence.criteria.Predicate> scopes = new ArrayList<>();
-      ResourceScopeType[] values = ResourceScopeType.values();
-      for (int bits = 1; bits < (1 << values.length); bits++) {
-        Set<ResourceScopeType> set = EnumSet.noneOf(ResourceScopeType.class);
-        for (int i = 0; i < values.length; i++) {
-          if ((bits & (1 << i)) != 0) {
-            set.add(values[i]);
-          }
-        }
-        if (set.contains(ResourceScopeType.TENANT)) {
-          scopes.add(cb.equal(resource.get("scopeTypes"), set));
-        }
-      }
-      var subscribed = live.subquery(Integer.class);
-      var tp = subscribed.from(TenantPackageRelevance.class);
-      var pa = subscribed.from(PackageApplicationRelevance.class);
-      var ar = subscribed.from(ApplicationResourceRelevance.class);
-      subscribed
-          .select(cb.literal(1))
-          .where(
-              cb.equal(tp.get("tenantId"), tenantId),
-              cb.equal(tp.get("packageCode"), pa.get("packageCode")),
-              cb.equal(pa.get("applicationCode"), ar.get("applicationCode")),
-              cb.equal(ar.get("resourceCode"), resource.get("code")),
-              cb.isNull(tp.get("deletedAt")),
-              cb.isNull(pa.get("deletedAt")),
-              cb.isNull(ar.get("deletedAt")));
-      live.select(cb.literal(1))
-          .where(
-              cb.equal(resource.get("id"), root.get("platformResourceId")),
-              cb.equal(resource.get("type"), ResourceType.PAGE),
-              cb.isNull(resource.get("deletedAt")),
-              cb.or(cb.isNull(resource.get("disabled")), cb.isFalse(resource.get("disabled"))),
-              cb.isTrue(resource.get("grantable")),
-              cb.or(
-                  cb.isNull(resource.get("routeKind")),
-                  cb.notEqual(cb.lower(resource.get("routeKind")), "hidden")),
-              cb.or(scopes.toArray(jakarta.persistence.criteria.Predicate[]::new)),
-              cb.or(cb.isTrue(resource.get("publicAccess")), cb.exists(subscribed)));
-      filters.add(cb.exists(live));
     }
     return cb.and(filters.toArray(jakarta.persistence.criteria.Predicate[]::new));
   }
@@ -607,7 +460,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   @Override
   @Transactional
   public TenantResource create(Mutation mutation) {
-    Tenant tenant = lockedCustomManagerTenant();
+    Tenant tenant = lockedManagerTenant();
     validate(mutation);
     if (mutation.type() == ResourceType.ACTION
         || mutation.type() == ResourceType.API
@@ -629,7 +482,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   @Override
   @Transactional
   public TenantResource update(String id, Mutation mutation) {
-    Tenant tenant = lockedCustomManagerTenant();
+    Tenant tenant = lockedManagerTenant();
     validate(mutation);
     TenantResource entry = find(tenant.getId(), id);
     if (entry == null) {
@@ -658,7 +511,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   @Override
   @Transactional
   public void delete(String id) {
-    Tenant tenant = lockedCustomManagerTenant();
+    Tenant tenant = lockedManagerTenant();
     TenantResource entry = find(tenant.getId(), id);
     if (entry == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "资源不存在");
@@ -719,7 +572,27 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
       throw badRequest("上级资源层级存在循环");
     }
     entry.setParentId(parentId);
-    entry.setName(mutation.name().trim());
+    if (mutation.nameLocalization() != null) {
+      var localized = org.simplepoint.api.locale.LocalizedTexts.validate(mutation.nameLocalization(), 100, 32);
+      boolean neutralLegacyValue = entry.getNameLocalization() == null
+          && localized.translations().isEmpty() && Objects.equals(entry.getName(), localized.defaultValue());
+      if (!neutralLegacyValue && !Objects.equals(entry.getNameLocalization(), localized)) {
+        org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(TenantResource.class, "name");
+      }
+      if (!neutralLegacyValue) entry.setNameLocalization(localized);
+      entry.setName(localized.defaultValue());
+    } else {
+      if (!Objects.equals(entry.getName(), mutation.name().trim())) {
+        org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(TenantResource.class, "name");
+        String locale = org.simplepoint.core.locale.I18nContextHolder.getLocale().toLanguageTag();
+        var translations = new java.util.LinkedHashMap<String, String>(entry.getNameLocalization() == null
+            ? Map.of() : entry.getNameLocalization().translations());
+        translations.put(org.simplepoint.api.locale.LocalizedTexts.locale(locale), mutation.name().trim());
+        entry.setNameLocalization(org.simplepoint.api.locale.LocalizedTexts.validate(
+            new org.simplepoint.api.locale.LocalizedText(mutation.name().trim(), locale, translations), 100, 32));
+      }
+      entry.setName(mutation.name().trim());
+    }
     entry.setType(mutation.type());
     entry.setIcon(blankToNull(mutation.icon()));
     entry.setSort(mutation.sort());
@@ -727,7 +600,7 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     if (entry.isPlatformSource()) {
       // Platform route/component remain authoritative; only presentation can change.
       if (Boolean.TRUE.equals(mutation.enabled())
-          && !desired(tenantId).resources().containsKey(entry.getId())) {
+          && (!entry.isSourceAvailable() || entry.isFormallyOffline())) {
         throw badRequest("平台已撤销该资源，租户不能重新启用");
       }
       if (mutation.enabled() != null) {
@@ -785,11 +658,19 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     if (mutation == null
         || mutation.name() == null
         || mutation.name().isBlank()
-        || mutation.name().length() > 100
+        || mutation.name().codePointCount(0, mutation.name().length()) > 100
         || mutation.type() == null
         || mutation.icon() != null && mutation.icon().length() > 100
         || mutation.description() != null && mutation.description().length() > 255) {
       throw badRequest("资源名称、类型或长度无效");
+    }
+    if (mutation.nameLocalization() != null) {
+      try {
+        var value = org.simplepoint.api.locale.LocalizedTexts.validate(mutation.nameLocalization(), 100, 32);
+        if (!value.defaultValue().equals(mutation.name())) throw new IllegalArgumentException();
+      } catch (IllegalArgumentException error) {
+        throw new org.simplepoint.plugin.rbac.tenant.api.error.LocalizedResourceNameException();
+      }
     }
   }
 
@@ -802,19 +683,41 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
     return new TenantResourceReadQuery(em, tenantId).activeResources();
   }
 
+  private String currentActorId() {
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    return context == null ? null : context.getUserId();
+  }
+
+  @Override
+  public Set<String> roleResourceIds(String tenantId) {
+    return new TenantResourceReadQuery(em, tenantId).roleResourceIds();
+  }
+
+  @Override
+  public AuthorizationSelection authorization(
+      String tenantId, Collection<String> roleCodes, boolean allEntitled, String actorId) {
+    return new TenantResourceReadQuery(em, tenantId).authorization(roleCodes, allEntitled, actorId);
+  }
+
   @Override
   public List<TenantResource> navigationResources(String tenantId, Collection<String> heldCodes) {
-    return new TenantResourceReadQuery(em, tenantId).navigationResources(heldCodes);
+    return new TenantResourceReadQuery(em, tenantId)
+        .navigationResources(heldCodes, currentActorId());
   }
 
   @Override
   public List<TenantResource> selectedResources(String tenantId, Collection<String> codes) {
-    return new TenantResourceReadQuery(em, tenantId).selectedResources(codes);
+    return new TenantResourceReadQuery(em, tenantId).selectedResources(codes, currentActorId());
   }
 
   @Override
   public Set<String> grantableCodes(String tenantId, Collection<String> requested) {
     return new TenantResourceReadQuery(em, tenantId).authorizationCodes(requested, false);
+  }
+
+  @Override
+  public Set<String> eligiblePermissionCodes(String tenantId, Collection<String> requested) {
+    return new TenantResourceReadQuery(em, tenantId).eligiblePermissionCodes(requested);
   }
 
   @Override
@@ -834,17 +737,8 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
 
   @Override
   public List<TenantResource> managedNavigationResources(
-      String tenantId,
-      Collection<String> heldCodes
-  ) {
+      String tenantId, Collection<String> heldCodes) {
     return new TenantResourceReadQuery(em, tenantId).managedNavigationResources(heldCodes);
-  }
-
-  private List<TenantResource> entries(String tenantId) {
-    return em.createQuery(
-            "select r from TenantResource r where r.tenantId = :tenant", TenantResource.class)
-        .setParameter("tenant", tenantId)
-        .getResultList();
   }
 
   private TenantResource find(String tenantId, String id) {
@@ -852,36 +746,27 @@ public class TenantResourceCatalogImpl implements TenantResourceCatalog {
   }
 
   private Tenant managerTenant() {
-    AuthorizationContext context = AuthorizationContextHolder.getContext();
-    String tenantId = context == null ? null : context.getAttribute("X-Tenant-Id");
-    if (tenantId == null || tenantId.isBlank()) {
-      throw new AccessDeniedException("请切换到组织工作空间");
-    }
-    Tenant tenant =
-        tenants.findById(tenantId).orElseThrow(() -> new AccessDeniedException("租户不存在"));
-    if (tenant.getTenantType() != TenantType.ORGANIZATION) {
-      throw new AccessDeniedException("仅组织租户支持自定义资源");
-    }
-    AuthorizationScopeGuards.requireOrganizationTenantManager(context, tenant.getOwnerId());
-    return tenant;
+    return ownerTenant(false);
   }
 
-  private Tenant customManagerTenant() {
-    Tenant tenant = managerTenant();
-    if (tenant.getResourceMode() != TenantResourceMode.CUSTOM) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "自定义资源未开启");
-    }
-    return tenant;
+  private Tenant lockedManagerTenant() {
+    return ownerTenant(true);
   }
 
-  private Tenant lockedCustomManagerTenant() {
-    Tenant tenant = managerTenant();
-    em.lock(tenant, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-    em.refresh(tenant);
-    if (tenant.getResourceMode() != TenantResourceMode.CUSTOM) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "自定义资源未开启");
+  private Tenant ownerTenant(boolean lock) {
+    String id =
+        new TenantOwnerBoundary(em, () -> new AccessDeniedException("Tenant owner required"))
+            .currentTenant(lock);
+    var ready =
+        em.createQuery(
+                "select s.state from TenantResourceSetup s where s.tenantId = :tenant",
+                TenantResourceSetup.State.class)
+            .setParameter("tenant", id)
+            .getResultList();
+    if (ready.isEmpty() || ready.getFirst() != TenantResourceSetup.State.READY) {
+      throw new TenantResourceSetupException(TenantResourceSetupException.Code.CATALOG_NOT_READY);
     }
-    return tenant;
+    return em.find(Tenant.class, id);
   }
 
   private static String blankToNull(String value) {

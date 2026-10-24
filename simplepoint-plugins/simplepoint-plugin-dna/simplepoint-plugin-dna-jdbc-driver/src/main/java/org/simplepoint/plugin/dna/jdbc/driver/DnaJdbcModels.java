@@ -3,13 +3,10 @@ package org.simplepoint.plugin.dna.jdbc.driver;
 import java.net.URI;
 import java.util.List;
 
-/**
- * Client-side models used by the standalone DNA JDBC driver.
- */
+/** Client-side models used by the standalone DNA JDBC driver. */
 final class DnaJdbcModels {
 
-  private DnaJdbcModels() {
-  }
+  private DnaJdbcModels() {}
 
   record ConnectionConfig(
       URI baseUri,
@@ -20,16 +17,14 @@ final class DnaJdbcModels {
       String tenantId,
       String contextId,
       String schema,
-      java.util.Properties properties
-  ) {
+      java.util.Properties properties) {
+    @Override
+    public String toString() {
+      return "ConnectionConfig[REDACTED]";
+    }
   }
 
-  record ColumnDef(
-      String name,
-      String typeName,
-      Integer jdbcType
-  ) {
-  }
+  record ColumnDef(String name, String typeName, Integer jdbcType) {}
 
   record PingResult(
       String catalogCode,
@@ -39,39 +34,21 @@ final class DnaJdbcModels {
       String loginSubject,
       String databaseProductName,
       String databaseProductVersion,
-      String currentSchema
-  ) {
-  }
+      String currentSchema) {}
 
-  record TabularResult(
-      List<ColumnDef> columns,
-      List<List<Object>> rows
-  ) {
-  }
+  record TabularResult(List<ColumnDef> columns, List<List<Object>> rows) {}
 
-  record QueryRequest(
-      String sql,
-      String defaultSchema,
-      String catalogCode
-  ) {
-  }
+  record QueryRequest(String sql, String defaultSchema, String catalogCode) {}
 
   record QueryResult(
-      List<ColumnDef> columns,
-      List<List<Object>> rows,
-      Boolean truncated,
-      Long returnedRows
-  ) {
-  }
+      List<ColumnDef> columns, List<List<Object>> rows, Boolean truncated, Long returnedRows) {}
 
   record UpdateResult(
       String catalogCode,
       String dataSourceCode,
       Long affectedRows,
       Long executionTimeMs,
-      String pushedSql
-  ) {
-  }
+      String pushedSql) {}
 
   record SocketRequest(
       String action,
@@ -92,8 +69,12 @@ final class DnaJdbcModels {
       Boolean approximate,
       List<SocketRequest> batch,
       List<Object> parameters,
-      Integer maxRows
-  ) {
+      Integer maxRows,
+      String oneTimeCode) {
+    @Override
+    public String toString() {
+      return "SocketRequest[REDACTED]";
+    }
 
     static Builder builder(final String action) {
       return new Builder(action);
@@ -104,6 +85,7 @@ final class DnaJdbcModels {
       private final String action;
       private String loginSubject;
       private String password;
+      private String oneTimeCode;
       private String catalogCode;
       private String tenantId;
       private String contextId;
@@ -127,6 +109,11 @@ final class DnaJdbcModels {
 
       Builder loginSubject(final String value) {
         this.loginSubject = value;
+        return this;
+      }
+
+      Builder oneTimeCode(final String value) {
+        this.oneTimeCode = value;
         return this;
       }
 
@@ -217,11 +204,26 @@ final class DnaJdbcModels {
 
       SocketRequest build() {
         return new SocketRequest(
-            action, loginSubject, password, catalogCode, tenantId, contextId,
-            schema, catalogPattern, schemaPattern, tablePattern, columnPattern,
-            types, sql, defaultSchema, unique, approximate, batch, parameters,
-            maxRows
-        );
+            action,
+            loginSubject,
+            password,
+            catalogCode,
+            tenantId,
+            contextId,
+            schema,
+            catalogPattern,
+            schemaPattern,
+            tablePattern,
+            columnPattern,
+            types,
+            sql,
+            defaultSchema,
+            unique,
+            approximate,
+            batch,
+            parameters,
+            maxRows,
+            oneTimeCode);
       }
     }
   }
@@ -233,7 +235,29 @@ final class DnaJdbcModels {
       TabularResult tabularResult,
       QueryResult queryResult,
       UpdateResult updateResult,
-      List<SocketResponse> batchResults
-  ) {
+      List<SocketResponse> batchResults,
+      String errorCode,
+      String messageKey,
+      String sqlState) {
+    SocketResponse(
+        Boolean success,
+        String errorMessage,
+        PingResult pingResult,
+        TabularResult tabularResult,
+        QueryResult queryResult,
+        UpdateResult updateResult,
+        List<SocketResponse> batchResults) {
+      this(
+          success,
+          errorMessage,
+          pingResult,
+          tabularResult,
+          queryResult,
+          updateResult,
+          batchResults,
+          null,
+          null,
+          null);
+    }
   }
 }

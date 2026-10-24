@@ -1,0 +1,1917 @@
+{
+  "status": "REAL_BUSINESS_MILESTONE_FINAL_ACCEPTANCE_IN_PROGRESS",
+  "at": "2026-10-19T03:54:03.776251+00:00",
+  "deployments": [
+    {
+      "passed": true,
+      "at": "2026-10-19T03:27:49.654Z",
+      "version": "20261019-calculation-integration1",
+      "sourceDigest": "22b3b9e62e84fbcc60064045850f61c2ad2832063e4fc30a6d77e30f43b44edf",
+      "services": [
+        {
+          "service": "dna",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 296,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "app",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 262,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "host",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 226,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "workflow",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 298,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "common",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 317,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "auditing",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 246,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "ai",
+          "version": "20261019-calculation-integration1",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 326,
+          "jarHashesMatch": true
+        }
+      ],
+      "allNineServiceHealth": "passing",
+      "rabbitmq": "healthy"
+    },
+    {
+      "passed": true,
+      "at": "2026-10-19T03:48:41.220Z",
+      "version": "20261019-calculation-integration2",
+      "sourceDigest": "733bcd9a4946ed80a22f1cd22a9aff2daf7ce63f8a1ced75d286673e53601ecb",
+      "services": [
+        {
+          "service": "app",
+          "version": "20261019-calculation-integration2",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 262,
+          "jarHashesMatch": true
+        }
+      ],
+      "allNineServiceHealth": "passing",
+      "rabbitmq": "healthy"
+    }
+  ],
+  "wholeGoalComplete": false,
+  "businesses": {
+    "cal_expense": {
+      "pageId": "ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+      "formId": "f420de63-7bb6-4a5b-b270-b31b6a91beaa",
+      "version": 1,
+      "workflowId": "ea263cb9-28d1-425d-938c-d7056245942b",
+      "workflowVersion": 1,
+      "runtime": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+      "resourceCode": "app.runtime.page.cae6fe3a16f93466b209d1a5375fa811"
+    },
+    "cal_daily": {
+      "pageId": "672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+      "formId": "0e8c354b-12ae-4764-a87d-0f69f5965a21",
+      "version": 1,
+      "workflowId": "211d86da-ba27-41da-95e4-bc6479819946",
+      "workflowVersion": 1,
+      "runtime": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+      "resourceCode": "app.runtime.page.7d8e12e2d9063846937c6f7641d1baf0"
+    },
+    "cal_delivery": {
+      "pageId": "63617986-54fe-4bea-b47a-3c3fc8607d74",
+      "formId": "f60bfb0a-f749-4722-880b-86c5729d02b7",
+      "version": 1,
+      "workflowId": "fc58f273-e184-4140-b30c-d4f9ed87fe2a",
+      "workflowVersion": 1,
+      "runtime": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/63617986-54fe-4bea-b47a-3c3fc8607d74",
+      "resourceCode": "app.runtime.page.107da919233438b6a2eecdbeea98c41f"
+    },
+    "cal_assets": {
+      "pageId": "2d58b2e5-25c6-4b47-813c-c82f18713454",
+      "formId": "cd4da43d-7051-4fb3-ae52-77be2bce17f6",
+      "version": 1,
+      "workflowId": "9eb68d40-f81a-43f7-a131-088f1379cef2",
+      "workflowVersion": 1,
+      "runtime": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/2d58b2e5-25c6-4b47-813c-c82f18713454",
+      "resourceCode": "app.runtime.page.d274f59f3d85310c88c821434224248b"
+    },
+    "cal_ledger": {
+      "pageId": "89601d0b-15b1-45f0-9555-fe0984567a58",
+      "formId": "0f14e43b-4e8d-4da2-8e6d-68ba18e5a9a5",
+      "version": 2,
+      "workflowId": "cabd37d3-bc1f-4c70-b662-077109700d51",
+      "workflowVersion": 2,
+      "runtime": "/app/runtime/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/pages/89601d0b-15b1-45f0-9555-fe0984567a58",
+      "resourceCode": "app.runtime.page.a971c38322123b0cb9bb834f735a0195"
+    }
+  },
+  "recordChecks": [
+    {
+      "name": "exact-aggregate",
+      "at": "2026-10-19T03:28:39.145Z",
+      "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+      "expected": {
+        "total_amount": "44.21",
+        "base_amount": "44.21",
+        "payable_amount": "44.21"
+      },
+      "actual": {
+        "total_amount": "44.21",
+        "base_amount": "44.21",
+        "payable_amount": "44.21"
+      }
+    },
+    {
+      "name": "exact-owned-rows",
+      "at": "2026-10-19T03:28:39.146Z",
+      "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+      "expected": [
+        "28.53",
+        "15.68"
+      ],
+      "actual": [
+        "28.53",
+        "15.68"
+      ]
+    },
+    {
+      "name": "forged-parent",
+      "at": "2026-10-19T03:28:39.188Z",
+      "status": 400
+    },
+    {
+      "name": "forged-child",
+      "at": "2026-10-19T03:28:39.217Z",
+      "status": 400
+    },
+    {
+      "name": "daily-aggregate",
+      "at": "2026-10-19T03:28:40.252Z",
+      "recordId": "4b4d22db-940e-5f76-a2af-79168a6be04d",
+      "expected": {
+        "total_hours": "8.75",
+        "overtime_hours": "0.75",
+        "completion_rate": "90"
+      },
+      "actual": {
+        "total_hours": "8.75",
+        "overtime_hours": "0.75",
+        "completion_rate": "90"
+      }
+    },
+    {
+      "name": "delivery-aggregate",
+      "at": "2026-10-19T03:28:41.451Z",
+      "recordId": "57337ba5-b2cc-5e8d-b222-3715ed1a74e6",
+      "expected": {
+        "weighted_score": "86"
+      },
+      "actual": {
+        "weighted_score": "86"
+      }
+    },
+    {
+      "name": "asset-aggregate",
+      "at": "2026-10-19T03:28:42.977Z",
+      "recordId": "387b5e9b-9d42-53c9-9956-a08c4bb4f929",
+      "expected": {
+        "total_quantity": "3",
+        "total_amount": "2900",
+        "remaining_budget": "2100"
+      },
+      "actual": {
+        "total_quantity": "3",
+        "total_amount": "2900",
+        "remaining_budget": "2100"
+      }
+    },
+    {
+      "name": "function-IF",
+      "at": "2026-10-19T03:28:43.643Z",
+      "recordId": "12d858bd-40a2-5e7c-87e4-5c15142711ce",
+      "expected": {
+        "actual": "yes"
+      },
+      "actual": {
+        "actual": "yes"
+      }
+    },
+    {
+      "name": "function-IFERROR",
+      "at": "2026-10-19T03:28:44.271Z",
+      "recordId": "9088691b-e59d-5c13-b2c2-a05a98801c59",
+      "expected": {
+        "actual": "fallback"
+      },
+      "actual": {
+        "actual": "fallback"
+      }
+    },
+    {
+      "name": "function-AND",
+      "at": "2026-10-19T03:28:44.893Z",
+      "recordId": "265f339c-5c86-5e0c-b08e-07f2866d25b5",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-OR",
+      "at": "2026-10-19T03:28:45.514Z",
+      "recordId": "240c5259-302f-5dab-85df-9810cfba9700",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-NOT",
+      "at": "2026-10-19T03:28:46.187Z",
+      "recordId": "5fa75dd2-a4c5-5c09-bf3e-c365d4b11b66",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-ISBLANK",
+      "at": "2026-10-19T03:28:46.792Z",
+      "recordId": "0f598690-a3c4-5627-8294-485e14832c25",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-ISNUMBER",
+      "at": "2026-10-19T03:28:47.380Z",
+      "recordId": "0e3c532e-670d-5817-8ff3-ea72c307e9c8",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-ISTEXT",
+      "at": "2026-10-19T03:28:47.937Z",
+      "recordId": "4b5f88f2-f812-5de2-a89f-994654691ee8",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-COALESCE",
+      "at": "2026-10-19T03:28:48.511Z",
+      "recordId": "daa2e373-dd7b-5c89-ba59-f26beeafc84b",
+      "expected": {
+        "actual": "available"
+      },
+      "actual": {
+        "actual": "available"
+      }
+    },
+    {
+      "name": "function-SUM",
+      "at": "2026-10-19T03:28:49.092Z",
+      "recordId": "80dbc5f6-1157-54af-9627-a07fa1ae8eb5",
+      "expected": {
+        "actual": "6"
+      },
+      "actual": {
+        "actual": "6"
+      }
+    },
+    {
+      "name": "function-AVERAGE",
+      "at": "2026-10-19T03:28:49.670Z",
+      "recordId": "ee939807-ba88-552b-a500-4c59c15d9f7a",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-MIN",
+      "at": "2026-10-19T03:28:50.216Z",
+      "recordId": "a5de4b15-3bce-5aae-9cf0-66cb2489bc85",
+      "expected": {
+        "actual": "-2"
+      },
+      "actual": {
+        "actual": "-2"
+      }
+    },
+    {
+      "name": "function-MAX",
+      "at": "2026-10-19T03:28:50.798Z",
+      "recordId": "c52288be-0db2-59f1-b69e-05925c05bef2",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-COUNT",
+      "at": "2026-10-19T03:28:51.351Z",
+      "recordId": "83160d53-78e3-58ee-b3df-ea93f8785af8",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-COUNTA",
+      "at": "2026-10-19T03:28:51.904Z",
+      "recordId": "b95760ef-faa4-5d9f-853e-a00c031e6d28",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-PRODUCT",
+      "at": "2026-10-19T03:28:52.454Z",
+      "recordId": "2933ba15-af16-5e64-91e4-84be92cbd794",
+      "expected": {
+        "actual": "3.6"
+      },
+      "actual": {
+        "actual": "3.6"
+      }
+    },
+    {
+      "name": "function-ABS",
+      "at": "2026-10-19T03:28:53.386Z",
+      "recordId": "010973c6-916e-5a5b-bc36-2e90c5506096",
+      "expected": {
+        "actual": "1.25"
+      },
+      "actual": {
+        "actual": "1.25"
+      }
+    },
+    {
+      "name": "function-SIGN",
+      "at": "2026-10-19T03:28:54.296Z",
+      "recordId": "af36b08f-2007-575a-a307-9427223b33a8",
+      "expected": {
+        "actual": "-1"
+      },
+      "actual": {
+        "actual": "-1"
+      }
+    },
+    {
+      "name": "function-INT",
+      "at": "2026-10-19T03:28:54.947Z",
+      "recordId": "7336fd2d-2333-530f-b730-90b6d974904c",
+      "expected": {
+        "actual": "-2"
+      },
+      "actual": {
+        "actual": "-2"
+      }
+    },
+    {
+      "name": "function-ROUND",
+      "at": "2026-10-19T03:28:55.507Z",
+      "recordId": "60c67256-b083-516c-8b1a-04f6cd3e8ae4",
+      "expected": {
+        "actual": "1.24"
+      },
+      "actual": {
+        "actual": "1.24"
+      }
+    },
+    {
+      "name": "function-ROUNDUP",
+      "at": "2026-10-19T03:28:56.083Z",
+      "recordId": "6ce71cc9-70e7-5889-8092-3adbb7955001",
+      "expected": {
+        "actual": "-1.24"
+      },
+      "actual": {
+        "actual": "-1.24"
+      }
+    },
+    {
+      "name": "function-ROUNDDOWN",
+      "at": "2026-10-19T03:28:56.610Z",
+      "recordId": "fbf018bd-a4b5-5f77-83b8-2d6da91d6fd5",
+      "expected": {
+        "actual": "-1.23"
+      },
+      "actual": {
+        "actual": "-1.23"
+      }
+    },
+    {
+      "name": "function-TRUNC",
+      "at": "2026-10-19T03:28:57.158Z",
+      "recordId": "cd55e88a-652c-5364-ad4c-f85126b713c2",
+      "expected": {
+        "actual": "-1"
+      },
+      "actual": {
+        "actual": "-1"
+      }
+    },
+    {
+      "name": "function-MOD",
+      "at": "2026-10-19T03:28:57.693Z",
+      "recordId": "f584a63e-b825-5c52-a738-127083316813",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-POWER",
+      "at": "2026-10-19T03:28:58.207Z",
+      "recordId": "027dfff2-cfc5-51bd-b483-247176e3c1a9",
+      "expected": {
+        "actual": "0.125"
+      },
+      "actual": {
+        "actual": "0.125"
+      }
+    },
+    {
+      "name": "function-SQRT",
+      "at": "2026-10-19T03:28:58.812Z",
+      "recordId": "99cd517d-8025-5adb-899b-3c20cb6b087a",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-PI",
+      "at": "2026-10-19T03:28:59.329Z",
+      "recordId": "a3fc4b88-ff32-58db-a00c-17fc26c49d30",
+      "expected": {
+        "actual": "3.1415926535897932384626433832795028842"
+      },
+      "actual": {
+        "actual": "3.1415926535897932384626433832795028842"
+      }
+    },
+    {
+      "name": "function-SIN",
+      "at": "2026-10-19T03:28:59.837Z",
+      "recordId": "fd4ddc79-9a12-5bd5-bc9d-71b1c03c27b8",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-COS",
+      "at": "2026-10-19T03:29:00.379Z",
+      "recordId": "069121a5-d29f-55d5-9f17-d5be6adb74e1",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-TAN",
+      "at": "2026-10-19T03:29:00.903Z",
+      "recordId": "c6e2d041-80ea-543e-bb72-fea131722366",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-EXP",
+      "at": "2026-10-19T03:29:01.462Z",
+      "recordId": "8fe63ca7-4e32-585f-9c26-3ea2bbb79235",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-LN",
+      "at": "2026-10-19T03:29:01.993Z",
+      "recordId": "c8531d59-f2eb-5f71-8c39-8707eacdb83c",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-LOG10",
+      "at": "2026-10-19T03:29:02.513Z",
+      "recordId": "1380dd22-bc75-5c1e-bb6f-fd3259aef053",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-VALUE",
+      "at": "2026-10-19T03:29:03.012Z",
+      "recordId": "5bd4027f-f754-5d2b-9223-a885eb030449",
+      "expected": {
+        "actual": "1.25"
+      },
+      "actual": {
+        "actual": "1.25"
+      }
+    },
+    {
+      "name": "function-NUMBER",
+      "at": "2026-10-19T03:29:03.538Z",
+      "recordId": "246fa4a4-4557-5e79-a253-85b277f58e25",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-BOOLEAN",
+      "at": "2026-10-19T03:29:04.057Z",
+      "recordId": "7b44e225-3fcc-5445-8090-19ae95c8c7d1",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-STRING",
+      "at": "2026-10-19T03:29:04.621Z",
+      "recordId": "9aa6e36c-f99c-559f-bc74-02a7495be108",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-TEXT",
+      "at": "2026-10-19T03:29:05.438Z",
+      "recordId": "b2644a9a-4515-5ee3-b5fb-d7e99a606987",
+      "expected": {
+        "actual": "12.5%"
+      },
+      "actual": {
+        "actual": "12.5%"
+      }
+    },
+    {
+      "name": "function-LEN",
+      "at": "2026-10-19T03:29:06.005Z",
+      "recordId": "29b7bb4a-5bd9-52e0-991a-222b621e0d36",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-LOWER",
+      "at": "2026-10-19T03:29:06.529Z",
+      "recordId": "51af0355-ba2a-5a49-80d4-1a563ea67bdc",
+      "expected": {
+        "actual": "abc汉"
+      },
+      "actual": {
+        "actual": "abc汉"
+      }
+    },
+    {
+      "name": "function-UPPER",
+      "at": "2026-10-19T03:29:07.026Z",
+      "recordId": "dafec795-a8c3-5470-af0c-18edc7469a92",
+      "expected": {
+        "actual": "ABC汉"
+      },
+      "actual": {
+        "actual": "ABC汉"
+      }
+    },
+    {
+      "name": "function-TRIM",
+      "at": "2026-10-19T03:29:07.540Z",
+      "recordId": "b4e16177-5ad0-5646-a4da-79d746f2335c",
+      "expected": {
+        "actual": "a b"
+      },
+      "actual": {
+        "actual": "a b"
+      }
+    },
+    {
+      "name": "exact-aggregate",
+      "at": "2026-10-19T03:33:19.390Z",
+      "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+      "expected": {
+        "total_amount": "44.21",
+        "base_amount": "44.21",
+        "payable_amount": "44.21"
+      },
+      "actual": {
+        "total_amount": "44.21",
+        "base_amount": "44.21",
+        "payable_amount": "44.21"
+      }
+    },
+    {
+      "name": "exact-owned-rows",
+      "at": "2026-10-19T03:33:19.401Z",
+      "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+      "expected": [
+        "28.53",
+        "15.68"
+      ],
+      "actual": [
+        "28.53",
+        "15.68"
+      ]
+    },
+    {
+      "name": "forged-parent",
+      "at": "2026-10-19T03:33:19.464Z",
+      "status": 400
+    },
+    {
+      "name": "forged-child",
+      "at": "2026-10-19T03:33:19.489Z",
+      "status": 400
+    },
+    {
+      "name": "daily-aggregate",
+      "at": "2026-10-19T03:33:19.867Z",
+      "recordId": "4b4d22db-940e-5f76-a2af-79168a6be04d",
+      "expected": {
+        "total_hours": "8.75",
+        "overtime_hours": "0.75",
+        "completion_rate": "90"
+      },
+      "actual": {
+        "total_hours": "8.75",
+        "overtime_hours": "0.75",
+        "completion_rate": "90"
+      }
+    },
+    {
+      "name": "delivery-aggregate",
+      "at": "2026-10-19T03:33:20.165Z",
+      "recordId": "57337ba5-b2cc-5e8d-b222-3715ed1a74e6",
+      "expected": {
+        "weighted_score": "86"
+      },
+      "actual": {
+        "weighted_score": "86"
+      }
+    },
+    {
+      "name": "asset-aggregate",
+      "at": "2026-10-19T03:33:20.478Z",
+      "recordId": "387b5e9b-9d42-53c9-9956-a08c4bb4f929",
+      "expected": {
+        "total_quantity": "3",
+        "total_amount": "2900",
+        "remaining_budget": "2100"
+      },
+      "actual": {
+        "total_quantity": "3",
+        "total_amount": "2900",
+        "remaining_budget": "2100"
+      }
+    },
+    {
+      "name": "function-IF",
+      "at": "2026-10-19T03:33:20.693Z",
+      "recordId": "12d858bd-40a2-5e7c-87e4-5c15142711ce",
+      "expected": {
+        "actual": "yes"
+      },
+      "actual": {
+        "actual": "yes"
+      }
+    },
+    {
+      "name": "function-IFERROR",
+      "at": "2026-10-19T03:33:20.892Z",
+      "recordId": "9088691b-e59d-5c13-b2c2-a05a98801c59",
+      "expected": {
+        "actual": "fallback"
+      },
+      "actual": {
+        "actual": "fallback"
+      }
+    },
+    {
+      "name": "function-AND",
+      "at": "2026-10-19T03:33:21.128Z",
+      "recordId": "265f339c-5c86-5e0c-b08e-07f2866d25b5",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-OR",
+      "at": "2026-10-19T03:33:21.331Z",
+      "recordId": "240c5259-302f-5dab-85df-9810cfba9700",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-NOT",
+      "at": "2026-10-19T03:33:21.540Z",
+      "recordId": "5fa75dd2-a4c5-5c09-bf3e-c365d4b11b66",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-ISBLANK",
+      "at": "2026-10-19T03:33:21.779Z",
+      "recordId": "0f598690-a3c4-5627-8294-485e14832c25",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-ISNUMBER",
+      "at": "2026-10-19T03:33:21.971Z",
+      "recordId": "0e3c532e-670d-5817-8ff3-ea72c307e9c8",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-ISTEXT",
+      "at": "2026-10-19T03:33:22.136Z",
+      "recordId": "4b5f88f2-f812-5de2-a89f-994654691ee8",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-COALESCE",
+      "at": "2026-10-19T03:33:22.348Z",
+      "recordId": "daa2e373-dd7b-5c89-ba59-f26beeafc84b",
+      "expected": {
+        "actual": "available"
+      },
+      "actual": {
+        "actual": "available"
+      }
+    },
+    {
+      "name": "function-SUM",
+      "at": "2026-10-19T03:33:22.538Z",
+      "recordId": "80dbc5f6-1157-54af-9627-a07fa1ae8eb5",
+      "expected": {
+        "actual": "6"
+      },
+      "actual": {
+        "actual": "6"
+      }
+    },
+    {
+      "name": "function-AVERAGE",
+      "at": "2026-10-19T03:33:22.704Z",
+      "recordId": "ee939807-ba88-552b-a500-4c59c15d9f7a",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-MIN",
+      "at": "2026-10-19T03:33:22.900Z",
+      "recordId": "a5de4b15-3bce-5aae-9cf0-66cb2489bc85",
+      "expected": {
+        "actual": "-2"
+      },
+      "actual": {
+        "actual": "-2"
+      }
+    },
+    {
+      "name": "function-MAX",
+      "at": "2026-10-19T03:33:23.077Z",
+      "recordId": "c52288be-0db2-59f1-b69e-05925c05bef2",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-COUNT",
+      "at": "2026-10-19T03:33:23.235Z",
+      "recordId": "83160d53-78e3-58ee-b3df-ea93f8785af8",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-COUNTA",
+      "at": "2026-10-19T03:33:23.404Z",
+      "recordId": "b95760ef-faa4-5d9f-853e-a00c031e6d28",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-PRODUCT",
+      "at": "2026-10-19T03:33:23.563Z",
+      "recordId": "2933ba15-af16-5e64-91e4-84be92cbd794",
+      "expected": {
+        "actual": "3.6"
+      },
+      "actual": {
+        "actual": "3.6"
+      }
+    },
+    {
+      "name": "function-ABS",
+      "at": "2026-10-19T03:33:23.764Z",
+      "recordId": "010973c6-916e-5a5b-bc36-2e90c5506096",
+      "expected": {
+        "actual": "1.25"
+      },
+      "actual": {
+        "actual": "1.25"
+      }
+    },
+    {
+      "name": "function-SIGN",
+      "at": "2026-10-19T03:33:23.925Z",
+      "recordId": "af36b08f-2007-575a-a307-9427223b33a8",
+      "expected": {
+        "actual": "-1"
+      },
+      "actual": {
+        "actual": "-1"
+      }
+    },
+    {
+      "name": "function-INT",
+      "at": "2026-10-19T03:33:24.080Z",
+      "recordId": "7336fd2d-2333-530f-b730-90b6d974904c",
+      "expected": {
+        "actual": "-2"
+      },
+      "actual": {
+        "actual": "-2"
+      }
+    },
+    {
+      "name": "function-ROUND",
+      "at": "2026-10-19T03:33:24.247Z",
+      "recordId": "60c67256-b083-516c-8b1a-04f6cd3e8ae4",
+      "expected": {
+        "actual": "1.24"
+      },
+      "actual": {
+        "actual": "1.24"
+      }
+    },
+    {
+      "name": "function-ROUNDUP",
+      "at": "2026-10-19T03:33:24.436Z",
+      "recordId": "6ce71cc9-70e7-5889-8092-3adbb7955001",
+      "expected": {
+        "actual": "-1.24"
+      },
+      "actual": {
+        "actual": "-1.24"
+      }
+    },
+    {
+      "name": "function-ROUNDDOWN",
+      "at": "2026-10-19T03:33:24.596Z",
+      "recordId": "fbf018bd-a4b5-5f77-83b8-2d6da91d6fd5",
+      "expected": {
+        "actual": "-1.23"
+      },
+      "actual": {
+        "actual": "-1.23"
+      }
+    },
+    {
+      "name": "function-TRUNC",
+      "at": "2026-10-19T03:33:24.775Z",
+      "recordId": "cd55e88a-652c-5364-ad4c-f85126b713c2",
+      "expected": {
+        "actual": "-1"
+      },
+      "actual": {
+        "actual": "-1"
+      }
+    },
+    {
+      "name": "function-MOD",
+      "at": "2026-10-19T03:33:24.933Z",
+      "recordId": "f584a63e-b825-5c52-a738-127083316813",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-POWER",
+      "at": "2026-10-19T03:33:25.092Z",
+      "recordId": "027dfff2-cfc5-51bd-b483-247176e3c1a9",
+      "expected": {
+        "actual": "0.125"
+      },
+      "actual": {
+        "actual": "0.125"
+      }
+    },
+    {
+      "name": "function-SQRT",
+      "at": "2026-10-19T03:33:25.379Z",
+      "recordId": "99cd517d-8025-5adb-899b-3c20cb6b087a",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-PI",
+      "at": "2026-10-19T03:33:25.638Z",
+      "recordId": "a3fc4b88-ff32-58db-a00c-17fc26c49d30",
+      "expected": {
+        "actual": "3.1415926535897932384626433832795028842"
+      },
+      "actual": {
+        "actual": "3.1415926535897932384626433832795028842"
+      }
+    },
+    {
+      "name": "function-SIN",
+      "at": "2026-10-19T03:33:25.887Z",
+      "recordId": "fd4ddc79-9a12-5bd5-bc9d-71b1c03c27b8",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-COS",
+      "at": "2026-10-19T03:33:26.123Z",
+      "recordId": "069121a5-d29f-55d5-9f17-d5be6adb74e1",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-TAN",
+      "at": "2026-10-19T03:33:26.327Z",
+      "recordId": "c6e2d041-80ea-543e-bb72-fea131722366",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-EXP",
+      "at": "2026-10-19T03:33:26.485Z",
+      "recordId": "8fe63ca7-4e32-585f-9c26-3ea2bbb79235",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-LN",
+      "at": "2026-10-19T03:33:26.643Z",
+      "recordId": "c8531d59-f2eb-5f71-8c39-8707eacdb83c",
+      "expected": {
+        "actual": "0"
+      },
+      "actual": {
+        "actual": "0"
+      }
+    },
+    {
+      "name": "function-LOG10",
+      "at": "2026-10-19T03:33:26.795Z",
+      "recordId": "1380dd22-bc75-5c1e-bb6f-fd3259aef053",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-VALUE",
+      "at": "2026-10-19T03:33:26.956Z",
+      "recordId": "5bd4027f-f754-5d2b-9223-a885eb030449",
+      "expected": {
+        "actual": "1.25"
+      },
+      "actual": {
+        "actual": "1.25"
+      }
+    },
+    {
+      "name": "function-NUMBER",
+      "at": "2026-10-19T03:33:27.158Z",
+      "recordId": "246fa4a4-4557-5e79-a253-85b277f58e25",
+      "expected": {
+        "actual": "1"
+      },
+      "actual": {
+        "actual": "1"
+      }
+    },
+    {
+      "name": "function-BOOLEAN",
+      "at": "2026-10-19T03:33:27.317Z",
+      "recordId": "7b44e225-3fcc-5445-8090-19ae95c8c7d1",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-STRING",
+      "at": "2026-10-19T03:33:27.476Z",
+      "recordId": "9aa6e36c-f99c-559f-bc74-02a7495be108",
+      "expected": {
+        "actual": "TRUE"
+      },
+      "actual": {
+        "actual": "TRUE"
+      }
+    },
+    {
+      "name": "function-TEXT",
+      "at": "2026-10-19T03:33:27.635Z",
+      "recordId": "b2644a9a-4515-5ee3-b5fb-d7e99a606987",
+      "expected": {
+        "actual": "12.5%"
+      },
+      "actual": {
+        "actual": "12.5%"
+      }
+    },
+    {
+      "name": "function-LEN",
+      "at": "2026-10-19T03:33:27.835Z",
+      "recordId": "29b7bb4a-5bd9-52e0-991a-222b621e0d36",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-LOWER",
+      "at": "2026-10-19T03:33:27.988Z",
+      "recordId": "51af0355-ba2a-5a49-80d4-1a563ea67bdc",
+      "expected": {
+        "actual": "abc汉"
+      },
+      "actual": {
+        "actual": "abc汉"
+      }
+    },
+    {
+      "name": "function-UPPER",
+      "at": "2026-10-19T03:33:28.228Z",
+      "recordId": "dafec795-a8c3-5470-af0c-18edc7469a92",
+      "expected": {
+        "actual": "ABC汉"
+      },
+      "actual": {
+        "actual": "ABC汉"
+      }
+    },
+    {
+      "name": "function-TRIM",
+      "at": "2026-10-19T03:33:28.494Z",
+      "recordId": "b4e16177-5ad0-5646-a4da-79d746f2335c",
+      "expected": {
+        "actual": "a b"
+      },
+      "actual": {
+        "actual": "a b"
+      }
+    },
+    {
+      "name": "function-CLEAN",
+      "at": "2026-10-19T03:33:29.184Z",
+      "recordId": "ab456dee-933b-5131-a301-0927c7a0875c",
+      "expected": {
+        "actual": "ab"
+      },
+      "actual": {
+        "actual": "ab"
+      }
+    },
+    {
+      "name": "function-EXACT",
+      "at": "2026-10-19T03:33:29.690Z",
+      "recordId": "1790abbc-6922-5fcd-842b-7d617b9191c8",
+      "expected": {
+        "actual": "FALSE"
+      },
+      "actual": {
+        "actual": "FALSE"
+      }
+    },
+    {
+      "name": "function-CONCAT",
+      "at": "2026-10-19T03:33:30.145Z",
+      "recordId": "b96db516-c1f6-5c67-bec6-57b7ac9e3c0e",
+      "expected": {
+        "actual": "a1TRUE"
+      },
+      "actual": {
+        "actual": "a1TRUE"
+      }
+    },
+    {
+      "name": "function-CONCATENATE",
+      "at": "2026-10-19T03:33:30.616Z",
+      "recordId": "d8edd537-0b9a-5063-b517-98e18196339a",
+      "expected": {
+        "actual": "ab"
+      },
+      "actual": {
+        "actual": "ab"
+      }
+    },
+    {
+      "name": "function-TEXTJOIN",
+      "at": "2026-10-19T03:33:31.076Z",
+      "recordId": "9596c839-8157-5690-9098-06b990d04cee",
+      "expected": {
+        "actual": "a,b"
+      },
+      "actual": {
+        "actual": "a,b"
+      }
+    },
+    {
+      "name": "function-LEFT",
+      "at": "2026-10-19T03:33:31.526Z",
+      "recordId": "68fcbd18-900d-5cd9-bb36-02426cdd37a2",
+      "expected": {
+        "actual": "😀汉"
+      },
+      "actual": {
+        "actual": "😀汉"
+      }
+    },
+    {
+      "name": "function-RIGHT",
+      "at": "2026-10-19T03:33:32.038Z",
+      "recordId": "13a2dd78-781f-5761-8704-499ce7d2182a",
+      "expected": {
+        "actual": "😀"
+      },
+      "actual": {
+        "actual": "😀"
+      }
+    },
+    {
+      "name": "function-MID",
+      "at": "2026-10-19T03:33:32.528Z",
+      "recordId": "b5b2cf2e-8e7f-5a89-85cc-6d7f15b72a32",
+      "expected": {
+        "actual": "😀"
+      },
+      "actual": {
+        "actual": "😀"
+      }
+    },
+    {
+      "name": "function-REPT",
+      "at": "2026-10-19T03:33:32.980Z",
+      "recordId": "e1ec7860-9742-5734-98af-24c95a888bc7",
+      "expected": {
+        "actual": "汉汉汉"
+      },
+      "actual": {
+        "actual": "汉汉汉"
+      }
+    },
+    {
+      "name": "function-SUBSTITUTE",
+      "at": "2026-10-19T03:33:33.441Z",
+      "recordId": "8ac96499-2758-56b7-a9cb-683816296cbb",
+      "expected": {
+        "actual": "a-b-x"
+      },
+      "actual": {
+        "actual": "a-b-x"
+      }
+    },
+    {
+      "name": "function-REPLACE",
+      "at": "2026-10-19T03:33:33.905Z",
+      "recordId": "0c706a63-26af-577f-b408-5504dbd2ecfd",
+      "expected": {
+        "actual": "汉字日"
+      },
+      "actual": {
+        "actual": "汉字日"
+      }
+    },
+    {
+      "name": "function-FIND",
+      "at": "2026-10-19T03:33:34.329Z",
+      "recordId": "a552c540-2ac3-5e94-8dd0-915fffa066a0",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-SEARCH",
+      "at": "2026-10-19T03:33:34.798Z",
+      "recordId": "5e2820e6-7cff-5c3a-a02d-a995b7469ae8",
+      "expected": {
+        "actual": "3"
+      },
+      "actual": {
+        "actual": "3"
+      }
+    },
+    {
+      "name": "function-DATE",
+      "at": "2026-10-19T03:33:35.271Z",
+      "recordId": "209a50be-ae49-52e1-8039-a80af7b6d2bb",
+      "expected": {
+        "actual": "2024-03-01"
+      },
+      "actual": {
+        "actual": "2024-03-01"
+      }
+    },
+    {
+      "name": "function-DATEVALUE",
+      "at": "2026-10-19T03:33:35.694Z",
+      "recordId": "d96b3a8c-1b8d-528e-99f9-597cce81af8c",
+      "expected": {
+        "actual": "2024-02-29"
+      },
+      "actual": {
+        "actual": "2024-02-29"
+      }
+    },
+    {
+      "name": "function-TODAY",
+      "at": "2026-10-19T03:33:36.168Z",
+      "recordId": "a8a01a94-57f0-55c1-a45f-fb9d240d5e87",
+      "expected": {},
+      "actual": {}
+    },
+    {
+      "name": "server-clock-TODAY",
+      "at": "2026-10-19T03:33:36.169Z",
+      "recordId": "a8a01a94-57f0-55c1-a45f-fb9d240d5e87",
+      "actual": "2026-10-19"
+    },
+    {
+      "name": "function-NOW",
+      "at": "2026-10-19T03:33:36.650Z",
+      "recordId": "e38bdf96-7480-5bc3-bda1-e2203fb1f8c1",
+      "expected": {},
+      "actual": {}
+    },
+    {
+      "name": "server-clock-NOW",
+      "at": "2026-10-19T03:33:36.651Z",
+      "recordId": "e38bdf96-7480-5bc3-bda1-e2203fb1f8c1",
+      "actual": "2026-10-19T03:33:36.358146"
+    },
+    {
+      "name": "function-YEAR",
+      "at": "2026-10-19T03:33:37.088Z",
+      "recordId": "cd4d31ed-56f2-57e3-abaa-6d81e42b2170",
+      "expected": {
+        "actual": "2024"
+      },
+      "actual": {
+        "actual": "2024"
+      }
+    },
+    {
+      "name": "function-MONTH",
+      "at": "2026-10-19T03:33:37.541Z",
+      "recordId": "f3e8ce97-0807-5fc5-a587-62bb2e87e05b",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    },
+    {
+      "name": "function-DAY",
+      "at": "2026-10-19T03:33:37.997Z",
+      "recordId": "467cbb46-a7b2-5572-9e16-3936e8d1d339",
+      "expected": {
+        "actual": "29"
+      },
+      "actual": {
+        "actual": "29"
+      }
+    },
+    {
+      "name": "function-DAYS",
+      "at": "2026-10-19T03:33:38.452Z",
+      "recordId": "862e123a-dd37-50c5-9a83-2b05811ba16d",
+      "expected": {
+        "actual": "2"
+      },
+      "actual": {
+        "actual": "2"
+      }
+    }
+  ],
+  "workflowChecks": [
+    {
+      "name": "expense-4800",
+      "at": "2026-10-19T03:33:43.978Z",
+      "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+      "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+      "recordId": "dc5ebef1-38bc-5120-89f8-bcba98333833",
+      "expected": {
+        "total_amount": "4800",
+        "base_amount": "4800"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "d4f1db99-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "finance",
+          "taskId": "d54b1f33-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "财务复核"
+        }
+      ]
+    },
+    {
+      "name": "expense-5000",
+      "at": "2026-10-19T03:34:09.425Z",
+      "submissionId": "b30687fb4b3986d0fd7f91ac221d5f0d5d421e09433d58bf5ffdc4552972c24a",
+      "processInstanceId": "e2e4431b-cb6d-11f1-b1c6-ca62369a9387",
+      "recordId": "33663830-4cd9-5b83-a443-a1580b088dae",
+      "expected": {
+        "total_amount": "5000",
+        "base_amount": "5000"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "e2e44325-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "finance",
+          "taskId": "e30deb3f-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "财务复核"
+        }
+      ]
+    },
+    {
+      "name": "expense-6800",
+      "at": "2026-10-19T03:34:34.464Z",
+      "submissionId": "f877cd3eef91a3886f844452ae7182d1933cf1d3286cd2093c643b7ab5fd95bf",
+      "processInstanceId": "f2208fc7-cb6d-11f1-b1c6-ca62369a9387",
+      "recordId": "243eb98f-6b36-5071-bc85-41a4db66b66e",
+      "expected": {
+        "total_amount": "6800",
+        "base_amount": "6800"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "f2208fd1-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "director",
+          "taskId": "f24afb3b-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "分管负责人审批"
+        },
+        {
+          "actor": "finance",
+          "taskId": "f2716f03-cb6d-11f1-b1c6-ca62369a9387",
+          "taskName": "财务复核"
+        }
+      ]
+    },
+    {
+      "name": "expense-currency-route",
+      "at": "2026-10-19T03:34:59.250Z",
+      "submissionId": "c488158511f8bd295e9dd66a3deb46efa4faaac1e00bf092412921103d885055",
+      "processInstanceId": "0102124b-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "e067a510-2c4e-5852-8e95-9a39da482f98",
+      "expected": {
+        "total_amount": "4800",
+        "base_amount": "6720"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "01021255-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "部门负责人审核"
+        },
+        {
+          "actor": "director",
+          "taskId": "012af71f-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "分管负责人审批"
+        },
+        {
+          "actor": "finance",
+          "taskId": "014d7347-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "财务复核"
+        }
+      ]
+    },
+    {
+      "name": "daily-overtime",
+      "at": "2026-10-19T03:35:24.087Z",
+      "submissionId": "3d460139628c40430b1aa7cfd337f6b95b9068b5facdbc61a92aa86f2e1108f7",
+      "processInstanceId": "0fc5ac8f-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "4600d5e1-1a83-5c16-ae39-7d6fec283db4",
+      "expected": {
+        "total_hours": "8.75",
+        "overtime_hours": "0.75"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "0fc5d3a9-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "负责人确认日报"
+        },
+        {
+          "actor": "director",
+          "taskId": "0fe9fd83-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "超时工作复核"
+        }
+      ]
+    },
+    {
+      "name": "delivery-parallel",
+      "at": "2026-10-19T03:35:49.430Z",
+      "submissionId": "06b8580783d7c02f75062766dde32c411617e6c2fc62d4b8a5b6923434f15cd4",
+      "processInstanceId": "1e8f132b-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "5d3e7fb5-bb07-59d5-a938-4a05d295a080",
+      "expected": {
+        "weighted_score": "86"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "1e8f1339-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "交付负责人评审"
+        },
+        {
+          "actor": "finance",
+          "taskId": "1e8f3a4c-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "测试质量复核"
+        }
+      ]
+    },
+    {
+      "name": "assets-standard",
+      "at": "2026-10-19T03:36:14.357Z",
+      "submissionId": "07b975a72264cc20fe6b28fc2bde8cccc5804309258f0e482a2b694bb37cba12",
+      "processInstanceId": "2daf736e-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "90c99eb0-4c16-54f5-ae03-7d189df33abc",
+      "expected": {
+        "total_amount": "2900",
+        "remaining_budget": "2100"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "2daf7378-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "部门预算审核"
+        },
+        {
+          "actor": "administration",
+          "taskId": "2de5c5c2-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "采购核实"
+        },
+        {
+          "actor": "finance",
+          "taskId": "2e17ab3a-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "资产登记确认"
+        }
+      ]
+    },
+    {
+      "name": "assets-budget-exception",
+      "at": "2026-10-19T03:36:39.205Z",
+      "submissionId": "d89af89213d8bd33b4f3630f36dfb02f19358420196ad2e5649ec140e5cd699f",
+      "processInstanceId": "3c9ed8a2-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "9e94f97e-de70-58b3-9d2a-b9eed0046795",
+      "expected": {
+        "total_amount": "2900",
+        "remaining_budget": "-900"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "3c9ed8ac-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "部门预算审核"
+        },
+        {
+          "actor": "director",
+          "taskId": "3cc46216-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "超预算加签"
+        },
+        {
+          "actor": "administration",
+          "taskId": "3ce46d3e-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "采购核实"
+        },
+        {
+          "actor": "finance",
+          "taskId": "3cff6e56-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "资产登记确认"
+        }
+      ]
+    },
+    {
+      "name": "function-ledger-confirmation",
+      "at": "2026-10-19T03:37:04.237Z",
+      "submissionId": "95b17597685f4fc88be03fcb89bd075b74eb36b6d9c53e8943d3f3bfb025960e",
+      "processInstanceId": "4b55528e-cb6e-11f1-b1c6-ca62369a9387",
+      "recordId": "3338d620-1a6b-5532-96c6-2d8b4921a5c3",
+      "expected": {
+        "actual": "6"
+      },
+      "approvals": [
+        {
+          "actor": "manager",
+          "taskId": "4b555297-cb6e-11f1-b1c6-ca62369a9387",
+          "taskName": "公式验算确认"
+        }
+      ]
+    }
+  ],
+  "permissions": {
+    "restored": true,
+    "deleted": [
+      "879adb3e-af6c-4b3c-9cc4-5db43f9e3798",
+      "d3b1a207-e416-491e-b1d5-f6bc84650483",
+      "b94a62d5-3003-40dc-85fc-1278284622b7",
+      "e92f30fc-7072-4594-b775-80c4305e19a1"
+    ],
+    "checks": [
+      {
+        "name": "hidden-child-source",
+        "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+        "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+        "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+        "rejected": [
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          }
+        ],
+        "hiddenRoot": [
+          "total_amount",
+          "tax_total",
+          "base_amount",
+          "payable_amount",
+          "risk_level"
+        ],
+        "hiddenDetail": [
+          "amount",
+          "tax_amount",
+          "net_amount"
+        ]
+      },
+      {
+        "name": "masked-parent-source",
+        "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+        "submissionId": "f13ff46a64b814c3dcb99e1c316ca3ca4c737b9aa0acae7731b9ade8d82b50d3",
+        "processInstanceId": "d4ec373f-cb6d-11f1-b1c6-ca62369a9387",
+        "rejected": [
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          },
+          {
+            "status": 403,
+            "code": "RESOURCE_ACCESS_DENIED",
+            "messageKey": "app.error.RESOURCE_ACCESS_DENIED"
+          }
+        ],
+        "hiddenRoot": [
+          "total_amount",
+          "tax_total",
+          "base_amount",
+          "payable_amount",
+          "risk_level"
+        ],
+        "hiddenDetail": [
+          "amount",
+          "tax_amount",
+          "net_amount"
+        ]
+      }
+    ],
+    "passed": true,
+    "completedAt": "2026-10-19T03:52:16.494Z"
+  },
+  "backfill": {
+    "version": 2,
+    "beforeCount": 43,
+    "afterCount": 43,
+    "checks": [
+      "37+ real records staged and applied with unchanged row identities",
+      "CLEAN control-character formula change backfilled the existing record",
+      "unchanged computed results preserve record versions"
+    ]
+  },
+  "browser": {
+    "passed": true,
+    "at": "2026-10-19T03:34:25.633Z",
+    "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+    "initial": "44.21",
+    "trial": "46.53",
+    "restored": "44.21",
+    "views": [
+      {
+        "width": 1440,
+        "bounded": true
+      },
+      {
+        "width": 768,
+        "bounded": true
+      },
+      {
+        "width": 390,
+        "bounded": true
+      }
+    ],
+    "noWrites": true
+  },
+  "limitations": [
+    "完整 176 项终验矩阵仍在执行；本文件只记录已经通过的具名业务检查",
+    "取消恢复真实演练发现旧数据库约束和取消后下一版本准入缺陷，已补修复与回归，仍在部署重验",
+    "已有数据新增物理 NOT NULL 计算列的标准迁移流程仍需完成验证"
+  ],
+  "evidenceFiles": [
+    {
+      "name": "business.json",
+      "sha256": "41ed6816500b4790aee6087c357dbd5f930fc6f6ab0fa2442bfb07d6079f7f9c",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    },
+    {
+      "name": "records.json",
+      "sha256": "fd04a729562e2ab0ce0ed3f4cbfde25e6c8f377b4aa4a707d43f599a268ccb8e",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    },
+    {
+      "name": "workflows.json",
+      "sha256": "a126e35674ec7315234c88c8f74153be0b43ec33e8d21c8fac4dd2100d394892",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    },
+    {
+      "name": "browser-records.json",
+      "sha256": "5eaeed2d6e0e7894eaa9ee2d5de263b51c761f454fe324ac9bd1d7465b43cea8",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    },
+    {
+      "name": "permissions.json",
+      "sha256": "ee31a0651922df97593b6b84a10b5d3820c090bd00e71b5cc8dcbf1079b5869b",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    },
+    {
+      "name": "cancellation-migration.json",
+      "sha256": "7d672180e53599e036726b8b6306c373c108ec28011a956379885a95bf5b6368",
+      "visibility": "private operational evidence; credentials excluded from this report"
+    }
+  ]
+}

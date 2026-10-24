@@ -1,0 +1,733 @@
+{
+  "date": "2026-10-21",
+  "status": "dictionary declaration ownership and legacy adapter parity verified; remote registration and complete composition remain unfinished",
+  "counts": {
+    "tests": 455,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "styleFiles": 19,
+    "styleReports": 9,
+    "dictionaries": 8,
+    "items": 27,
+    "installedJars": 329,
+    "declaredFrontendAssets": 101
+  },
+  "projects": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-dictionary-api",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.dictionary.DictionaryContributionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-dictionary-api/build/test-results/test/TEST-org.simplepoint.platform.dictionary.DictionaryContributionTest.xml",
+          "sha256": "c0f542f949cae29d1500acd63076e3ac12040462f1a9d73ca5bf1a89eafaba0a"
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.ModuleCatalogTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+          "sha256": "d12e11be8b50638e708670a84f34145e8943fc6c26df09c99a0bceb68382bae7"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleDefaultsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+          "sha256": "3400456dccce53762b4aa9a31c024628d52702c81b3ca91a6aa77aa81013545a"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleDictionaryPlanTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDictionaryPlanTest.xml",
+          "sha256": "9704b28a3baeea5646748a1902412e7ac846fb3cbf5edd458d8483d46c0a5854"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleHttpPlanTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpPlanTest.xml",
+          "sha256": "05bc6b4c6c4bfa5ae16441c9752a2c5654c1f84dbe2b22a451dffcbdc4fa919b"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleHttpRoutesTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpRoutesTest.xml",
+          "sha256": "8bdbac8426bcf092bd3e69d1a82abd55aa153061340e1c35b89be338e7d3bf40"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleResourcePlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcePlanTest.xml",
+          "sha256": "d8d999f4ea4ff4cc03357ae56a3c2b9359c9f15ddc3c54f2fedfa6d86b73d588"
+        },
+        {
+          "name": "org.simplepoint.platform.composition.ModuleResourcesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml",
+          "sha256": "ca2278111c50bd33331493099afee415ac82b64c6cc22d16ca601295666154f2"
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+          "sha256": "d6fc75e38ff31e2bcc689b29c674f04c9809727fadf2e62f066eba6188ba4fb0"
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest.xml",
+          "sha256": "ed1824788586e6234c4d23d8f8a831ed506f3fce8c0981670b38a1c6fabf5b3c"
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest.xml",
+          "sha256": "220a31e399855a5a7b0f7b0aa601f2eff3e1e2f1e21c0d700efb3cd151fb2e3e"
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest.xml",
+          "sha256": "3c6d17b7717d27e5140ec499f7f0fde88453f0d7f1c55ac842714c7c551fc928"
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest.xml",
+          "sha256": "f312b4342c6a813b6f060d0ecbde2b568f78d9e1cf1bdc982f27fa333e440604"
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest.xml",
+          "sha256": "6fc287b8f6ea3a59d8e509ab5be7144635bc8f2a8ddcfde2faededc6a05540e2"
+        }
+      ]
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 377,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest.xml",
+          "sha256": "af80d24e974372903a529cf97c1c00a1e73296d0c6935a6ff574864912b4e714"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest.xml",
+          "sha256": "10928f9e3a5598f5f255db70ab64df518a345fb62ca063679a681064c567316d"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentDirectoryHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentDirectoryHttpTest.xml",
+          "sha256": "397c1972138ae3923685d03d9089ed0cc4e7760ab1c756dbcb3f6e738f257fd8"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+          "sha256": "d64fa9a872b9e16510ee655a8a6f91bbb21627326c3535559ef17935fee0463a"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+          "sha256": "270eb7f35ce0e1cb62ef0dca24dea64ddf71ff08ba60c4402e41b3873a03ffbf"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest.xml",
+          "sha256": "d78910a4e5739aff5ba067a40e992560f0f9cee9181c6ba8035dfd51759ab00c"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest.xml",
+          "sha256": "7466c24912694a42ccf279fb4a035c4e54c74cda42f6931a31cfcb2d4a141cf2"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+          "tests": 38,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+          "sha256": "cedc868ed34192a315a1eff7b50e7ad605feb2733cabed95572e429f9d6f1ad0"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.I18nTableQueryHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.I18nTableQueryHttpTest.xml",
+          "sha256": "61000a463d28a383ba5a1a830e10e5cf3c1f009930f320eb901a9ee6d871b34f"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.MultipartUploadLimitTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.MultipartUploadLimitTest.xml",
+          "sha256": "e0358438b4a1bf5ec8fb8a1af54ea239ba19c01d31b026384a8b1cee42688556"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+          "sha256": "706d14b1a343c7eeb017313fbb22cb932ca1ef9701deef9e50264bcd5c3a0f32"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest.xml",
+          "sha256": "addc27b313bf44678e283f3261e109767b118daa5c2e1cafff472254e1c3c6f1"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OrganizationSelectionHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+          "sha256": "a0730366813c9d04929460ce2ba967135b48b46f11bac9e34171eb231a5b89b7"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+          "sha256": "1646c6cdfc43be7de2b9b3dd05a41e5de17f45295f5ad17d3a1480f3039a438e"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountBindingTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountBindingTest.xml",
+          "sha256": "9347458afa9c495caf45bd4c3c225fc4f79eba9697713dbdb5f965bc37a93003"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest.xml",
+          "sha256": "43975efd4fb416f0666c0496b9887bba863859cf5633cd598a291e0284e75cfc"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+          "tests": 51,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+          "sha256": "9e39321fa25a1f76999c9fad860732c46008d6381ace4932cfefedc50b9b7bd1"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+          "sha256": "2cd073c127654d34d12168687cb3908680009f2619b5f592a827543c3bf8c6df"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+          "sha256": "7dc40d55766f18a5630305b71ee4cd36c6668aaafd051c5b627b9da88a13f350"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.StorageTableQueryHttpTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.StorageTableQueryHttpTest.xml",
+          "sha256": "3fc8d1aae11f6d5cf03f029c9854b04d2c431687a0e9983b028d229ca9337605"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+          "sha256": "b0afa43552618da60b7531e0ec21f0dffc57315e6dc3df4b094ceda1ef760a40"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest.xml",
+          "sha256": "0a42d8aeac8a41dd77366aa3317890db6f0b483e74534c67d1268260ebc259b0"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantDirectoryHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantDirectoryHttpTest.xml",
+          "sha256": "3f8107082c74955905a2d601d2a0d1dd971b2b5a32d8fecd7f2f8cbcbdf174fd"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantMemberQueryHttpTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantMemberQueryHttpTest.xml",
+          "sha256": "9ce76982ad8d27b4e17740bc3c5475debbfcdabda9f5c68263de024e39549e6e"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+          "sha256": "ece4980ffc178b3651447184ddab658454bc31ca80c1be9f44063066698111f2"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest.xml",
+          "sha256": "103fdd109234493345dcb6dfd68c9434014f91c7146a8655d0eb7b6495242825"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPickerHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPickerHttpTest.xml",
+          "sha256": "e2727d3ef31502cd9d49d7f4b4bbac7965a18f7f8143cfd830940f39a168aa8a"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureAuthorizationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureAuthorizationTest.xml",
+          "sha256": "58aa68639eed6571dc8f0ac3ea24be0e16ec54c10d57abaf69cb9c866f6e9182"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureHttpTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureHttpTest.xml",
+          "sha256": "cf3956f739602117f3046b0d50745a1c6caf6d625ec6115961781b5d98e9c4bb"
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest.xml",
+          "sha256": "c4cbb598a1bc9aa1b132e34a09aa8b8dd5091f42d9bd0d3eb816ead8dd909225"
+        },
+        {
+          "name": "org.simplepoint.common.server.i18n.CommonI18nMessagesTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.i18n.CommonI18nMessagesTest.xml",
+          "sha256": "1ea864fdccc105ae0344b5b5c195dc5666e94dc8c60f8f897ed788727ed7a895"
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest.xml",
+          "sha256": "056bc7b0b35a4bf271cd1b647ed816ba8ed10beef72d25873043d5ab09489e1f"
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest.xml",
+          "sha256": "6d15490736acc11ea2ce07b1a4f2d23e68f417830c89837f9d37352bf19d8bf8"
+        }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/reports/checkstyle/dictionary.xml",
+      "sha256": "918d24b014a4e16c5c15b592183b90a5ceaed89fdea9966d4690130df40c8e2c",
+      "files": 3,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/build/reports/checkstyle/dictionary.xml",
+      "sha256": "3ba5c2eb8c53e519c1494bb7f64e51aafd464c384102fb5639de429574ee32cd",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-api/build/reports/checkstyle/dictionary.xml",
+      "sha256": "0175370f7fb41ac23b9a824618575e2289e0b72e16d5200b134625d1d11dc3cf",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/build/reports/checkstyle/dictionary.xml",
+      "sha256": "1771ad5429e43a48008739fd59407f52c0be45e1191aa367f43d8cadcf1001a9",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/build/reports/checkstyle/dictionary.xml",
+      "sha256": "806082920c81814e134511f8c3d90a1408ae59c62df40075ef8c9fe7c5fe8d36",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/reports/checkstyle/dictionary.xml",
+      "sha256": "8301ff9063823dc52ecfed472383c5bf6feaed0918563e3d10f1c93fdd846762",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/build/reports/checkstyle/dictionary.xml",
+      "sha256": "85cf790212e2b7923f5ed95677ce8faf34d61048d7ce9483ec51baeb09b38bc0",
+      "files": 7,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/dictionary.xml",
+      "sha256": "579089c9c4dda03a1779ce7a1d19edf658f6cdb94525ed6bd4cd6b2424c207d3",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/dictionary.xml",
+      "sha256": "6c1b2ff1d4917bfbf7cf6ab33a0f568d911e0b63ba86240cf70615481b30a3ed",
+      "files": 3,
+      "violations": 0
+    }
+  ],
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-dictionary-api:test :simplepoint-platform:simplepoint-platform-dictionary-api:verifyDictionaryApiDependencies :simplepoint-platform:simplepoint-platform-composition:test :simplepoint-platform:simplepoint-platform-composition:verifyCompositionDependencies :simplepoint-services:simplepoint-service-common:test --tests '*Dictionary*Test' :simplepoint-platform:simplepoint-platform-composition-verification:test --tests '*PlatformDeploymentPlanTest' -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyDictionaryStyle verifyModuleBoundaries :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test --tests '*Dictionary*Test' :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-dictionary-checkstyle.gradle --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyDictionaryStyle verifyModuleBoundaries :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-dictionary-checkstyle.gradle --console=plain"
+  ],
+  "initialFailure": "Second command completed both test tasks but failed the style gate on three missing test braces. Braces were corrected; final command passed style, module boundaries and installDist with frontend enabled. Tests were not rerun for formatting-only braces.",
+  "baseline": {
+    "path": "simplepoint-services/simplepoint-service-common/src/test/resources/bootstrap/legacy-dictionaries.json",
+    "sha256": "c53c8f12ef78c3b185558789d25e7d0e99b744d13ed0dedc0f5ff9a70f48b0ce",
+    "captureSource": "import java.lang.reflect.Proxy;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\nimport java.util.*;\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;\nimport org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary;\nimport org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem;\nimport org.simplepoint.plugin.rbac.tenant.api.service.DictionaryService;\nimport org.simplepoint.plugin.rbac.tenant.api.service.DictionaryItemService;\n\npublic class CaptureLegacyDictionarySeeds {\n  public static void main(String[] args) throws Exception {\n    var output = new ArrayList<Map<String,Object>>();\n    for (String[] entry : List.of(\n        new String[]{\"ExternalIdentityProviderDictionaryInitializer\", \"externalIdentityProviderDictionaryContribution\"},\n        new String[]{\"NotificationDictionaryInitializer\", \"notificationDictionaryBootstrapContribution\"})) {\n      var dictionaries = new ArrayList<Dictionary>();\n      var items = new ArrayList<DictionaryItem>();\n      var loader = CaptureLegacyDictionarySeeds.class.getClassLoader();\n      var dictionariesService = (DictionaryService) Proxy.newProxyInstance(loader, new Class<?>[]{DictionaryService.class},\n          (proxy, method, values) -> {\n            if (method.getName().equals(\"findAll\")) return List.of();\n            if (method.getName().equals(\"create\")) { dictionaries.add((Dictionary) values[0]); return values[0]; }\n            throw new AssertionError(method.getName());\n          });\n      var itemService = (DictionaryItemService) Proxy.newProxyInstance(loader, new Class<?>[]{DictionaryItemService.class},\n          (proxy, method, values) -> {\n            if (method.getName().equals(\"findAll\")) return List.of();\n            if (method.getName().equals(\"create\")) { items.add((DictionaryItem) values[0]); return values[0]; }\n            throw new AssertionError(method.getName());\n          });\n      var type = Class.forName(\"org.simplepoint.common.server.initialize.\" + entry[0]);\n      var factory = (PlatformBootstrapContribution) type.getMethod(entry[1], DictionaryService.class, DictionaryItemService.class)\n          .invoke(type.getConstructor().newInstance(), dictionariesService, itemService);\n      var contribution = factory.contribution();\n      contribution.action().run();\n      var record = new LinkedHashMap<String,Object>();\n      record.put(\"moduleCode\", contribution.moduleCode());\n      record.put(\"contributionKey\", contribution.contributionKey());\n      record.put(\"version\", contribution.version());\n      record.put(\"order\", contribution.order());\n      record.put(\"checksum\", contribution.checksum());\n      record.put(\"dictionaries\", dictionaries.stream().map(d -> Map.of(\n          \"code\", d.getCode(), \"name\", d.getName(), \"description\", d.getDescription(), \"sort\", d.getSort(),\n          \"items\", items.stream().filter(i -> i.getDictionaryCode().equals(d.getCode())).map(i -> Map.of(\n            \"value\",i.getValue(),\"name\",i.getName(),\"i18nKey\",i.getI18nKey(),\"description\",i.getDescription(),\"sort\",i.getSort())).toList())).toList());\n      output.add(record);\n    }\n    Files.writeString(Path.of(args[0]), new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(output)+\"\\n\");\n  }\n}\n",
+    "origin": "captured by invoking pre-change installed Common initializer artifacts with in-memory recording services; no business database access",
+    "currentInstalledMetadataEqual": true
+  },
+  "artifactProbe": {
+    "source": "import java.nio.file.*;\nimport java.util.*;\nimport org.simplepoint.platform.composition.*;\nimport org.simplepoint.platform.dictionary.*;\n\npublic class VerifyDictionaryArtifacts {\n  public static void main(String[] args) throws Exception {\n    var loader = VerifyDictionaryArtifacts.class.getClassLoader();\n    var catalog = ModuleCatalog.discover(loader);\n    var selected = catalog.plan(List.of(\"oidc\", \"notification\"));\n    var declarations = ModuleDictionaryPlan.declarations(selected);\n    if (!declarations.keySet().equals(Set.of(\"oidc\", \"notification\")))\n      throw new AssertionError(\"Missing selected declarations\");\n    if (!ModuleDictionaryPlan.declarations(catalog.plan(List.of(\"identity\"))).isEmpty())\n      throw new AssertionError(\"Unselected dictionaries were discovered\");\n    var codes = new HashSet<String>();\n    int items = 0;\n    for (var declaration : declarations.values()) {\n      for (var dictionary : declaration.dictionaries()) {\n        if (!codes.add(dictionary.code())) throw new AssertionError(\"Duplicate code\");\n        items += dictionary.items().size();\n      }\n    }\n    if (codes.size() != 8 || items != 27) throw new AssertionError(\"Incorrect metadata count\");\n    for (String name : List.of(\n        \"org.simplepoint.platform.dictionary.DictionaryContribution\",\n        \"org.simplepoint.plugin.oidc.api.initialization.ExternalIdentityProviderDictionaries\",\n        \"org.simplepoint.plugin.notification.api.initialization.NotificationDictionaries\")) {\n      var urls = Collections.list(loader.getResources(name.replace('.', '/') + \".class\"));\n      if (urls.size() != 1) throw new AssertionError(\"Duplicate or missing packaged class: \" + name);\n    }\n    System.out.println(\"Installed artifact: two selected dictionary owners, eight dictionaries, 27 items; identity-only plan excludes both; metadata classes packaged once.\");\n  }\n}\n",
+    "command": "/home/ymsl/.jdks/ms-21.0.12.1/bin/java --class-path 'simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/*' /tmp/VerifyDictionaryArtifacts.java",
+    "dictionaryApiJar": {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-platform-dictionary-api.jar",
+      "sha256": "fd4e275b6eefa26bfaa48917a90d7f9c6f98e0d59568d2c56d3585cad189550a"
+    },
+    "jdeps": [
+      "java.base"
+    ],
+    "jdepsCommand": "/home/ymsl/.jdks/ms-21.0.12.1/bin/jdeps --list-deps simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-platform-dictionary-api.jar",
+    "output": "Installed artifact: two selected dictionary owners, eight dictionaries, 27 items; identity-only plan excludes both; metadata classes packaged once."
+  },
+  "sources": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/test/java/org/simplepoint/platform/dictionary/DictionaryContributionTest.java",
+      "sha256": "1d39b38d4451b9bfe2ced43eda22afa1e6d5226b8004d566104c05a3926320b7"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryContribution.java",
+      "sha256": "10a098c8cbde9c29984a53a893426b91268b4dbd0dc9886f1efdd982d83e1b4d"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryDeclaration.java",
+      "sha256": "5e17dab5bb2875ead54ad45ba82218345ab7c73dda9c8c2c1e3b7c00435df208"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DeclarationChecks.java",
+      "sha256": "5d66e2b49f62507733dfb346c68c0beda0638417b7539c02ec4c66124be96405"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryItemDeclaration.java",
+      "sha256": "601a92c8711db4238982f0b78b61d68d5cb87a82968fa0a123d409e5da3044bf"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryDefinitions.java",
+      "sha256": "0fa08aefc98b56503496506a781cbdb634c399d6d2984f75b8cb370caacb1998"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/ModuleDictionaries.java",
+      "sha256": "fb3d3ac781011fe3db8086dab74babe734040903aba8ccbfcb52d8f5a29caace"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleDictionaryPlanTest.java",
+      "sha256": "0d7ca5cf8edc027da1f16be4630fd23c0639a184111abc2f83c8483d6aa5202e"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDictionaryPlan.java",
+      "sha256": "f473053e1f558d7950818741f770980ee08d04fbcad9782e2bb219a6c1e75dc2"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/src/main/java/org/simplepoint/plugin/oidc/api/initialization/ExternalIdentityProviderDictionaries.java",
+      "sha256": "c63c90ededfdd4c3fb3115acc73006fa512015799eed865e102d707f18d77f19"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-api/src/main/java/org/simplepoint/plugin/notification/api/initialization/NotificationDictionaries.java",
+      "sha256": "f2697c00225e1c79215653ec121e0a031a58856b732b740fa309ae205f4ffe92"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/java/org/simplepoint/plugin/oidc/module/OidcModule.java",
+      "sha256": "a4da1ffb234f65a75a90ad826c6720dcae248b0ad47a3b420df3d3a387a97fca"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/src/main/java/org/simplepoint/plugin/notification/module/NotificationModule.java",
+      "sha256": "30967908c6ce60e261edcfb2d9751fe69f8b7695ea82fdbc9bfe70c82517ed4d"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/BuiltInDictionaryRegistrar.java",
+      "sha256": "5ca7abdfdbdde9b44996949dc2a7f10bee954b6673488b09cca08e3693e192dd"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/ExternalIdentityProviderDictionaryInitializer.java",
+      "sha256": "5332d113b2f8ccd72d9cdd20d94cafe9cb4af93353af6f732fd64b7ace55d894"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializer.java",
+      "sha256": "f96407d49d4636360e93cf1e27946b0230c9b9b4213467b3f80c472d49917275"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/DictionaryDeclarationCompatibilityTest.java",
+      "sha256": "9d5f613a5c5e7613091323c7835ce32d841b8a7032df129506853cbf3406a37d"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java",
+      "sha256": "f137afd18a6e89926172dcd3b5687c25da56be90703028ed04e54c4e5dfbaa09"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java",
+      "sha256": "622f4caa0296ba02f9f02abba9c18de95bd3850db181a3ec60d2bf5a45eb74f6"
+    },
+    {
+      "path": "build.gradle.kts",
+      "sha256": "b07e981534681e15c6cb57f9c64d72fed83a4e100205a8325885b6d0dbb7bd6b"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "0510d1ed516da4fc8f60b28e32ede755fef35d30f4c1e56aa4e63bd606332205"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/build.gradle.kts",
+      "sha256": "dd99c9b341075db6d486e81c67f9dc6c34356bbac9657c664ce70a38a3f579e6"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build.gradle.kts",
+      "sha256": "c8222697ec9a75bb43d62d20c06a8cc8a09614934a0e81110b9b65abbb5443d7"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/README.md",
+      "sha256": "704e79e319e68aa6d76c21b87c66a370fbe0bb621d918ad5dafefc37d3a4c18a"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/README.md",
+      "sha256": "c54ad65385a48ef6640448ee7987d67f29abf91115277620f13cd0cd4aefce7c"
+    },
+    {
+      "path": "doc/design/modular_service_composition_plan.md",
+      "sha256": "9f8131538dc0bbe39d3bdec67d5d36b4277393af5293d4429eeaa831b115db5a"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build.gradle.kts",
+      "sha256": "c76d52373397c9ab18b747cf423c2b8e7ee90b48d66eb41f2ad6745e54ea99c7"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/build.gradle.kts",
+      "sha256": "acd8a56e2260b09e77ec57a02a7e5ad090fd35ade18521909658fee793d6f2de"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-api/build.gradle.kts",
+      "sha256": "6e574308f5a0f68d0029e61efcc7fabf3a4c18039f88c29fe0942bd91741a649"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/resources/bootstrap/legacy-dictionaries.json",
+      "sha256": "c53c8f12ef78c3b185558789d25e7d0e99b744d13ed0dedc0f5ff9a70f48b0ce"
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-dictionary-targeted.log",
+      "sha256": "764874d20922238432a9f0712b900b7c2ace165846ec863043d8e7666816f1e4"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-final.log",
+      "sha256": "1491c4adf6a4d19c314567de70b1b8490706ead71190cac970e9c5ac53e120d5"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-package.log",
+      "sha256": "7c614d48b62593503f958bc45a4c989a4db2766d09736a31032c4349695a5f07"
+    }
+  ],
+  "limits": [
+    "No remote dictionary registration endpoint or authorization policy added.",
+    "No module bootstrap remote application or historical ledger adoption yet.",
+    "Existing local registration refresh semantics retained, including enabled=true; no new atomicity or concurrency guarantee.",
+    "Planning and installed artifact checks are not end-to-end deployment acceptance.",
+    "No production deployment, database/Consul mutation, commit or push."
+  ],
+  "styleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-dictionary-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleDictionary', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyDictionaryStyle') { dependsOn checks }\n}\n",
+  "styleSourcePaths": [
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/test/java/org/simplepoint/platform/dictionary/DictionaryContributionTest.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryContribution.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryDeclaration.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DeclarationChecks.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryItemDeclaration.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/DictionaryDefinitions.java",
+    "simplepoint-platform/simplepoint-platform-dictionary-api/src/main/java/org/simplepoint/platform/dictionary/ModuleDictionaries.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleDictionaryPlanTest.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDictionaryPlan.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/src/main/java/org/simplepoint/plugin/oidc/api/initialization/ExternalIdentityProviderDictionaries.java",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-api/src/main/java/org/simplepoint/plugin/notification/api/initialization/NotificationDictionaries.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/java/org/simplepoint/plugin/oidc/module/OidcModule.java",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-module/src/main/java/org/simplepoint/plugin/notification/module/NotificationModule.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/BuiltInDictionaryRegistrar.java",
+    "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/ExternalIdentityProviderDictionaryInitializer.java",
+    "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializer.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/DictionaryDeclarationCompatibilityTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java"
+  ]
+}

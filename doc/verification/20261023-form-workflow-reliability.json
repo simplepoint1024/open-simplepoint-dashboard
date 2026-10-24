@@ -1,0 +1,299 @@
+{
+  "verifiedAt": "2026-10-23T16:06:28.684046+00:00",
+  "scope": "应用表单校验、只读提交、审批历史、待办/已办、代码加载恢复",
+  "tests": {
+    "backend": {
+      "passed": 364,
+      "skipped": 2,
+      "failed": 0
+    },
+    "frontend": {
+      "passed": 119,
+      "failed": 0
+    },
+    "i18n": {
+      "passed": 6,
+      "failed": 0
+    },
+    "typecheck": true,
+    "strictUiAudit": true,
+    "repeatedHistoryBrowserReads": {
+      "single": 3,
+      "micro": 3,
+      "failed": 0
+    },
+    "requiredReadonlySubmission": {
+      "frontendFeedbackVisible": true,
+      "backendRejected": true,
+      "processNotCreated": true,
+      "negativeDraftRemoved": true
+    },
+    "recordHistoryAuthorization": [
+      {
+        "topology": "single",
+        "checks": [
+          "record-scoped count and actor isolation",
+          "authorized non-owner readonly snapshot",
+          "cross-record snapshot rejected",
+          "non-owner retry rejected",
+          "page permission enforced"
+        ],
+        "at": "2026-10-23T16:02:36.366Z"
+      },
+      {
+        "topology": "micro",
+        "checks": [
+          "record-scoped count and actor isolation",
+          "authorized non-owner readonly snapshot",
+          "cross-record snapshot rejected",
+          "non-owner retry rejected",
+          "page permission enforced"
+        ],
+        "at": "2026-10-23T16:02:37.900Z"
+      }
+    ]
+  },
+  "topologies": {
+    "single": {
+      "origin": "https://single.simplepoint.online:8000",
+      "businessCases": [
+        {
+          "code": "office_meeting_room",
+          "recordId": "2115ac39-1ebd-5310-a2fc-717532672aba",
+          "processInstanceId": "7518",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_daily_report",
+          "recordId": "211d3cfc-9436-5222-8bf7-5a5682f1f366",
+          "processInstanceId": "7535",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "60d6bf15-a242-5dc2-8b73-808103912aee",
+          "processInstanceId": "7552",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "4fca6ccc-9b39-5640-adb9-c98d3b2088ba",
+          "processInstanceId": "7580",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "70af3589-ffa3-5ce2-9f48-ccac70eaffaf",
+          "processInstanceId": "7616",
+          "status": "REJECTED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "f2a0ef29-39d8-5a00-b30a-ad59b31e7948",
+          "processInstanceId": "7632",
+          "status": "COMPLETED"
+        }
+      ],
+      "scenarioChecks": 12,
+      "uiApproval": {
+        "recordId": "9672344a-35ed-5a4d-8fcf-c9517dd53ce6",
+        "processInstanceId": "15001",
+        "taskId": "15010",
+        "readonlyVerified": true,
+        "injectedScriptFailureRecovered": true
+      },
+      "hostJsCssFiles": 348,
+      "modules": [
+        {
+          "name": "common",
+          "assets": 103
+        },
+        {
+          "name": "audit",
+          "assets": 45
+        },
+        {
+          "name": "dna",
+          "assets": 76
+        },
+        {
+          "name": "ai",
+          "assets": 49
+        },
+        {
+          "name": "app",
+          "assets": 54
+        },
+        {
+          "name": "workflow",
+          "assets": 54
+        }
+      ],
+      "assetsVerifiedAt": "2026-10-23T16:00:16.511Z",
+      "moduleAssetCount": 381
+    },
+    "micro": {
+      "origin": "https://home.simplepoint.online:8000",
+      "businessCases": [
+        {
+          "code": "office_meeting_room",
+          "recordId": "1b35afc0-74ca-5897-bbb8-f1452e40fffb",
+          "processInstanceId": "10001",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_daily_report",
+          "recordId": "acc45dfb-67ec-553a-b766-3f93db01362d",
+          "processInstanceId": "10018",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "9eab6bc8-b83d-5f6c-8151-99233b6c41fb",
+          "processInstanceId": "10035",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "cabb3589-fa19-5be7-ba55-81718805d64c",
+          "processInstanceId": "10063",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "171f7745-2c86-5ee8-b7cb-044e4840b258",
+          "processInstanceId": "10099",
+          "status": "REJECTED"
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "1c24b556-143b-5be2-9245-0abd29654d3f",
+          "processInstanceId": "10115",
+          "status": "COMPLETED"
+        }
+      ],
+      "scenarioChecks": 12,
+      "uiApproval": {
+        "recordId": "e8b5c4d2-8aff-5551-9e2a-4d1da3504795",
+        "processInstanceId": "17501",
+        "taskId": "17510",
+        "readonlyVerified": true,
+        "injectedScriptFailureRecovered": true
+      },
+      "hostJsCssFiles": 348,
+      "modules": [
+        {
+          "name": "common",
+          "assets": 103
+        },
+        {
+          "name": "audit",
+          "assets": 45
+        },
+        {
+          "name": "dna",
+          "assets": 76
+        },
+        {
+          "name": "ai",
+          "assets": 49
+        },
+        {
+          "name": "app",
+          "assets": 54
+        },
+        {
+          "name": "workflow",
+          "assets": 54
+        }
+      ],
+      "assetsVerifiedAt": "2026-10-23T16:01:39.439Z",
+      "moduleAssetCount": 381
+    }
+  },
+  "deployment": {
+    "verifiedAt": "2026-10-23T16:02:11.667108+00:00",
+    "services": [
+      {
+        "service": "standalone",
+        "container": "simplepoint-single",
+        "image": "simplepoint-standalone:20261023-form-workflow-r9",
+        "imageId": "sha256:4b950d41f6cd0122c04e695712812965f740d7a60af2379f118a77b4a7742a9e",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "common",
+        "container": "simplepoint203-common-1",
+        "image": "simplepoint203/common:20261023-form-workflow-r9",
+        "imageId": "sha256:3342eeeb4631de7e183fca5a95169efdb8ab83f78111794e4d78edacc8ecc46b",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "authorization",
+        "container": "simplepoint203-authorization-1",
+        "image": "simplepoint203/authorization:20261023-form-workflow-r1",
+        "imageId": "sha256:fd590508c0707482f8f4e8072deae6f2efa1dd80f6b863051f317f5a29d8e84c",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "host",
+        "container": "simplepoint203-host-1",
+        "image": "simplepoint203/host:20261023-form-workflow-r9",
+        "imageId": "sha256:78f0106b0a7254aff9eafe0fb046e42992fc58f96fa163ceffb2437b93814007",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "app",
+        "container": "simplepoint203-app-1",
+        "image": "simplepoint203/app:20261023-form-workflow-r9",
+        "imageId": "sha256:7f735f3beb6a99333404747351cd57c93550fb2a57c23f22eb8253cf30cbb33a",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "dna",
+        "container": "simplepoint203-dna-1",
+        "image": "simplepoint203/dna:20261023-form-workflow-r9",
+        "imageId": "sha256:3cbed7cc99c3031bfbf679b2b415af5b48dae236d38a091f48fb1f543e1014fc",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "workflow",
+        "container": "simplepoint203-workflow-1",
+        "image": "simplepoint203/workflow:20261023-form-workflow-r9",
+        "imageId": "sha256:db8eefce7210403b486879c93e91968fb79325debccd325af02d5362c6c19553",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "ai",
+        "container": "simplepoint203-ai-1",
+        "image": "simplepoint203/ai:20261023-form-workflow-r9",
+        "imageId": "sha256:74e3b24505880072439e80a24c4e1643d0b29d07fd955eb5c9c84e5baf475833",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "auditing",
+        "container": "simplepoint203-auditing-1",
+        "image": "simplepoint203/auditing:20261023-form-workflow-r8",
+        "imageId": "sha256:4c81fd045fcc65f76b635233345043da944cc1521377cd982453ac7670890482",
+        "healthy": true,
+        "completeManifestVerified": true
+      },
+      {
+        "service": "mcp-gateway",
+        "container": "simplepoint203-mcp-gateway-1",
+        "image": "simplepoint203/mcp-gateway:20261023-form-workflow-r1",
+        "imageId": "sha256:1212dc6d4ed2f5437fdafa6510cc32879c753f1f6b6371da46f7941886619e8c",
+        "healthy": true,
+        "completeManifestVerified": true
+      }
+    ]
+  }
+}

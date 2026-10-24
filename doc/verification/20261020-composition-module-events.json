@@ -1,0 +1,248 @@
+{
+  "date": "2026-10-20",
+  "phase": "G05 module event assembly and G06 explicit event storage binding; overall goal remains incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-events:simplepoint-events-composition:check :simplepoint-events:simplepoint-events-rabbit:test :simplepoint-events:simplepoint-events-jdbc:test :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:test --tests \"*ApplicationResourceLifecycleTest\" :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test --tests \"*RecordMaintenanceControlDatabaseTest\" :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries verifyModuleEventsStyle -I /tmp/simplepoint-module-events-checkstyle.gradle -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-events/simplepoint-events-composition",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-events/simplepoint-events-rabbit",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    {
+      "module": "simplepoint-events/simplepoint-events-jdbc",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+      "tests": 188,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 603,
+  "testsSkipped": [
+    "org.simplepoint.events.rabbit.RabbitEventIntegrationTest.unroutableMessageIsNotReportedAsDelivered()",
+    "org.simplepoint.events.rabbit.RabbitEventIntegrationTest.unacknowledgedDeliveryReturnsAfterChannelLoss()",
+    "org.simplepoint.events.rabbit.RabbitEventIntegrationTest.brokerRejectsSpoofedUserIdentity()",
+    "org.simplepoint.events.rabbit.RabbitEventIntegrationTest.confirmedPersistentDeliverySurvivesAbsentConsumerAndRedelivery()",
+    "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest.serializesPostgresqlControlMetadataAndMysqlMaintenance()",
+    "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest.serializesControlMetadataAndPostgresqlMaintenance()"
+  ],
+  "skipExplanation": "Four legacy broker tests require their separate fixed endpoint/credentials. Two DNA maintenance tests require isolated database fixtures. The new two-user real RabbitMQ module test executed with zero skips.",
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-events/simplepoint-events-api/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-events/simplepoint-events-composition/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-events/simplepoint-events-rabbit/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-resource-api/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build/reports/checkstyle/moduleEvents.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-events/simplepoint-events-composition/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-events/simplepoint-events-composition/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml",
+      "violations": 0
+    }
+  ],
+  "scopedStyleFiles": [
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventAssemblyTest.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/FixturePublisher.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventBrokerIntegrationTest.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleBrokerConnectionsTest.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventPlanTest.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/fixture/two/TwoModule.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/fixture/one/OneModule.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRegistry.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventPlan.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleBrokerConnections.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRuntime.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventAutoConfiguration.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/DefaultModuleBrokerConnections.java",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventProperties.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/FormEventDeclarations.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityEventDeclarations.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/RuntimeEventDeclarations.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditEventDeclarations.java",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditLoggingModule.java",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/ModuleEvents.java",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/EventDeclarations.java",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/EventPublication.java",
+    "simplepoint-events/simplepoint-events-rabbit/src/main/java/org/simplepoint/events/rabbit/EventInfrastructureConfiguration.java",
+    "simplepoint-platform/simplepoint-platform-resource-api/src/main/java/org/simplepoint/platform/resource/ResourceLifecycleEvents.java",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ResourceLifecycleSubscriptions.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedEventDeclarationsTest.java",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/FixtureHandler.java"
+  ],
+  "scopedStyleProcedure": "Standard check runs for the new event composition module and actual-artifact architecture verification. Scoped Checkstyle uses unchanged repository checkstyle/google_checks.xml, each owning project test compile classpath and maxWarnings=0. Domain tests with --tests are explicitly filtered above; this is not a full-domain or full-repository result.",
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "passed",
+  "realBroker": {
+    "image": "rabbitmq:4.2-management",
+    "imageId": "sha256:7f79e00af50ce38297eb63a90bfee895d060b57520a22b30620085482a816318",
+    "isolatedFromBusinessEnvironment": true,
+    "vhost": "/module-verification",
+    "users": [
+      "legacy-one",
+      "legacy-two"
+    ],
+    "applicationConfigurePermission": "^$",
+    "writePermission": "only each owner exchange",
+    "readPermission": "only each owner durable subscriber queue",
+    "topology": "admin-preprovisioned durable direct exchanges, quorum queues, delivery-limit=-1 and versioned bindings",
+    "testEnvironmentNames": [
+      "SP_MODULE_EVENT_RABBIT_PORT",
+      "SP_MODULE_EVENT_ONE_PASSWORD",
+      "SP_MODULE_EVENT_TWO_PASSWORD"
+    ],
+    "cleanup": "Temporary container and its anonymous volumes removed; temporary credential file deleted. Business MQ untouched."
+  },
+  "verified": [
+    "Pure module event manifests declare stable aliases, publication versions and durable subscription contracts. Actual app-form/identity/dna-runtime/audit-logging artifacts preserve app/common/dna/auditing identities and selected-module defaults.",
+    "Prototype publishers bind to constructor/factory injection ownership and reject unowned callers, undeclared versions and forged producer identity. No payload or host credential selects an owner.",
+    "Each module has a distinct native/Spring Rabbit connection, explicit module secret, mandatory correlated confirms/returns, preserved TLS and virtual host configuration, and no host credential-provider fallback.",
+    "Spring assembly rejects missing credentials/handlers, unknown binding keys and a mismatched DataSource/transaction manager before starting workers. Static and instance factory handler ownership are exercised.",
+    "Real H2 transactions verify per-owner isolation on shared storage, explicit separate event storage, caller rollback, duplicate inbox receipt, and atomic local effects/inbox completion/outgoing outbox with retry.",
+    "The real broker test starts actual listeners/workers for two identities, completes a request/response through durable queues, rejects cross-owner queue reads and forged user_id, then disconnects one channel. Business outbox writes/storage health remain available while transport health is DOWN; restoration delivers the backlog.",
+    "Legacy single-service event configuration backs off only when ModulePlan exists. Common/Authorization regression and scoped resource lifecycle tests pass."
+  ],
+  "limitations": [
+    "Production database dialects, cluster failover and full domain/topology acceptance remain pending.",
+    "Explicit event storage binding does not yet relocate JPA repositories/entities or provide module database/migration orchestration (G06).",
+    "Deployment-wide provisioning, credentials/ACL installation automation, readiness integration and controlled migration of historical stores remain pending. Runtime topology declaration is intentionally rejected for modular hosts.",
+    "Authorization-host login events and new credential authentication audit still need owned module integration; JDBC authentication migration is incomplete.",
+    "Existing service entrypoints have not been switched to the module event adapter, no production deployment occurred and the standalone service is not delivered."
+  ],
+  "sourceSha256": {
+    "AGENTS.md": "821cd640c8ab18f7ed3c69c42e269d0e81593160e68141c5b743bf6148924df0",
+    "settings.gradle.kts": "b47a296cdef3f2fadbc79c5e8832cdda7ebf27b1b4b663a61f449117dfcf190d",
+    "simplepoint-events/README.md": "b9920b88b45dafeb756ddcc140ef4fddfd07ac7da8056e4e98ff628fa7c85d6f",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/EventDeclarations.java": "5bf8b1272f1c14c56d3ed6b4f4b43be612ae2780290d0a128f71a3f06683f3f8",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/EventPublication.java": "5c3a020f68ea67b369d86e7c85a400995842d8a77c954301cc26bec66f533d77",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/ModuleEvents.java": "3be4505d50aac9050a1c271d97a32d6e0322eacd910006e397ebfbfe2476c5ce",
+    "simplepoint-events/simplepoint-events-composition/README.md": "6e7f86065ea796a3a52576c4b91418899f7d7e80e5bf53eee97eb0a9d83350bf",
+    "simplepoint-events/simplepoint-events-composition/build.gradle.kts": "38353271c7aec0c7146e27acd93b88d617e0ca3bf0defbc469d9b6a866e9e6cb",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/DefaultModuleBrokerConnections.java": "c5b95819440349c8efc1da5f5348a29946ebb9faf17cf112176ae48fceb615d5",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleBrokerConnections.java": "afa2e10be0ca445273fd656d4506e2176f734a49163d5eb3c22aea5f37e84934",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventAutoConfiguration.java": "adc71eeb3b93c30267ba08b94d47ff148e99f855c7bf64b7765e4e3c93f16050",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventPlan.java": "70e666858d9b21ac619e59b5de0f2f2f41e245c8c1185c03666fccaee269bc97",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventProperties.java": "0d6a127d94e8c618af50139b0ea8b6bef65ff9f39b42ff8b033c8f2059a612b2",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRegistry.java": "f503e37fc85d866a51152fccb9c415361038365b4684682377c195b7fefdebf6",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRuntime.java": "352d593c92ca258d79e9f1743f0be7733bae7427575c1080f6a15b23a22d026b",
+    "simplepoint-events/simplepoint-events-composition/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports": "fcf6648f2b92e983dfa681cc9e98366771775d7e5173a6dd62ad4b538d443820",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/FixtureHandler.java": "097218de5772a13a15fae8e19845cd52e15193024ffda65c8f1d6cd13114263f",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/FixturePublisher.java": "0b2dee86ecb9f3a950bf5d88fff32dbfad3b8dcda70530c82fbd7f767c7af8ed",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleBrokerConnectionsTest.java": "448d12274b646bdd923d2fc84f7181ebeb76798b47efcc02340d3c76c4f951aa",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventAssemblyTest.java": "5e8bf12db39f357ab1d638f06a3f43c3717b5ead0016ffd46c192d20c13a50ae",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventBrokerIntegrationTest.java": "cb57692e9402367356e7074ec0029032ec1a2ce34fb4c46ac22d6de1b7fc0892",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventPlanTest.java": "f4142871f865ac375f416928a63579718a453749b53ce87e27c6456fa6d4dcfb",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/fixture/one/OneModule.java": "3eee485a13207f89d6fcd86a70a82543f455ec7e69bbb9f78ac92b95b9e9bf45",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/fixture/two/TwoModule.java": "cde99d4817e0bcdbdc0b9484f8c8c36c827dc4c22fab020069393cb0e61c8939",
+    "simplepoint-events/simplepoint-events-rabbit/src/main/java/org/simplepoint/events/rabbit/EventInfrastructureConfiguration.java": "2600103a25ee6bc060bd2f4eaa3f4894f42d656ebab756e03e4267b78edbf9bb",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "8e2bb3d6d3d12c0b3f1d21cef3cb7f1bea5b44160249ff47e56a3b9b145531cb",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedEventDeclarationsTest.java": "6cfa5aa2e0e8286c6553d8586cf5dbee5e97e735471a8629e1b69a334138b08f",
+    "simplepoint-platform/simplepoint-platform-resource-api/src/main/java/org/simplepoint/platform/resource/ResourceLifecycleEvents.java": "fefae55bdf9ada54f5ca1e6c9364154e65b8db54d6054bf19e51fe493d87f2b9",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java": "7dde264d78af7fd45dd7d9a89c49e4451d7a463307a7f0c2f689ed420bdc7555",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/FormEventDeclarations.java": "1ff6c4de3a9e344fd398e1501d68bc6b6a829e62a1d9e213ae52a8375f1b3848",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ResourceLifecycleSubscriptions.java": "9477f0f47b75a8a7c881d42c5ad8494ed36c6488f7f175238e3d86089974a1d1",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules/app-form.properties": "9607a28e611005af43d2031d06d36cbb82a96718bb80d926b8ebf5ce0af37911",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java": "314a20d21f05fa26d566618fa34006bcdd824f4d32d3e1ea8432233dd0f1a05a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/RuntimeEventDeclarations.java": "fcf2274766ce9bc3a50375a18625fe07a9895cec9c7bb7088e9e8bfd05b1ad53",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalResourceOfflineHandler.java": "e723e416371e68ff05f85a7267449ed8d94dc7ad00cae7ea0296c63af393ec40",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/resources/META-INF/simplepoint/modules/dna-runtime.properties": "9607a28e611005af43d2031d06d36cbb82a96718bb80d926b8ebf5ce0af37911",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditEventDeclarations.java": "e4e978138dfad0fe41a35117e8641dfbecc3d329e92d1abf9164b7d9d2fd28fd",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditLoggingModule.java": "a0f1bac2ea23ec7a2db96531e825c6b18c85de189a906c5c1d08b5a0949c6494",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/resources/META-INF/simplepoint/modules/audit-logging.properties": "9607a28e611005af43d2031d06d36cbb82a96718bb80d926b8ebf5ce0af37911",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build.gradle.kts": "bc9bea8d743d547ea766624d58b2f9b3412a67c7d3fc8cc81a24a60b1dfb1fbf",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityEventDeclarations.java": "e8e30f2f2819051ce6eb7eba6f5b7e2d72c075e419fad61fa63cfc6e7c892fe4",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "532c3ad5fcd4971822b55742ab74f7c10ff1e6ef7c4299273cd8c0c2ba1d041b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity.properties": "81339dcd4ff27b828b05e4c888cb1b3c3926093a1a7c625116da7c168fc38eb7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedResourceOfflineHandler.java": "0df012be0820481947aa51940e61e0eb95cee8556b42bb4ef08f93e33ef78f92"
+  }
+}

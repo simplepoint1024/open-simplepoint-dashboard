@@ -1,0 +1,420 @@
+{
+  "date": "2026-10-20",
+  "recorded_at_utc": "2026-10-20T15:39:00.412387+00:00",
+  "scope": "G06 selected-module persistence assembly and event storage binding; S3 remains in progress",
+  "command_script": "#!/usr/bin/env bash\nset -euo pipefail\nexport JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1\n./gradlew -I /tmp/simplepoint-persistence-checkstyle.gradle \\\n  verifyPersistenceStyle verifyModuleBoundaries \\\n  :simplepoint-data:simplepoint-data-jpa-composition:checkstyleMain \\\n  :simplepoint-data:simplepoint-data-jpa-composition:checkstyleTest \\\n  :simplepoint-data:simplepoint-data-jpa-composition:test \\\n  :simplepoint-platform:simplepoint-platform-composition:test \\\n  :simplepoint-platform:simplepoint-platform-composition-verification:test \\\n  :simplepoint-events:simplepoint-events-composition:test \\\n  :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-implementation:test \\\n  :simplepoint-services:simplepoint-service-ai:test \\\n  :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test \\\n  :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:test \\\n  :simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-implementation:test \\\n  :simplepoint-services:simplepoint-service-common:test \\\n  :simplepoint-services:simplepoint-service-authorization:test \\\n  -Psimplepoint.frontend.skip=true --console=plain\n",
+  "test_totals": {
+    "tests": 951,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2
+  },
+  "tests": [
+    {
+      "project": ":simplepoint-data:simplepoint-data-jpa-composition",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-data/simplepoint-data-jpa-composition/build/test-results/test/TEST-org.simplepoint.data.jpa.composition.ModulePersistenceTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedInitializationTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-events:simplepoint-events-composition",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "xml_reports": [
+        "simplepoint-events/simplepoint-events-composition/build/test-results/test/TEST-org.simplepoint.events.composition.ModuleBrokerConnectionsTest.xml",
+        "simplepoint-events/simplepoint-events-composition/build/test-results/test/TEST-org.simplepoint.events.composition.ModuleEventAssemblyTest.xml",
+        "simplepoint-events/simplepoint-events-composition/build/test-results/test/TEST-org.simplepoint.events.composition.ModuleEventBrokerIntegrationTest.xml",
+        "simplepoint-events/simplepoint-events-composition/build/test-results/test/TEST-org.simplepoint.events.composition.ModuleEventPlanTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-implementation",
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.repository.AiEmbeddingModelOptionsDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.AiGenerationAdapterRegistryTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.AiGenerationAdaptersTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.NativeOpenAiGatewayTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.OpenAiProviderAdapterTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.ProviderHttpSupportTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.impl.AiApiKeyPagePermissionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.impl.AiGatewayAccessServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.impl.AiModelCatalogServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.schedule.AiIdlePollBackoffTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.security.AiApiKeyHasherTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.security.AiCredentialCipherTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.support.AiButtonAuthorityTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.support.AiDiscoveredPricingParserTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.support.AiModelBillingCalculatorTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.support.AiModelTypeDetectorTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicyTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-services:simplepoint-service-ai",
+      "tests": 155,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "xml_reports": [
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.ai.server.AiConfigurationLifecycleHttpTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.ai.server.AiTableQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.ai.server.RuntimeTableQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogPermissionsTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiApiKeyControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiBillingControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiCompatibleGatewayControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiModelDebugControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiModelDefinitionControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.controller.AiProviderDefinitionControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.gateway.AiCompatibilityMapperTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.rest.gateway.OpenAiResponsesProtocolTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.AiGatewayResourcePersistenceTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.core.service.adapter.NativeOpenAiClientTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.knowledge.rest.controller.AiKnowledgeBaseControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpErrorContractTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpGatewayControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpOauthBrowserCallbackControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpServerDefinitionControllerTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpWorkbenchPermissionsTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.runtime.rest.config.AiRuntimeInternalSecurityConfigurationTest.xml",
+        "simplepoint-services/simplepoint-service-ai/build/test-results/test/TEST-org.simplepoint.plugin.ai.runtime.rest.controller.AiRuntimeRestExceptionHandlerTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation",
+      "tests": 168,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.base.repository.RevokedGrantDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.aspect.DataScopeAspectTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.configuration.UserAutoRegistrationInitializerTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessReadQueryTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.PermissionMetadataQueryDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.PlatformAccountDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.RoleScopeBindingServiceTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.ScopePolicyDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.UserDirectoryBoundaryTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.UserDirectoryDatabaseTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.UserPreferenceServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.UserRemoteBoundaryTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.UsersServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationPropertiesTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-implementation",
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.s3.support.S3CompatibleObjectStorageDriverTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.impl.ObjectStorageObjectServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.impl.ObjectStorageProviderConfigServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.impl.ObjectStorageTenantQuotaServiceImplTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.impl.StorageActionsTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.initialize.ObjectStorageMinioInitializerTest.xml",
+        "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/test-results/test/TEST-org.simplepoint.plugin.storage.service.security.ObjectStorageCredentialCipherTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-services:simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentDirectoryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.I18nTableQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.MultipartUploadLimitTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountBindingTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.StorageTableQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantDirectoryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantMemberQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPickerHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureAuthorizationTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.i18n.CommonI18nMessagesTest.xml",
+        "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest.xml"
+      ]
+    },
+    {
+      "project": ":simplepoint-services:simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_reports": [
+        "simplepoint-services/simplepoint-service-authorization/build/test-results/test/TEST-org.simplepoint.authorization.server.listener.AuthenticationSecretMigrationTest.xml",
+        "simplepoint-services/simplepoint-service-authorization/build/test-results/test/TEST-org.simplepoint.authorization.server.listener.LoginAuditDurabilityTest.xml"
+      ]
+    }
+  ],
+  "style": {
+    "reports": [
+      {
+        "report": "simplepoint-data/simplepoint-data-jpa-composition/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-events/simplepoint-events-composition/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-services/simplepoint-service-ai/build/reports/checkstyle/persistence.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-data/simplepoint-data-jpa-composition/build/reports/checkstyle/main.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-data/simplepoint-data-jpa-composition/build/reports/checkstyle/test.xml",
+        "violations": 0
+      }
+    ],
+    "sources": [
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/EnableModulePersistence.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceCandidates.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceConfiguration.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistencePlan.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceRegistrar.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModuleTransactionAttributes.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/data/jpa/composition/ModulePersistenceTest.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaModule.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaRecord.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaRepository.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaService.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaModule.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaRecord.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaRepository.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaService.java",
+      "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/ForeignTransactions.java",
+      "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRegistry.java",
+      "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventAssemblyTest.java",
+      "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryModule.java",
+      "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java",
+      "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RepositoryOwnershipTest.java",
+      "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModulePersistence.java",
+      "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleStorageBindings.java",
+      "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/java/org/simplepoint/plugin/ai/core/service/impl/AiModelDefinitionServiceImpl.java",
+      "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/module/AiKnowledgeModule.java",
+      "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/java/org/simplepoint/plugin/ai/mcp/module/AiMcpModule.java",
+      "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java",
+      "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java",
+      "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java",
+      "simplepoint-services/simplepoint-service-ai/src/test/java/org/simplepoint/ai/server/AiConfigurationLifecycleHttpTest.java"
+    ],
+    "init_script": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-persistence-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstylePersistence', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyPersistenceStyle') { dependsOn checks }\n}\n",
+    "note": "Scoped reports cover the listed sources; the 16 further legacy constructor/call-site migration files have targeted formatting and functional regressions, not a full legacy-module Checkstyle claim."
+  },
+  "module_boundary_gate": "verifyModuleBoundaries passed",
+  "skipped_tests": [
+    {
+      "test": "ModuleEventBrokerIntegrationTest.realChannelsExchangeDurableFactsAndKeepBusinessWritesAvailableDuringTransportOutage",
+      "reason": "SP_MODULE_EVENT_RABBIT_PORT was not supplied; no live broker scenario was run in this increment"
+    },
+    {
+      "test": "NativeOpenAiClientTest.realCodexExecutesToolAndReturnsItsResultThroughGateway",
+      "reason": "SIMPLEPOINT_CODEX_BINARY was not supplied; no live external Codex process was invoked"
+    }
+  ],
+  "scenarios": [
+    "Selected-module entity and Spring Data repository assembly",
+    "Default shared store rollback and independent store isolation",
+    "Module-bound resources override unrelated primary DataSource candidates",
+    "Preserved read-only and checked-exception rollback semantics",
+    "JPA, JDBC and outbox commit/rollback in one owning transaction",
+    "Reject conflicting co-store assignments, broad scans and foreign transaction qualifiers",
+    "Default schema validation does not create business tables",
+    "Event channels inherit owning persistence bindings and reject foreign overrides",
+    "Real domain mappings and 88 repositories initialize in one shared store and three independent H2 stores",
+    "Joint EnablePlatformModules and EnableModulePersistence discovery with writes to two stores",
+    "Architecture checks for shared entity ownership, local repository edges and forbidden JPA resource annotation injection",
+    "Legacy AI, Common, identity, storage, authorization and resource-route regressions"
+  ],
+  "limits": [
+    "H2 verification only; production PostgreSQL/MySQL migration not validated by this increment",
+    "Versioned module migrations, legacy schema adoption and historical initialization recovery remain pending",
+    "Legacy service entrypoints have not switched to the persistence assembler",
+    "Shared OAuth HTTP infrastructure still needs explicit storage ownership during host extraction",
+    "No distributed atomic transactions or automatic data relocation",
+    "No complete one-JVM standalone service, frontend packaging, real authentication/workflow/event/UI topology acceptance yet",
+    "No production deployment, commit or push performed"
+  ],
+  "source_sha256": {
+    "AGENTS.md": "f74060e4df6a14c548bf962d0ae893b5b07f2e8d0a8607a2201c34fa782e8213",
+    "doc/design/modular_service_composition_plan.md": "a3b7c049f619dab05f029a2fbc54b6bf39a7d9677de789a229b741a67fb3cc13",
+    "settings.gradle.kts": "89a8be0b5729a5430ccd2247e278c62d2315a0c7db93a2bc38ae07b2c03a592a",
+    "simplepoint-data/simplepoint-data-jpa-composition/README.md": "3a524f4b2e3e6f114adf20bb35cb0fea7b095bc1ec8f3ca364e16ae0dea2d287",
+    "simplepoint-data/simplepoint-data-jpa-composition/build.gradle.kts": "33e8d8b181f9a3a611eb07460bd2f648e687c37956dbfe61a3f932975d368950",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/EnableModulePersistence.java": "30faa5f2f984b60f4b9dc391827ebfd5c81a78a8cc6f25486e986bf9764f3a8a",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceCandidates.java": "39ad4100a9acf723550edfced9257e2fd935572b344c37d7dc1a0180d56e48e3",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceConfiguration.java": "11c1c5e821ea879effd4b8f905b7990d73c26f5917bba13965dcfb47abac2db9",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistencePlan.java": "6656799befe0984bedd2367f3f14d549eb12a7e73b7d95b07fae13e5ede5afcf",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModulePersistenceRegistrar.java": "cb79b2d3e47ee9c60371d10a9c14f9c7721bb0dff1b05857d279f5550c0e2957",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/main/java/org/simplepoint/data/jpa/composition/ModuleTransactionAttributes.java": "1a9669bbc2d0a902cf4aabcfe2a3517e5389c1a47dd2697467d019a1d5c9f886",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/data/jpa/composition/ModulePersistenceTest.java": "d6cbc7f1234fb08a476f1450e715b1920c0caca1ff0c8f1f56b61d6b92819728",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaModule.java": "6589aa357837f57122227692e2558b1e41dcde11c48f9eff564965385933a88f",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaRecord.java": "d3bab1dfda6a2cd467717506255082e7b4349abc0ec2f94a30ef65c2fd4ce7d6",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaRepository.java": "c954ebb9eced94a4adcf7b843f5d1e0181ae31f4810dff4ed8d51944d67ea177",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/alpha/AlphaService.java": "133236f27c65cfdcb0d98824f707b0d189374e7524983b586c3ae4a31bafbf22",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaModule.java": "3a675fb2012036894f0248dcdbc44f1c859a762134ed39140815ace46f1be9ab",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaRecord.java": "7e94a187a677ad027ea6f584cdf6b680983396f3527242ef4d0330f43c086fcc",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaRepository.java": "a4e94a208687b9627732c8f7f832b93b0693565ec1f1701789636859cf395b79",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/BetaService.java": "f1000dbc17854e6329c74fe76e5ff9548b9def5eeedc345af370f5993be57c3c",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/java/org/simplepoint/persistencefixture/beta/ForeignTransactions.java": "ec4040d6bc61ac4c7da05d9244b0fc116337fba785fd4e92fa90be060ef2390c",
+    "simplepoint-data/simplepoint-data-jpa-composition/src/test/resources/META-INF/simplepoint/modules.imports": "3cb4e666b57b3f9292de4e07015292300594f9ceb8dd4e161239e77805e3d83a",
+    "simplepoint-events/simplepoint-events-composition/README.md": "0c4b844c8995eb6d9534155fb87a61680f8fbc0a2e5b7e2beb7b6afa050fb144",
+    "simplepoint-events/simplepoint-events-composition/src/main/java/org/simplepoint/events/composition/ModuleEventRegistry.java": "cad21b03334bda7e1c6b8316378f78c247cd252ec0d0f32a7a8fcd3671e0ce58",
+    "simplepoint-events/simplepoint-events-composition/src/test/java/org/simplepoint/events/composition/ModuleEventAssemblyTest.java": "4bfce529d033a9da122521e98c4b75df4aaef8282f01f9633e7a8118a7559539",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryModule.java": "c0b18cbfbd32db820aed3c8505bae13930e43ea33ee304ec8c2fcc8216891b9b",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "020c50cf793f5625f0bae83436599310a5a4d784272669fee4d24f0b71a67c32",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "c6a3b2409db7ffbd45154d06211f5a26612b7fca5d51a6c15a59cf7a5f0106e3",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RepositoryOwnershipTest.java": "62e735e800481d6728bba5de9d373dafcf9871ea7d4fd2be95f456204d4b41de",
+    "simplepoint-platform/simplepoint-platform-composition/README.md": "2d98c1d2b562361c7fd49cb5ad7e6e34db1777090291e61958457fcdb532c133",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModulePersistence.java": "63cc32104afedd853e72400b5d6fe67ed2fafcbf0277e129e03458d4090d0677",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleStorageBindings.java": "e5857329ee6253e27cd433c0f86af95fed1b6e14a2054df6f79543076e04c802",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/java/org/simplepoint/plugin/ai/core/service/impl/AiModelDefinitionServiceImpl.java": "c3813f5a44a2dadebd01ec566f9a183b0d0f83df0e7d72124704412739c65196",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/module/AiKnowledgeModule.java": "1784677622cefa3e23ef3be43b45c867204418494e0d9b5ee0df68f6c11fc122",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/java/org/simplepoint/plugin/ai/mcp/module/AiMcpModule.java": "d111c4bd449fe9afcd5e983a79775d82952fc20ae9f31aeb395df4717f1b4c6e",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java": "ccf0d7806d81c78b28eb19480aee3d6a818e773fe8c48436e7fb21eaf165a3e2",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java": "d3fa4b381711e74d6dcc11b5060899e2ab23b883aef08075f1ed68b9fddc7a95",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/ScopePolicyValidator.java": "1784e5167d75559d6932ee139064bb5fecdb6119531ec34d6f5fcc86f570ae3e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/UsersServiceImpl.java": "0338af07a4894e2af3698aed9b03b31f4dc73da9d83f32bf2a251a71eee55d98",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/RoleScopeBindingServiceTest.java": "41cfbf02728505e8589447a35bb776281bb9a7b9e74a87446120665f80f3c353",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "c870e09bdf8d1125c407f2208d840c0d05a185a4d5d1fe79099ff0cbaf99d84b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "a0295d465a42fa9fc67067216cd01b32ab88f8c21b5e3c70535eeee2b9313faf",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ManagedTenantResourceRoutesTest.java": "1e3cb842d2ce99d673d9a98fa4ac2fa117e56b76cdcbcaf835616fe4dcd68cd0",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImplTest.java": "1129155010304acb4d19890ee6d5c577347d3a4c30753bdf5ed3e1e3b177f475",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java": "36afcabb5966e66dc5f4a8bc02d01a9f531c495f973e942c7f891ef03a1f5bec",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/service/impl/ObjectStorageProviderConfigServiceImpl.java": "9f0e0fab314e3152659e3f1cdae7910f186d0c08b4cee9bd2c42880628c9e32f",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/service/impl/ObjectStorageTenantQuotaServiceImpl.java": "b9a04e591bc556b77e125fb00413b50dc6f37c85e55d2ef91f3314c48591441c",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/test/java/org/simplepoint/plugin/storage/service/impl/ObjectStorageProviderConfigServiceImplTest.java": "4415d9d58759d90b488cd184442c80ab8c61fb714b43ba68dc13f4a62025bce3",
+    "simplepoint-services/simplepoint-service-ai/src/test/java/org/simplepoint/ai/server/AiConfigurationLifecycleHttpTest.java": "0aa78c73ec7fc625a14d722df1d97989e45669dbe4172f38ca3cac921614270e",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/CurrentUserAccessHttpTest.java": "dd6832ff3db80fe5f66a9b64d1cc3719fd54363c5f0f69ff4b3335b932e7eb5b",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java": "83daf5efb44c1d6c9fad7d14181fee0f503fcad03e895450f0d55ce15da4c2fe",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceQueryHttpTest.java": "0e5fc49c2b65ba6303db934665db7d16144a63616e217be90e426a8191631f3f",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/StorageTableQueryHttpTest.java": "1a4ae508edbf19068e1619760faae8144352774f65c53cab4e23f6349053c2f4",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/UserPickerHttpTest.java": "bff24242159d56e177a2040d3aa0059d20247f6f37a5e88491bef438b7a08ffc",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/UserPictureHttpTest.java": "ab3b2542d7bf2fa335e40bf48999b8dfe4be41b738920ec28c662bbffd285e3b",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/UserRoleAssignmentHttpTest.java": "cf0339cb798d571acd982ec390745fca89adc7ebd7299c7aec668049b700874b"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-21",
+  "status": "shared-infrastructure rehearsal; formal standalone not deployed",
+  "runtimeImage": "sha256:669e8f1943abccbe0e97e47f720dc8fae88778aa144663cc863421cae1bb987e",
+  "production": {
+    "databaseBusinessDataAndSchemaChanged": false,
+    "microserviceBinariesChanged": false,
+    "singleDomainSwitched": false
+  },
+  "fixtures": {
+    "database": "copy of original database on existing PostgreSQL",
+    "redisDatabase": 12,
+    "rabbitVhost": "/simplepoint-single-rehearsal",
+    "minioBucket": "simplepoint-single-rehearsal"
+  },
+  "realRuntime": {
+    "standardSchemas": [
+      "users",
+      "roles",
+      "workflow-inbox",
+      "ai-models",
+      "platform-dna-datasources",
+      "platform-login-audit"
+    ],
+    "publishedPagesRead": 10,
+    "office": {
+      "cases": 6,
+      "checks": 12,
+      "attachmentBytesVerified": true
+    },
+    "calculationCrudChecks": 13,
+    "calculationRecords": 67,
+    "calculationChecks": 78,
+    "resourceLifecycle": {
+      "passed": true,
+      "transportGap": {
+        "pendingState": "OFFLINING",
+        "readiness": "UP",
+        "completedParticipants": [],
+        "requiredParticipants": [
+          "common",
+          "dna"
+        ]
+      },
+      "offlineParticipants": [
+        "common",
+        "dna"
+      ],
+      "reonlineDoesNotRestoreGrants": true,
+      "dataAndHistoryRetained": true
+    },
+    "formulaPublicationCancellation": {
+      "unstartedOldVersionCancelledAfterRestart": true,
+      "activeFormRepublished": true,
+      "durableBatchRestorationStillRequired": true
+    },
+    "frontend": {
+      "modules": 6,
+      "declaredAssets": 381,
+      "servedBytesMatchBuild": true
+    },
+    "messageRecovery": {
+      "queues": 7,
+      "consumersAfterRecovery": 7,
+      "messagesPending": 0
+    },
+    "restartVerification": {
+      "persistedWorkflowInstancesAndSnapshots": 6,
+      "passed": true
+    }
+  },
+  "tests": [
+    {
+      "group": "DNA core including pool budget and close propagation",
+      "tests": 129,
+      "passed": 129
+    },
+    {
+      "group": "Resource deployment receipts",
+      "tests": 11,
+      "passed": 11
+    },
+    {
+      "group": "Dictionary approval receipts",
+      "tests": 13,
+      "passed": 13
+    },
+    {
+      "group": "Privileged installer including stateful broker management protocol",
+      "tests": 13,
+      "passed": 13
+    },
+    {
+      "group": "Cancellation model/service, PostgreSQL fence and maintenance",
+      "tests": 13,
+      "passed": 12,
+      "skipped": 1,
+      "skipReason": "optional MySQL maintenance scenario has no configured test database"
+    }
+  ],
+  "installer": {
+    "broker": {
+      "eventOwners": 6,
+      "steps": 32,
+      "applied": true,
+      "durableSubscriptions": 7,
+      "reviewFingerprint": "f4ee8334fffce367bd624a14b77dd55581ca96983927e33ef253c6e6805b58c6"
+    },
+    "artifactFingerprint": "8e21135233cb05974b3078f0c36bb2157ba4fbc195cd93aecaeb5bd5a4d8340d",
+    "repeatUsesImmutableCopiedDistribution": true,
+    "authorityReferenceDatabase": {
+      "provisionedClients": 21,
+      "resourceAuthorities": 6,
+      "dictionaryAuthorities": 2,
+      "appliedAndRepeated": true,
+      "reviewFingerprint": "9e08ddb303ecc0f38460c50488765684f29e8a57a4ac56ec3f31d079f2c33db9"
+    }
+  },
+  "gates": {
+    "targetedJavaStyle": true,
+    "moduleBoundaries": true,
+    "standaloneFullFrontendDistribution": true,
+    "coordinatedMicroserviceDistributionsBuilt": 9
+  },
+  "remaining": [
+    "valid Consul administration credential or exact single-service registration policy",
+    "coordinated upgrade of existing microservice writers",
+    "CLI retirement proof for uncertain RUNNING installation attempts",
+    "formal production migration and single domain cutover",
+    "formal-origin end-to-end acceptance"
+  ],
+  "sourceSha256": {
+    "simplepoint-services/simplepoint-service-standalone/build.gradle.kts": "849fa5dd2be4f6a83c997fb3cc7c8e1ac43a9bdbf6d2275df9db8e0116ab78fe",
+    "simplepoint-data/simplepoint-data-json/simplepoint-data-json-schema/src/main/java/org/simplepoint/data/json/schema/configuration/JsonSchemaAutoConfiguration.java": "37037bed781050599cf59590a59eb3cfa32447fb4958e1595a4f3978927fedf9",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/service/support/DefaultJdbcManagedDataSourceFactory.java": "f88f15d6a4936275d384518b3f3730c2242a04f53d13f96d257476b4237e5283",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/ManagedJdbcPoolProperties.java": "7f2967b861d159a1111a80d29eeb669ddc9897d94b44ab2f26a6d6d2e239fbc8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RuntimeRecordModelResolver.java": "c1360433c037bb9808f06282f1e116f138a0afd809625d5ec0a74de614724b84",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordWritePolicyServiceImpl.java": "d8cc06cd443e4f3d8f9ed8eda1b31e9582bce7e4179e79e809be009552d16382",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RuntimeCalciteRecordBackend.java": "1fc8804e23a5dae2b33e37aa0547c4943d8f5813c57af98f1b211169a8ce783b",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/InstallationAuthorities.java": "ce6cff4116f2e0f16f9bc30d432dd109a7c3f7a4431b6499944f873eadd385cd",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/BrokerInstallation.java": "32d070801c640cb858647b06209464f417409c3d6519e2b3b36c15f635381e7d",
+    "simplepoint-platform/simplepoint-platform-installation-host/src/main/java/org/simplepoint/installation/host/BrokerInstallationExecution.java": "d10752cc4d2c110b134d472563b64245cf355665450d4e8dd0c945bdb217e0ec",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceRegistrationDeployments.java": "56ff75d8804e30d78c5e3570f46d0e5e93abdba82acfde6167e6f71693269b93",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/DictionaryRegistrationStore.java": "526a32cb7c8f802a2b71192037d48ca978a7569c4bfa50ba5a3ac1f3977e3c74"
+  }
+}

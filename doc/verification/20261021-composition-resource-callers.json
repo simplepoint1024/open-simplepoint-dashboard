@@ -1,0 +1,1142 @@
+{
+  "date": "2026-10-21",
+  "recordedAt": "2026-10-20T22:24:10.646356+00:00",
+  "status": "verified-increment-overall-goal-incomplete",
+  "scope": "Exact resource owner/client authorization, separate routed registration provider, mandatory contract-local isolation, shared module client identity and registration-policy planning",
+  "totals": {
+    "backendTests": 678,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "frontendI18nTests": 12,
+    "frontendTypecheckProjects": 8
+  },
+  "projects": {
+    "simplepoint-platform-composition": {
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+          "sha256": "b761f86d09322f83a42971918e3dc1b79636cc351548081fe55f7875d2280c03",
+          "tests": 20
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+          "sha256": "89c0f7a7046438a0de01e80344a781d0cfb02c2d69ca17aa79b12a78d2c4f903",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpPlanTest.xml",
+          "sha256": "cda2c6a3b21bc37fa5d1cccd1561d12a26f9693643971af68ecff57750712caf",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcePlanTest.xml",
+          "sha256": "438ec1ad9fa4860373bf9d848c72ccca1c853aa1b0866671dc01d8d14db9a1b3",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml",
+          "sha256": "ee88d57927216c228370f1f5027e8bc2b61c2d423ace69369f0cc28d1711c9d3",
+          "tests": 2
+        }
+      ]
+    },
+    "simplepoint-platform-composition-spring": {
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleBootstrapBootTest.xml",
+          "sha256": "8fb0eb62c941c68e9d445208a2e0bbd8f861c6d81eeaa84b61cb323535925564",
+          "tests": 7
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCallerIdentityTest.xml",
+          "sha256": "4884ad7d7c573c3a84edcb36567f74710eeb36dec635152a8f0a1fab36bf032b",
+          "tests": 7
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleClientDefinitionTest.xml",
+          "sha256": "74adf899f4ff7c41ed58432c0d954749d75f0c3b35a154d009999483460691f6",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCredentialConfigurationTest.xml",
+          "sha256": "a2335734c9f9d613187c9763f30420d234399711d644974e8654972007aa4a10",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleInitializationBootTest.xml",
+          "sha256": "59fb16bff9088790a6f1f5867ddd983d0da174e34bc245d31b0b5d229b86aa65",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.PlatformModuleAssemblyTest.xml",
+          "sha256": "b03466a3f17c04cb8f61d494565ce9f1a996d88a1858e28eaf250c3694631ada",
+          "tests": 9
+        }
+      ]
+    },
+    "simplepoint-platform-composition-verification": {
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedInitializationTest.xml",
+          "sha256": "d540c9de86de9902bcb3a69385e7926e6422ea4d2dccfde45ed5dec9de1a0de8",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+          "sha256": "ac8f8a6d0bd7e91d7e274d96dfed880daaef42371998e6febc1384c221b02b97",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+          "sha256": "e30b110aabbe1e7816b964e797713dc38826a0b10b20b733ec10253893699841",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+          "sha256": "33c122224c03e01cde76a6353ed8db5d2eb4fa0a0727610f8f52029f62f803bb",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+          "sha256": "5d88e5d0581da18e9062c0778e9a509a732fa87aa3365f6f48bf130a5161a0ca",
+          "tests": 1
+        }
+      ],
+      "filters": [
+        "*PlatformDeploymentPlanTest",
+        "*RemoteContractBoundaryTest",
+        "*RepositoryOwnershipTest",
+        "*PackagedInitializationTest",
+        "*PackagedPersistenceTest"
+      ]
+    },
+    "simplepoint-security-core": {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.ResourceScopePolicyTest.xml",
+          "sha256": "16303739cfd632a12d40d85500f48370974dd9acb564034eeeb61e0bf889a83a",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.authentication.AuthenticationSecretCipherTest.xml",
+          "sha256": "ee6d0c6e2b65124d238fb763d8a3835312ce76360582c330ee716685b66c717a",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextCacheSecurityTest.xml",
+          "sha256": "75d3e7675615b7484f102013c8a32212a0780b311eab9687a35b34234a9f9af2",
+          "tests": 8
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextRejectionTest.xml",
+          "sha256": "1603a8461e441481ab9a1e8c612c32efefc9bb754868dab28d511a0407787dc7",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextResolverTest.xml",
+          "sha256": "e612bede3853a0c719536061c0acf511d1459f6c7ff3dc64cd19f576a48b5b86",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.EntityFieldsTest.xml",
+          "sha256": "86c8349c0ef9c7ac7132a7bd76fcfa34b83727856971f0cc5e039cca2e5cb60c",
+          "tests": 9
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.ResourceScopeTypesConverterTest.xml",
+          "sha256": "3ab7ba935568f82a2aed03a504ec2e46c181323721fd46fd5006cc4d741d79d3",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.UserTest.xml",
+          "sha256": "1a47618ad6f9f36de6492cfa122ded8cc59b63ff2e65d62fca2c38a2a54db656",
+          "tests": 9
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.identity.UserDisplayNameTest.xml",
+          "sha256": "6b8d4abef722921e8d5395dc799912266c6aafa3b4a495d22c1be74204e54019",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.resource.ResourceDeclarationDocumentTest.xml",
+          "sha256": "d0b479b262481ae7b8ba4c388d267934329742564505428ba9ae4dc9c144596c",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.resource.ResourceRegistrationExceptionTest.xml",
+          "sha256": "16b32293d97b53eed9d6adf2f227da6968cb97a2db5c242bd5a271c2fe7c2221",
+          "tests": 1
+        }
+      ]
+    },
+    "simplepoint-security-oauth2-resource": {
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest.xml",
+          "sha256": "b17ebd3896cebc8494812043410a838c4e359344f04f1b0a51b78fc8ee1c5b8c",
+          "tests": 7
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest.xml",
+          "sha256": "16bc82dcb36b0ee54388d31660fe4d0f21f4a8904aea5d9f00acbb387392abe6",
+          "tests": 6
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest.xml",
+          "sha256": "67d6c02d170f9c831acaf3338fcad534335b8f199b29837b5af79672b9b533bc",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest.xml",
+          "sha256": "51db21deed9924ca6c8a0546d087c984dd189d38f9012a061ba0423e3f3461c7",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest.xml",
+          "sha256": "a79e5819fc8aab1c0e640bce3380b8bfaa6e5b1f88f59a460747c235d89a0283",
+          "tests": 13
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest.xml",
+          "sha256": "a145bc1e63abb668996fb418fc2238f21b2c7ebabf3aa19aa669f066b64b2aae",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest.xml",
+          "sha256": "de90f301e385648d33fd5cfaf0a3492f40182261170545b31c114be6144aad17",
+          "tests": 1
+        }
+      ]
+    },
+    "simplepoint-service-router-core": {
+      "tests": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.config.EnableServiceRouterIntegrationTest.xml",
+          "sha256": "46b6853c36e70b1962087f48509aeb9f5d7f5424b87fb7e1e52ac5e7c38e8399",
+          "tests": 6
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.config.ServiceRouterProxyDefinitionsTest.xml",
+          "sha256": "91cf0f535f988a88f2dfe653915ce079ee7e00e2740dad5c5bc0f78005830983",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.invocation.ClientCredentialsServiceRouterAccessTokenProviderTest.xml",
+          "sha256": "e5c032b1783c1ddae09aac5825216237d8dad8231ed4bce9640766dd8328ec6e",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.invocation.IsolatedLocalInvocationTest.xml",
+          "sha256": "c19f46427ba737d63cac536bd9491e92fbcd54ba71781e4b03b81a24c908d054",
+          "tests": 8
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.invocation.RestClientRemoteInvokerTest.xml",
+          "sha256": "a48a0966245072e3b6691d5ef1f4a25df9390355c4e3955d23b9d46e9d2fb39a",
+          "tests": 8
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.invocation.ServiceInvocationDispatcherTest.xml",
+          "sha256": "09e5cb08a603ad82672c9468fbafecabd2743a060bf84003c8cab5721eb01262",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.invocation.ServiceRouterWireTest.xml",
+          "sha256": "fb9c0ee20099e928e8575ab582b2488a44b177a8318319bdeb0f962234737a70",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.loadbalance.RoundRobinLoadBalancerTest.xml",
+          "sha256": "223f2b01a61044fc4aaa7105fffb2e798f0e84eb0f69e83565cf3dd447bc5bb7",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.metadata.RoutedServiceMetadataResolverTest.xml",
+          "sha256": "bd484b82ec38d37bdbdd09dbc97ae83dac6b40229e68a5c4eb18a27a94110759",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.proxy.RemoteBusinessErrorRoutingTest.xml",
+          "sha256": "47ac065c4ae5edd4c38594191e74fe8fca0b24fcb30926ebbf2032206fdb44f7",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.proxy.RemoteRecoveryPolicyTest.xml",
+          "sha256": "8c8eb796484bd270599a4c5d2881787c07d1587674c303ae6a75878096049916",
+          "tests": 8
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.proxy.RequiredLocalIsolationTest.xml",
+          "sha256": "987ebbd6bbadc9aac5a6f630ec3bbba09005d8c9935907cb22c036e34dd04ef7",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.proxy.ServiceRouterInvocationHandlerTest.xml",
+          "sha256": "576a10aeaedf9a2c6aea3481257a70b13a692cebf60121c337e43916af7afe75",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.registry.ApplicationContextLocalServiceRegistryTest.xml",
+          "sha256": "b758cecb7f280c1acb922b35e13eafd8ad1727d0da1646bd8e1b1562c9c8b76f",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-service-router/simplepoint-service-router-core/build/test-results/test/TEST-com.simplepoint.service.router.routing.DiscoveryClientServiceDiscoveryTest.xml",
+          "sha256": "5bf1995d43c342f91945590387187f96589d120b017b0a721c13c57c11257d81",
+          "tests": 9
+        }
+      ]
+    },
+    "simplepoint-plugin-rbac-router-api": {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.configuration.ResourceAutoConfigurationTest.xml",
+          "sha256": "f0a9b5c94cbd2c94bc5b035f0b708c980f292b05b0a3d8afb2d1a8fb7b241fc0",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.configuration.ResourceRegistrationBoundaryTest.xml",
+          "sha256": "18b471656fe25bde99922ffdd04e1467ee932b13dc3783af7b87263e39ba6302",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.initialization.ResourceModuleInitializerTest.xml",
+          "sha256": "b0c063f9f6a193426148dda791a1172c09e675451ead70ff85ff91c5fb0a8f35",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVoTest.xml",
+          "sha256": "20f550017480f591fac8311bd8589a00e7a2aed48091a0a640c2525f259d99cb",
+          "tests": 5
+        }
+      ]
+    },
+    "simplepoint-plugin-rbac-router-implementation": {
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest.xml",
+          "sha256": "3af161860d97a00686dbdb17b68b751cbb35f22a0eaa57a2878afba7b70ff287",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest.xml",
+          "sha256": "9010c27244f432bd846217e4d0f8444a4cd00b46195d7be04d1c265bd52c3b5f",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest.xml",
+          "sha256": "29ff1eea4df37ca5047f8d3e69755e3b2f403a7c9fc8ac89a725c3bdd99aa388",
+          "tests": 15
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest.xml",
+          "sha256": "6373bb86bb11bde62df516ec77b3e06408d996f26555d789fb27d33d5aeb3826",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest.xml",
+          "sha256": "bae53177038e34c4379f458d667412ce21dfca3d510e3b32da56cc254d710b8d",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest.xml",
+          "sha256": "944633ac7130071bafd2e6540b33e97ad976c63e70ccf780cb6f4a79223f5ce1",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest.xml",
+          "sha256": "47a909839f0494f8e0e3b63e9d163ce5e6ef31e32058a638ae6cf03009f489ea",
+          "tests": 9
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest.xml",
+          "sha256": "44b4175a98ed85c171087e79d35341da3be00f4b1c0846369cf6ea5818c082cf",
+          "tests": 7
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest.xml",
+          "sha256": "5539991761ea9ded8f48d5cea4add065f129334fb161dfa839842f0e5111bfcc",
+          "tests": 3
+        }
+      ]
+    },
+    "simplepoint-service-common": {
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest.xml",
+          "sha256": "5ab66747e351cdae86ab9856cd49d2a90f4d1deb16481e0a3cae7244bf389990",
+          "tests": 36
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentDirectoryHttpTest.xml",
+          "sha256": "be8ff9ab6d82b1abf7207e5f9f1b3cfba1b6f57f017f66199e370434d511101f",
+          "tests": 11
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+          "sha256": "a869e640d24f536d8f64c8e2a8c482e5bdc4c324aa2ee848568d5889abb6750b",
+          "tests": 26
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+          "sha256": "eea7d816b53a487f70197ea2ceeb7e2b3f2c52b3b4aa03cb053e800dacea0f62",
+          "tests": 12
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest.xml",
+          "sha256": "9221cd76412e4cc42eb7cc984fa063e9d4250f9c518a0cc2a98869a874646ef4",
+          "tests": 13
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest.xml",
+          "sha256": "316aac4e8f8059be1c20f213f7d9326d645d3229ffc7fc1d5bdecc1cbe7a2396",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+          "sha256": "fcda1b2cff179cff95db9919d795cf4e48aaf68ef06e4ba0b9a6b4e4f77072f8",
+          "tests": 38
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.I18nTableQueryHttpTest.xml",
+          "sha256": "fbfc73bae75309e0072f320141e69956f6d567385e8379284c1303b8867b1f13",
+          "tests": 12
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.MultipartUploadLimitTest.xml",
+          "sha256": "4b4f2ac1d0b93a1a10eb30ccb2cc0c9c0b5979ade1eb5ff0f69c07510157eddc",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+          "sha256": "76d8899457a3cb988a024a392290d9db89a81ad831346b0e5de24869e619f046",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+          "sha256": "9e773850f627b5dda5584caffbb6bb108341743987a235c5fce194e7b83c8417",
+          "tests": 12
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+          "sha256": "60c4090b94030a3ee7af4b8788ab8b626a2d3f9e7b156c1c66e6a8e24fe33520",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountBindingTest.xml",
+          "sha256": "2f8f49658bc1fa6da8bd7482affbf02daa0708459428b67c18b33a3fc13059ec",
+          "tests": 4
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest.xml",
+          "sha256": "254b326f91ebec4d6a8d5536f7db5ca09ec53420509b96a0bb55e74b78b7e929",
+          "tests": 9
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+          "sha256": "397bb98237cd44d00cdfbf640c74b6e4df5f1ea67b6c37d1a673cc97a8b9f23f",
+          "tests": 51
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+          "sha256": "3ef1c6b601981c949468eba086c2c1c23bbba4727781dc82cabfafb7d9aa2add",
+          "tests": 5
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+          "sha256": "55443774824057d839267272e8f52a05761e0a255ccefaa66178d55234fc8260",
+          "tests": 23
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.StorageTableQueryHttpTest.xml",
+          "sha256": "656ca179ec2a091d4b1d2679d68b4ce83c5513f4066cbe7ffb30b5246917a647",
+          "tests": 16
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+          "sha256": "5cfa5b32701364b03f223013cf18ce723d4b53da226b9d73d3c2bd9ae6bddd23",
+          "tests": 26
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest.xml",
+          "sha256": "7746b2f49f05e0e77e7dc6bbbd00fc5c84871ac6facb4bbdc57f79ffb8b36949",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantDirectoryHttpTest.xml",
+          "sha256": "b19a5170f36235c1fc0ceda2b73824559029c47009649c7cd5bca6317ad9eed0",
+          "tests": 6
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantMemberQueryHttpTest.xml",
+          "sha256": "e6b326a68d02545d10334c9264858ef2fe8e10bcf27f4c51507e6100317ffc70",
+          "tests": 21
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+          "sha256": "73ac91ae3455ee0279ef8f98dcd2b20a33a08c6f51b8529110a9fdce33a2e654",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest.xml",
+          "sha256": "afd83d7e3ab3643b560164a3621ad15c02f318ad3c88e43069d382b18cf89529",
+          "tests": 10
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPickerHttpTest.xml",
+          "sha256": "666e7c580e893bbee290cab3ff017ae5c20ec4c42db88a704488ff95aabf9939",
+          "tests": 11
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureAuthorizationTest.xml",
+          "sha256": "809d69155a5d7a16fa320ae3fcdb795bc63533e6ed6b51c8d97d023991336691",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureHttpTest.xml",
+          "sha256": "342d3a8186c74c279f1fda0007a845984d6316e495a72b78bb8c4a8164e337cf",
+          "tests": 3
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest.xml",
+          "sha256": "1fd3fb3ad43e46353d9a6727177ed320a4dc43083aab77ff4ecbf94ed760fee3",
+          "tests": 9
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.i18n.CommonI18nMessagesTest.xml",
+          "sha256": "27d964dc6b17b72cd29402de5b97fe4d418d541ef75639e7ffa1e982954bbd9a",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest.xml",
+          "sha256": "bdf629a04b7a80ad77b2444f615fc6b635f563cb0f6b9f0a98bdb7e0958a67fc",
+          "tests": 2
+        }
+      ]
+    },
+    "simplepoint-plugin-workflow-http": {
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpArtifactTest.xml",
+          "sha256": "211e269fb16d0bcceeca2512434cc48accfce3314f779c647b9f924ce2722d37",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpCompositionTest.xml",
+          "sha256": "732282b9693be2bf575135ac81115d0c1c77a3a8376c6b9c8fd3a086f67a67f0",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowResourceInitializationTest.xml",
+          "sha256": "a370d20240bc104d2f25f85a35b83b82c73e8be34ae8ea72df346ad66d20020e",
+          "tests": 1
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowDirectoryErrorTest.xml",
+          "sha256": "ddbb1aef644d86d9bf75f7adc40a00881a59cc15ff2d85fc82f6050ff0cff8d7",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest.xml",
+          "sha256": "137be2e1fc2e67283758b47fa76d59df01109ce23e2279d92dacd9accb4b9b4b",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowModelingErrorTest.xml",
+          "sha256": "bb3e0efbb6310d9890274c8509df8f72e78e535805927132c5bbbf8bdd9aa21e",
+          "tests": 2
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPersonalHttpTest.xml",
+          "sha256": "1da936edfe9cd4913341681a87ffd144681bdf310b543f87f592c8bfef85ac54",
+          "tests": 6
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest.xml",
+          "sha256": "8efa79ea37204cb0fe40cc240ff24278dc09b24270790ad985f792528316138f",
+          "tests": 2
+        }
+      ]
+    }
+  },
+  "checkstyle": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "398370926c96791baa18961044d24b3bd92f01267edc467e010a1c0094792e9a",
+      "files": 3,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "2d74640b96feae939d8e1e35dffa4d5d280950abf3c1b8a38848275cf867ea16",
+      "files": 1,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "579089c9c4dda03a1779ce7a1d19edf658f6cdb94525ed6bd4cd6b2424c207d3",
+      "files": 1,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "ad853ce544118b436bda7b06f7092c8bd82e8b0b9d763523914c027b997defa5",
+      "files": 1,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "02eb5b40d364126ed10c356b1aa60dfef46afc18fc4acd004c2d03197ab7d42e",
+      "files": 6,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-remoting/simplepoint-remoting-core/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "cd10f218440f6a9d70502ea42032659ffd7973f17ef0a576278b9b5265ed9000",
+      "files": 1,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "e2b80b0c0fa69da107dc3edb50fcba041ae2f0f81125fd92976e48d1559b3975",
+      "files": 3,
+      "issues": 0
+    },
+    {
+      "path": "simplepoint-service-router/simplepoint-service-router-core/build/reports/checkstyle/resourceCallers.xml",
+      "sha256": "99f103d0e37f89839644bb0f850ad8018067780b8af05633c5c0c63098613e18",
+      "files": 2,
+      "issues": 0
+    }
+  ],
+  "checkstyleFiles": [
+    "simplepoint-remoting/simplepoint-remoting-core/src/main/java/org/simplepoint/remoting/RemoteContract.java",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/RequiredLocalIsolationTest.java",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceRegistrationService.java",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceService.java",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/resource/ResourceRegistrationException.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleClientPlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourcePlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleResourcePlanTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleCredentialConfiguration.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/configuration/ResourceRegistrationBoundaryTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationProvider.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/properties/ResourceRegistrationProperties.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceRegistrationCallerPolicy.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationProviderTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationSecurityTest.java"
+  ],
+  "checkstyleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-resource-callers-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleResourceCallers', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyResourceCallersStyle') { dependsOn checks }\n}\n",
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew -I /tmp/simplepoint-resource-callers-checkstyle.gradle :simplepoint-platform:simplepoint-platform-composition:test :simplepoint-platform:simplepoint-platform-composition:verifyCompositionDependencies :simplepoint-platform:simplepoint-platform-composition-spring:test :simplepoint-security:simplepoint-security-core:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:test :simplepoint-service-router:simplepoint-service-router-core:test :simplepoint-security:simplepoint-security-oauth2-resource:test verifyResourceCallersStyle verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-composition-verification:test --tests *PlatformDeploymentPlanTest --tests *RemoteContractBoundaryTest --tests *RepositoryOwnershipTest --tests *PackagedInitializationTest --tests *PackagedPersistenceTest :simplepoint-services:simplepoint-service-common:test :simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-http:test :simplepoint-services:simplepoint-service-common:installDist --console=plain",
+    "java -cp simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/* /tmp/VerifyResourceCallerArtifacts.java",
+    "In simplepoint-react: pnpm i18n:sync; pnpm i18n:check; pnpm typecheck",
+    "git diff --check -- <scoped files>"
+  ],
+  "distribution": {
+    "jarCount": 326,
+    "frontend": [
+      {
+        "jar": "simplepoint-service-common.jar",
+        "count": 373,
+        "entries": [
+          "static/cjs/api/system/role.d.ts",
+          "static/cjs/api/system/user.d.ts",
+          "static/cjs/api/system/field-scope.d.ts",
+          "static/cjs/api/system/resource.d.ts",
+          "static/cjs/api/system/role-resource-configuration.d.ts",
+          "static/cjs/api/system/platform-account.d.ts",
+          "static/cjs/api/index.d.ts",
+          "static/cjs/api/platform/tenant.d.ts",
+          "static/cjs/api/platform/package.d.ts",
+          "static/cjs/api/platform/application.d.ts",
+          "static/cjs/index.d.ts",
+          "static/cjs/index.cjs",
+          "static/cjs/services.d.ts",
+          "static/cjs/views/system/Role/index.d.ts",
+          "static/cjs/views/system/Role/config/resource/PolicySelect.d.ts",
+          "static/cjs/views/system/Role/config/resource/index.d.ts",
+          "static/cjs/views/system/Role/config/resource/previewLoader.d.ts",
+          "static/cjs/views/system/Role/config/resource/ResourcePreview.d.ts",
+          "static/cjs/views/system/Role/config/resource/ResourceChildren.d.ts",
+          "static/cjs/views/system/Role/config/resource/resourceDraft.d.ts",
+          "static/cjs/views/system/Role/config/resource/resourcePreview.d.ts",
+          "static/cjs/views/system/Role/metadata.d.ts",
+          "static/cjs/views/system/IdentityProvider/model.d.ts",
+          "static/cjs/views/system/IdentityProvider/index.d.ts",
+          "static/cjs/views/system/OAuthClient/index.d.ts",
+          "static/cjs/views/system/DataScope/model.d.ts",
+          "static/cjs/views/system/DataScope/index.d.ts",
+          "static/cjs/views/system/DataScope/effectiveModel.d.ts",
+          "static/cjs/views/system/DataScope/EffectiveScopePreview.d.ts",
+          "static/cjs/views/system/FieldScope/forms.d.ts",
+          "static/cjs/views/system/FieldScope/index.d.ts",
+          "static/cjs/views/system/FieldScope/config/entries/index.d.ts",
+          "static/cjs/views/system/FieldScope/MatrixForm.d.ts",
+          "static/cjs/views/system/User/index.d.ts",
+          "static/cjs/views/system/User/config/role/index.d.ts",
+          "static/cjs/views/system/User/memberForm.d.ts",
+          "static/cjs/views/system/Notification/model.d.ts",
+          "static/cjs/views/system/Notification/index.d.ts",
+          "static/cjs/views/system/Resource/index.d.ts",
+          "static/cjs/views/system/Resource/components/resourceTreeState.d.ts",
+          "static/cjs/views/system/Resource/components/ResourceTreeTransfer.d.ts",
+          "static/cjs/views/ops/Microapp/index.d.ts",
+          "static/cjs/views/i18n/Timezone/index.d.ts",
+          "static/cjs/views/i18n/Message/index.d.ts",
+          "static/cjs/views/i18n/Region/index.d.ts",
+          "static/cjs/views/i18n/Namespace/index.d.ts",
+          "static/cjs/views/i18n/Countries/index.d.ts",
+          "static/cjs/views/i18n/Language/index.d.ts",
+          "static/cjs/views/Dashboard/index.d.ts",
+          "static/cjs/views/personal/Messages/index.d.ts",
+          "static/cjs/views/personal/Todos/index.d.ts",
+          "static/cjs/views/personal/Items/index.d.ts",
+          "static/cjs/views/personal/components/shared.d.ts",
+          "static/cjs/views/personal/components/actions.d.ts",
+          "static/cjs/views/personal/components/ItemDetail.d.ts",
+          "static/cjs/views/personal/components/usePersonalActions.d.ts",
+          "static/cjs/views/personal/components/LegacyItems.d.ts",
+          "static/cjs/views/personal/components/PersonalTable.d.ts",
+          "static/cjs/views/personal/components/Inbox.d.ts",
+          "static/cjs/views/platform/Account/index.d.ts",
+          "static/cjs/views/platform/Account/accountActions.d.ts",
+          "static/cjs/views/platform/Application/index.d.ts",
+          "static/cjs/views/platform/Application/config/resource/index.d.ts",
+          "static/cjs/views/platform/Dictionary/index.d.ts",
+          "static/cjs/views/platform/Dictionary/config/item/model.d.ts",
+          "static/cjs/views/platform/Dictionary/config/item/index.d.ts",
+          "static/cjs/views/platform/AccountAudit/index.d.ts",
+          "static/cjs/views/platform/Tenant/index.d.ts",
+          "static/cjs/views/platform/Tenant/config/package/index.d.ts",
+          "static/cjs/views/platform/Tenant/config/user/index.d.ts",
+          "static/cjs/views/platform/Organization/memberForms.d.ts",
+          "static/cjs/views/platform/Organization/index.d.ts",
+          "static/cjs/views/platform/Organization/OrganizationMembersPanel.d.ts",
+          "static/cjs/views/platform/Package/index.d.ts",
+          "static/cjs/views/platform/Package/config/application/index.d.ts",
+          "static/cjs/views/platform/ObjectStorage/forms.d.ts",
+          "static/cjs/views/platform/ObjectStorage/index.d.ts",
+          "static/cjs/views/platform/ObjectStorage/useStorageList.d.ts",
+          "static/mf/__federation_expose_platform__Tenant.5e77df8051.css",
+          "static/mf/__federation_expose_system__DataScope.5e77df8051.css",
+          "static/mf/639.b83e55a2a5.js",
+          "static/mf/8371.02ef5ae6d5.js",
+          "static/mf/3705.e0ca352ba5.js",
+          "static/mf/__federation_expose_personal__Messages.23075c699b.css",
+          "static/mf/1470.8d101d6d0c.js",
+          "static/mf/__federation_expose_platform__Dictionary.fec9d8c8f4.js",
+          "static/mf/4249.a5ae5db0aa.js",
+          "static/mf/355.42f26eb63f.js",
+          "static/mf/__federation_expose_personal__Messages.8c422668b5.js",
+          "static/mf/__federation_expose_personal__Items.27e365a6e8.css",
+          "static/mf/__federation_expose_system__FieldScope.3197c65293.js",
+          "static/mf/1467.9e80101e3c.js",
+          "static/mf/__federation_expose_platform__Dictionary.5e77df8051.css",
+          "static/mf/__federation_expose_system__OAuthClient.5e77df8051.css",
+          "static/mf/6963.1e13b25b01.css",
+          "static/mf/__federation_expose_system__User.6fdabbdee5.js",
+          "static/mf/5848.8f48d6a014.js",
+          "static/mf/__federation_expose_i18n__Message.5e77df8051.css",
+          "static/mf/6915.4738dd3e92.js.LICENSE.txt",
+          "static/mf/__federation_expose_personal__Items.788e5f0621.js",
+          "static/mf/__federation_expose_i18n__Namespace.5e77df8051.css",
+          "static/mf/3767.e967284e71.js",
+          "static/mf/7559.b671cdc968.js",
+          "static/mf/__federation_expose_platform__Application.5e77df8051.css",
+          "static/mf/static/font/bpmn.4d5c92bfdc.eot",
+          "static/mf/static/font/bpmn.ed7e52b1a2.ttf",
+          "static/mf/static/font/bpmn.975baf9ad1.woff2",
+          "static/mf/static/font/bpmn.75dbcaf639.woff",
+          "static/mf/static/svg/bpmn.22e8d1d88d.svg",
+          "static/mf/__federation_expose_platform__ObjectStorage.fb5abc4f4b.js",
+          "static/mf/9001.6fddbcca96.css",
+          "static/mf/@mf-types/compiled-types/api/system/role.d.ts",
+          "static/mf/@mf-types/compiled-types/api/system/user.d.ts",
+          "static/mf/@mf-types/compiled-types/api/system/field-scope.d.ts",
+          "static/mf/@mf-types/compiled-types/api/system/resource.d.ts",
+          "static/mf/@mf-types/compiled-types/api/system/role-resource-configuration.d.ts",
+          "static/mf/@mf-types/compiled-types/api/system/platform-account.d.ts",
+          "static/mf/@mf-types/compiled-types/api/index.d.ts",
+          "static/mf/@mf-types/compiled-types/api/platform/tenant.d.ts",
+          "static/mf/@mf-types/compiled-types/api/platform/package.d.ts",
+          "static/mf/@mf-types/compiled-types/api/platform/application.d.ts",
+          "static/mf/@mf-types/compiled-types/services.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/PolicySelect.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/previewLoader.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/ResourcePreview.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/ResourceChildren.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/resourceDraft.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/config/resource/resourcePreview.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Role/metadata.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/IdentityProvider/model.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/IdentityProvider/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/OAuthClient/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/DataScope/model.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/DataScope/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/DataScope/effectiveModel.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/DataScope/EffectiveScopePreview.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/FieldScope/forms.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/FieldScope/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/FieldScope/config/entries/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/FieldScope/MatrixForm.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/User/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/User/config/role/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/User/memberForm.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Notification/model.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Notification/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Resource/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Resource/components/resourceTreeState.d.ts",
+          "static/mf/@mf-types/compiled-types/views/system/Resource/components/ResourceTreeTransfer.d.ts",
+          "static/mf/@mf-types/compiled-types/views/ops/Microapp/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Timezone/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Message/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Region/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Namespace/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Countries/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/i18n/Language/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/Dashboard/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/Messages/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/Todos/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/Items/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/shared.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/actions.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/ItemDetail.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/usePersonalActions.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/LegacyItems.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/PersonalTable.d.ts",
+          "static/mf/@mf-types/compiled-types/views/personal/components/Inbox.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Account/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Account/accountActions.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Application/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Application/config/resource/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Dictionary/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Dictionary/config/item/model.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Dictionary/config/item/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/AccountAudit/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Tenant/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Tenant/config/package/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Tenant/config/user/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Organization/memberForms.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Organization/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Organization/OrganizationMembersPanel.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Package/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/Package/config/application/index.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/ObjectStorage/forms.d.ts",
+          "static/mf/@mf-types/compiled-types/views/platform/ObjectStorage/index.d.ts",
+          "static/mf/@mf-types/system/FieldScope.d.ts",
+          "static/mf/@mf-types/system/DataScope.d.ts",
+          "static/mf/@mf-types/system/Resource.d.ts",
+          "static/mf/@mf-types/system/User.d.ts",
+          "static/mf/@mf-types/system/Role.d.ts",
+          "static/mf/@mf-types/system/OAuthClient.d.ts",
+          "static/mf/@mf-types/system/Notification.d.ts",
+          "static/mf/@mf-types/system/IdentityProvider.d.ts",
+          "static/mf/@mf-types/ops/Microapp.d.ts",
+          "static/mf/@mf-types/i18n/Timezone.d.ts",
+          "static/mf/@mf-types/i18n/Countries.d.ts",
+          "static/mf/@mf-types/i18n/Message.d.ts",
+          "static/mf/@mf-types/i18n/Language.d.ts",
+          "static/mf/@mf-types/i18n/Region.d.ts",
+          "static/mf/@mf-types/i18n/Namespace.d.ts",
+          "static/mf/@mf-types/personal/Messages.d.ts",
+          "static/mf/@mf-types/personal/Items.d.ts",
+          "static/mf/@mf-types/personal/Todos.d.ts",
+          "static/mf/@mf-types/platform/Organization.d.ts",
+          "static/mf/@mf-types/platform/Package.d.ts",
+          "static/mf/@mf-types/platform/ObjectStorage.d.ts",
+          "static/mf/@mf-types/platform/Tenant.d.ts",
+          "static/mf/@mf-types/platform/Application.d.ts",
+          "static/mf/@mf-types/platform/Account.d.ts",
+          "static/mf/@mf-types/platform/Dictionary.d.ts",
+          "static/mf/@mf-types/platform/AccountAudit.d.ts",
+          "static/mf/@mf-types/Dashboard.d.ts",
+          "static/mf/__federation_expose_i18n__Countries.5e77df8051.css",
+          "static/mf/3268.389232ca29.js",
+          "static/mf/4139.b1429d95a8.js",
+          "static/mf/__federation_expose_system__DataScope.705a856537.js",
+          "static/mf/__federation_expose_i18n__Region.d1793b54a4.js",
+          "static/mf/6573.005b639650.js",
+          "static/mf/5302.2d3684a022.js",
+          "static/mf/__federation_expose_platform__ObjectStorage.5e77df8051.css",
+          "static/mf/__federation_expose_Dashboard.9956de2cc1.js",
+          "static/mf/__federation_expose_platform__Account.61a1f6ae62.js",
+          "static/mf/__federation_expose_system__Role.a0442c5ea0.js",
+          "static/mf/6210.49ddd12bc2.css",
+          "static/mf/__federation_expose_platform__Package.5e77df8051.css",
+          "static/mf/9515.16e503f7b5.js",
+          "static/mf/mf-manifest.json",
+          "static/mf/9144.d5bf139551.js",
+          "static/mf/__federation_expose_system__Resource.e9ed8ffaf1.js",
+          "static/mf/__federation_expose_system__IdentityProvider.5e77df8051.css",
+          "static/mf/__federation_expose_system__FieldScope.5e77df8051.css",
+          "static/mf/@mf-types.d.ts",
+          "static/mf/__federation_expose_i18n__Countries.3a9a82ff0c.js",
+          "static/mf/1299.735ef5670c.css",
+          "static/mf/index.fba829666f.js",
+          "static/mf/__federation_expose_i18n__Namespace.79e8cf40fa.js",
+          "static/mf/8550.a7a3dc4b2d.css",
+          "static/mf/__federation_expose_i18n__Region.5e77df8051.css",
+          "static/mf/__federation_expose_i18n__Language.5e77df8051.css",
+          "static/mf/5640.a9928a832f.js",
+          "static/mf/5090.981bfead19.js",
+          "static/mf/9357.8a264becbb.js",
+          "static/mf/__federation_expose_ops__Microapp.b922c8b481.js",
+          "static/mf/__federation_expose_i18n__Timezone.7c982d825f.js",
+          "static/mf/__federation_expose_platform__AccountAudit.5e77df8051.css",
+          "static/mf/9110.18714452a5.js",
+          "static/mf/3307.a95ff167c9.js",
+          "static/mf/6915.4738dd3e92.js",
+          "static/mf/468.7b0fda1393.js",
+          "static/mf/9110.a7a3dc4b2d.css",
+          "static/mf/__federation_expose_personal__Todos.c94cd1e4e3.js",
+          "static/mf/__federation_expose_platform__AccountAudit.92d785d91a.js",
+          "static/mf/9515.adf3aed4a4.css",
+          "static/mf/1608.c373c689d1.js",
+          "static/mf/__federation_expose_system__IdentityProvider.ff640d6e8e.js",
+          "static/mf/__federation_expose_platform__Organization.a9f645918e.js",
+          "static/mf/2359.2e2eb16d9c.css",
+          "static/mf/9779.d6323737e7.js",
+          "static/mf/1031.101aa59739.js",
+          "static/mf/__federation_expose_i18n__Timezone.5e77df8051.css",
+          "static/mf/__federation_expose_system__Notification.12855554da.js",
+          "static/mf/371.a8f9014398.js",
+          "static/mf/6210.9f5b3d560a.js",
+          "static/mf/__federation_expose_platform__Tenant.408e1041cb.js",
+          "static/mf/724.09c9f90076.js",
+          "static/mf/__federation_expose_system__Notification.5e77df8051.css",
+          "static/mf/__federation_expose_i18n__Message.dab93404f1.js",
+          "static/mf/__federation_expose_personal__Todos.27e365a6e8.css",
+          "static/mf/1470.a6e9edd908.css",
+          "static/mf/__federation_expose_system__Role.5e77df8051.css",
+          "static/mf/6963.f97d6ab41d.js",
+          "static/mf/__federation_expose_system__OAuthClient.dc404259a3.js",
+          "static/mf/7542.f83ef628ff.js",
+          "static/mf/9001.bbd3f8f24b.js",
+          "static/mf/8550.ab98f47d74.js",
+          "static/mf/__federation_expose_i18n__Language.af88e2cc9e.js",
+          "static/mf/common.9038349e96.js",
+          "static/mf/__federation_expose_ops__Microapp.5e77df8051.css",
+          "static/mf/@mf-types.zip",
+          "static/mf/__federation_expose_platform__Organization.c1264980c7.css",
+          "static/mf/1738.39b73b4ed8.js",
+          "static/mf/__federation_expose_system__User.88e53a0305.css",
+          "static/mf/1499.c0c8982951.js",
+          "static/mf/__federation_expose_platform__Application.bf8433f826.js",
+          "static/mf/mf-stats.json",
+          "static/mf/__federation_expose_system__Resource.5e77df8051.css",
+          "static/mf/__federation_expose_platform__Account.7022b43cc2.css",
+          "static/mf/1641.40d12830fb.js",
+          "static/mf/1299.e43b0175a2.js",
+          "static/mf/724.2e2eb16d9c.css",
+          "static/mf/__federation_expose_platform__Package.cef013736d.js",
+          "static/mf/9001.bbd3f8f24b.js.LICENSE.txt",
+          "static/mf/1031.101aa59739.js.LICENSE.txt",
+          "static/mf/3169.e5dc45c440.js",
+          "static/esm/api/system/role.d.ts",
+          "static/esm/api/system/user.d.ts",
+          "static/esm/api/system/field-scope.d.ts",
+          "static/esm/api/system/resource.d.ts",
+          "static/esm/api/system/role-resource-configuration.d.ts",
+          "static/esm/api/system/platform-account.d.ts",
+          "static/esm/api/index.d.ts",
+          "static/esm/api/platform/tenant.d.ts",
+          "static/esm/api/platform/package.d.ts",
+          "static/esm/api/platform/application.d.ts",
+          "static/esm/index.d.ts",
+          "static/esm/services.d.ts",
+          "static/esm/views/system/Role/index.d.ts",
+          "static/esm/views/system/Role/config/resource/PolicySelect.d.ts",
+          "static/esm/views/system/Role/config/resource/index.d.ts",
+          "static/esm/views/system/Role/config/resource/previewLoader.d.ts",
+          "static/esm/views/system/Role/config/resource/ResourcePreview.d.ts",
+          "static/esm/views/system/Role/config/resource/ResourceChildren.d.ts",
+          "static/esm/views/system/Role/config/resource/resourceDraft.d.ts",
+          "static/esm/views/system/Role/config/resource/resourcePreview.d.ts",
+          "static/esm/views/system/Role/metadata.d.ts",
+          "static/esm/views/system/IdentityProvider/model.d.ts",
+          "static/esm/views/system/IdentityProvider/index.d.ts",
+          "static/esm/views/system/OAuthClient/index.d.ts",
+          "static/esm/views/system/DataScope/model.d.ts",
+          "static/esm/views/system/DataScope/index.d.ts",
+          "static/esm/views/system/DataScope/effectiveModel.d.ts",
+          "static/esm/views/system/DataScope/EffectiveScopePreview.d.ts",
+          "static/esm/views/system/FieldScope/forms.d.ts",
+          "static/esm/views/system/FieldScope/index.d.ts",
+          "static/esm/views/system/FieldScope/config/entries/index.d.ts",
+          "static/esm/views/system/FieldScope/MatrixForm.d.ts",
+          "static/esm/views/system/User/index.d.ts",
+          "static/esm/views/system/User/config/role/index.d.ts",
+          "static/esm/views/system/User/memberForm.d.ts",
+          "static/esm/views/system/Notification/model.d.ts",
+          "static/esm/views/system/Notification/index.d.ts",
+          "static/esm/views/system/Resource/index.d.ts",
+          "static/esm/views/system/Resource/components/resourceTreeState.d.ts",
+          "static/esm/views/system/Resource/components/ResourceTreeTransfer.d.ts",
+          "static/esm/views/ops/Microapp/index.d.ts",
+          "static/esm/views/i18n/Timezone/index.d.ts",
+          "static/esm/views/i18n/Message/index.d.ts",
+          "static/esm/views/i18n/Region/index.d.ts",
+          "static/esm/views/i18n/Namespace/index.d.ts",
+          "static/esm/views/i18n/Countries/index.d.ts",
+          "static/esm/views/i18n/Language/index.d.ts",
+          "static/esm/views/Dashboard/index.d.ts",
+          "static/esm/views/personal/Messages/index.d.ts",
+          "static/esm/views/personal/Todos/index.d.ts",
+          "static/esm/views/personal/Items/index.d.ts",
+          "static/esm/views/personal/components/shared.d.ts",
+          "static/esm/views/personal/components/actions.d.ts",
+          "static/esm/views/personal/components/ItemDetail.d.ts",
+          "static/esm/views/personal/components/usePersonalActions.d.ts",
+          "static/esm/views/personal/components/LegacyItems.d.ts",
+          "static/esm/views/personal/components/PersonalTable.d.ts",
+          "static/esm/views/personal/components/Inbox.d.ts",
+          "static/esm/views/platform/Account/index.d.ts",
+          "static/esm/views/platform/Account/accountActions.d.ts",
+          "static/esm/views/platform/Application/index.d.ts",
+          "static/esm/views/platform/Application/config/resource/index.d.ts",
+          "static/esm/views/platform/Dictionary/index.d.ts",
+          "static/esm/views/platform/Dictionary/config/item/model.d.ts",
+          "static/esm/views/platform/Dictionary/config/item/index.d.ts",
+          "static/esm/views/platform/AccountAudit/index.d.ts",
+          "static/esm/views/platform/Tenant/index.d.ts",
+          "static/esm/views/platform/Tenant/config/package/index.d.ts",
+          "static/esm/views/platform/Tenant/config/user/index.d.ts",
+          "static/esm/views/platform/Organization/memberForms.d.ts",
+          "static/esm/views/platform/Organization/index.d.ts",
+          "static/esm/views/platform/Organization/OrganizationMembersPanel.d.ts",
+          "static/esm/views/platform/Package/index.d.ts",
+          "static/esm/views/platform/Package/config/application/index.d.ts",
+          "static/esm/views/platform/ObjectStorage/forms.d.ts",
+          "static/esm/views/platform/ObjectStorage/index.d.ts",
+          "static/esm/views/platform/ObjectStorage/useStorageList.d.ts",
+          "static/esm/index.js"
+        ],
+        "sha256": "f718067d8683f832e633115289af10bbeb9100a00cacb03742a43347a76d5a44"
+      }
+    ],
+    "frontendPackagingEnabled": true,
+    "probeSource": "import com.fasterxml.jackson.databind.ObjectMapper;\nimport java.util.Collections;\nimport org.simplepoint.remoting.RemoteContract;\nimport org.simplepoint.remoting.RemoteProvider;\nimport org.simplepoint.security.service.ResourceService;\nimport org.simplepoint.security.service.ResourceRegistrationService;\nimport org.simplepoint.security.resource.ResourceRegistrationException;\nimport org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProvider;\nimport org.simplepoint.plugin.rbac.resource.service.properties.ResourceRegistrationProperties;\nimport org.simplepoint.plugin.rbac.resource.service.support.ResourceRegistrationCallerPolicy;\nimport org.simplepoint.platform.composition.ModuleClientPlan;\n\npublic class VerifyResourceCallerArtifacts {\n  public static void main(String[] args) throws Exception {\n    if (ResourceRegistrationService.class.isAssignableFrom(ResourceService.class))\n      throw new AssertionError(\"Local management is still remotely exported\");\n    if (!ResourceRegistrationService.class.getAnnotation(RemoteContract.class).isolateLocalCalls())\n      throw new AssertionError(\"Registration contract lost its mandatory local boundary\");\n    if (!ResourceRegistrationService.class.isAssignableFrom(ResourceRegistrationProvider.class)\n        || !ResourceRegistrationProvider.class.isAnnotationPresent(RemoteProvider.class))\n      throw new AssertionError(\"Dedicated provider missing\");\n    var loader = VerifyResourceCallerArtifacts.class.getClassLoader();\n    for (Class<?> type : new Class<?>[] {ResourceRegistrationProvider.class, ModuleClientPlan.class}) {\n      var entries = Collections.list(loader.getResources(type.getName().replace('.', '/') + \".class\"));\n      if (entries.size() != 1) throw new AssertionError(\"Missing or duplicate class \" + type.getName());\n    }\n    for (String locale : new String[] {\"en-US\", \"zh-CN\"}) {\n      var paths = Collections.list(loader.getResources(\n          \"META-INF/simplepoint/modules/identity/i18n/\" + locale + \"/resources.json\"));\n      if (paths.size() != 1) throw new AssertionError(\"Duplicate or missing translations\");\n      try (var input = paths.getFirst().openStream()) {\n        var messages = new ObjectMapper().readTree(input);\n        if (!messages.has(\"resources.registration.accessDenied\")) throw new AssertionError(\"Missing error translation\");\n      }\n    }\n    try {\n      new ResourceRegistrationCallerPolicy(new ResourceRegistrationProperties()).requireCaller(\"workflow\");\n      throw new AssertionError(\"Unconfigured artifact granted registration access\");\n    } catch (ResourceRegistrationException expected) {\n      if (expected.code() != ResourceRegistrationException.Code.ACCESS_DENIED)\n        throw new AssertionError(\"Wrong rejection category\");\n    }\n    System.out.println(\"Installed artifacts: isolated registration, separate provider, default-deny policy, unique planning class and two error locales verified\");\n  }\n}\n",
+    "probeOutput": "Installed artifacts: isolated registration, separate provider, default-deny policy, unique planning class and two error locales verified\n"
+  },
+  "verifiedScenarios": [
+    "Provider checks authenticated client_credentials identity and service-router.invoke against the exact configured resource owner before any domain mutation, including empty declarations",
+    "Missing policy/identity/scope, display-name impersonation, user credentials, mismatched owner and client are denied; binding freezes policy and rejects wildcard or malformed identities",
+    "Real signed JWT tests verify local service credentials, invalid signatures, grant type, scope, audience and revocation; caller browser/security/authorization context remains isolated",
+    "Missing local security contribution fails closed even when the caller has a valid service context",
+    "Consumer or provider contract can require local isolation regardless of the legacy host setting; a legacy consumer using a different Java interface still respects the provider requirement",
+    "Inbound JSON dispatcher uses the same policy and does not expose ResourceService management methods; explicit local plugin installation still reuses the domain implementation",
+    "Runtime credential configuration and registration policy planning use ModuleClientPlan; actual 20 domain modules plus workflow-http retain equal capabilities and resource-client policy across distributed, standalone and mixed deployment plans",
+    "Client identity planning rejects alias sharing across different hosts, including modules without resource declarations, and rejects overrides for unselected modules",
+    "Actual Common distribution uniquely packages the dedicated provider and identity planner, preserves isolation metadata, denies unconfigured registration and includes both error locales"
+  ],
+  "limitations": [
+    "Signed JWT and dispatcher verification is in-process; domain writes in security tests are explicit mocks, not a deployed OAuth/HTTP/browser acceptance",
+    "Policy generation is an API; actual credential provisioning, secret distribution, config publishing and cold-start/upgrade acceptance remain installer work",
+    "Legacy profile source mappings have not been applied to live Consul; modular hosts must use policies derived from their complete deployment plan",
+    "No persistent cross-process resource-catalog serialization, stale deployment generation fence, or automated legacy ownership adoption yet",
+    "No production data/config changes, deployment, commit or push; no temporary database or broker infrastructure was created in this increment",
+    "Standalone host, remaining HTTP/frontend contributions and three-topology end-to-end acceptance remain incomplete"
+  ],
+  "sources": {
+    "simplepoint-remoting/simplepoint-remoting-core/src/main/java/org/simplepoint/remoting/RemoteContract.java": "90d542063b682b1af45a9c6cc67e77763c69a63a1b8e88fc7004bcacd3aa589a",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java": "0f48fef6422f6cd2c4664295805b668efcdbd46a7860b9c765dd5989a6d67148",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/RequiredLocalIsolationTest.java": "93959d30939b07cc015854dd04e71f271a433a3b75ad9eb774d26628ec31e186",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceRegistrationService.java": "26611267b6f9617455bff804b9aa3dbe0761c4232bcfd70186c728940c7887cd",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceService.java": "adc9f4d771d6d5435da6cc251b26c6771ad1544a089d7fd14ac62b1868daf738",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/resource/ResourceRegistrationException.java": "a899ef89c8fd62e8933ea66fc58a4c849ee21a48aa4e11fab4de8980279c12db",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleClientPlan.java": "4f93278bc9f06f9a1ef1d01754466fb9714b47bebb12e35f5d3b555dd0e37571",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourcePlan.java": "e3e8b4d81b2089f839750837c95a5706b2400c9ccc503ae7023159d7b5b42b96",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleResourcePlanTest.java": "a737b0ec463a8dc0f82a18810a3f2c3fa4becb41683ba2b3ade8707062d4a8a7",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleCredentialConfiguration.java": "214b23c0b26c55191f6df071d9866b48d54f6cca1d1d950c56907ac4dcc4660d",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "6e1b1cba28ae0227db6e90b3700ad1ae2cad8947c7d46804f1b5079b4f7f3c34",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/configuration/ResourceRegistrationBoundaryTest.java": "38e34f9a2676ac822ae3c0009ac985217a0a9ba6a32446dae67b8e953208d787",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "32abc2772ea1b68926f4f1f5bba3c274938a95de098b8a6249e087b7e4e9c29c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationProvider.java": "881615f208c0c66318dd3d8bf8ba833a21ca41c1d6ad886e373f480f93c51873",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/properties/ResourceRegistrationProperties.java": "8a5ccde8e1d082eec3e741e98a495a04cd9afe3bb558d2383c7bb9dd7e7a2d3b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceRegistrationCallerPolicy.java": "7e3332fbb782cf8eaf6f77c72299831f928feea2466f65247f3deaa795b65129",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationProviderTest.java": "5d06c741841b5c97b12de737c752b67412f2036f2869b0323138d1491a181e09",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationSecurityTest.java": "e36390a99bdbcde395a9e4b8990aca80b9751f3fa5315e1bc2581e0eae261493",
+    "AGENTS.md": "131fe413fc42ed5e3444c1fbabcfec6b5cacde41fc41bf67c4ed22614003d432",
+    "doc/design/modular_service_composition_plan.md": "20acfebe806c4343ec8f03808d39963211d0cab3cbcc3cf6ec072c3c23664842",
+    "simplepoint-platform/simplepoint-platform-composition/README.md": "bb33b1aaa619626e0d7d9f5541e87669e290e97b0f4d680a649db2c4341e1a2a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/README.md": "d99379e4c21306b716a8d7b87bfe9dc2313e4939fd77b2aa444f382031dae94e",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "6fe6b5c118b00bcf468e616554ae93a4f4852d3bac8482a18b0f107b766f6009",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build.gradle.kts": "102495fbd738b2aeda002cbf267eb9b26438d318d8127b2f10b5c9251fb6577e",
+    "config/consul/profiles/dev/simplepoint/config/application-dev/application.properties": "c0d984d903cf342c63cfeb4827d2d6e1f985e97f1fb7255a9b93583cbd0234a9",
+    "config/consul/profiles/compose/simplepoint/config/common-compose/application.properties": "1f1a35c89ba75177e59b7b2764da14279d65f1236977eb59654bdf539f69a396",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/resources/META-INF/simplepoint/modules/identity/i18n/en-US/resources.json": "7d7f623cd89da9a804d43c5658133874f115fbad29a872d8c122a606778562d9",
+    "simplepoint-react/modules/mocks/src/i18n/bundles/local/en-US.json": "c9668ac9e304a19ef30f5c2ddf92b2d6b90a12395194256f2421bc1751f0da7d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/resources/META-INF/simplepoint/modules/identity/i18n/zh-CN/resources.json": "a42af49fb200733de94697f3a4a9040318b1db7d4de552487a57c2b1ccf86ad7",
+    "simplepoint-react/modules/mocks/src/i18n/bundles/local/zh-CN.json": "e1ad6e4c5499ec3cad60fece1e54d39138678b95a867fa88192c1bb9d6de012e"
+  },
+  "logs": {
+    "quality": {
+      "path": "/tmp/simplepoint-resource-callers-quality.log",
+      "sha256": "79908119d71dd64b7c860e351b06d3970fd77d1e42b79d35dbb5cbc92c63bd10"
+    },
+    "distribution": {
+      "path": "/tmp/simplepoint-resource-callers-distribution.log",
+      "sha256": "41f3e395bd8208d7ef56287209008b0b75f20b4d579434db9590df98d33316d0"
+    },
+    "artifact": {
+      "path": "/tmp/simplepoint-resource-callers-artifact.log",
+      "sha256": "82b27032ae6f87015c6fb300a2a680cef857786bf0017988a7d0325d52e6188e"
+    },
+    "i18n-check": {
+      "path": "/tmp/simplepoint-resource-callers-i18n-check.log",
+      "sha256": "ad58915dbcb2318d20fe1a2902850a398fbca38c3d93f34b8bec15fac72e1641"
+    },
+    "typecheck": {
+      "path": "/tmp/simplepoint-resource-callers-typecheck.log",
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    }
+  }
+}

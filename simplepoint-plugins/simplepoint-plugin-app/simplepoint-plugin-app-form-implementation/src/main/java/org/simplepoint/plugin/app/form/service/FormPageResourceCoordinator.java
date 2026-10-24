@@ -54,7 +54,10 @@ public class FormPageResourceCoordinator {
           path,
           "AppstoreOutlined",
           work.sortOrder(),
-          work.pageDescription()
+          work.pageDescription(),
+          work.presentation() == null ? null : work.presentation().name(),
+          work.presentation() == null ? null : work.presentation().navigationRootKey(),
+          work.presentation() == null ? null : work.presentation().navigationRevision()
       ));
       requirePage(work, page, code, path);
       for (ActionDeclaration action : ACTIONS) {
@@ -70,7 +73,7 @@ public class FormPageResourceCoordinator {
             null,
             null,
             action.sort(),
-            null
+            null, actionLocalization(action), null, null
         ));
         requireAction(work, child, code + "." + action.key());
       }
@@ -87,13 +90,15 @@ public class FormPageResourceCoordinator {
   }
 
   private String prepareDirectory(BindingWork work) {
+    if (work.presentation() != null && work.presentation().navigationRootKey() != null) return work.presentation().parentManagedKey();
     if (work.navigationGroupName() == null) {
       return null;
     }
     String key = "application:" + work.applicationId();
     ManagedTenantResourceView directory = resources.prepare(new ManagedTenantResourceCommand(work.tenantId(), key,
         "app.runtime.group." + stableSuffix(work.applicationId()), work.navigationGroupName(),
-        ResourceType.GROUP, null, null, null, null, "TeamOutlined", 100, null));
+        ResourceType.GROUP, null, null, null, null, "TeamOutlined", 100, null,
+        work.presentation() == null ? null : work.presentation().groupName(), null, null));
     // The directory is activated before its first page is prepared. Never activate the
     // directory again during later page publications: that would affect sibling pages.
     if (!directory.enabled()) {
@@ -204,6 +209,14 @@ public class FormPageResourceCoordinator {
       String runtimePath,
       boolean enabled
   ) {
+  }
+
+  private static org.simplepoint.api.locale.LocalizedText actionLocalization(ActionDeclaration action) {
+    String english = switch (action.key()) {case "records.create" -> "Create"; case "records.edit" -> "Edit";
+      case "records.delete" -> "Delete"; case "process.start" -> "Submit for approval"; default -> throw new IllegalArgumentException();};
+    String japanese = switch (action.key()) {case "records.create" -> "新規作成"; case "records.edit" -> "編集";
+      case "records.delete" -> "削除"; case "process.start" -> "承認申請"; default -> throw new IllegalArgumentException();};
+    return new org.simplepoint.api.locale.LocalizedText(action.name(), "zh-CN", java.util.Map.of("en", english, "ja", japanese));
   }
 
   private record ActionDeclaration(String key, String name, int sort) {

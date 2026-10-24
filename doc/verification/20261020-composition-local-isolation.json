@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-20",
+  "phase": "S2 isolated local transport and authenticated host boundary; full objective incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-service-router:simplepoint-service-router-core:check :simplepoint-security:simplepoint-security-oauth2-resource:check :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-resource",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 490,
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-service-router/simplepoint-service-router-core/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-service-router/simplepoint-service-router-core/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml",
+      "violations": 0
+    }
+  ],
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "verified": [
+    "New module hosts automatically enable isolated local transport and reject an explicit attempt to disable it. Existing service entrypoints retain compatibility mode until migrated.",
+    "Wire copying preserves decimals and prevents caller/provider object aliasing; inheritable thread and Servlet request context do not enter local provider execution.",
+    "Real H2 transactions show provider commit survives caller rollback; provider rollback does not mark the caller transaction rollback-only. Contract business errors round-trip through the shared decoder.",
+    "Nested calls share bounded capacity and one deadline; depth is bounded. Timed-out workers and descendants retain capacity until they exit; writes are not retried. Slow context setup cannot start provider work after the deadline. Shutdown cancels waiting calls and rejects new work.",
+    "RSA-signed token tests cover service claims, scope, signature, issuer, expiry, audience, revocation, refresh before invocation and Spring auto-configuration. Browser authentication and authorization context are not inherited.",
+    "HTTP OAuth RPC access now requires authenticated service grant claims as well as invocation authority; a user token or name plus scope is insufficient."
+  ],
+  "limitations": [
+    "Host service identity is verified; logical per-module caller identity/credential selection within an aggregate host is still pending.",
+    "UsersService remains the legacy entity/credential interface. DNA credential verification must be migrated with account-state, rate-limit and MFA policy before aggregate deployment.",
+    "H2 and in-process Spring fixtures do not prove production PostgreSQL topology equivalence, actual OAuth server/network deployment or all business transaction boundaries.",
+    "No standalone service or deployment delivered in this phase; storage, event, frontend/HTTP and final three-topology acceptance remain pending.",
+    "Cancellation requests interruption and reports uncertain completion; it cannot guarantee rollback of already executing business writes."
+  ],
+  "sourceSha256": {
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/PlatformModuleRegistrar.java": "10c7b449cd073651b548e85b14b39a4bf49b702ca33170654930e7d8ab4b843a",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/PlatformModuleAssemblyTest.java": "a8360d90e2e287ef56bb764d4fbff01d0135e60373f58c3a523a12803c9696cc",
+    "simplepoint-security/simplepoint-security-oauth2-resource/build.gradle.kts": "caab3b15767e017925247f007ad90a05c3351b1a5eadd505f19c82859c9b9ef6",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/ServiceRouterLocalAuthentication.java": "e20f7f359b6ece55cefc9eaad53e6a77cfbc96849cd0a44e2217e7765c0dd3cd",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ResourceServerAutoConfiguration.java": "5819f5707cecc8f6c09a34819cbef9837f58aa64d70ffac4f4130e72d9977510",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ServiceRouterLocalSecurityAutoConfiguration.java": "7e76e2c5a85ed58c504aaaa2537b78fbb6aee1026a15bb4c34e310c941cd0cb1",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports": "796e6a24be886868b3fb2b94042309bbfb4d0125214db0ecec79a70fa8927b9f",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/AuthorizationContextFilterTest.java": "948e10d7750cc50c472ba38a628471a7aac00ed37f28a68334f99b48bd4f16ae",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/ServiceRouterLocalAuthenticationTest.java": "dc8a051d8ff53ea299c35758a52cff4b098ae7d536fab50319f7e3a411c98e46",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/config/ServiceRouterBoundaryTest.java": "09c461dc225b8709a081a4b357dde57fd8f60fb9f62e4e43901ae474d042bdf4",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/StandardResourcePermissionCatalogTest.java": "971077fb96e79403b3fbf265d551fe916601b4126ee4c3494fd079ab63f07ef8",
+    "simplepoint-service-router/simplepoint-service-router-core/build.gradle.kts": "00d86b44a0fd37db193569191ceaf052e03541ec87321384e6e18ae816b6e9e3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProperties.java": "779e49738bf225e0f4f29dccb46d52710db3165500ab55725baf3e50edfadd4f",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRuntimeConfiguration.java": "ea5bd800bc5244f6ee6379b1eb74709b12e6a78f89f66d4a44d559fc48e6bcbb",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/IsolatedLocalInvoker.java": "8653c27a52f79c757c7a2c0a28788ffbacaef113f116f7f7738f3d8b223d14aa",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/LocalInvocationContext.java": "a89de534c7434184a1c04a611fab5e9aa8e0cecb8550312c2df966edd5b1e0f7",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcher.java": "606ee4f1a074562394cf0df889b9674e816218ab7c0498f376668ee075023bf8",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java": "8f0985d58808ee9e73cc6095eeb48dfb5c49139de74506e95d0e80cd798cbf92",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/IsolatedLocalInvocationTest.java": "59c9634a3c53beff31586b5dff5db03bf73a9d05d9d990cfb7a9161248449200"
+  }
+}

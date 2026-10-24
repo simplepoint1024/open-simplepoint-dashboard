@@ -14,6 +14,7 @@ import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.core.datascopeannotation.DataScopeCondition;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.data.jpa.DataScopePredicates;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.TenantMemberCommand;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.TenantMemberView;
@@ -166,7 +167,7 @@ public class TenantMemberServiceImpl implements TenantMemberService {
     if (page == null
         || page.isUnpaged()
         || page.getPageSize() < 1
-        || page.getPageSize() > 100
+        || page.getPageSize() > TablePagination.MAX_PAGE_SIZE
         || page.getOffset() > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("每页最多 100 条");
     }

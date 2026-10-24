@@ -15,28 +15,59 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /** Read-only authority-to-scope catalog built from module resource declarations. */
-public class ClasspathResourceScopeRegistry {
+public class ClasspathResourceScopeRegistry
+    implements org.simplepoint.security.ResourceScopeCatalog {
 
   private static final String RESOURCE_PATTERN = "classpath*:META-INF/simplepoint/resources/*.json";
 
   private final Map<String, Set<ResourceScopeType>> scopesByCode;
   private final Map<String, String> pageByCode;
-  private final Map<Class<?>, Optional<String>> controllerPages = new java.util.concurrent.ConcurrentHashMap<>();
+  private final Map<Class<?>, Optional<String>> controllerPages =
+      new java.util.concurrent.ConcurrentHashMap<>();
 
-  /** Creates and validates a catalog from every resource manifest on the service classpath. */
+  /** Creates the legacy catalog from all declarations packaged with the original service. */
   public ClasspathResourceScopeRegistry(final ObjectMapper objectMapper) throws IOException {
+    this(objectMapper, null, org.springframework.util.ClassUtils.getDefaultClassLoader());
+  }
+
+  /** In a modular host reads only selected, explicit and uniquely owned resource declarations. */
+  public ClasspathResourceScopeRegistry(
+      final ObjectMapper objectMapper,
+      org.simplepoint.platform.composition.ModulePlan modules,
+      ClassLoader loader)
+      throws IOException {
     Map<String, Set<ResourceScopeType>> scopes = new LinkedHashMap<>();
     Map<String, String> pages = new LinkedHashMap<>();
-    var resolver = new PathMatchingResourcePatternResolver();
-    for (Resource resource : resolver.getResources(RESOURCE_PATTERN)) {
-      try (var input = resource.getInputStream()) {
-        JsonNode document = objectMapper.readTree(input);
-        JsonNode roots = document.isArray() ? document : document.path("resources");
-        if (!roots.isArray()) {
-          continue;
+    if (modules != null) {
+      for (var entry :
+          org.simplepoint.platform.composition.ModuleResourcePlan.owners(modules).entrySet()) {
+        var declarations =
+            org.simplepoint.security.resource.ResourceDeclarationDocument.read(
+                entry.getKey(),
+                entry.getValue(),
+                org.simplepoint.platform.composition.ModuleResources.read(
+                    entry.getKey(), loader, "resources.json"));
+        for (JsonNode root : declarations.resources()) {
+          collect(root, Set.of(), null, scopes, pages, entry.getKey(), true);
         }
-        for (JsonNode root : roots) {
-          collect(root, Set.of(), null, scopes, pages, resource.getDescription());
+      }
+    } else {
+      var resolver = new PathMatchingResourcePatternResolver(loader);
+      for (String pattern :
+          new String[] {
+            RESOURCE_PATTERN, "classpath*:META-INF/simplepoint/modules/*/resources.json"
+          }) {
+        for (Resource resource : resolver.getResources(pattern)) {
+          try (var input = resource.getInputStream()) {
+            JsonNode document = objectMapper.readTree(input);
+            JsonNode roots = document.isArray() ? document : document.path("resources");
+            if (!roots.isArray()) {
+              continue;
+            }
+            for (JsonNode root : roots) {
+              collect(root, Set.of(), null, scopes, pages, resource.getDescription(), false);
+            }
+          }
         }
       }
     }
@@ -48,17 +79,18 @@ public class ClasspathResourceScopeRegistry {
     this(scopesByCode, Map.of());
   }
 
-  ClasspathResourceScopeRegistry(final Map<String, Set<ResourceScopeType>> scopesByCode,
+  ClasspathResourceScopeRegistry(
+      final Map<String, Set<ResourceScopeType>> scopesByCode,
       final Map<String, String> pageByCode) {
     Map<String, Set<ResourceScopeType>> scopes = new LinkedHashMap<>();
-    scopesByCode.forEach((code, values) ->
-        scopes.put(code, ResourceScopePolicy.effectiveScopes(values))
-    );
+    scopesByCode.forEach(
+        (code, values) -> scopes.put(code, ResourceScopePolicy.effectiveScopes(values)));
     this.scopesByCode = Collections.unmodifiableMap(scopes);
     this.pageByCode = Map.copyOf(pageByCode);
   }
 
   /** Returns the declared effective scopes for an authority code. */
+  @Override
   public Optional<Set<ResourceScopeType>> findScopes(final String resourceCode) {
     if (resourceCode == null || resourceCode.isBlank()) {
       return Optional.empty();
@@ -79,21 +111,34 @@ public class ClasspathResourceScopeRegistry {
   private Optional<String> resolveControllerPage(Class<?> controller) {
     Set<String> pages = new java.util.LinkedHashSet<>();
     for (var method : controller.getMethods()) {
-      var get = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
-          method, org.springframework.web.bind.annotation.GetMapping.class);
-      if (get == null || java.util.Arrays.stream(get.value()).anyMatch(path -> !path.isBlank())
-          || java.util.Arrays.stream(get.path()).anyMatch(path -> !path.isBlank())) continue;
-      var permission = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
-          method, org.springframework.security.access.prepost.PreAuthorize.class);
-      if (permission == null) permission = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
-          controller, org.springframework.security.access.prepost.PreAuthorize.class);
-      if (permission != null) ResourceScopeHandlerInterceptor.extractAuthorities(permission.value())
-          .forEach(authority -> findPage(authority).ifPresent(pages::add));
+      var get =
+          org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+              method, org.springframework.web.bind.annotation.GetMapping.class);
+      if (get == null
+          || java.util.Arrays.stream(get.value()).anyMatch(path -> !path.isBlank())
+          || java.util.Arrays.stream(get.path()).anyMatch(path -> !path.isBlank())) {
+        continue;
+      }
+      var permission =
+          org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+              method, org.springframework.security.access.prepost.PreAuthorize.class);
+      if (permission == null) {
+        permission =
+            org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+                controller, org.springframework.security.access.prepost.PreAuthorize.class);
+      }
+      if (permission != null) {
+        ResourceScopeHandlerInterceptor.extractAuthorities(permission.value())
+            .forEach(authority -> findPage(authority).ifPresent(pages::add));
+      }
     }
     if (pages.isEmpty()) {
-      var explicit = org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
-          controller, org.simplepoint.core.permission.PermissionPage.class);
-      if (explicit != null) return Optional.of(explicit.value());
+      var explicit =
+          org.springframework.core.annotation.AnnotatedElementUtils.findMergedAnnotation(
+              controller, org.simplepoint.core.permission.PermissionPage.class);
+      if (explicit != null) {
+        return Optional.of(explicit.value());
+      }
     }
     return pages.size() == 1 ? Optional.of(pages.iterator().next()) : Optional.empty();
   }
@@ -109,28 +154,40 @@ public class ClasspathResourceScopeRegistry {
       final String parentPage,
       final Map<String, Set<ResourceScopeType>> target,
       final Map<String, String> pages,
-      final String source
-  ) {
+      final String source,
+      boolean strict) {
     Set<ResourceScopeType> declared = readScopes(node);
-    Set<ResourceScopeType> effective = declared.isEmpty()
-        ? (parentScopes.isEmpty() ? ResourceScopePolicy.effectiveScopes(Set.of()) : parentScopes)
-        : ResourceScopePolicy.effectiveScopes(declared);
+    Set<ResourceScopeType> effective =
+        declared.isEmpty()
+            ? (parentScopes.isEmpty()
+                ? ResourceScopePolicy.effectiveScopes(Set.of())
+                : parentScopes)
+            : ResourceScopePolicy.effectiveScopes(declared);
     if (!parentScopes.isEmpty() && !ResourceScopePolicy.isValidChild(parentScopes, effective)) {
-      throw new IllegalStateException("Resource scope exceeds parent boundary in " + source
-          + ": " + node.path("code").asText("<unknown>"));
+      throw new IllegalStateException(
+          "Resource scope exceeds parent boundary in "
+              + source
+              + ": "
+              + node.path("code").asText("<unknown>"));
     }
 
     String code = node.path("code").asText(null);
     String page = "PAGE".equals(node.path("type").asText()) ? code : parentPage;
     if (code != null && !code.isBlank()) {
+      if (strict && target.containsKey(code)) {
+        throw new org.simplepoint.platform.composition.ModuleCompositionException(
+            "DUPLICATE_RESOURCE_CODE", code);
+      }
       Set<ResourceScopeType> previous = target.putIfAbsent(code, effective);
       if (previous != null && !previous.equals(effective)) {
-        throw new IllegalStateException("Conflicting resource scopes for " + code + " in " + source);
+        throw new IllegalStateException(
+            "Conflicting resource scopes for " + code + " in " + source);
       }
       if (page != null) {
         String existingPage = pages.putIfAbsent(code, page);
         if (existingPage != null && !existingPage.equals(page)) {
-          throw new IllegalStateException("Conflicting page resource for " + code + " in " + source);
+          throw new IllegalStateException(
+              "Conflicting page resource for " + code + " in " + source);
         }
       }
     }
@@ -138,7 +195,7 @@ public class ClasspathResourceScopeRegistry {
     JsonNode children = node.path("children");
     if (children.isArray()) {
       for (JsonNode child : children) {
-        collect(child, effective, page, target, pages, source);
+        collect(child, effective, page, target, pages, source, strict);
       }
     }
   }

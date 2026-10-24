@@ -13,7 +13,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -42,9 +41,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
-/**
- * Dedicated TCP socket server used by the DNA JDBC driver.
- */
+/** Dedicated TCP socket server used by the DNA JDBC driver. */
 @Component
 public class FederationJdbcSocketServer implements DisposableBean {
 
@@ -108,33 +105,34 @@ public class FederationJdbcSocketServer implements DisposableBean {
    */
   public FederationJdbcSocketServer(final FederationJdbcDriverService driverService) {
     this.driverService = driverService;
-    this.objectMapper = new ObjectMapper()
-        .findAndRegisterModules()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    this.acceptExecutor = Executors.newSingleThreadExecutor(runnable -> {
-      Thread thread = new Thread(runnable, "dna-jdbc-socket-accept");
-      thread.setDaemon(true);
-      return thread;
-    });
-    this.connectionExecutor = new ThreadPoolExecutor(
-        4,
-        200,
-        60L,
-        TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(64),
-        runnable -> {
-          Thread thread = new Thread(runnable, "dna-jdbc-socket-client");
-          thread.setDaemon(true);
-          return thread;
-        },
-        new ThreadPoolExecutor.AbortPolicy()
-    );
+    this.objectMapper =
+        new ObjectMapper()
+            .findAndRegisterModules()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    this.acceptExecutor =
+        Executors.newSingleThreadExecutor(
+            runnable -> {
+              Thread thread = new Thread(runnable, "dna-jdbc-socket-accept");
+              thread.setDaemon(true);
+              return thread;
+            });
+    this.connectionExecutor =
+        new ThreadPoolExecutor(
+            4,
+            200,
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(64),
+            runnable -> {
+              Thread thread = new Thread(runnable, "dna-jdbc-socket-client");
+              thread.setDaemon(true);
+              return thread;
+            },
+            new ThreadPoolExecutor.AbortPolicy());
     this.started = new AtomicBoolean(false);
   }
 
-  /**
-   * Starts the JDBC socket listener after the DNA application is ready.
-   */
+  /** Starts the JDBC socket listener after the DNA application is ready. */
   @EventListener(ApplicationReadyEvent.class)
   public void start() {
     if (!enabled || !started.compareAndSet(false, true)) {
@@ -163,20 +161,18 @@ public class FederationJdbcSocketServer implements DisposableBean {
     }
     if (sslKeyStore == null || sslKeyStore.isBlank()) {
       throw new IllegalStateException(
-          "SSL enabled but simplepoint.dna.jdbc.socket.ssl.key-store is not configured"
-      );
+          "SSL enabled but simplepoint.dna.jdbc.socket.ssl.key-store is not configured");
     }
     try {
       KeyStore keyStore = KeyStore.getInstance(sslKeyStoreType);
       Resource resource = new DefaultResourceLoader().getResource(sslKeyStore);
-      char[] passwordChars = sslKeyStorePassword == null
-          ? new char[0] : sslKeyStorePassword.toCharArray();
+      char[] passwordChars =
+          sslKeyStorePassword == null ? new char[0] : sslKeyStorePassword.toCharArray();
       try (InputStream stream = resource.getInputStream()) {
         keyStore.load(stream, passwordChars);
       }
-      KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
-          KeyManagerFactory.getDefaultAlgorithm()
-      );
+      KeyManagerFactory keyManagerFactory =
+          KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(keyStore, passwordChars);
       SSLContext sslContext = SSLContext.getInstance("TLS");
       sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
@@ -211,11 +207,11 @@ public class FederationJdbcSocketServer implements DisposableBean {
   }
 
   private void handleConnection(final Socket socket) {
-    try (
-        Socket client = socket;
-        DataInputStream inputStream = new DataInputStream(new BufferedInputStream(client.getInputStream()));
-        DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(client.getOutputStream()))
-    ) {
+    try (Socket client = socket;
+        DataInputStream inputStream =
+            new DataInputStream(new BufferedInputStream(client.getInputStream()));
+        DataOutputStream outputStream =
+            new DataOutputStream(new BufferedOutputStream(client.getOutputStream()))) {
       client.setSoTimeout(idleTimeoutMs);
       ConnectionSession session = null;
       try {
@@ -236,10 +232,10 @@ public class FederationJdbcSocketServer implements DisposableBean {
             session = outcome.session();
             response = outcome.response();
           } catch (AccessDeniedException | IllegalArgumentException | IllegalStateException ex) {
-            response = SocketResponse.error(rootMessage(ex));
+            response = SocketResponse.error(ex);
           } catch (RuntimeException ex) {
             LOGGER.warn("DNA JDBC Socket request failed: {}", rootMessage(ex));
-            response = SocketResponse.error(rootMessage(ex));
+            response = SocketResponse.error(ex);
           }
           writeResponse(outputStream, response);
           if ("CLOSE".equalsIgnoreCase(request.action())) {
@@ -254,138 +250,176 @@ public class FederationJdbcSocketServer implements DisposableBean {
     }
   }
 
-  private RequestOutcome handleRequest(final ConnectionSession session, final SocketRequest request) {
+  private RequestOutcome handleRequest(
+      final ConnectionSession session, final SocketRequest request) {
     String action = normalizeAction(request.action());
     if ("CONNECT".equals(action)) {
-      FederationJdbcDriverModels.DriverRequest driverRequest = new FederationJdbcDriverModels.DriverRequest(
-          request.loginSubject(),
-          request.password(),
-          request.catalogCode(),
-          request.tenantId(),
-          request.contextId()
-      );
-      FederationJdbcDriverService.DriverSession driverSession = driverService.openSession(driverRequest);
-      FederationJdbcDriverModels.PingResult pingResult = driverService.ping(driverSession, request.contextId());
-      ConnectionSession nextSession = new ConnectionSession(driverSession, pingResult.contextId());
-      return new RequestOutcome(nextSession, SocketResponse.ping(pingResult));
+      FederationJdbcDriverModels.DriverRequest driverRequest =
+          new FederationJdbcDriverModels.DriverRequest(
+              request.loginSubject(),
+              request.password(),
+              request.catalogCode(),
+              request.tenantId(),
+              request.contextId(),
+              request.oneTimeCode());
+      FederationJdbcDriverService.DriverSession driverSession =
+          driverService.openSession(driverRequest);
+      try {
+        FederationJdbcDriverModels.PingResult pingResult =
+            driverService.ping(driverSession, request.contextId());
+        ConnectionSession nextSession =
+            new ConnectionSession(driverSession, pingResult.contextId());
+        return new RequestOutcome(nextSession, SocketResponse.ping(pingResult));
+      } catch (RuntimeException failure) {
+        try {
+          driverSession.close();
+        } catch (RuntimeException cleanup) {
+          failure.addSuppressed(cleanup);
+        }
+        throw failure;
+      }
     }
     ConnectionSession requiredSession = requireSession(session);
     String contextId = resolveContextId(requiredSession, request.contextId());
     return switch (action) {
       case "PING" -> {
-        FederationJdbcDriverModels.PingResult pingResult = driverService.ping(requiredSession.driverSession(), contextId);
-        yield new RequestOutcome(requiredSession.withContextId(pingResult.contextId()), SocketResponse.ping(pingResult));
+        FederationJdbcDriverModels.PingResult pingResult =
+            driverService.ping(requiredSession.driverSession(), contextId);
+        yield new RequestOutcome(
+            requiredSession.withContextId(pingResult.contextId()), SocketResponse.ping(pingResult));
       }
-      case "CATALOGS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.catalogs(requiredSession.driverSession(), contextId))
-      );
-      case "SCHEMAS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.schemas(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern()
-          ))
-      );
-      case "TABLE_TYPES" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.tableTypes(requiredSession.driverSession(), contextId))
-      );
-      case "TABLES" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.tables(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern(),
-              request.types()
-          ))
-      );
-      case "COLUMNS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.columns(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern(),
-              request.columnPattern()
-          ))
-      );
-      case "PRIMARY_KEYS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.primaryKeys(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern()
-          ))
-      );
-      case "INDEX_INFO" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.indexInfo(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern(),
-              Boolean.TRUE.equals(request.unique()),
-              !Boolean.FALSE.equals(request.approximate())
-          ))
-      );
-      case "IMPORTED_KEYS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.importedKeys(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern()
-          ))
-      );
-      case "EXPORTED_KEYS" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.exportedKeys(
-              requiredSession.driverSession(),
-              contextId,
-              request.catalogPattern(),
-              request.schemaPattern(),
-              request.tablePattern()
-          ))
-      );
-      case "TYPE_INFO" -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.tabular(driverService.typeInfo(requiredSession.driverSession(), contextId))
-      );
-      case "QUERY" -> acquireAndExecute(() -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.query(driverService.query(
-              requiredSession.driverSession(),
-              contextId,
-              // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters(), request.maxRows())
-          ))
-      ));
-      case "EXECUTE_UPDATE" -> acquireAndExecute(() -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.update(driverService.executeUpdate(
-              requiredSession.driverSession(),
-              contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
-          ))
-      ));
-      case "EXECUTE_DDL" -> acquireAndExecute(() -> new RequestOutcome(
-          requiredSession,
-          SocketResponse.update(driverService.executeDdl(
-              requiredSession.driverSession(),
-              contextId,
-              new FederationJdbcDriverModels.QueryRequest(request.sql(), request.defaultSchema(), request.catalogCode(), request.parameters())
-          ))
-      ));
+      case "CATALOGS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.catalogs(requiredSession.driverSession(), contextId)));
+      case "SCHEMAS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.schemas(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern())));
+      case "TABLE_TYPES" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.tableTypes(requiredSession.driverSession(), contextId)));
+      case "TABLES" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.tables(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern(),
+                      request.types())));
+      case "COLUMNS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.columns(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern(),
+                      request.columnPattern())));
+      case "PRIMARY_KEYS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.primaryKeys(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern())));
+      case "INDEX_INFO" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.indexInfo(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern(),
+                      Boolean.TRUE.equals(request.unique()),
+                      !Boolean.FALSE.equals(request.approximate()))));
+      case "IMPORTED_KEYS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.importedKeys(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern())));
+      case "EXPORTED_KEYS" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.exportedKeys(
+                      requiredSession.driverSession(),
+                      contextId,
+                      request.catalogPattern(),
+                      request.schemaPattern(),
+                      request.tablePattern())));
+      case "TYPE_INFO" ->
+          new RequestOutcome(
+              requiredSession,
+              SocketResponse.tabular(
+                  driverService.typeInfo(requiredSession.driverSession(), contextId)));
+      case "QUERY" ->
+          acquireAndExecute(
+              () ->
+                  new RequestOutcome(
+                      requiredSession,
+                      SocketResponse.query(
+                          driverService.query(
+                              requiredSession.driverSession(),
+                              contextId,
+                              // CHECKSTYLE.SUPPRESS: LineLength for +1 lines
+                              new FederationJdbcDriverModels.QueryRequest(
+                                  request.sql(),
+                                  request.defaultSchema(),
+                                  request.catalogCode(),
+                                  request.parameters(),
+                                  request.maxRows())))));
+      case "EXECUTE_UPDATE" ->
+          acquireAndExecute(
+              () ->
+                  new RequestOutcome(
+                      requiredSession,
+                      SocketResponse.update(
+                          driverService.executeUpdate(
+                              requiredSession.driverSession(),
+                              contextId,
+                              new FederationJdbcDriverModels.QueryRequest(
+                                  request.sql(),
+                                  request.defaultSchema(),
+                                  request.catalogCode(),
+                                  request.parameters())))));
+      case "EXECUTE_DDL" ->
+          acquireAndExecute(
+              () ->
+                  new RequestOutcome(
+                      requiredSession,
+                      SocketResponse.update(
+                          driverService.executeDdl(
+                              requiredSession.driverSession(),
+                              contextId,
+                              new FederationJdbcDriverModels.QueryRequest(
+                                  request.sql(),
+                                  request.defaultSchema(),
+                                  request.catalogCode(),
+                                  request.parameters())))));
       case "CLOSE" -> new RequestOutcome(requiredSession, SocketResponse.ok());
       case "FLUSH_CACHE" -> {
         driverService.flushCache(requiredSession.driverSession());
@@ -404,7 +438,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
             currentSession = subOutcome.session();
             batchResults.add(subOutcome.response());
           } catch (Exception ex) {
-            batchResults.add(SocketResponse.error(rootMessage(ex)));
+            batchResults.add(SocketResponse.error(ex));
           }
         }
         yield new RequestOutcome(currentSession, SocketResponse.batch(batchResults));
@@ -414,9 +448,9 @@ public class FederationJdbcSocketServer implements DisposableBean {
   }
 
   /**
-   * Acquires a query permit from the concurrency semaphore, executes the
-   * action, and releases the permit. Rejects immediately when the pool
-   * is exhausted to prevent queue buildup under heavy load.
+   * Acquires a query permit from the concurrency semaphore, executes the action, and releases the
+   * permit. Rejects immediately when the pool is exhausted to prevent queue buildup under heavy
+   * load.
    */
   private RequestOutcome acquireAndExecute(final QueryAction action) {
     Semaphore sem = querySemaphore;
@@ -454,10 +488,8 @@ public class FederationJdbcSocketServer implements DisposableBean {
     return objectMapper.readValue(payload, SocketRequest.class);
   }
 
-  private void writeResponse(
-      final DataOutputStream outputStream,
-      final SocketResponse response
-  ) throws IOException {
+  private void writeResponse(final DataOutputStream outputStream, final SocketResponse response)
+      throws IOException {
     byte[] payload = objectMapper.writeValueAsBytes(response);
     outputStream.writeInt(payload.length);
     outputStream.write(payload);
@@ -478,11 +510,15 @@ public class FederationJdbcSocketServer implements DisposableBean {
     return session;
   }
 
-  private static String resolveContextId(final ConnectionSession session, final String requestContextId) {
-    return requestContextId == null || requestContextId.isBlank() ? session.contextId() : requestContextId;
+  private static String resolveContextId(
+      final ConnectionSession session, final String requestContextId) {
+    return requestContextId == null || requestContextId.isBlank()
+        ? session.contextId()
+        : requestContextId;
   }
 
-  private void closeReplacedSession(final ConnectionSession previous, final ConnectionSession next) {
+  private void closeReplacedSession(
+      final ConnectionSession previous, final ConnectionSession next) {
     if (previous == null) {
       return;
     }
@@ -520,9 +556,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
     return message == null || message.isBlank() ? throwable.getClass().getSimpleName() : message;
   }
 
-  /**
-   * Stops the JDBC socket listener and releases background executors.
-   */
+  /** Stops the JDBC socket listener and releases background executors. */
   @Override
   public void destroy() throws Exception {
     running = false;
@@ -535,9 +569,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
   }
 
   private record ConnectionSession(
-      FederationJdbcDriverService.DriverSession driverSession,
-      String contextId
-  ) {
+      FederationJdbcDriverService.DriverSession driverSession, String contextId) {
 
     private ConnectionSession withContextId(final String resolvedContextId) {
       return resolvedContextId == null || resolvedContextId.isBlank()
@@ -546,8 +578,7 @@ public class FederationJdbcSocketServer implements DisposableBean {
     }
   }
 
-  private record RequestOutcome(ConnectionSession session, SocketResponse response) {
-  }
+  private record RequestOutcome(ConnectionSession session, SocketResponse response) {}
 
   private record SocketRequest(
       String action,
@@ -568,8 +599,12 @@ public class FederationJdbcSocketServer implements DisposableBean {
       Boolean approximate,
       List<SocketRequest> batch,
       List<Object> parameters,
-      Integer maxRows
-  ) {
+      Integer maxRows,
+      String oneTimeCode) {
+    @Override
+    public String toString() {
+      return "SocketRequest[REDACTED]";
+    }
   }
 
   private record SocketResponse(
@@ -579,22 +614,69 @@ public class FederationJdbcSocketServer implements DisposableBean {
       FederationJdbcDriverModels.TabularResult tabularResult,
       FederationQueryModels.SqlQueryResult queryResult,
       FederationQueryModels.SqlUpdateResult updateResult,
-      List<SocketResponse> batchResults
-  ) {
+      List<SocketResponse> batchResults,
+      String errorCode,
+      String messageKey,
+      String sqlState) {
+    private SocketResponse(
+        Boolean success,
+        String errorMessage,
+        FederationJdbcDriverModels.PingResult pingResult,
+        FederationJdbcDriverModels.TabularResult tabularResult,
+        FederationQueryModels.SqlQueryResult queryResult,
+        FederationQueryModels.SqlUpdateResult updateResult,
+        List<SocketResponse> batchResults) {
+      this(
+          success,
+          errorMessage,
+          pingResult,
+          tabularResult,
+          queryResult,
+          updateResult,
+          batchResults,
+          null,
+          null,
+          null);
+    }
 
-    private static SocketResponse ok() {
-      return new SocketResponse(true, null, null, null, null, null, null);
+    private static SocketResponse error(Exception failure) {
+      if (failure
+          instanceof
+          org.simplepoint.plugin.rbac.core.api.authentication.CredentialAuthenticationException
+              credential) {
+        return new SocketResponse(
+            false,
+            credential.getMessage(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            credential.remoteErrorCode(),
+            credential.messageKey(),
+            credential.code()
+                    == org.simplepoint.plugin.rbac.core.api.authentication
+                        .CredentialAuthenticationException.Code.UNAVAILABLE
+                ? "08004"
+                : "28000");
+      }
+      return error(rootMessage(failure));
     }
 
     private static SocketResponse error(final String errorMessage) {
       return new SocketResponse(false, errorMessage, null, null, null, null, null);
     }
 
+    private static SocketResponse ok() {
+      return new SocketResponse(true, null, null, null, null, null, null);
+    }
+
     private static SocketResponse ping(final FederationJdbcDriverModels.PingResult pingResult) {
       return new SocketResponse(true, null, pingResult, null, null, null, null);
     }
 
-    private static SocketResponse tabular(final FederationJdbcDriverModels.TabularResult tabularResult) {
+    private static SocketResponse tabular(
+        final FederationJdbcDriverModels.TabularResult tabularResult) {
       return new SocketResponse(true, null, null, tabularResult, null, null, null);
     }
 

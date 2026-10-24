@@ -1,5 +1,6 @@
 import type {FormFieldDefinition, FormComponentDefinition, FormValue} from './contracts.ts';
 import {choiceValue} from './choiceValues.ts';
+import {selectionOptions} from '../FormComponents/Standard/model.ts';
 
 export function fieldSchema(field: FormFieldDefinition, component: FormComponentDefinition) {
   const base: Record<string, any> = {
@@ -27,6 +28,10 @@ export function fieldSchema(field: FormFieldDefinition, component: FormComponent
     default: Object.assign(base, {type: 'string', ...(field.length ? {maxLength: field.length} : {})});
   }
   if (component.componentType === 'field.rating') Object.assign(base, {minimum: 0, maximum: Number(component.properties.count?.value ?? 5)});
+  if (component.componentType === 'field.cascader' || component.componentType === 'field.transfer') {
+    base['x-display-selection'] = {kind: component.componentType === 'field.cascader' ? 'path' : 'multiple',
+      options: selectionOptions(component.properties.options?.value ?? undefined)};
+  }
   if (field.choices.length) {
     base.type = field.type === 'BOOLEAN' ? 'boolean' : field.type === 'INT32' ? 'integer' : 'string';
     delete base['x-ui'];

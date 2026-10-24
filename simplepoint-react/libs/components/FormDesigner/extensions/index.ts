@@ -7,19 +7,28 @@ import type {FormComponentDefinition, FormFieldWritePolicy} from '../../FormRunt
 import type {ComponentDescriptor, DesignDocument} from '../contracts';
 import MatrixProperties from '../../FormComponents/Matrix/Properties';
 import {DetailFieldsProperties, DetailIndexesProperties} from '../../FormComponents/Detail/Properties';
+import FieldCalculationProperties from '../FieldCalculationProperties';
+import FieldDependencyProperties from '../FieldDependencyProperties';
 
 export type DesignerPropertyEditorProps = {
   node: FormComponentDefinition; document: DesignDocument; components: readonly ComponentDescriptor[];
   writePolicies: readonly FormFieldWritePolicy[]; disabled: boolean;
   onChange: (node: FormComponentDefinition) => void; onDocumentChange: (document: DesignDocument) => void;
+  onEditField?: (mode: 'stored' | 'calculated') => void;
 };
 /** Every property extension declares its own stable tab identity, icon and content. */
 export type DesignerPropertyTab = {key: string; labelKey: string; label: string; icon: string; component: ComponentType<DesignerPropertyEditorProps>};
+export const calculationPropertyTab: DesignerPropertyTab = {
+  key: 'calculation', labelKey: 'app.calculation.title', label: '计算公式', icon: 'CalculatorOutlined', component: FieldCalculationProperties,
+};
+export const dependencyPropertyTab: DesignerPropertyTab = {
+  key: 'dependencies', labelKey: 'app.calculation.dependencies', label: '依赖关系', icon: 'BranchesOutlined', component: FieldDependencyProperties,
+};
 export class DesignerPropertyRegistry {
   private readonly entries = new Map<string, readonly DesignerPropertyTab[]>();
   constructor(entries: readonly (readonly [string, readonly DesignerPropertyTab[]])[]) {
     for (const [type, tabs] of entries) {
-      if (this.entries.has(type) || tabs.some(tab => !tab.key || tab.key === 'general' || !tab.icon || !tab.labelKey)
+      if (this.entries.has(type) || tabs.some(tab => !tab.key || ['general', 'calculation', 'dependencies'].includes(tab.key) || !tab.icon || !tab.labelKey)
         || new Set(tabs.map(tab => tab.key)).size !== tabs.length) throw new Error('Invalid designer property tabs');
       this.entries.set(type, Object.freeze(tabs.map(tab => Object.freeze({...tab}))));
     }

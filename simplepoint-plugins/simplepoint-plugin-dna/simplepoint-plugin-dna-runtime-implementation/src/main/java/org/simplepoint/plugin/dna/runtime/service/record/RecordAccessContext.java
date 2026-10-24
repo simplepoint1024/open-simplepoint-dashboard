@@ -21,14 +21,14 @@ record RecordAccessContext(
     this(actor, resourceCode, readableFields, writableFields, maskedFields, rowScope, organizationId, 0);
   }
 
-  RecordAccessContext withGeneration(long generation) {
-    return new RecordAccessContext(actor, resourceCode, readableFields, writableFields,
-        maskedFields, rowScope, organizationId, generation);
-  }
-
   RecordAccessContext {
     readableFields = Set.copyOf(readableFields);
     writableFields = Set.copyOf(writableFields);
     maskedFields = Set.copyOf(maskedFields);
+  }
+
+  RecordAccessContext withGeneration(long generation) {
+    return new RecordAccessContext(actor, resourceCode, readableFields, writableFields,
+        maskedFields, rowScope, organizationId, generation);
   }
 }

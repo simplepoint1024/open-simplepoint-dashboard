@@ -1,0 +1,129 @@
+{
+  "date": "2026-10-21",
+  "scope": "Full existing-microservice runtime images; no production replacement",
+  "images": {
+    "authorization": {
+      "tag": "simplepoint203/authorization:20261021-composition-shared",
+      "imageId": "sha256:a8cb43e3a89fb6f4ac6097f22c5609a1cb95c4a9df8271ea1740e577715c2ca1",
+      "healthPort": 9000,
+      "readiness": true,
+      "verifiedFiles": 282,
+      "frontendFilesInVerifiedServiceJar": 0
+    },
+    "common": {
+      "tag": "simplepoint203/common:20261021-composition-shared",
+      "imageId": "sha256:80c71ef1a61fb90bec21ec7219c668aab7e70887d21d41da82dfbc4d70265b12",
+      "healthPort": 7000,
+      "readiness": true,
+      "verifiedFiles": 335,
+      "frontendFilesInVerifiedServiceJar": 373
+    },
+    "auditing": {
+      "tag": "simplepoint203/auditing:20261021-composition-shared",
+      "imageId": "sha256:bcda07f5498e6baa70d54cc2c6d889f5639da7843987e49618977a7dae845f0e",
+      "healthPort": 6000,
+      "readiness": true,
+      "verifiedFiles": 265,
+      "frontendFilesInVerifiedServiceJar": 90
+    },
+    "dna": {
+      "tag": "simplepoint203/dna:20261021-composition-shared",
+      "imageId": "sha256:3cf4f41d57ce82346c7fa9704c61f4375fbee10ccc4529826f5b8ee8adb6bce1",
+      "healthPort": 2777,
+      "readiness": true,
+      "verifiedFiles": 301,
+      "frontendFilesInVerifiedServiceJar": 216
+    },
+    "ai": {
+      "tag": "simplepoint203/ai:20261021-composition-shared",
+      "imageId": "sha256:709c87c9e4741d9ba2169837626685deba5f340bb522f9f6a3621b3941443dda",
+      "healthPort": 2888,
+      "readiness": false,
+      "verifiedFiles": 333,
+      "frontendFilesInVerifiedServiceJar": 189
+    },
+    "app": {
+      "tag": "simplepoint203/app:20261021-composition-shared",
+      "imageId": "sha256:edc8380d670b28835438bd33bb9fc74c9822591e737658cc4ebb683dab1280e8",
+      "healthPort": 2999,
+      "readiness": true,
+      "verifiedFiles": 268,
+      "frontendFilesInVerifiedServiceJar": 142
+    },
+    "workflow": {
+      "tag": "simplepoint203/workflow:20261021-composition-shared",
+      "imageId": "sha256:ffae185f2f83e9aad3363037ad952b72b2dacdc86e57d362511d6bd19079bc56",
+      "healthPort": 2666,
+      "readiness": true,
+      "verifiedFiles": 316,
+      "frontendFilesInVerifiedServiceJar": 92
+    },
+    "mcp-gateway": {
+      "tag": "simplepoint203/mcp-gateway:20261021-composition-shared",
+      "imageId": "sha256:b6d4982d7612598b4e967bb94338523850d6b978e1ca541f29f27d16fac18098",
+      "healthPort": 2890,
+      "readiness": false,
+      "verifiedFiles": 186,
+      "frontendFilesInVerifiedServiceJar": 0
+    },
+    "host": {
+      "tag": "simplepoint203/host:20261021-composition-shared",
+      "imageId": "sha256:56dc0fc6b7c2ff9a82c524e8f420fc54810fea6d441e8b41cca602f0c6a71140",
+      "healthPort": 8080,
+      "readiness": false,
+      "verifiedFiles": 231,
+      "frontendFilesInVerifiedServiceJar": 367
+    }
+  },
+  "verifiedDistributionFiles": 2517,
+  "verification": "Each file read from a network-isolated, read-only image container and compared by SHA-256 with the complete frontend-verified installDist",
+  "productionContainersReplaced": false,
+  "productionDatabaseChanged": false,
+  "singleDomainEnabled": false,
+  "sources": {
+    "docker/runtime/Dockerfile.service": "a21c1374e7a99b57dc4b338190d7c92aca6a24610998dc99ee8f181838d875fa",
+    "docker/runtime/Dockerfile.service.dockerignore": "51beeae2321b8f8cee30e1a6e300784084e2de590642506970a0b73b016fa005"
+  },
+  "liveConsul": {
+    "source": "running common, authorization and host containers",
+    "policy": "simplepoint203-runtime",
+    "sameCredentialAcrossInspectedServices": true,
+    "configReadStatus": 200,
+    "visibleConfigKeyCount": 20,
+    "standaloneRegistration": {
+      "service": "simplepoint-standalone",
+      "httpStatus": 403,
+      "missingPermission": "service:write"
+    },
+    "mutationsApplied": false,
+    "managementRecoveryApproval": "pending"
+  },
+  "liveSecretMapping": {
+    "checks": {
+      "common:simplepoint.storage.credential-encryption-key": true,
+      "common:simplepoint.security.oauth2.external-provider.credential-encryption-key": true,
+      "authorization:simplepoint.security.oauth2.external-provider.credential-encryption-key": true,
+      "ai:simplepoint.ai.credential-encryption-key": true,
+      "ai:simplepoint.ai.api-key-hash-pepper": true,
+      "ai:simplepoint.ai.mcp.gateway-internal-token": true,
+      "mcp-gateway:simplepoint.mcp.gateway.internal-token": true
+    },
+    "mountedConfigMatches": true,
+    "externalIdentityBindingAndCipherRoundTrip": "passed",
+    "secretValuesRecorded": false
+  },
+  "coldQueries": {
+    "restartBeforeQueries": true,
+    "routerReadTimeout": "30s",
+    "pages": 10,
+    "httpChecks": 30,
+    "failures": 0,
+    "readinessAndReadsElapsedSeconds": 6.85
+  },
+  "limitations": [
+    "Consul ACL management recovery requires pending user confirmation; no ACL bootstrap or policy mutation executed",
+    "Initial three cold record queries exceeded the default 3-second timeout; after explicit 30-second deployment configuration, all 30 post-restart read checks passed",
+    "External identity-provider verification covers actual configuration binding and cipher round trip, not a third-party authorization flow",
+    "Formal schema migration, coordinated microservice replacement and single-domain acceptance remain outstanding"
+  ]
+}

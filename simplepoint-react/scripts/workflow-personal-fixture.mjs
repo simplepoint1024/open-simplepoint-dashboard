@@ -24,6 +24,8 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
   let listDelay = 0;
   let sequence = 0;
   let diagramXml = xml;
+  let businessSnapshot, denyBusiness = false;
+  const businessBinding = {provider: 'simplepoint-app', formId: 'expense', version: 1, variableMappings: {applicant: 'applicant'}};
   const result = (rows, fields, url, fixed) => fixturePage(rows, fields, url, fixed);
   const addAction = (matter, action, comment, task) => {
     events.get(matter.id).push({id: 'event-' + ++sequence, actionType: action, actorName: '李四', comment,
@@ -39,8 +41,16 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
       instanceStatus: matter.status, createdAt: now, handledAt: later, handledByMe: true, assigned: false, claimable: false, actionable: false});
     addAction(matter, action, comment, task);
   };
-  return {matters, tasks, diagram(source) {diagramXml = source;}, fail(action) {failures.add(action);}, delayLists(milliseconds) {listDelay = milliseconds;}, async handle(req, url, data, respond, expectedFailure) {
+  return {matters, tasks, businessForm(snapshot) {
+    businessSnapshot = structuredClone(snapshot);
+    matters.find(item => item.id === 'instance1').businessKey = 'app-form:' + 'a'.repeat(64);
+  }, denyBusinessForm(value) {denyBusiness = value;},
+  diagram(source) {diagramXml = source;}, fail(action) {failures.add(action);}, delayLists(milliseconds) {listDelay = milliseconds;}, async handle(req, url, data, respond, expectedFailure) {
     const path = url.pathname;
+    if (/^\/app\/workflow\/(tasks\/task1|instances\/instance1)\/business-form$/.test(path) && businessSnapshot) {
+      if (denyBusiness) {expectedFailure(403); return respond({message: '业务快照不可用'}, 403), true;}
+      return respond(structuredClone(businessSnapshot)), true;
+    }
     if (/^\/workflow\/(inbox\/(pending|completed)|matters\/(started|copied|all))$/.test(path)) {
       if (listDelay) await new Promise(resolve => setTimeout(resolve, listDelay));
       if (failures.delete(path)) {expectedFailure(503); return respond({message: '列表暂时不可用（测试）'}, 503), true;}
@@ -76,7 +86,8 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
     const matter = matters.find(row => row.id === (taskMatch ? task?.processInstanceId : instanceMatch[1]));
     if (!matter) throw Error('Unknown personal workflow fixture: ' + path);
     const operation = taskMatch?.[2] ?? instanceMatch[2];
-    if (operation === 'form') return respond({definitionVersion: 1, formContract: contract, values: {approved: false}}), true;
+    if (operation === 'form') return respond({definitionVersion: 1, formContract: contract, values: {approved: false},
+      ...(businessSnapshot && task.taskId === 'task1' ? {binding: businessBinding, protectedVariables: ['applicant']} : {})}), true;
     if (operation === 'progress') return respond({matter, diagram: {instance: matter, bpmnXml: diagramXml,
       activities: [{id: matter.id + '-review', activityId: 'review', activityName: '审批', activityType: 'userTask',
         taskId: tasks.find(row => row.processInstanceId === matter.id)?.taskId, status: matter.status === 'RUNNING' ? 'ACTIVE' : 'COMPLETED',

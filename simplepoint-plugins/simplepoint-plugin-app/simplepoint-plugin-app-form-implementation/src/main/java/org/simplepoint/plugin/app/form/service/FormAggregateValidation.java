@@ -81,9 +81,23 @@ final class FormAggregateValidation {
     }
   }
 
+  /** Checks input-only rules; DNA validates every persistent rule after producing current outputs. */
+  static void validateInputs(ApplicationFormDocument document, Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details) {
+    validate(document, values, details, true);
+  }
+
   static void validate(ApplicationFormDocument document, Map<String, Object> values,
       Map<String, List<Map<String, Object>>> details) {
+    validate(document, values, details, false);
+  }
+
+  private static void validate(ApplicationFormDocument document, Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details, boolean inputsOnly) {
     for (var rule : document.constraints()) {
+      if (inputsOnly && usesCalculatedValues(document, rule)) {
+        continue;
+      }
       boolean valid;
       try {
         valid = switch (rule.kind()) {
@@ -103,6 +117,16 @@ final class FormAggregateValidation {
         throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_INVALID, rule.message());
       }
     }
+  }
+
+  private static boolean usesCalculatedValues(final ApplicationFormDocument document, final FormValidationConstraint rule) {
+    if (document.fields().stream().anyMatch(field -> field.calculation() != null
+        && (field.fieldId().equals(rule.fieldId()) || field.fieldId().equals(rule.otherFieldId())))) {
+      return true;
+    }
+    return document.details().stream().filter(detail -> detail.detailId().equals(rule.detailId()))
+        .flatMap(detail -> detail.fields().stream())
+        .anyMatch(field -> field.calculation() != null && field.fieldId().equals(rule.detailFieldId()));
   }
 
   private static BigDecimal bound(String value) {

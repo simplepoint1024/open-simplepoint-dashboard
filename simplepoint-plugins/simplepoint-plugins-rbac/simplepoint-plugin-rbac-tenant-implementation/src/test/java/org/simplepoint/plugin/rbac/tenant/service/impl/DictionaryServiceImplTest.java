@@ -3,7 +3,6 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,21 +28,24 @@ import org.simplepoint.plugin.rbac.tenant.api.vo.DictionaryOptionVo;
 @ExtendWith(MockitoExtension.class)
 class DictionaryServiceImplTest {
 
-  @Mock
-  DictionaryRepository repository;
+  @Mock DictionaryRepository repository;
+
+  @Mock DetailsProviderService detailsProviderService;
+
+  @Mock DictionaryItemRepository dictionaryItemRepository;
 
   @Mock
-  DetailsProviderService detailsProviderService;
+  org.simplepoint.plugin.rbac.tenant.service.support.DictionaryCatalogWriteBoundary catalogWrites;
 
   @Mock
-  DictionaryItemRepository dictionaryItemRepository;
+  org.simplepoint.plugin.rbac.tenant.service.initialize.DictionaryRegistrationStore registrations;
 
-  @InjectMocks
-  DictionaryServiceImpl service;
+  @InjectMocks DictionaryServiceImpl service;
 
   @BeforeEach
   void stubAuditingService() {
-    lenient().when(detailsProviderService.getDialects(ModifyDataAuditingService.class))
+    lenient()
+        .when(detailsProviderService.getDialects(ModifyDataAuditingService.class))
         .thenReturn(Set.of());
   }
 
@@ -80,7 +82,8 @@ class DictionaryServiceImplTest {
   void create_setsEnabledTrueWhenNull() {
     Dictionary dict = new Dictionary();
     dict.setId("d1");
-    dict.setName("Dictionary one"); dict.setCode("dict-one");
+    dict.setName("Dictionary one");
+    dict.setCode("dict-one");
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     Dictionary result = service.create(dict);
@@ -92,7 +95,8 @@ class DictionaryServiceImplTest {
   void create_keepsExistingEnabledFalse() {
     Dictionary dict = new Dictionary();
     dict.setId("d2");
-    dict.setName("Dictionary two"); dict.setCode("dict-two");
+    dict.setName("Dictionary two");
+    dict.setCode("dict-two");
     dict.setEnabled(false);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -105,7 +109,8 @@ class DictionaryServiceImplTest {
   void create_keepsExistingEnabledTrue() {
     Dictionary dict = new Dictionary();
     dict.setId("d3");
-    dict.setName("Dictionary three"); dict.setCode("dict-three");
+    dict.setName("Dictionary three");
+    dict.setCode("dict-three");
     dict.setEnabled(true);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 

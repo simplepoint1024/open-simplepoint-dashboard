@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-22",
+  "authorization": "User requested direct registration in local Consul",
+  "permissionSetup": {
+    "date": "2026-10-22",
+    "managementAccessRecovered": false,
+    "service": "simplepoint-standalone",
+    "dedicatedPolicy": "simplepoint-standalone-registration",
+    "serviceWriteScope": "exact service only",
+    "existingRuntimePolicyUnchanged": true,
+    "existingServiceRegistrationsUnchanged": true,
+    "existingConfigUnchanged": true,
+    "existingConfigKeys": 20,
+    "existingServices": 9,
+    "source": "local Consul leader; live runtime token checked before and after"
+  },
+  "registration": {
+    "date": "2026-10-22",
+    "service": "simplepoint-standalone",
+    "instance": "simplepoint-standalone-shared-rehearsal",
+    "registration": "application-owned automatic registration",
+    "directReadiness": "UP",
+    "agentHealth": "passing",
+    "serviceHealth": "passing",
+    "checkStatuses": [
+      "passing",
+      "passing"
+    ],
+    "legacyRegistrationsUnchanged": 9,
+    "configKeysUnchanged": 20,
+    "dedicatedTokenAdminAccessStatus": 403,
+    "deployment": "rehearsal",
+    "productionDomainSwitched": false
+  },
+  "restart": {
+    "gracefulStopDeregistersInstance": true,
+    "instance": "simplepoint-standalone-shared-rehearsal",
+    "restartAutomaticallyRegistersSameInstance": true,
+    "healthCheckedAtAgentCatalogAndApplication": true
+  },
+  "businessReadVerification": {
+    "pages": 10,
+    "checks": 30,
+    "failures": 0,
+    "loginAndStandardEndpointsChecked": true,
+    "platformOnlyEndpointsDenyOrganizationScope": true
+  },
+  "consulBootstrapResetExecuted": false,
+  "productionDatabaseChanged": false,
+  "productionMicroservicesReplaced": false,
+  "singleDomainEnabled": false,
+  "limitations": [
+    "Current registered instance remains the shared-infrastructure rehearsal using a database copy",
+    "Formal original-database migration, coordinated writer upgrade, uncertain-running installation recovery CLI and real-domain acceptance remain outstanding"
+  ]
+}

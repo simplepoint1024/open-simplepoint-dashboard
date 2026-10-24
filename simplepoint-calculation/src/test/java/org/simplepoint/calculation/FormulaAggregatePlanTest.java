@@ -11,6 +11,71 @@ import org.junit.jupiter.api.Test;
 
 class FormulaAggregatePlanTest {
   @Test
+  void evaluationDiagnosticsIdentifyTheFailingFieldAndRowWithoutInputValues() {
+    var plan =
+        new FormulaAggregatePlan(
+            new FormulaEngine(),
+            new FormulaAggregatePlan.Scope(Set.of(), Map.of("total", "SUM([lines.amount])")),
+            Map.of(
+                "lines",
+                new FormulaAggregatePlan.Scope(
+                    Set.of("quantity"), Map.of("amount", "1/[quantity]"))));
+    var failure =
+        assertThrows(
+            FormulaException.class,
+            () ->
+                plan.evaluate(
+                    Map.of(),
+                    Map.of("lines", List.of(Map.of("quantity", 2), Map.of("quantity", 0)))));
+    assertEquals("DIV_ZERO", failure.code());
+    assertEquals("lines", failure.scope());
+    assertEquals("amount", failure.field());
+    assertEquals(1, failure.row());
+    assertEquals("DIV_ZERO", failure.getMessage());
+    assertEquals("amount", failure.atField("parent", "total", null).field());
+  }
+
+  @Test
+  void appliesHostResultSemanticsBeforeDependentExpressionsAndFreezesOutputs() {
+    var plan =
+        new FormulaAggregatePlan(
+            new FormulaEngine(),
+            new FormulaAggregatePlan.Scope(Set.of(), Map.of("total", "SUM([lines.amount])")),
+            Map.of(
+                "lines",
+                new FormulaAggregatePlan.Scope(Set.of("price"), Map.of("amount", "[price]/3"))),
+            (scope, field, value) ->
+                ((BigDecimal) value).setScale(2, java.math.RoundingMode.HALF_UP));
+    var result =
+        plan.evaluate(Map.of(), Map.of("lines", List.of(Map.of("price", 1), Map.of("price", 1))));
+    assertEquals(new BigDecimal("0.66"), result.parent().get("total"));
+    assertThrows(UnsupportedOperationException.class, () -> result.parent().put("total", 9));
+    var items = new java.util.ArrayList<>(List.of("kept"));
+    var list =
+        new FormulaAggregatePlan(
+                new FormulaEngine(),
+                new FormulaAggregatePlan.Scope(Set.of(), Map.of("value", "1")),
+                Map.of(),
+                (scope, field, value) -> items)
+            .evaluate(Map.of(), Map.of());
+    items.clear();
+    assertEquals(List.of("kept"), list.parent().get("value"));
+  }
+
+  @Test
+  void hostAdaptersCannotBypassValueEnvelope() {
+    var plan =
+        new FormulaAggregatePlan(
+            new FormulaEngine(),
+            new FormulaAggregatePlan.Scope(Set.of(), Map.of("value", "1")),
+            Map.of(),
+            (scope, field, value) -> new Object());
+    assertEquals(
+        "TYPE",
+        assertThrows(FormulaException.class, () -> plan.evaluate(Map.of(), Map.of())).code());
+  }
+
+  @Test
   void computesDetailAmountsThenParentTotalsWithoutChangingInputs() {
     var plan =
         new FormulaAggregatePlan(

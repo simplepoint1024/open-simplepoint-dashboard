@@ -67,6 +67,21 @@ public class ApplicationFormWritePolicyPublicationEntity {
   @Column(name = "cancellation_json", columnDefinition = "TEXT")
   private String cancellationJson;
 
+  @Column(name = "recovery_actor_id", length = 64)
+  private String recoveryActorId;
+
+  @Column(name = "recovery_role_id", length = 64)
+  private String recoveryRoleId;
+
+  @Column(name = "recovery_not_before")
+  private Instant recoveryNotBefore;
+
+  @Column(name = "recovery_failures", nullable = false)
+  private int recoveryFailures;
+
+  @Column(name = "recovery_error", length = 64)
+  private String recoveryError;
+
   @Column(name = "created_by", length = 64, updatable = false)
   private String createdBy;
 

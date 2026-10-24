@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type {QueryFunctionContext} from '@tanstack/react-query';
 import type { IChangeEvent } from '@rjsf/core';
@@ -90,7 +91,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const active = usePageActive(), activity = useRef(active); activity.current = active;
   const [i18nReady, setI18nReady] = useState(false);
   const [page, setPage] = useState<number>(1);
-  const [size, setSize] = useState<number>(20);
+  const [size, setSize] = useState<number>(DEFAULT_TABLE_PAGE_SIZE);
   const [filters, setFilters] = useState<Record<string, string>>(props.initialFilters ?? {});
   const [sort, setSort] = useState<string | string[] | undefined>(undefined);
   const [tenantId, setTenantId] = useState<string>(() => getStoredTenantId() ?? '');
@@ -111,6 +112,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   }>();
   const confirmingDelete = !!deletion && deletion.scope === session;
   const submissionLock = useRef(false);
+  const readAccess = useRef({blocked: false, epoch: 0});
   const formSubmission = useRef<FormSubmission<{action: SimpleTableSubmitAction; editingRecord: any | null}> | undefined>(undefined);
   useLayoutEffect(() => {
     if (active && operation.selected) return;
@@ -214,6 +216,18 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     }
   );
 
+  const accessError = [schemaError, pageError].find(error => isHttpError(error) && [401, 403, 404].includes(error.status));
+  readAccess.current.blocked = !!accessError;
+  const denialHandler = useRef(props.onReadAccessDenied); denialHandler.current = props.onReadAccessDenied;
+  useLayoutEffect(() => {
+    if (!accessError) return;
+    readAccess.current.epoch++;
+    // Permission loss closes even retained editors. A transient transport failure preserves drafts.
+    updateDrawerOpen(false); setEditingRecord(null); setDeletion(undefined);
+    setSelectionResetKey(previous => previous + 1);
+    denialHandler.current?.(accessError);
+  }, [accessError]);
+
   useEffect(() => {
     const handleTenantChange = (event: Event) => {
       const nextTenantId = (event as CustomEvent<string | undefined>).detail ?? getStoredTenantId() ?? '';
@@ -273,8 +287,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   const tableLoading = !bootLoading && pageFetching;
   const drawerSchemaLoading = drawerOpen && ((schemaLoading && !schemaData) || dictionariesLoading);
   const hasSchemaError = !bootLoading && !!schemaError;
-  const hasPageError = !bootLoading && !schemaError && !!pageError && !pageData;
-  const showPageWarning = !bootLoading && !schemaError && !!pageError && !!pageData;
+  const hasPageError = !bootLoading && !schemaError && !!pageError && (!pageData || !!accessError);
+  const showPageWarning = !bootLoading && !schemaError && !!pageError && !!pageData && !accessError;
 
   const refreshTargets = async (targets: Required<SimpleTableRefreshTargets>) => {
     const tasks: Array<Promise<unknown>> = [];
@@ -308,7 +322,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
 
   const handleAdd = () => {
     const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'add');
-    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete || props.isButtonDisabled?.(button, [], [])) return;
+    if (!button || schemaError || readAccess.current.blocked || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete || (props.isButtonVisible?.(button, []) === false || props.isButtonDisabled?.(button, [], []))) return;
     props.onInteractionLockChange?.(true);
     setEditingRecord(null);
     setDrawerOpen(true);
@@ -316,8 +330,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
 
   const handleEdit = async (_keys: React.Key[], rows: any[]) => {
     const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'edit');
-    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
-      || rows?.length !== 1 || !hasRecordIdentity(rows[0]) || props.isButtonDisabled?.(button, _keys, rows)) return;
+    if (!button || schemaError || readAccess.current.blocked || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
+      || rows?.length !== 1 || !hasRecordIdentity(rows[0]) || (props.isButtonVisible?.(button, rows) === false || props.isButtonDisabled?.(button, _keys, rows))) return;
     props.onInteractionLockChange?.(true);
     if (!props.loadEditingRecord) {
       setEditingRecord(rows[0]); setDrawerOpen(true); return;
@@ -325,9 +339,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     const request = operation.begin();
     if (!request) {props.onInteractionLockChange?.(false); return;}
     let opened = false;
+    const accessEpoch = readAccess.current.epoch;
     try {
       const record = await props.loadEditingRecord(rows[0], request.signal);
-      if (!operation.current(request.signal) || !operation.isSelected()) return;
+      if (!operation.current(request.signal) || !operation.isSelected() || readAccess.current.blocked || readAccess.current.epoch !== accessEpoch) return;
       if (!hasRecordIdentity(record) || (record as {id?: unknown}).id !== rows[0].id) throw new Error("Editing record identity changed");
       // This request owns the operation lock; the user-action guard would reject its completion.
       setEditingRecord(record); updateDrawerOpen(true); opened = true;
@@ -340,16 +355,18 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
 
   const handleDelete = (keys: React.Key[], rows: any[]) => {
     const button = schemaData?.buttons?.find((item: TableButtonProps) => item.key === 'delete' || item.key === 'del');
-    if (!button || schemaError || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
+    if (!button || schemaError || readAccess.current.blocked || !operation.current() || !operation.isSelected() || operation.isBusy() || drawerOpen || confirmingDelete
       || !keys.length || rows?.length !== keys.length || rows.some(row => !hasRecordIdentity(row))
-      || props.isButtonDisabled?.(button, keys, rows)) return;
+      || (props.isButtonVisible?.(button, rows) === false || props.isButtonDisabled?.(button, keys, rows))) return;
     props.onInteractionLockChange?.(true);
     setDeletion({keys: [...keys], rows: [...rows], scope: session});
   };
 
   const confirmDelete = async () => {
-    if (!deletion || !confirmingDelete || submissionLock.current || schemaError
+    if (!deletion || !confirmingDelete || submissionLock.current || schemaError || readAccess.current.blocked
       || !schemaData?.buttons?.some((button: TableButtonProps) => button.key === 'delete' || button.key === 'del')) return;
+    const button = schemaData.buttons.find((button: TableButtonProps) => button.key === 'delete' || button.key === 'del');
+    if (!button || props.isButtonVisible?.(button, deletion.rows) === false) return;
     const request = operation.begin(); if (!request) return;
     submissionLock.current = true; setSubmitLoading(true); setDeletion({...deletion, error: undefined});
     try {
@@ -378,9 +395,10 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   };
 
   const beginFormSubmit = () => {
-    if (!drawerOpen || !activity.current || !operation.current() || !operation.isSelected() || submissionLock.current || operation.isBusy()) return false;
+    if (!drawerOpen || readAccess.current.blocked || !activity.current || !operation.current() || !operation.isSelected() || submissionLock.current || operation.isBusy()) return false;
     const action: SimpleTableSubmitAction = editingRecord ? 'edit' : 'add';
-    if (schemaError || confirmingDelete || !schemaData?.buttons?.some((button: TableButtonProps) => button.key === action)) {
+    const button = schemaData?.buttons?.find((button: TableButtonProps) => button.key === action);
+    if (schemaError || confirmingDelete || !button || props.isButtonVisible?.(button, editingRecord ? [editingRecord] : []) === false) {
       setSubmitError(t('table.actionUnavailable', '此操作暂不可用，请刷新页面后重试')); return false;
     }
     const request = operation.begin(); if (!request) return false;
@@ -399,8 +417,9 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     // Only the callback belonging to an accepted pre-validation intent can write.
     const submission = claimFormSubmission(formSubmission, session); if (!submission) return;
     const {request, target: {action, editingRecord: capturedEditing}} = submission;
+    const accessEpoch = readAccess.current.epoch;
     try {
-      if (!operation.current(request.signal)) return;
+      if (!operation.current(request.signal) || readAccess.current.blocked) return;
       const beforeSubmitContext: SimpleTableBeforeSubmitContext = {
         action,
         formData,
@@ -412,7 +431,8 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
         ? await props.beforeSubmit(beforeSubmitContext)
         : formData;
       let submittedData = normalizedFormData ?? formData;
-      if (!operation.current(request.signal) || !operation.isSelected() || !activity.current || !startFormWrite(formSubmission, submission)) return;
+      if (!operation.current(request.signal) || readAccess.current.blocked || readAccess.current.epoch !== accessEpoch
+        || !operation.isSelected() || !activity.current || !startFormWrite(formSubmission, submission)) return;
 
       let result: unknown;
       if (props.onSubmit) {
@@ -521,7 +541,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
       retry: refetchSchema,
     },
     table: {
-      data: pageData,
+      data: accessError ? undefined : pageData,
       filters,
       sorter: sort,
       onQueryChange: (nextFilters, nextSort) => {setFilters(nextFilters); setSort(nextSort); setPage(1);},

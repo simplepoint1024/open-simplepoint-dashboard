@@ -89,7 +89,7 @@ export default function ContractEditor({value, onChange, disabled, onBlockedChan
     <BindingEditor elementId="process:start" binding={value.startBinding} variables={value.variables} disabled={disabled || blocked}
       onChange={startBinding => onChange({...value, startBinding})}/>
     <DataTable rowKey="name" storageKey="workflow.variable.contract" dataSource={value.variables}
-      pagination={{pageSize: 10, showSizeChanger: true}}
+      pagination={{defaultPageSize: 50, showSizeChanger: true}}
       query={{mode: 'local', scope: 'complete', fields: {
         name: {type: 'string'}, label: {type: 'string'}, type: {type: 'string'}, scope: {type: 'string'},
       }}}

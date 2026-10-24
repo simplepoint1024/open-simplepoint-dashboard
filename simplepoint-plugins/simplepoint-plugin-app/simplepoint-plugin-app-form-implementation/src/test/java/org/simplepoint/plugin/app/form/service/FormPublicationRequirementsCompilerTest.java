@@ -189,6 +189,59 @@ class FormPublicationRequirementsCompilerTest {
     return FormPublicationRequirementsCompiler.compile("model", "app", "form", pages, governing).checks();
   }
 
+  @Test
+  void inspectsRealCalculatedColumnsAndPreservesCalculatedConditions() {
+    var number = FormCalculationPublicationProjectionTest.number("total", "1");
+    var total = new FormFieldDefinition(number.fieldId(), number.storageCode(), number.label(), number.storageLabel(),
+        number.type(), number.storageMode(), true, false, null, number.precision(), number.scale(), null, List.of(), null, null, null, number.calculation());
+    var condition = new FormCondition(FormConditionOperator.GREATER_THAN, "total",
+        List.of(new FormValue(FormValueKind.DECIMAL, "10.005")), List.of());
+    var page = document(List.of(total, field("note", false, FormFieldWritePolicy.UNTIL_SUBMITTED)), List.of(required("note", condition)));
+    var plan = FormPublicationRequirementsCompiler.compile("model", "app", "form", List.of(new Version(SCHEMA, page)), page);
+    assertThat(plan.checks()).hasSize(2);
+    assertThat(plan.checks().values()).allSatisfy(check -> assertThat(check.filter().values()).containsExactly("SUBMITTED"));
+    assertThat(plan.checks().values()).anySatisfy(check -> {
+      assertThat(check.fields()).containsExactly("column_note");
+      assertThat(check.condition().field()).isEqualTo("renamed_total");
+      assertThat(check.condition().values().getFirst().canonicalValue()).isEqualTo("10.005");
+    });
+    assertThat(plan.checks().values()).anySatisfy(check -> assertThat(check.fields()).containsExactly("renamed_total"));
+    assertThat(plan.validations()).hasSize(2);
+  }
+
+  @Test
+  void mergesHistoricalRequirementsAsAlternativesInsteadOfOverwritingOrIntersectingThem() {
+    var fields = List.of(field("name", false, FormFieldWritePolicy.UNTIL_SUBMITTED), field("kind", false, FormFieldWritePolicy.EDITABLE));
+    var first = document(fields, List.of(required("name", equals("kind", "person"))));
+    var second = document(fields, List.of(required("name", equals("kind", "company"))));
+    var pages = List.of(new Version(SCHEMA, first), new Version(SCHEMA, second), new Version(SCHEMA, first));
+    var plan = FormPublicationRequirementsCompiler.compile("model", "app", "form", pages, document(fields, List.of()), true);
+    assertThat(plan.validations()).hasSize(1);
+    var union = plan.validations().getFirst();
+    assertThat(union.field().fieldId()).isEqualTo("name");
+    assertThat(union.when().operator()).isEqualTo(RecordValueConditionOperator.OR);
+    assertThat(union.when().children()).hasSize(2).allSatisfy(child -> assertThat(child.operator()).isEqualTo(RecordValueConditionOperator.AND));
+    assertThat(union.when().children().stream().flatMap(child -> child.children().stream())
+        .filter(child -> child.field() != null && child.field().fieldId().equals("kind"))
+        .flatMap(child -> child.values().stream()).map(value -> value.canonicalValue())).containsExactly("person", "company");
+    assertThat(FormCalculationValidationProjection.merge(plan.validations(), plan.validations())).isEqualTo(plan.validations());
+    assertThat(plan.checks()).hasSize(2);
+  }
+
+  @Test
+  void keepsLegacyComputedPlaceholdersAbsentFromPhysicalChecks() {
+    var placeholder = new FormFieldDefinition("placeholder", null, "Placeholder", null, FormFieldType.STRING,
+        FormStorageMode.COMPUTED, true, false, null, null, null, null, List.of());
+    var page = document(List.of(placeholder, field("note", false, FormFieldWritePolicy.UNTIL_SUBMITTED)),
+        List.of(required("note", new FormCondition(FormConditionOperator.IS_EMPTY, "placeholder", List.of(), List.of()))));
+    var plan = FormPublicationRequirementsCompiler.compile("model", "app", "form", List.of(new Version(SCHEMA, page)), page);
+    assertThat(plan.checks()).hasSize(1);
+    var check = plan.checks().values().iterator().next();
+    assertThat(check.fields()).containsExactly("column_note");
+    assertThat(check.condition()).isNull();
+    assertThat(plan.validations()).isNull();
+  }
+
   private static FormCondition equals(final String field, final String value) {
     return new FormCondition(FormConditionOperator.EQUALS, field, List.of(new FormValue(FormValueKind.STRING, value)), List.of());
   }

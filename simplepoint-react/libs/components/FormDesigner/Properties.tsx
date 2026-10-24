@@ -1,6 +1,11 @@
+import {localizedTextSchema, localizedDraft, changedLocalizedDraft} from '@simplepoint/shared/i18n/localizedSchema';
 import {normalizedValidation, textField, validationProperties} from './fieldValidation';
 import {Tabs} from 'antd';
-import {designerPropertyEditors, type DesignerPropertyRegistry} from './extensions';
+import {calculationPropertyTab, dependencyPropertyTab, designerPropertyEditors, type DesignerPropertyRegistry} from './extensions';
+import TableActions from '../Table/Actions';
+import {useState} from 'react';
+import {calculableField} from './fieldCapabilities';
+import {FieldCalculationDialog} from './FieldCalculationProperties';
 import SForm from '../SForm/Lazy';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {createIcon} from '@simplepoint/shared/types/icon';
@@ -14,22 +19,25 @@ export default function Properties({document, componentId, components, disabled,
   disabled: boolean; onChange: (document: DesignDocument) => void;
   writePolicies: readonly FormFieldWritePolicy[]; propertyRegistry?: DesignerPropertyRegistry;
 }) {
-  const {t} = useI18n();
+  const {t, locale} = useI18n();
+  const [editing, setEditing] = useState<{componentId: string; mode: 'stored' | 'calculated'}>();
   const selected = locate(document, componentId);
   if (!selected) return null;
   const {node, scene, parent} = selected;
   const field = document.fields.find(field => field.fieldId === node.fieldId);
   const descriptor = components.find(item => item.type === node.componentType && item.version === node.componentVersion);
   const extensionTabs = propertyRegistry.get(`${node.componentType}@${node.componentVersion}`);
+  const tabs = [...(field?.calculation ? [calculationPropertyTab] : []), ...(field ? [dependencyPropertyTab] : []), ...extensionTabs];
+  const editField = (mode: 'stored' | 'calculated') => {if (!disabled) setEditing({componentId, mode});};
   const properties: Record<string, any> = {
-    label: {type: 'string', title: t('app.designer.label', '标题'), maxLength: 120},
+    labelLocalization: {...localizedTextSchema(t('app.designer.label', '标题')), type: ['object', 'null'], default: null},
     columnSpan: {type: 'integer', title: t('app.designer.columnSpan', '宽度（共 24 格）'), minimum: 1, maximum: 24},
     description: {type: 'string', title: t('app.designer.description', '说明'), maxLength: 500},
     readOnly: {type: 'boolean', title: t('app.designer.readOnly', '界面只读')},
   };
-  const data: Record<string, unknown> = {label: node.label ?? '', columnSpan: node.columnSpan,
+  const data: Record<string, unknown> = {labelLocalization: node.label || node.labelLocalization ? localizedDraft(node.label ?? '', node.labelLocalization, locale) : undefined, columnSpan: node.columnSpan,
     description: node.description ?? undefined, readOnly: node.readOnly};
-  const required: string[] = field ? ['fieldLabel'] : [];
+  const required: string[] = field ? ['fieldLabelLocalization'] : [];
   if (!parent) {
     properties.sceneName = {type: 'string', title: t('app.designer.sceneName', '场景名称'), minLength: 1, maxLength: 120};
     data.sceneName = scene.name; required.push('sceneName');
@@ -39,12 +47,19 @@ export default function Properties({document, componentId, components, disabled,
     }
   }
   if (field) {
-    properties.fieldLabel = {type: 'string', title: t('app.designer.fieldLabel', '字段名称'), minLength: 1, maxLength: 120};
-    data.fieldLabel = field.label;
+    if (calculableField(field)) {
+      properties.calculationMode = {type: 'string', title: t('app.calculation.mode', '字段来源'), oneOf: [
+        {const: 'stored', title: t('app.calculation.stored', '用户填写')},
+        {const: 'calculated', title: t('app.calculation.calculated', '公式计算')},
+      ]};
+      data.calculationMode = field.calculation ? 'calculated' : 'stored';
+    }
+    properties.fieldLabelLocalization = localizedTextSchema(t('app.designer.fieldLabel', '字段名称'));
+    data.fieldLabelLocalization = localizedDraft(field.label, field.labelLocalization, locale);
     properties.placeholder = {type: 'string', title: t('app.designer.placeholder', '输入提示'), maxLength: 240};
     properties.submitRequired = {type: 'boolean', title: t('app.designer.required', '提交时必填')};
     data.placeholder = node.placeholder ?? undefined; data.submitRequired = field.submitRequired;
-    if (writePolicies.length && ['STORED', 'REFERENCE', 'ATTACHMENT'].includes(field.storageMode)) {
+    if (!field.calculation && writePolicies.length && ['STORED', 'REFERENCE', 'ATTACHMENT'].includes(field.storageMode)) {
       properties.writePolicy = {type: 'string', title: t('app.designer.writePolicy', '字段写入规则'),
         description: t('app.designer.writePolicyHint', '发布后，写入限制同时约束使用旧版本的页面；旧页面原有的更严格限制仍保留。仅新增时填写的必填字段需在首次保存前填写。'),
         oneOf: [
@@ -69,11 +84,11 @@ export default function Properties({document, componentId, components, disabled,
     }
     if (node.componentType === 'field.select' || field.choices.length) {
       properties.choices = {type: 'array', title: t('app.designer.choices', '选项'), maxItems: 200,
-        items: {type: 'object', required: ['value', 'label'], properties: {
+        items: {type: 'object', required: ['value', 'labelLocalization'], properties: {
           value: {type: 'string', title: t('app.designer.choiceValue', '选项值'), minLength: 1, maxLength: 256},
-          label: {type: 'string', title: t('app.designer.choiceLabel', '显示名称'), minLength: 1, maxLength: 120},
+          labelLocalization: localizedTextSchema(t('app.designer.choiceLabel', '显示名称')),
         }}};
-      data.choices = field.choices;
+      data.choices = field.choices.map(choice => ({...choice, labelLocalization: localizedDraft(choice.label, choice.labelLocalization, locale)}));
     }
   }
   if (node.componentType.startsWith('action.open-')) {
@@ -95,16 +110,26 @@ export default function Properties({document, componentId, components, disabled,
   }
   return <div className="sp-form-designer-properties" data-component-id={componentId}>
     <Tabs key={componentId} className="sp-form-property-tabs" defaultActiveKey="general" items={[
-      {key: 'general', icon: createIcon(componentIcon(node.componentType)), label: t('app.designer.properties', '属性'), children:
-    <SForm formContext={designerFormContext} key={componentId} idPrefix="design_property" hideSubmit disabled={disabled} liveValidate="onChange"
+      {key: 'general', icon: createIcon(componentIcon(node.componentType)), label: t('app.designer.properties', '属性'), children: <>
+    <SForm formContext={designerFormContext} key={`${componentId}:${Boolean(editing)}`} idPrefix="design_property" hideSubmit disabled={disabled} liveValidate="onChange"
       schema={{type: 'object', properties, required}} formData={data}
       onChange={({formData}, changedField) => {
         // RJSF also reports schema/default normalization on mount; only user edits are design commands.
         if (disabled || !formData || !changedField) return;
+        if (properties.calculationMode && formData.calculationMode !== data.calculationMode) {
+          editField(formData.calculationMode === 'calculated' ? 'calculated' : 'stored');
+          return;
+        }
         onChange(changeNode(document, componentId, (next, nextField, nextScene) => {
           const values = formData as typeof data;
-          next.label = values.label ? String(values.label) : null;
-          if (nextField) nextField.label = String(values.fieldLabel ?? '');
+          const localization = changedLocalizedDraft(node.label ?? '', node.labelLocalization, values.labelLocalization as any, locale);
+          if (localization && !localization.defaultValue.trim() && Object.values(localization.translations).every(value => !value.trim())) {
+            delete next.labelLocalization; next.label = null;
+          } else if (localization) {next.labelLocalization = localization; next.label = localization.defaultValue;}
+          if (nextField) {
+            const fieldLocalization = changedLocalizedDraft(nextField.label, nextField.labelLocalization, values.fieldLabelLocalization as any, locale);
+            if (fieldLocalization) {nextField.labelLocalization = fieldLocalization; nextField.label = fieldLocalization.defaultValue;}
+          }
           next.columnSpan = Number(values.columnSpan ?? 24);
           next.description = values.description ? String(values.description) : null;
           next.readOnly = Boolean(values.readOnly);
@@ -121,7 +146,11 @@ export default function Properties({document, componentId, components, disabled,
             }
             if (nextField.type === 'STRING') nextField.length = Number(values.length ?? 255);
             if (nextField.type === 'DECIMAL') {nextField.precision = Number(values.precision ?? 18); nextField.scale = Number(values.scale ?? 0);}
-            if (properties.choices) nextField.choices = Array.isArray(values.choices) ? values.choices : [];
+            if (properties.choices) nextField.choices = Array.isArray(values.choices) ? values.choices.map((choice, index) => {
+              const previous = nextField.choices[index];
+              const localization = changedLocalizedDraft(previous?.label ?? '', previous?.labelLocalization, choice.labelLocalization, locale);
+              return {value: choice.value, label: localization?.defaultValue ?? previous?.label ?? '', ...(localization ? {labelLocalization: localization} : {})};
+            }) : [];
           }
           if (nextScene) {
             nextScene.name = String(values.sceneName ?? '');
@@ -130,12 +159,20 @@ export default function Properties({document, componentId, components, disabled,
           if (properties.targetSceneId) next.targetSceneId = typeof values.targetSceneId === 'string' ? values.targetSceneId : null;
           if (properties.properties) next.properties = (values.properties ?? {}) as typeof next.properties;
         }));
-      }}/>},
-      ...extensionTabs.map(tab => {const Content = tab.component; return {
+      }}/>
+      {field && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'fieldSettings', sort: 0, icon: 'SettingOutlined', text: t('app.designer.fieldSettings', '字段设置'), disabled},
+      ]} onButtonEvents={{fieldSettings: () => editField(field.calculation ? 'calculated' : 'stored')}}/>}
+      </>},
+      ...tabs.map(tab => {const Content = tab.component; return {
         key: tab.key, icon: createIcon(tab.icon), label: t(tab.labelKey, tab.label), children:
           <Content node={node} disabled={disabled} document={document} components={components} writePolicies={writePolicies}
+            onEditField={editField}
             onDocumentChange={onChange} onChange={updated => onChange(changeNode(document, componentId, target => Object.assign(target, updated)))}/>,
       };}),
     ]}/>
+    {field && editing?.componentId === componentId && <FieldCalculationDialog key={componentId} node={node} field={field}
+      mode={editing.mode} document={document} components={components} writePolicies={writePolicies} disabled={disabled}
+      onDocumentChange={onChange} onClose={() => setEditing(undefined)}/>}
   </div>;
 }

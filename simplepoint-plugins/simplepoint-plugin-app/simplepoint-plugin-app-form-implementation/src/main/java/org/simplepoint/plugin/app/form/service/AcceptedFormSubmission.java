@@ -13,4 +13,18 @@ record AcceptedFormSubmission(
     DnaInvocationContext dataAuthority,
     WorkflowInvocationContext workflowAuthority,
     RuntimeForm workflow,
-    String previousInstanceId) {}
+    String previousInstanceId,
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> snapshotRequirements) {
+
+  /** Legacy accepted operations retain the exact snapshot request and durable receipt identity. */
+  AcceptedFormSubmission(PublishedApplicationForm form, SubmitApplicationFormCommand command, DnaInvocationContext dataAuthority,
+      WorkflowInvocationContext workflowAuthority, RuntimeForm workflow, String previousInstanceId) {
+    this(form, command, dataAuthority, workflowAuthority, workflow, previousInstanceId, null);
+  }
+
+  AcceptedFormSubmission {
+    snapshotRequirements = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(java.util.List.of(),
+        snapshotRequirements).requirements();
+  }
+}

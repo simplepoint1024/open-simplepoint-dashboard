@@ -3,42 +3,41 @@ package org.simplepoint.plugin.i18n.service.impl;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.simplepoint.api.security.base.BaseUser;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.core.entity.Message;
-import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
+import org.simplepoint.plugin.i18n.api.service.I18nMessageManagementService;
 import org.simplepoint.remoting.RemoteProvider;
 import org.springframework.stereotype.Service;
 
 /**
- * MessageServiceImpl provides the implementation for MessageService.
- * It extends BaseServiceImpl to manage Message entities.
- * This service is used to interact with the persistence layer for message entities.
+ * MessageServiceImpl provides the implementation for MessageService. It extends BaseServiceImpl to
+ * manage Message entities. This service is used to interact with the persistence layer for message
+ * entities.
  */
 @Service
 @RemoteProvider
-public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepository, Message, String> implements
-    I18nMessageService {
+public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepository, Message, String>
+    implements I18nMessageManagementService {
 
   /**
-   * Constructs a BaseServiceImpl with the specified repository, user context, and details provider service.
+   * Constructs a BaseServiceImpl with the specified repository, user context, and details provider
+   * service.
    *
-   * @param repository             the repository to be used for entity operations
+   * @param repository the repository to be used for entity operations
    * @param detailsProviderService the service providing additional details
    */
   public I18nMessageServiceImpl(
-      I18nMessageRepository repository,
-      DetailsProviderService detailsProviderService) {
+      I18nMessageRepository repository, DetailsProviderService detailsProviderService) {
     super(repository, detailsProviderService);
   }
 
   /**
-   * Retrieves a message based on the provided code and locale.
-   * This method uses caching to improve performance.
+   * Retrieves a message based on the provided code and locale. This method uses caching to improve
+   * performance.
    *
-   * @param code   the code of the message
+   * @param code the code of the message
    * @param locale the locale for which the message is requested
    * @return the text of the message or null if not found
    */
@@ -55,31 +54,23 @@ public class I18nMessageServiceImpl extends BaseServiceImpl<I18nMessageRepositor
    * Retrieves global messages based on the provided locale and namespace.
    *
    * @param locale the locale for which messages are requested
-   * @param ns     the namespace of the messages
+   * @param ns the namespace of the messages
    * @return a map of message codes to their corresponding texts
    */
   @Override
   public Map<String, String> mapping(String locale, String ns) {
     boolean notNull = ns != null && !ns.isEmpty();
-    Collection<Message> messages = notNull
-        ? getRepository().mapping(locale, ns.split(","))
-        : getRepository().global(locale);
+    Collection<Message> messages =
+        notNull ? getRepository().mapping(locale, ns.split(",")) : getRepository().global(locale);
     return mergeMapping(messages);
   }
 
-  static Map<String, String> mergeMapping(
-      final Collection<Message> messages
-  ) {
+  static Map<String, String> mergeMapping(final Collection<Message> messages) {
     Map<String, String> result = new LinkedHashMap<>();
     for (Message message : messages) {
-      String existing = result.putIfAbsent(
-          message.getCode(),
-          message.getMessage()
-      );
+      String existing = result.putIfAbsent(message.getCode(), message.getMessage());
       if (existing != null && !existing.equals(message.getMessage())) {
-        throw new IllegalStateException(
-            "Conflicting i18n message for code: " + message.getCode()
-        );
+        throw new IllegalStateException("Conflicting i18n message for code: " + message.getCode());
       }
     }
     return Map.copyOf(result);

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
 import {PlatformModelingProvider} from './platformModeling.ts';
 
 function provider(autoPlace) {
@@ -54,4 +56,31 @@ test('replacement menu offers configured platform node types without executable 
     'replace-with-script-task', 'replace-with-service-task', 'replace-with-call-activity',
     'replace-with-task', 'replace-with-timer-start', 'replace-with-event-based-gateway'];
   assert.deepEqual(Object.keys(instance.getPopupMenuEntries()(Object.fromEntries(keys.map(key => [key, {}])))), keys.slice(0, 3));
+});
+
+test('installed replacement catalog and legacy aliases retain safe ordinary event/subprocess repair', async () => {
+  const require = createRequire(import.meta.url);
+  const moduleUrl = source => 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
+  // Node requires an extension; resolve the installed catalog dependency without altering its contents.
+  const dependency = moduleUrl(readFileSync(require.resolve('bpmn-js/lib/features/popup-menu/PopupEntries.js'), 'utf8'));
+  const source = readFileSync(require.resolve('bpmn-js/lib/features/replace/ReplaceOptions.js'), 'utf8');
+  assert(source.includes("'../popup-menu/PopupEntries'"));
+  const catalog = await import(moduleUrl(source.replace("'../popup-menu/PopupEntries'", JSON.stringify(dependency))));
+  const entries = Object.values(catalog).filter(Array.isArray).flat();
+  const {instance} = provider(false);
+  for (const [key, type] of [['replace-with-none-start', 'bpmn:StartEvent'], ['replace-with-none-end', 'bpmn:EndEvent'],
+    ['replace-with-subprocess', 'bpmn:SubProcess']]) {
+    const entry = entries.find(entry => entry.actionName === key); assert(entry, key);
+    assert.equal(entry.target.type, type); assert.equal(entry.target.eventDefinitionType, undefined);
+    const menu = {[key]: {action: () => entry.target}, 'replace-with-script-task': {action: () => assert.fail('unsafe action')}};
+    const filtered = instance.getPopupMenuEntries()(menu);
+    assert.deepEqual(Object.keys(filtered), [key]); assert.equal(filtered[key], menu[key]);
+    assert.deepEqual(filtered[key].action(), entry.target);
+  }
+  // Previous catalog names are accepted if a compatible host supplies them, never synthesized in the current UI.
+  for (const alias of ['replace-with-none-start-event', 'replace-with-none-end-event']) {
+    assert(!entries.some(entry => entry.actionName === alias));
+    const action = () => alias, entry = {action};
+    assert.equal(instance.getPopupMenuEntries()({[alias]: entry})[alias].action, action);
+  }
 });

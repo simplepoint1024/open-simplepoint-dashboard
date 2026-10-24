@@ -1,0 +1,419 @@
+{
+  "date": "2026-10-21",
+  "scope": "Optional AI HTTP module, selected mounting/security and actual-host auxiliary TLS port validation",
+  "reports": {
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http": [
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.http.AiHttpCompositionTest",
+        "timestamp": "2026-10-21T09:26:50",
+        "sha256": "602c870c2295e2d3218b47c15b206e7807b77a81141eead5412bb7f6e49af43c"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.http.AiResourceInitializationTest",
+        "timestamp": "2026-10-21T09:26:55",
+        "sha256": "af4cb8c5721215a24ec7ac942445686da87c275cc03625afa9fe3f638e759a2b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.http.AiSecurityCompositionTest",
+        "timestamp": "2026-10-21T09:26:57",
+        "sha256": "1ac68fd008bf3deb1becafe33dec66cfe12a458a18c32d4152f7f53860a311d0"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.http.config.AiRuntimeMtlsConnectorConfigurationTest",
+        "timestamp": "2026-10-21T09:26:57",
+        "sha256": "b9c8e8b9b9dd8be6adff961ea00aeb16b9c70a205f9769b7ad5191cd5eabe0fb"
+      },
+      {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.server.AiConfigurationLifecycleHttpTest",
+        "timestamp": "2026-10-21T09:26:57",
+        "sha256": "4aedb0a8e0f01ab0575e5b0966c2d0827dedf587ec83edeeabfaa030bfb3696f"
+      },
+      {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.server.AiTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:27:02",
+        "sha256": "907e373bfc4096aa9df9033419147f4bc1a670eb7abf379bf9c5ba757ab6e0c1"
+      },
+      {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.ai.server.RuntimeTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:27:05",
+        "sha256": "56d0d87a6cf934c29a4c7aa0388ec648ddd1dcb2a9686ab18425295a28540bba"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogControllerTest",
+        "timestamp": "2026-10-21T09:27:07",
+        "sha256": "dba6547de2279d1bbe1d605b0973e755b21835628e8cae37ab27a2bd626ac660"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogPermissionsTest",
+        "timestamp": "2026-10-21T09:27:07",
+        "sha256": "6e9a319a4b596566d0573e389f61d78a996653835dd42a99a0db87c1d4bd9816"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiApiKeyControllerTest",
+        "timestamp": "2026-10-21T09:27:07",
+        "sha256": "f56eba0bd29fb44dd6367d741cd90d477d9d0ad267e4bf694b0792aad01a366a"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiBillingControllerTest",
+        "timestamp": "2026-10-21T09:27:07",
+        "sha256": "016765cfef5f4ad35002cfd8a69d4e6b50bf8a54b3e9dfc7d60eca0ba2a6d53d"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiCompatibleGatewayControllerTest",
+        "timestamp": "2026-10-21T09:27:07",
+        "sha256": "530581cbfc3db32c82135329ce7671dc677aefdae091715293c8a94d539d9d18"
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiModelDebugControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "6ba45f72a8f927da4456ffbef7070263c375689792df7942f73ce2764ce9617e"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiModelDefinitionControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "52dc5191ceb6bd2621fba8b948d680304c304dcb0cc039073a78f1b8da30bd00"
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.controller.AiProviderDefinitionControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "7cc75025d7af00a43059ffa358161d2f37b5ca7d7027e8c89ce653130a343949"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.gateway.AiCompatibilityMapperTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "e6c242fffe07846eaf0ced2181ee05cc92c5d2a252b9d1efde104437a224d780"
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.rest.gateway.OpenAiResponsesProtocolTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "b3e1a67bd878569bf50c51ba84e54ccb72a7941f17c8e037add6e4a3e6fd3f81"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.core.service.adapter.AiGatewayResourcePersistenceTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "9c303849413566751b59a6745e30c450f31c70f8f96db13e022b84d6082a0677"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "name": "org.simplepoint.plugin.ai.core.service.adapter.NativeOpenAiClientTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "6795b8a5de5e11c7d025a7602297fa72a7344160f8eb167ef545ea215cb74e17"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.knowledge.rest.controller.AiKnowledgeBaseControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "00485a3b9877f3043a1885b2556279b56453fec09b47771cdc551407506cf1ad"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpErrorContractTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "e7055e0218f2aececcdf015a46e86db6ee332979aa7ff04a596c40f9e69a7289"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpGatewayControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "93f75ab865ef3e60f5d20a16ab6e08612d63693eedb11cc24668438649876714"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpOauthBrowserCallbackControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "a9aad7c184f13f8ed1ac6d2406a1d9a8e7568b246c68c001c326b6268e85f277"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpServerDefinitionControllerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "249992e770c8687076554e3a172710912f4d86a0387b1705f7149b6de53b378e"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpWorkbenchPermissionsTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "757d303b7b172c692af6628c512b97e5dbc8418f305c6942cc44212d404b3aa8"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.runtime.rest.config.AiRuntimeInternalSecurityConfigurationTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "d74d866d5b283fb1d74b24e802b0e1333b896d68756626e7b7dd6d44374da2d5"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.ai.runtime.rest.controller.AiRuntimeRestExceptionHandlerTest",
+        "timestamp": "2026-10-21T09:27:08",
+        "sha256": "a9bb05e80f4bd822f7c8827d8575ea9346408b570118e2c71986abdc956bd766"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-http-servlet": [
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.ModuleHttpAssemblyTest",
+        "timestamp": "2026-10-21T09:22:07",
+        "sha256": "2b1adfcd13c49e0e558777a77804265989f6bdbc936e68bd5591d327d58b73d5"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.ModuleHttpPathsTest",
+        "timestamp": "2026-10-21T09:22:11",
+        "sha256": "1c42d1fd62f8c99d50361e8d76d93cb2d76b6d210787dda52e954183004b826f"
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.SharedModuleHttpTest",
+        "timestamp": "2026-10-21T09:22:11",
+        "sha256": "3640fc3eca1226dab89aa6ae650fe3dbf7d89dd8ff679b6a9a748ba717f2220b"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition-verification": [
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+        "timestamp": "2026-10-21T09:29:41",
+        "sha256": "b2015b1959651639be4c60e23a6192b33afe1278e8262cd999e611ed79553358"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+        "timestamp": "2026-10-21T09:30:03",
+        "sha256": "765b09b17220678897de1f332074cf999c0844e1041642859621c649b5bb66f7"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+        "timestamp": "2026-10-21T09:30:03",
+        "sha256": "8ccfc56080b77e4c7d9634612d9f89f31d48c389d71c7bac937f57ed1179a13d"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 194,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "sourceSha256": {
+    "gradle/module-boundaries.gradle.kts": "232a13558951889d4b0c56cd6aa9b704c9b58b29f5e737ea7f1ddc2908ba1345",
+    "settings.gradle.kts": "a9ba4fadf48694b83c89b664dfd29d6a914ed20b886fc89149a11dfbb1632054",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "fa6f982eb2be7251bab3febc816fe53b885c2593d3ffa84b78deaed71923d058",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpPaths.java": "3b6f867118ca1b3ebecc0c7a0e611996df1100aa63aa88653c1802d21adad072",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/platform/http/servlet/ModuleHttpPathsTest.java": "0c57da93408d7257e643a55a7030cbbb4647c5dca81963905c92a5a1a9a4a734",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/java/org/simplepoint/plugin/ai/catalog/module/AiCatalogModule.java": "6b704ef3ab46434322d18dd85198456d0990a02f9066848d2a654e69aab1c7c5",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/java/org/simplepoint/plugin/ai/core/module/AiCoreModule.java": "858b95f24520cbb936ccdd436e4ad19e6923c6bc84c9937495c999c0f9f4a31a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/ai/http/AiHttpModule.java": "a95cb4d1765302d973b079b5b4e2e879171a0d5d167216625badf08be0d801f6",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/ai/http/config/AiRuntimeMtlsConnectorConfiguration.java": "3377341d97d9de4dc229e1b4ae4c02ba837e2342962a738b305d98cea294b91b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/catalog/rest/controller/AiCatalogController.java": "6334b2e7cfce9048b645542b1e34f233d12a7282fd60845f7253b3046d37b409",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/config/AiGatewaySecurityConfiguration.java": "45275e36f49e5979a767d6b4b43ca799d24c47a868b8fe6e6d5153a0987c4117",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/config/AiInferenceConfiguration.java": "9e6c717c5db2e7a2e5bd725fbd6cc6e50b7fc7c1beaffc0e9cf44dd934a14512",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiApiKeyController.java": "5a6dffc0c350520203346475f6795ea498c47c86b2a92adabcdc9120fd5bdb01",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiBillingController.java": "5e93569652a0e54ad2f015a98ec6ddb5253ed972c55d40312ff9fe3e03dd073f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiCompatibleGatewayController.java": "31f07f18fd95d177fe06d0c09eda896976c195283ffeb5bbcd716924c549aea8",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiInvocationController.java": "055b04157ce2ed330074b0c015b0dcb6af54411bdb93d5fc257dcbea5561fad0",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiModelDebugController.java": "5eb3c61b15576f8bf3c2b94c4552305e88a89581ba8b0b03a80bc1e866d91deb",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiModelDefinitionController.java": "b3559194727086530078c3dd38350a8caba73a7d480911c7402b36c665f2ace5",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/controller/AiProviderDefinitionController.java": "ef903186f2e2340cfcdb19d418cdc60ff841efb404a11a13191a30444b667bfb",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/gateway/AiCompatibilityMapper.java": "996f1ae1ef18084648db8f6ca110a6fd503272c8da07fea57151552563e9bd81",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/gateway/AiCompatibleGatewayErrors.java": "e2e0a6bd7ab95dfc35f823201d2ef28639b4767dba412adf846f0b9cf6317f94",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/core/rest/gateway/OpenAiResponsesProtocol.java": "d03bbcb1b44a6e4672eaa9bd2ec3648cb72c680a7671c147557c3f03b093e05f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/knowledge/rest/controller/AiKnowledgeBaseController.java": "47f19fe9960b02e4376646e1a31997066c6d978b7605cce9a69d967203589ab2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/config/AiMcpPublicationInternalSecurityConfiguration.java": "78f47fb27f97d7c69d549df903e8e72aa705017a84d79aad2db45c5f851c79f5",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpGatewayController.java": "cb900bae722297ca24115fdf25b91bfed96502ab441a8ad2d83680a48a0ccd42",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpInvocationController.java": "9265611d59694bbd702a779b08776db6f0fe98f8e903113cb7ab60606db9b2bb",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpOauthBrowserCallbackController.java": "fdf280dc3ce0e94478f505e64959091a067f9d3b1edd455f0a7d05073450897b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpPublicationController.java": "308d2834a168b4c5fa785b9757f52609cbea2e81f362af7a6f2d6f2b4f9523ec",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpPublicationInternalController.java": "01faa3d519caf74bb7ac161c49511f8e8aa5b49962cedea8fb145d66ddeb410a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpServerDefinitionController.java": "3ecdea2064c8cfea098d6ca03fa7ee9b7117e7a65fc1056fab773d4f01782a59",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/config/AiRuntimeInternalSecurityConfiguration.java": "adf0dff803d0592a42eeb58e834a691ef78bb4d86626b6a6cf2896292e6d3b69",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeMcpProfileController.java": "f19fafb32d35156718a8db674aff2526095e7c7548796a2a45a178574da4d27d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeNodeController.java": "3b9aadab5851c6ad3feff86d41a69600de79aa8faa98b193de4245c5be5ff86a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeNodeInternalController.java": "7200bcdfc7995772224264193c5962117bd01bff87fa19b48f30c0e8cc4b6740",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimePoolController.java": "ee458866338264169c08dfa91803f719b9039c32eed85bc87b772800b10cbe46",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeRestExceptionHandler.java": "2b0d7cd6b367712fecb16fadd2172083c44689302995f9b1b6c76ae5b28721f1",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeSecretController.java": "a2d235396ef68abb1f7cccaa04c3d14928d9c885c492246391a36d414ca2a02f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeTableSchemaController.java": "09a3d15c4cc74144346d79f9ce57cfa477931ced914fa961ad51e8368ecdf43d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeWorkloadController.java": "485c66328dcc81f514ff8ef35096cb8966391ebf19543cea10e078cf325f68ea",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/http/AiHttpCompositionTest.java": "d62b464988cbd0dd548562fd5a6bb7f61fea138285355978eb791c76bcd53170",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/http/AiResourceInitializationTest.java": "b75b5f39335f3571b6999fb31cd233d5d346bbc91d302e54d1765e678473426d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/http/AiSecurityCompositionTest.java": "7e81d389edb371019d2b28c743a7b372e61a879a32c30be556a300e5b4066839",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/http/config/AiRuntimeMtlsConnectorConfigurationTest.java": "51d488ee53776a237b215eb7453afa48fba9487845c3645b6fb170919040b4b5",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/server/AiConfigurationLifecycleHttpTest.java": "b2654f32da26e285ec9634e0adab0c6af58fff17f4a802ce96f6eb8c218f1c0e",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/server/AiTableQueryHttpTest.java": "826a8af4de2ce25178dcdc2c2bb86519030e55eaffb65ae2c922e1dd03dc7cc1",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/server/RuntimeTableQueryHttpTest.java": "f541f8de07608f105a98fed087d7534b83225e4f794abf729e1e6748ff56f791",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/catalog/rest/controller/AiCatalogControllerTest.java": "22c0225522907ad3e552c2665a43233fde031d9b01b54626088fcb911fc863e0",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/catalog/rest/controller/AiCatalogPermissionsTest.java": "a110f6246a179cfb8d13d58580cc03c406ec74651f0c6c9e443c22aabcf8294c",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiApiKeyControllerTest.java": "51915605322dc352d6611d1a3f44ee37382e00885a8c95faef1cb9fc1cc5874e",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiBillingControllerTest.java": "bf53836388e932ef34be43d3b007d0d9549aae9eadb3a2ee1dfe6421b67f67ff",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiCompatibleGatewayControllerTest.java": "9b1f087eaa3982649a563e73c73f7a18f1385f122cea07fb37ff3f50f02e0f89",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiModelDebugControllerTest.java": "e9bc0413983e937ec321290781fd7b49808cdd1a617c4fb91a3409fc2e7be7ad",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiModelDefinitionControllerTest.java": "03cfedb2127bf8e6cbfaab27770f571b29d2f0909ac2e6081b0e8f1f4ab6fca0",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/controller/AiProviderDefinitionControllerTest.java": "c4c2018733b3a10cc92107598c9ed04df729ebc837965bcb8d336d45f0eb7cb8",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/gateway/AiCompatibilityMapperTest.java": "363ed6361b53c84961212bf34d87edd311ba7e7b1dab47e3f75feee2f2391b5b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/rest/gateway/OpenAiResponsesProtocolTest.java": "12d28a36ce9b8e43e668e7a283fc43f62e462ffa796a2a651de27645b6dd2350",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/service/adapter/AiGatewayResourcePersistenceTest.java": "636b4048d593a3d41a516d5d517b1af2d313294adcdb8abaafc268971cbfcec0",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/core/service/adapter/NativeOpenAiClientTest.java": "ae60c9b03df9418e10862684813620c1236c76387f1f647010cb2bac50b79289",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/knowledge/rest/controller/AiKnowledgeBaseControllerTest.java": "5723aa5b543ada51e73cb4d1592775af1c0b52304eff261c695de2b3edfad3aa",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpErrorContractTest.java": "ee77ad99a68473cb9c01e9f049df9f93d10266b8ba5931c237f99b6268407a9f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpGatewayControllerTest.java": "c507c0f2727d7f9527ef61ddc8513c5b03b1386a3ed748d47c406e1544217d79",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpOauthBrowserCallbackControllerTest.java": "9c9ef6605a2b701d1288216b710934e2baf44be7234e2814f91156d567ddca43",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpServerDefinitionControllerTest.java": "ac1419d17a8dd63b2eeb326c598ebcd9a2347c63b83eb3e38d217e9cc834013b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/mcp/rest/controller/AiMcpWorkbenchPermissionsTest.java": "ff979a97a7c3589cfd1b06e32367bf56cada08ea2d1d98ae7ec6c6e0c3714544",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/runtime/rest/config/AiRuntimeInternalSecurityConfigurationTest.java": "d81fffa861195a41b0c616db0face070be644f7a6954abd3849da08abba2bfac",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeRestExceptionHandlerTest.java": "13d8ef814a00e6329db179023990c324530e40350364a7792c6a4e709d340c73",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/module/AiKnowledgeModule.java": "bfb1a2be92d622dc142efad5a4a3951eeffbce8ad5f28576261585e568dca26f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/java/org/simplepoint/plugin/ai/mcp/module/AiMcpModule.java": "e0016999761fdad34dbdeb92a3d0b380bfeb6bf4682880e321d458c15d4d6ef4",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/java/org/simplepoint/plugin/ai/runtime/module/AiRuntimeModule.java": "2166e8db82f7e11c36dc9da4ffbadd88137e79f8b65bf0d8e7be71388758c449",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/config/DnaJdbcDriverSecurityConfiguration.java": "0c6cd32ce2ed20a30c21cb5b749367cbb36eb361d3380e329d745d8697dda0e6"
+  },
+  "artifacts": {
+    "jars": 331,
+    "classes": {
+      "org/simplepoint/ai/http/AiHttpModule.class": [
+        "simplepoint-plugin-ai-http.jar"
+      ],
+      "org/simplepoint/ai/http/config/AiRuntimeMtlsConnectorConfiguration.class": [
+        "simplepoint-plugin-ai-http.jar"
+      ],
+      "org/simplepoint/plugin/ai/runtime/rest/controller/AiRuntimeNodeController.class": [
+        "simplepoint-plugin-ai-http.jar"
+      ]
+    },
+    "frontend": [
+      {
+        "jar": "simplepoint-service-ai.jar",
+        "files": 189,
+        "sha256": "7ca3f7767a09415af7c58df62533d8f7930b0047c1e8ff4a45a8008bc830cba9"
+      }
+    ]
+  },
+  "validation": [
+    "Actual MVC legacy/modular mapping parity, provider permission/scope, exact resource/i18n initialization",
+    "Three independent security chains; mounted mTLS node identity and servlet context; host port collision rejection",
+    "Existing AI protocol, HTTP and H2 regression tests",
+    "Frontend-enabled installDist, verifyFrontendDistribution, scoped Checkstyle and module boundaries"
+  ],
+  "limitations": [
+    "One existing opt-in native Codex binary test skipped because SIMPLEPOINT_CODEX_BINARY is unset",
+    "No live standalone deployment or full three-topology business acceptance yet",
+    "Running microservices unchanged"
+  ]
+}

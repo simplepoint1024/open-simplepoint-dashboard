@@ -147,6 +147,12 @@ importers:
 
   libs/components:
     dependencies:
+      '@simplepoint/calculation':
+        specifier: workspace:*
+        version: link:../calculation
+      '@simplepoint/calculation-editor':
+        specifier: workspace:*
+        version: link:../calculation-editor
       '@simplepoint/shared':
         specifier: workspace:*
         version: link:../shared

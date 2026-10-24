@@ -1,0 +1,18 @@
+dependencies {
+    implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
+    api(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-http-servlet"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
+    implementation(project(":simplepoint-service-router:simplepoint-service-router-core"))
+    implementation(project(":simplepoint-core"))
+    implementation("org.springframework:spring-webmvc")
+    implementation("org.springframework.data:spring-data-commons")
+    implementation("org.springframework.boot:spring-boot-autoconfigure")
+    implementation("org.springframework.security:spring-security-core")
+    implementation(libs.swagger.annotations)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.security:spring-security-config")
+    testImplementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
+}

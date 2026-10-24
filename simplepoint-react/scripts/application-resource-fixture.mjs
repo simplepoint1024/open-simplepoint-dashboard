@@ -23,9 +23,9 @@ export function createApplicationResourceFixture() {
     {id: 'resource-app-b', code: 'resource-app-b', name: 'Resource Beta', enabled: true}];
   const roots = Array.from({length: 521}, (_, i) => ({id: 'resource-' + String(i).padStart(3, '0'), code: 'resource.code.' + String(i).padStart(3, '0'),
     name: 'Resource' + String(i).padStart(3, '0'), type: i === 0 ? 'GROUP' : 'PAGE', hasChildren: i === 0,
-    grantable: i !== 0, disabled: false, scopeTypes: ['TENANT']}));
+    grantable: i !== 0 && i !== 520, distributable: i !== 0, disabled: false, scopeTypes: ['TENANT']}));
   const children = Array.from({length: 41}, (_, i) => ({id: 'resource-child-' + i, code: 'resource.child.' + String(i).padStart(3, '0'),
-    name: 'Child' + String(i).padStart(3, '0'), type: 'ACTION', hasChildren: false, grantable: true, disabled: false, scopeTypes: ['TENANT']}));
+    name: 'Child' + String(i).padStart(3, '0'), type: 'ACTION', hasChildren: false, grantable: true, distributable: true, disabled: false, scopeTypes: ['TENANT']}));
   const grants = new Map([[applications[0].code, new Set(roots.slice(1, 502).map(row => row.code))], [applications[1].code, new Set([roots[1].code])]]);
   const nativeAssignedSnapshot = new Set(grants.get(applications[0].code));
   const reads = [], writes = [];
@@ -53,6 +53,7 @@ export function createApplicationResourceFixture() {
         read.completed = true; respond(page(applications.map(row => ({...row, ...(currentMode === 'masked-app' ? {code: '***'} : {})})), url)); return true;
       }
       if (path === resourcesBase + '/children' || path === resourcesBase + '/assigned-tree' || path === resourcesBase + '/subtree-codes') {
+        if (url.searchParams.get('purpose') !== 'DISTRIBUTION') throw Error('Application delivery must not use role grant candidates');
         const payload = req.method === 'POST' ? await body(req) : undefined;
         const read = {path, params: new URLSearchParams(url.searchParams), payload, mode: currentMode, completed: false}; reads.push(read);
         if (currentMode === 'denied' || failRead === path) {
@@ -86,7 +87,7 @@ export function createApplicationResourceFixture() {
         } else if (url.searchParams.get('keyword')) {
           const keyword = url.searchParams.get('keyword'); rows = keyword === 'Old' ? [{...roots[2], name: 'OldResult'}] : rows.filter(row => row.name.includes(keyword));
         }
-        if (currentMode === 'masked-resource') rows = rows.map(row => ({...row, id: '***', code: '***', grantable: '***', disabled: '***'}));
+        if (currentMode === 'masked-resource') rows = rows.map(row => ({...row, id: '***', code: '***', grantable: '***', distributable: '***', disabled: '***'}));
         read.completed = true; respond(page(rows, url)); return true;
       }
       if (req.method === 'POST' && [base + '/authorize', base + '/unauthorized'].includes(path)) {

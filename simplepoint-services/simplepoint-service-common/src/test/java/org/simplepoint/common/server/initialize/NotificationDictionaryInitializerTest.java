@@ -16,6 +16,8 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary;
 import org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem;
 import org.simplepoint.plugin.rbac.tenant.api.service.DictionaryItemService;
 import org.simplepoint.plugin.rbac.tenant.api.service.DictionaryService;
+import org.simplepoint.plugin.rbac.tenant.service.initialize.DictionaryDeclarationWriter;
+import org.simplepoint.plugin.rbac.tenant.service.support.DictionaryCatalogWriteBoundary;
 
 class NotificationDictionaryInitializerTest {
 
@@ -23,10 +25,10 @@ class NotificationDictionaryInitializerTest {
   void contributionHasStableMetadata() {
     NotificationDictionaryInitializer initializer = new NotificationDictionaryInitializer();
 
-    BootstrapContribution contribution = initializer.notificationDictionaryBootstrapContribution(
-        mock(DictionaryService.class),
-        mock(DictionaryItemService.class)
-    ).contribution();
+    BootstrapContribution contribution =
+        initializer
+            .notificationDictionaryBootstrapContribution(mock(DictionaryDeclarationWriter.class))
+            .contribution();
 
     assertThat(contribution.moduleCode()).isEqualTo("notification");
     assertThat(contribution.contributionType()).isEqualTo("dictionary");
@@ -48,10 +50,18 @@ class NotificationDictionaryInitializerTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     NotificationDictionaryInitializer initializer = new NotificationDictionaryInitializer();
-    initializer.notificationDictionaryBootstrapContribution(
-        dictionaryService,
-        dictionaryItemService
-    ).contribution().action().run();
+    initializer
+        .notificationDictionaryBootstrapContribution(
+            new DictionaryDeclarationWriter(
+                mock(DictionaryCatalogWriteBoundary.class),
+                dictionaryService,
+                dictionaryItemService,
+                org.mockito.Mockito.mock(
+                    org.simplepoint.plugin.rbac.tenant.service.initialize
+                        .DictionaryRegistrationStore.class)))
+        .contribution()
+        .action()
+        .run();
 
     ArgumentCaptor<Dictionary> dictionaryCaptor = ArgumentCaptor.forClass(Dictionary.class);
     verify(dictionaryService, times(4)).create(dictionaryCaptor.capture());
@@ -61,8 +71,7 @@ class NotificationDictionaryInitializerTest {
             "notification.category",
             "notification.priority",
             "notification.audience-type",
-            "notification.status"
-        );
+            "notification.status");
 
     ArgumentCaptor<DictionaryItem> itemCaptor = ArgumentCaptor.forClass(DictionaryItem.class);
     verify(dictionaryItemService, times(15)).create(itemCaptor.capture());
@@ -72,7 +81,6 @@ class NotificationDictionaryInitializerTest {
             "notifications.category.ANNOUNCEMENT",
             "notifications.priority.URGENT",
             "notifications.audience.TENANT",
-            "notifications.status.REVOKED"
-        );
+            "notifications.status.REVOKED");
   }
 }

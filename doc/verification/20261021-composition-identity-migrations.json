@@ -1,0 +1,858 @@
+{
+  "date": "2026-10-21",
+  "scope": "Identity, OIDC, i18n and bootstrap-registry module schema installation",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    "./gradlew -I /tmp/simplepoint-identity-migration-checkstyle.gradle verifyIdentityMigrationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-platform:simplepoint-platform-bootstrap-registry:test :simplepoint-security:simplepoint-security-core:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-authentication:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-credentials:test :simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service:test :simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest:test :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api:test :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-identity-migration-checkstyle.gradle verifyIdentityMigrationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "gates": [
+      "SP_MIGRATIONS_POSTGRES_URL",
+      "SP_MIGRATIONS_POSTGRES_USER",
+      "SP_MIGRATIONS_POSTGRES_PASSWORD"
+    ],
+    "database": {
+      "version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+      "image": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+      "runningBeforeCleanup": true,
+      "oomKilled": false,
+      "remainingTestSchemas": 0,
+      "topology": "One isolated PostgreSQL instance; independent schemas and DataSource objects for store isolation tests"
+    }
+  },
+  "totals": {
+    "tests": 593,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "initialActualExecutionTests": 554,
+  "initialUpToDateTests": 39,
+  "executionNotes": [
+    "Unchanged authentication (30 cases) and credential (9 cases) tasks were UP-TO-DATE during the initial command; these are retained valid task results, not freshly rerun cases.",
+    "The 31-case composition suite reran after adding long-token and post-restart preservation assertions, and again after final SQL whitespace normalization. All runs passed."
+  ],
+  "testProjects": [
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-bootstrap-registry",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.bootstrap.registry.ModuleBootstrapRegistryTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-security:simplepoint-security-core",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 42,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.security.ResourceScopePolicyTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.authentication.AuthenticationSecretCipherTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextCacheSecurityTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextRejectionTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.EntityFieldsTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.ResourceScopeTypesConverterTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.UserTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.identity.UserDisplayNameTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 168,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.base.repository.RevokedGrantDatabaseTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.aspect.DataScopeAspectTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.configuration.UserAutoRegistrationInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImplTest",
+          "tests": 29,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessReadQueryTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessServiceImplTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.PermissionMetadataQueryDatabaseTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.PlatformAccountDatabaseTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.RoleScopeBindingServiceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.ScopePolicyDatabaseTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.UserDirectoryBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.UserDirectoryDatabaseTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.UserPreferenceServiceImplTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.UserRemoteBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.impl.UsersServiceImplTest",
+          "tests": 29,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationPropertiesTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 188,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.ResourceAuthorizationVersionServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.AuditIdentityDirectoryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.BuiltInTenantProvisionerImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceCallerGuardTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceProviderBoundaryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationServiceImplTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.PackageServiceImplTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantDirectoryBoundaryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantMemberRepositoryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantRoleRecipientsDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantServiceImplTest",
+          "tests": 55,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-authentication",
+      "initialTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.AccountCredentialVerifierTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.AuthenticationModuleBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.LoginProtectionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.MfaVerificationServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.TotpServiceTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-credentials",
+      "initialTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.credentials.CredentialAuditTransactionTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.credentials.CredentialAuthenticationTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 80,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.initialize.ClientRegistrationInitializeTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.initialize.Oauth2ClientInitializePropertiesTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.repository.impl.RegisteredClientRepositoryImplTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderCredentialCipherTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderUrlValidatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcAuthorizationConsentServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcAuthorizationServiceImplTest",
+          "tests": 37,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.oidc.rest.controller.OidcClientControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.i18n.api.entity.I18nEntityTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.i18n.api.initialization.I18nModuleInitializerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service",
+      "initialTaskState": "EXECUTED",
+      "totals": {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.i18n.initialize.I18nBootstrapSelectionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.i18n.service.impl.I18nMessageServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.i18n.service.impl.I18nRemoteBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "styleReports": [
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build/reports/checkstyle/identityMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/build/reports/checkstyle/identityMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/build/reports/checkstyle/identityMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/identityMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/identityMigration.xml",
+      "violations": 0
+    }
+  ],
+  "styleSources": [
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/java/org/simplepoint/plugin/oidc/module/OidcModule.java",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java"
+  ],
+  "styleTaskContract": {
+    "configuration": "checkstyle/google_checks.xml",
+    "maxWarnings": 0,
+    "classpath": "owning project test compile classpath"
+  },
+  "moduleBoundaries": "passed",
+  "schemaCoverage": {
+    "identity": 31,
+    "oidc": 5,
+    "i18n": 6,
+    "bootstrap-registry": 1,
+    "entities": 41,
+    "collectionTables": 2
+  },
+  "verifiedScenarios": [
+    "Fresh four-module installation in one shared schema and in four independent store bindings, with no unexpected tables in another store",
+    "Full Hibernate validate plus queries for all 41 entities; only the structural platform lock row is initially populated",
+    "Actual role grant repository excludes revoked grants before request filters exist; updating active role scope leaves historical grants unchanged",
+    "Restart applies zero migrations and preserves revoked grants, formally-offline resource generations, APPLIED bootstrap records and i18n messages",
+    "User identity/step-up foreign keys, platform role enum, tenant membership uniqueness/defaults, managed resource identity check and production indexes",
+    "MFA ciphertext storage accepts 512 characters and rejects 513; authorization version defaults to zero",
+    "OIDC long text token reads through its JPA entity without truncation; i18n unique key separates locales; duplicate contribution identity is rejected"
+  ],
+  "limitations": [
+    "Nine logical modules have SQL manifests. Remaining module migrations and installation coverage are not complete.",
+    "Independent storage tests use separate schemas in one PostgreSQL instance; no multi-host or full deployment topology acceptance claimed.",
+    "The shared OAuth persistence adapter, production entrypoints and login end-to-end still need explicit modular storage and lifecycle integration.",
+    "The current entity uniqueness constraints for OIDC client issue timestamps/secrets and region country codes remain unchanged; actual batch initialization must assess them before full installation acceptance.",
+    "Historical organization migration and i18n cleanup are excluded from fresh schema V1; verified legacy database adoption is still pending.",
+    "Other selected test projects use their existing unit/H2 fixtures. The 593-case scope is not a claim that all cases ran on PostgreSQL.",
+    "No deployment, business database mutation, account creation in the business environment, frontend distribution build, commit or push."
+  ],
+  "sourceSha256": {
+    "doc/design/modular_service_composition_plan.md": "9d697f7278582aa5565b1671b7c258a1377c18935e50387f73c62f2aaaa6ec84",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "64747fc2b8137fbe5e44ba6a4f4930203556b6f217af9eae1296d4c31d94b59e",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryModule.java": "987f1fe6c875f79e4dffb5fa76e83f9d11d31d6cd582f0be46996902afc39dd6",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/resources/META-INF/simplepoint/modules/bootstrap-registry/db/manifest.properties": "d245dcd92f507b8dce52e8b0a62b5e9f3bacf13b4cb06bfca8047aaff2857819",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/resources/META-INF/simplepoint/modules/bootstrap-registry/db/postgresql/V1__bootstrap_registry_foundation.sql": "eb765f6ddc09d7caf52f0ff9dca252efe98dfb3d893afa471df94d66f8ccbc6f",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "bbf26f9ba9576227964b56a2e88d7f76eec9dbd09c96e83181d9f3be0d079ce9",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java": "bae326aaba33d4d1db5f80b22d93e5cf523859a8494a86ae19d22813c46eb7c3",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "e243729db0260667a522027613ce649f046b8a8d30ee34996f8d293c98ee9fac",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java": "552cc958122957b4b40834b2afecc04cdf3c8773dd572d510ffba575236a71f4",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/resources/META-INF/simplepoint/modules/i18n/db/manifest.properties": "d1a1776bd9cdb51ef68d0a382bfd3db7d4347164d49a1c0442294d4cdaa82d76",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/resources/META-INF/simplepoint/modules/i18n/db/postgresql/V1__i18n_foundation.sql": "0b803a43f850c3ef6b0f5bf8c7f1652d8fb23630796907f3b143c6914e19b38b",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/java/org/simplepoint/plugin/oidc/module/OidcModule.java": "f186d655f984eca0bc0ee5a91c2794e82027d48172c404c8b637240a1fe80623",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules/oidc/db/manifest.properties": "7532e39e0c23528599ef950fb7400cea33a44833cafe1fee1910abc817fab90c",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules/oidc/db/postgresql/V1__oidc_foundation.sql": "5c43f623f7efe2afc7cbe877ef95b9b926609c2420de8f60ba5cd5509d3d3004",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "4c2fee4c8539c006a7ebf62f6d0dde5a35c55b8b0f5dc34ea5723fb94d975e2e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity/db/manifest.properties": "f34dd04ef438b3748a37db5a32b3d766e0770326fbe3cbbe0960227de33856ef",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity/db/postgresql/V1__identity_foundation.sql": "a2b95981a3e86b79ced143bbe4d1934543beb410ea3d4758091a8685d9750387"
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "anonymousVolumeRemoved": true,
+    "temporaryCredentialFileRemoved": true,
+    "remainingTestSchemasBeforeRemoval": 0
+  }
+}

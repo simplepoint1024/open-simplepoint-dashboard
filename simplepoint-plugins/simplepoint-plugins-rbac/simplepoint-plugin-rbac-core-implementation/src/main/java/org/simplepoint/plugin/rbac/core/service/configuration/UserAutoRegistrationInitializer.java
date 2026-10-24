@@ -3,11 +3,10 @@ package org.simplepoint.plugin.rbac.core.service.configuration;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.platform.bootstrap.BootstrapContribution;
 import org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.core.service.properties.UserRegistrationProperties;
 import org.simplepoint.security.entity.User;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 /**
@@ -29,9 +28,9 @@ public class UserAutoRegistrationInitializer {
    */
   @Bean
   public PlatformBootstrapContribution userRegistrationBootstrapContribution(
-      UsersService usersService,
-      UserRegistrationProperties userRegistrationProperties,
-      org.simplepoint.plugin.rbac.core.api.repository.UserRepository userRepository
+      UserManagementService usersService,
+      SystemUserBootstrap bootstrap,
+      UserRegistrationProperties userRegistrationProperties
   ) {
     return () -> BootstrapContribution.versioned(
         "rbac-core",
@@ -40,27 +39,12 @@ public class UserAutoRegistrationInitializer {
         "3",
         100,
         () -> userRegistrationProperties.getUsers().forEach(user -> {
-          boolean exists = false;
-          try {
-            log.info("Initialize system user {}", user.getUsername());
-
-            // Check if the user already exists
-            UserDetails existUser = usersService.loadUserByUsername(resolveSubject(user));
-            if (existUser != null) {
-              exists = true;
-            }
-          } catch (Exception ignore) {
-            // User does not exist
-          }
-          if (!exists) {
-            boolean bootstrapRoot = Boolean.TRUE.equals(user.getSuperAdmin());
-            user.setSuperAdmin(false);
-            usersService.create(user);
-            // Trusted startup-only bootstrap, never reachable through a user mutation endpoint.
-            if (bootstrapRoot) {
-              user.setSuperAdmin(true);
-              userRepository.save(user);
-            }
+          log.info("Initialize system user {}", user.getUsername());
+          // Lookup must not create a personal tenant before resource declarations are installed.
+          // Infrastructure failures propagate; only an absent account permits registration.
+          User existing = usersService.loadUserByPhoneOrEmail(resolveSubject(user));
+          if (existing == null) {
+            bootstrap.createBootstrapAccount(user);
           }
         })
     );

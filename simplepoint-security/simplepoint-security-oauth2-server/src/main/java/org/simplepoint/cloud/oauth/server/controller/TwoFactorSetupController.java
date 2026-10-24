@@ -1,7 +1,7 @@
 package org.simplepoint.cloud.oauth.server.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.simplepoint.cloud.oauth.server.service.TwoFactorSetupService;
+import org.simplepoint.plugin.rbac.authentication.mfa.TwoFactorSetupService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Controller for enabling and configuring TOTP-based two-factor authentication
- * for the currently authenticated user.
+ * Controller for enabling and configuring TOTP-based two-factor authentication for the currently
+ * authenticated user.
  */
 @Controller
 @RequestMapping("/account/2fa")
@@ -21,34 +21,36 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class TwoFactorSetupController {
 
   private final TwoFactorSetupService twoFactorSetupService;
+  private final org.simplepoint.plugin.rbac.core.api.service.UserManagementService usersService;
 
-  /**
-   * Show simple 2FA settings page (enabled/disabled + actions).
-   */
+  /** Show simple 2FA settings page (enabled/disabled + actions). */
   @GetMapping
   public String settings(
       Model model,
       Authentication authentication,
-      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
       return redirectTo(gateway, "/login");
     }
     addNavigationUrls(model, gateway);
-    model.addAttribute("twoFactorEnabled", Boolean.TRUE.equals(user.getTwoFactorEnabled()));
+    model.addAttribute(
+        "twoFactorEnabled",
+        usersService
+            .findByIdForAuthorization(user.getId())
+            .map(value -> Boolean.TRUE.equals(value.getTwoFactorEnabled()))
+            .orElse(false));
     return "two-factor-settings";
   }
 
   /**
-   * Generate a new TOTP secret for the current user and show setup info.
-   * The user must scan the QR code and confirm with a valid code to finish enabling 2FA.
+   * Generate a new TOTP secret for the current user and show setup info. The user must scan the QR
+   * code and confirm with a valid code to finish enabling 2FA.
    */
   @PostMapping("/enable")
   public String enable(
       Model model,
       Authentication authentication,
-      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
       return redirectTo(gateway, "/login");
     }
@@ -60,16 +62,15 @@ public class TwoFactorSetupController {
     return "two-factor-setup";
   }
 
-  /**
-   * Confirm enabling 2FA by verifying the first TOTP code from the authenticator app.
-   */
+  /** Confirm enabling 2FA by verifying the first TOTP code from the authenticator app. */
   @PostMapping("/confirm")
   public String confirm(
+      jakarta.servlet.http.HttpServletRequest request,
+      jakarta.servlet.http.HttpServletResponse response,
       @RequestParam("code") String code,
       Model model,
       Authentication authentication,
-      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
       return redirectTo(gateway, "/login");
     }
@@ -97,22 +98,25 @@ public class TwoFactorSetupController {
       return "two-factor-setup";
     }
 
-    return redirectTo(gateway, "/account/2fa");
+    org.simplepoint.cloud.oauth.server.service.LoginSession.clear(request, response);
+    return redirectTo(gateway, "/login");
   }
 
-  /**
-   * Disable 2FA for the current user.
-   */
+  /** Disable 2FA for the current user. */
   @PostMapping("/disable")
   public String disable(
+      jakarta.servlet.http.HttpServletRequest request,
+      jakarta.servlet.http.HttpServletResponse response,
       Authentication authentication,
-      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway
-  ) {
+      @RequestParam("password") String password,
+      @RequestParam("code") String code,
+      @RequestParam(name = "gateway", defaultValue = "false") boolean gateway) {
     if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
       return redirectTo(gateway, "/login");
     }
-    twoFactorSetupService.disable(user);
-    return redirectTo(gateway, "/account/2fa");
+    twoFactorSetupService.disable(user, password, code);
+    org.simplepoint.cloud.oauth.server.service.LoginSession.clear(request, response);
+    return redirectTo(gateway, "/login");
   }
 
   private void addNavigationUrls(Model model, boolean gateway) {

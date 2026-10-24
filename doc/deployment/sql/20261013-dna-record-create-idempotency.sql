@@ -6,6 +6,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = 'uk_dna_physical_model_tenant_id'
+      AND conrelid = 'simpoint_dna_physical_models'::regclass
   ) THEN
     ALTER TABLE simpoint_dna_physical_models
       ADD CONSTRAINT uk_dna_physical_model_tenant_id UNIQUE (tenant_id, id);

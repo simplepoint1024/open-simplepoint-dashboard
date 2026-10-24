@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.app.form.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.HashSet;
 import java.util.List;
@@ -24,13 +25,15 @@ public class FormPublicationImpactService {
   private final EntityManager entityManager;
   private final FormDocumentCodec codec;
   private final FormRequestContext context;
+  private final ObjectMapper mapper;
 
   /** Depends only on APP metadata and the shared requirement compiler, never on target rows. */
   public FormPublicationImpactService(final EntityManager entityManager, final FormDocumentCodec codec,
-      final FormRequestContext context) {
+      final FormRequestContext context, final ObjectMapper mapper) {
     this.entityManager = entityManager;
     this.codec = codec;
     this.context = context;
+    this.mapper = mapper;
   }
 
   /** Includes the candidate and every surviving active historical page, under the effective governing definition. */
@@ -75,8 +78,11 @@ public class FormPublicationImpactService {
       }
     }
     Iterable<Version> pages = () -> effectiveVersions.stream().map(number -> version(work, number, budget)).iterator();
-    var plan = FormPublicationRequirementsCompiler.compile(work.physicalModelId(), work.applicationId(), work.formId(), pages, governing);
-    return new FormWritePolicyImpact(form.getWritePolicyVersion(), governingVersion, observedBindings, plan.checks(), plan.valueChecks());
+    boolean calculated = FormCalculationCompiler.hasCalculations(governing)
+        || FormInstalledCalculation.at(entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
+    var plan = FormPublicationRequirementsCompiler.compile(work.physicalModelId(), work.applicationId(), work.formId(), pages, governing, calculated);
+    return new FormWritePolicyImpact(form.getWritePolicyVersion(), governingVersion, observedBindings,
+        plan.checks(), plan.valueChecks(), plan.validations());
   }
 
   private Version version(final BindingWork work, final int number, final FormActiveDefinitionBudget budget) {

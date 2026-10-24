@@ -41,6 +41,9 @@ class ProjectionPagesTest {
       maxPageSize = 10)
   record Summary(String id, String title, int quantity) {}
 
+  @TableQuery({@QueryField("title"), @QueryField("quantity")})
+  record StandardPageRow(String id, String title, int quantity) {}
+
   private static SessionFactory factory;
   private Session session;
 
@@ -111,6 +114,34 @@ class ProjectionPagesTest {
         (cb, criteria, root) ->
             cb.and(cb.equal(root.get("tenant"), "a"), cb.isFalse(root.get("deleted"))),
         row -> new Summary(row.id, row.title, row.quantity));
+  }
+
+  @Test
+  void standardFiveHundredRowPagesKeepCountsTenantBoundariesAndStableContinuation() {
+    for (int index = 0; index < 503; index++) {
+      var row = new Row();
+      row.id = "bulk-%04d".formatted(index);
+      row.title = "Bulk " + index;
+      row.quantity = index;
+      row.tenant = index == 501 ? "b" : "a";
+      row.deleted = index == 502;
+      session.persist(row);
+    }
+    session.flush();
+    session.clear();
+    java.util.function.Function<Pageable, Page<StandardPageRow>> read = page -> ProjectionPages.query(
+        session, Row.class, StandardPageRow.class, Map.of("title", "like:Bulk"), page,
+        "quantity", Set.of("title"),
+        (cb, criteria, root) -> cb.and(cb.equal(root.get("tenant"), "a"), cb.isFalse(root.get("deleted"))),
+        row -> new StandardPageRow(row.id, row.title, row.quantity));
+    var first = read.apply(PageRequest.of(0, 500, Sort.by("quantity")));
+    assertThat(first.getTotalElements()).isEqualTo(501);
+    assertThat(first.getContent()).hasSize(500);
+    assertThat(first.getContent().getFirst().id()).isEqualTo("bulk-0000");
+    assertThat(first.getContent().getLast().id()).isEqualTo("bulk-0499");
+    assertThat(read.apply(PageRequest.of(1, 500, Sort.by("quantity"))).getContent())
+        .extracting(StandardPageRow::id).containsExactly("bulk-0500");
+    assertThatThrownBy(() -> read.apply(PageRequest.of(0, 501))).isInstanceOf(InvalidQueryException.class);
   }
 
   @Test

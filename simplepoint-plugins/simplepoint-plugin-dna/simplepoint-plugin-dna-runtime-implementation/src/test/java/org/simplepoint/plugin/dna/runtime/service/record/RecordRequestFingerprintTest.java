@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCompletenessQuery;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinition;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationScope;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommand;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordDeleteMutation;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordJsonSemantics;
@@ -21,6 +23,53 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordViolationQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
 
 class RecordRequestFingerprintTest {
+
+  @Test
+  void snapshotConsumerRequirementsChangeIntentButAbsentMetadataKeepsLegacyIdentity() {
+    var parent = new RecordTransactionCommand("model-a", SCHEMA,
+        List.of(new org.simplepoint.plugin.dna.runtime.api.record.RecordCreateMutation("parent", Map.of("title", "Test"))), 1000, "key");
+    var legacy = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand(parent, List.of(),
+        new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(List.of()));
+    var absent = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand(parent, List.of(),
+        new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(List.of(), null));
+    var required = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand(parent, List.of(),
+        new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(List.of(), List.of(
+            new org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement("title", true, 4000, null, false, false, false))));
+    assertThat(fingerprints.of(legacy)).isEqualTo(fingerprints.of(absent)).isNotEqualTo(fingerprints.of(required));
+    var retry = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand(
+        new RecordTransactionCommand("model-a", SCHEMA, parent.mutations(), 2000, "key", 8), List.of(), required.snapshot());
+    assertThat(fingerprints.of(retry)).isEqualTo(fingerprints.of(required));
+  }
+
+  @Test
+  void calculationIntentIncludesExpressionsScopesAndSchemaWhileMapOrderDoesNotMatter() {
+    Map<String, String> first = new LinkedHashMap<>();
+    first.put("total", "SUM([lines.amount])");
+    first.put("tax", "ROUND([total]*0.13,2)");
+    Map<String, String> second = new LinkedHashMap<>();
+    second.put("tax", first.get("tax"));
+    second.put("total", first.get("total"));
+    var detail = new RecordCalculationScope("child", SCHEMA, Map.of("amount", "[price]*[quantity]"));
+    var initial = calculation(new RecordCalculationDefinition("1", first, Map.of("lines", detail)), 1000);
+    var reordered = calculation(new RecordCalculationDefinition("1", second, Map.of("lines", detail)), 2000);
+    assertThat(fingerprints.of(initial)).isEqualTo(fingerprints.of(reordered));
+    assertThat(fingerprints.cancellationOf(initial)).isEqualTo(fingerprints.cancellationOf(reordered));
+    assertThat(fingerprints.of(initial)).isNotEqualTo(fingerprints.of(calculation(null, 1000)));
+    assertThat(fingerprints.of(calculation(new RecordCalculationDefinition("1", Map.of(), Map.of()), 1000)))
+        .isNotEqualTo(fingerprints.of(calculation(null, 1000)));
+    for (var changed : List.of(
+        new RecordCalculationScope("other-model", SCHEMA, detail.formulas()),
+        new RecordCalculationScope("child", new RecordSchemaReference(2, "b".repeat(64)), detail.formulas()),
+        new RecordCalculationScope("child", SCHEMA, Map.of("amount", "[price]*[quantity]+1")))) {
+      assertThat(fingerprints.of(calculation(new RecordCalculationDefinition("1", first,
+          Map.of("lines", changed)), 1000))).isNotEqualTo(fingerprints.of(initial));
+    }
+  }
+
+  private static RecordWritePolicyPublicationCommand calculation(RecordCalculationDefinition definition, int timeout) {
+    return new RecordWritePolicyPublicationCommand("model-a", "app", "form", SCHEMA, 0, 1,
+        "publish", "b".repeat(64), Map.of(), timeout, Map.of(), definition);
+  }
 
   private static final RecordSchemaReference SCHEMA = new RecordSchemaReference(
       1,

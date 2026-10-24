@@ -10,7 +10,6 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,20 +34,17 @@ import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserPickerItem;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceRepository;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
+import org.simplepoint.plugin.rbac.core.service.configuration.SystemUserBootstrap;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
+import org.simplepoint.plugin.rbac.tenant.api.service.PersonalTenantProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
-import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
 import org.simplepoint.security.entity.UserRoleRelevance;
 import org.simplepoint.security.identity.UserDisplayName;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,14 +59,13 @@ import org.springframework.transaction.annotation.Transactional;
  * Service implementation class for managing User entities
  * in the RBAC (Role-Based Access Control) system.
  * This class extends BaseServiceImpl to inherit common CRUD operations and implements both
- * UsersService and UserDetailsService interfaces to handle user-specific operations and
+ * UserManagementService and UserDetailsService interfaces to handle user-specific operations and
  * authentication-related logic.
  */
 @Slf4j
 @Service
-@RemoteProvider
 public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, String>
-    implements UsersService {
+    implements UserManagementService, SystemUserBootstrap {
 
   private static final int USER_PICKER_MIN_SEARCH_LENGTH = 3;
   private static final int USER_PICKER_MAX_SELECTED_IDS = 100;
@@ -81,9 +76,11 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final RoleRepository roleRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
-  private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
+  private final PersonalTenantProvisioningService personalTenants;
   private final UserRoleCandidateQuery roleCandidateQuery;
   private final UserPickerQuery pickerQuery;
+
+  private final jakarta.persistence.EntityManager permissionEntityManager;
 
   /**
      * Optional password encoder for encrypting user passwords.
@@ -92,27 +89,28 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   private final PasswordEncoder passwordEncoder;
 
   /**
-     * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
-     *
-     * @param passwordEncoder             the optional PasswordEncoder for encrypting user passwords
-     * @param usersRepository             the repository used for user operations
-     * @param detailsProviderService      the access control service for managing resource grants
-     * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
-     */
+   * Constructs a UsersServiceImpl with the specified repository and optional metadata sync service.
+   *
+   * @param passwordEncoder the optional PasswordEncoder for encrypting user passwords
+   * @param usersRepository the repository used for user operations
+   * @param detailsProviderService the access control service for managing resource grants
+   * @param userRoleRelevanceRepository the repository for managing UserRoleRelevance entities
+   */
   public UsersServiceImpl(
       final PasswordEncoder passwordEncoder,
       final UserRepository usersRepository,
       final DetailsProviderService detailsProviderService,
       final UserRoleRelevanceRepository userRoleRelevanceRepository,
       @Autowired(required = false) final TenantRepository tenantRepository,
-      @Autowired(required = false) final TenantUserRelevanceRepository tenantUserRelevanceRepository,
+      @Autowired(required = false)
+          final TenantUserRelevanceRepository tenantUserRelevanceRepository,
       final RoleRepository roleRepository,
       final ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       final ResourceGrantLogRemoteService resourceGrantLogRemoteService,
-      final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
+      final PersonalTenantProvisioningService personalTenants,
       final UserRoleCandidateQuery roleCandidateQuery,
-      final UserPickerQuery pickerQuery
-  ) {
+      final UserPickerQuery pickerQuery,
+      final jakarta.persistence.EntityManager permissionEntityManager) {
     super(usersRepository, detailsProviderService);
     this.passwordEncoder = passwordEncoder;
     this.userRoleRelevanceRepository = userRoleRelevanceRepository;
@@ -122,15 +120,17 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     this.pickerQuery = pickerQuery;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
-    this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
+    this.personalTenants = personalTenants;
     this.roleCandidateQuery = roleCandidateQuery;
+    this.permissionEntityManager = permissionEntityManager;
   }
 
-  @jakarta.persistence.PersistenceContext
-  private jakarta.persistence.EntityManager permissionEntityManager;
+
 
   private String permissionTenant() {
-    if (currentTenantId() == null && AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) return null;
+    if (currentTenantId() == null && AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
+      return null;
+    }
     return resolveCurrentTenantScope();
   }
 
@@ -140,49 +140,84 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
   }
 
   @Override
-  protected boolean useInheritedDataScope() { return false; }
+  protected boolean useInheritedDataScope() {
+    return false;
+  }
 
   /** User scope is defined by membership in this tenant, never the global account's audit organization. */
   @Override
   protected org.simplepoint.core.datascopeannotation.DataScopeCondition buildDefaultDataScopeCondition() {
     String tenantId = permissionTenant();
-    if (tenantId == null || tenantId.isBlank()) return super.buildDefaultDataScopeCondition();
+    if (tenantId == null || tenantId.isBlank()) {
+      return super.buildDefaultDataScopeCondition();
+    }
     var context = getAuthorizationContext();
     var rule = context == null ? null : context.activeDataScope();
     Set<String> allowed;
-    if (rule == null || "ALL".equals(rule.type())) allowed = currentTenantUserIds(tenantId);
-    else if (!rule.expressions().isEmpty()) allowed = expressionMemberIds(tenantId, rule);
-    else allowed = new LinkedHashSet<>(tenantUserRelevanceRepository.authorizedForScope(tenantId,
-        rule.type(), rule.departmentIds().isEmpty() ? Set.of("__no_department__") : rule.departmentIds(),
-        context.getUserId(), rule.includeSelf()));
+    if (rule == null || "ALL".equals(rule.type())) {
+      allowed = currentTenantUserIds(tenantId);
+    } else if (!rule.expressions().isEmpty()) {
+      allowed = expressionMemberIds(tenantId, rule);
+    } else {
+      allowed =
+          new LinkedHashSet<>(
+              tenantUserRelevanceRepository.authorizedForScope(
+                  tenantId,
+                  rule.type(),
+                  rule.departmentIds().isEmpty()
+                      ? Set.of("__no_department__")
+                      : rule.departmentIds(),
+                  context.getUserId(),
+                  rule.includeSelf()));
+    }
     return new org.simplepoint.core.datascopeannotation.DataScopeCondition("CUSTOM", "id", "id",
         context == null ? null : context.getUserId(), allowed, false);
   }
 
   @Override
   protected boolean isAccessible(User user) {
-    if (user == null) return false;
+    if (user == null) {
+      return false;
+    }
     String tenantId = permissionTenant();
-    if (tenantId == null || tenantId.isBlank()) return super.isAccessible(user);
+    if (tenantId == null || tenantId.isBlank()) {
+      return super.isAccessible(user);
+    }
     var context = getAuthorizationContext();
     var rule = context.activeDataScope();
-    if (rule == null || rule.expressions().isEmpty()) return buildDefaultDataScopeCondition().getDeptIds().contains(user.getId());
+    if (rule == null || rule.expressions().isEmpty()) {
+      return buildDefaultDataScopeCondition().getDeptIds().contains(user.getId());
+    }
     var member = tenantUserRelevanceRepository.findByTenantIdAndUserIdAndDeletedAtIsNull(tenantId, user.getId()).orElse(null);
-    if (member == null) return false;
+    if (member == null) {
+      return false;
+    }
     boolean self = user.getId().equals(context.getUserId());
-    boolean builtin = switch (rule.type()) {
-      case "ALL" -> true; case "SELF" -> self;
-      case "CUSTOM", "DEPT", "DEPT_AND_BELOW" -> member.getOrgId() != null && rule.departmentIds().contains(member.getOrgId()) || rule.includeSelf() && self;
-      default -> false;
-    };
-    if (builtin) return true;
-    return rule.condition("orgId", "userId", context).getExpressions().stream().anyMatch(node ->
-        org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(node, field -> switch (field) {
-          case "orgId" -> member.getOrgId(); case "enabled" -> member.getEnabled() == null || member.getEnabled();
-          case "userId" -> user.getId();
-          case "name" -> UserDisplayName.display(user);
-          default -> permissionFieldValue(user, field);
-        }));
+    boolean builtin =
+        switch (rule.type()) {
+          case "ALL" -> true;
+          case "SELF" -> self;
+          case "CUSTOM", "DEPT", "DEPT_AND_BELOW" ->
+              member.getOrgId() != null && rule.departmentIds().contains(member.getOrgId())
+                  || rule.includeSelf() && self;
+          default -> false;
+        };
+    if (builtin) {
+      return true;
+    }
+    return rule.condition("orgId", "userId", context).getExpressions().stream()
+        .anyMatch(
+            node ->
+                org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
+                    node,
+                    field ->
+                    switch (field) {
+                      case "orgId" -> member.getOrgId();
+                      case "enabled" -> member.getEnabled() == null || member.getEnabled();
+                      case "userId" -> user.getId();
+                      case "name" -> UserDisplayName.display(user);
+                      default -> permissionFieldValue(user, field);
+                    }));
   }
 
   private Set<String> expressionMemberIds(String tenantId, org.simplepoint.core.ResourceDataScope rule) {
@@ -191,13 +226,23 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     var member = query.from(org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance.class);
     var user = query.from(User.class);
     var fields = new java.util.LinkedHashMap<String, jakarta.persistence.criteria.Expression<?>>();
-    permissionEntityManager.getMetamodel().entity(User.class).getAttributes().forEach(attribute -> fields.put(attribute.getName(), user.get(attribute.getName())));
-    fields.put("orgId", member.get("orgId")); fields.put("userId", member.get("userId"));
+    permissionEntityManager.getMetamodel().entity(User.class).getAttributes()
+        .forEach(attribute -> fields.put(attribute.getName(), user.get(attribute.getName())));
+    fields.put("orgId", member.get("orgId"));
+    fields.put("userId", member.get("userId"));
     fields.put("enabled", cb.coalesce(member.<Boolean>get("enabled"), true));
     fields.put("name", UserDisplayName.expression(cb, user));
-    var policy = org.simplepoint.data.jpa.DataScopePredicates.compile(rule.condition("orgId", "userId", getAuthorizationContext()), fields, cb);
-    query.select(member.get("userId")).where(cb.equal(member.get("tenantId"), tenantId), cb.isNull(member.get("deletedAt")),
-        cb.equal(member.get("userId"), user.get("id")), cb.isNull(user.get("deletedAt")), policy);
+    var policy =
+        org.simplepoint.data.jpa.DataScopePredicates.compile(
+            rule.condition("orgId", "userId", getAuthorizationContext()), fields, cb);
+    query
+        .select(member.get("userId"))
+        .where(
+            cb.equal(member.get("tenantId"), tenantId),
+            cb.isNull(member.get("deletedAt")),
+            cb.equal(member.get("userId"), user.get("id")),
+            cb.isNull(user.get("deletedAt")),
+            policy);
     return new LinkedHashSet<>(permissionEntityManager.createQuery(query).getResultList());
   }
 
@@ -265,13 +310,14 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
      *                                   users are found with the given username
      */
   @Override
+  @Transactional(rollbackFor = Exception.class)
   public UserDetails loadUserByUsername(String subject) throws UsernameNotFoundException {
     var user = loadUserByPhoneOrEmail(subject);
     if (user == null) {
       log.warn("User not found: {}", subject);
       throw new UsernameNotFoundException("User not found: " + subject);
     }
-    ensurePersonalTenantExists(user);
+    personalTenants.ensureForUser(user.getId());
     return user;
   }
 
@@ -315,18 +361,14 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
       throw new AccessDeniedException("普通账号创建接口不能授予超级管理员");
     }
     AuthorizationContext context = getAuthorizationContext();
-    if (context != null && (context.getScopeType() != org.simplepoint.core.AuthorizationScopeType.PLATFORM
-        || (!Boolean.TRUE.equals(context.getIsAdministrator()) && !context.getResources().contains("platform.accounts.create")))) {
+    if (context != null
+        && (context.getScopeType() != org.simplepoint.core.AuthorizationScopeType.PLATFORM
+            || (!Boolean.TRUE.equals(context.getIsAdministrator())
+                && !context.getResources().contains("platform.accounts.create")))) {
       throw new AccessDeniedException("租户请通过成员邀请入口添加已有账号");
     }
-    entity.setSuperAdmin(false);
-    entity.setAuthorizationVersion(0L);
-    entity.setTwoFactorSecret(null);
-    entity.setTwoFactorEnabled(false);
-    entity.setPicture(normalizePicture(entity.getPicture()));
-    entity.setPassword(passwordEncoder.encode(entity.getPassword()));
-    S created = super.create(entity);
-    ensurePersonalTenantExists(created);
+    S created = createAccount(entity);
+    personalTenants.ensureForUser(created.getId());
     return created;
   }
 
@@ -336,56 +378,31 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     return entities.stream().map(this::create).toList();
   }
 
-  private void ensurePersonalTenantExists(User user) {
-    if (tenantRepository == null || tenantUserRelevanceRepository == null) {
-      return;
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public User createBootstrapAccount(User account) {
+    if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null
+        || getAuthorizationContext() != null) {
+      throw new AccessDeniedException("System account bootstrap is unavailable in request contexts");
     }
-    if (user == null || user.getId() == null || user.getId().isBlank()) {
-      return;
+    boolean root = Boolean.TRUE.equals(account.getSuperAdmin());
+    User created = createAccount(account);
+    if (root) {
+      // Trusted startup configuration only; commit account and configured root identity atomically.
+      created.setSuperAdmin(true);
+      created = getRepository().save(created);
     }
-    var existing = Optional.ofNullable(tenantRepository.findPersonalTenantByOwnerId(user.getId()))
-        .orElse(Optional.empty());
-    if (existing.isPresent()) {
-      ensureTenantMembership(existing.get().getId(), user.getId());
-      provisionPersonalTenant(existing.get().getId());
-      return;
-    }
-    String displayName = (user.getName() != null && !user.getName().isBlank())
-        ? user.getName()
-        : user.getId();
-    Tenant tenant = new Tenant();
-    tenant.setName(displayName + " 的个人空间");
-    tenant.setDescription("个人租户");
-    tenant.setTenantType(TenantType.PERSONAL);
-    tenant.setOwnerId(user.getId());
-    tenant.setAuthorizationVersion(0L);
-    Tenant saved = tenantRepository.save(tenant);
-    ensureTenantMembership(saved.getId(), user.getId());
-    provisionPersonalTenant(saved.getId());
+    return created;
   }
 
-  private void provisionPersonalTenant(String tenantId) {
-    if (builtInTenantProvisionerProvider == null) {
-      return;
-    }
-    BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
-    if (provisioner != null) {
-      provisioner.provisionPersonalTenant(tenantId);
-    }
-  }
-
-  private void ensureTenantMembership(String tenantId, String userId) {
-    if (tenantId == null || tenantId.isBlank() || userId == null || userId.isBlank()) {
-      return;
-    }
-    Collection<String> authorizedUserIds = tenantUserRelevanceRepository.authorized(tenantId);
-    if (authorizedUserIds != null && authorizedUserIds.contains(userId)) {
-      return;
-    }
-    TenantUserRelevance rel = new TenantUserRelevance();
-    rel.setTenantId(tenantId);
-    rel.setUserId(userId);
-    tenantUserRelevanceRepository.saveAll(List.of(rel));
+  private <S extends User> S createAccount(S entity) {
+    entity.setSuperAdmin(false);
+    entity.setAuthorizationVersion(0L);
+    entity.setTwoFactorSecret(null);
+    entity.setTwoFactorEnabled(false);
+    entity.setPicture(normalizePicture(entity.getPicture()));
+    entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+    return super.create(entity);
   }
 
   @Override
@@ -743,7 +760,13 @@ public class UsersServiceImpl extends BaseServiceImpl<UserRepository, User, Stri
     command.setTenantId(resolveCurrentTenantScope());
     command.setContextId(authorizationContext.getContextId());
     command.setSourceService("common");
-    command.setDescription(action + " USER_ROLE [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+    command.setDescription(
+        action
+            + " USER_ROLE ["
+            + command.getSubjectLabel()
+            + "] -> ["
+            + command.getTargetSummary()
+            + "]");
     resourceGrantLogRemoteService.record(command);
   }
 

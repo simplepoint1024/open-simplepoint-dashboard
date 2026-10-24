@@ -1,0 +1,122 @@
+{
+  "passed": true,
+  "completedAt": "2026-10-20T02:04:37.311Z",
+  "scope": "Canvas field properties entry for the existing formula editor; shared field definitions and existing server calculation/publication contracts",
+  "version": "20261020-formula-properties",
+  "source": {
+    "simplepoint-react/libs/components/FormDesigner/Properties.tsx": "f0f14ef84ebd4adbc54d28ac0f9ebd2ec9c4e3b325ad1cd7513548620b92f6c5",
+    "simplepoint-react/libs/components/FormDesigner/FieldCalculationProperties.tsx": "df26a9c32c89db2d9094567132644c12c1c3db286247374bff59cb50d18a528d",
+    "simplepoint-react/libs/components/FormDesigner/FieldEditor.tsx": "cd5b5556044bc56cadf3b7fbf834ccf6fbb6803cf879367a388ddf9040f91372",
+    "simplepoint-react/libs/components/FormDesigner/extensions/index.ts": "ea0f19f3d9fb5413a765d88bf3d9f1dc6e83287a02e6164c4b41d8e3bccee26e",
+    "simplepoint-react/libs/components/FormDesigner/index.tsx": "a7f063f88c6592fb7fcdb775fde909227bcc8e748bfbabab9314dd9ed6d93c52",
+    "simplepoint-react/libs/components/FormDesigner/style.css": "3314e41a4700ab0a756fb20628facd55064134ccb6bbd4059fda2cef3c45a02c",
+    "simplepoint-services/simplepoint-service-app/src/main/resources/META-INF/simplepoint/i18n/zh-CN/app-workbench.json": "5a43b6318151a50f2a180498bf6ebbff593b40300853c2a2ab269d8d22355a9e",
+    "simplepoint-services/simplepoint-service-app/src/main/resources/META-INF/simplepoint/i18n/en-US/app-workbench.json": "e9b83de27bd1ad9687e383cb9fd71cb25a77a0fc1c854f6e29a406778b8f8139"
+  },
+  "verification": {
+    "typecheck": "8 frontend workspaces passed",
+    "uiAudit": "40/40 native controls reviewed; zero unreviewed",
+    "i18n": "9 tests passed; bundle usage check passed",
+    "modelTests": "12 passed; zero failures/skips",
+    "browserRegression": "Complete form designer fixture suite passed, including new field-source entry, atomic cancel, invalid formula rejection, visual/expression roundtrip, data-design synchronization, preview, detail, publication, readonly and retention",
+    "browserDriverFix": "A layout right-click check once missed its target; the driver now waits for scrolling/layout and validates elementFromPoint before sending real pointer input; complete suite rerun passed",
+    "distribution": "installDist and verifyFrontendDistribution passed with frontend packaging enabled"
+  },
+  "deployment": {
+    "passed": true,
+    "version": "20261020-formula-properties",
+    "at": "2026-10-20T02:04:06.987Z",
+    "jarHashesMatch": true,
+    "health": [
+      {
+        "service": "authorization",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "common",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "auditing",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "dna",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "ai",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "app",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "workflow",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "mcp-gateway",
+        "health": "healthy",
+        "consul": "passing"
+      },
+      {
+        "service": "host",
+        "health": "healthy",
+        "consul": "passing"
+      }
+    ]
+  },
+  "servedAssets": {
+    "count": 54,
+    "hashesMatch": true
+  },
+  "liveBrowser": {
+    "passed": true,
+    "fieldSource": true,
+    "summary": true,
+    "visualEditor": true,
+    "expressionRoundtrip": true,
+    "invalidRejected": true,
+    "discardPreservedDraft": true,
+    "dimensions": {
+      "width": 1040,
+      "height": 506,
+      "maxHeight": 650,
+      "viewport": 1000
+    },
+    "draftRevision": 32
+  },
+  "qualityLogHashes": {
+    "types": {
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    "ui": {
+      "sha256": "c1e4cc0384a4fa93ad79f64ddcef4d5a50870d6e70fd165319199ff7dc96ca20"
+    },
+    "i18n": {
+      "sha256": "171e89b69914bc48bc144fb75480d3ba6e132acc4f95aa54e8f0c3b187f4d5ec"
+    },
+    "models": {
+      "sha256": "9a28914ffdb3fbd4461f0957df9aabce9cd7a5d0b557a4b29429422bf46c0fd9"
+    },
+    "browser": {
+      "sha256": "6daad6de2e53c05245b55835bfb7ecab4c9f67094a983bb06c88841c7a4daa0d"
+    },
+    "distribution": {
+      "sha256": "81b67aa5c7a5a5e9e31789d5186d26ecb178cb9dbd18c97e3cd11876e02da817"
+    }
+  },
+  "limitations": [
+    "Browser fixture calculations use fixed HTTP outputs; the live browser check verifies actual field metadata, catalog validation and cancellation without publishing changes.",
+    "This scoped verification does not re-run the earlier 176-case calculation engine acceptance matrix."
+  ]
+}

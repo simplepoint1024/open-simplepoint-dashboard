@@ -25,6 +25,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-http"))
     implementation(project(":simplepoint-core"))
     implementation("org.springframework:spring-webmvc")
     implementation("jakarta.servlet:jakarta.servlet-api")

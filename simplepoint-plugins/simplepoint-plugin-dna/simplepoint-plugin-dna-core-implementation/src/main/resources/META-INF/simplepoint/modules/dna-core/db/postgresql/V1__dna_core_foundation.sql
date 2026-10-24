@@ -1,0 +1,67 @@
+-- PostgreSQL control metadata owned by dna-core. Business target tables are not installed here.
+create table simpoint_dna_jdbc_data_sources (
+    enabled boolean,
+    created_at timestamp(6) with time zone,
+    deleted_at timestamp(6) with time zone,
+    last_tested_at timestamp(6) with time zone,
+    updated_at timestamp(6) with time zone,
+    last_connect_status varchar(32),
+    driver_id varchar(64) not null,
+    code varchar(128) not null unique,
+    database_product_name varchar(128),
+    name varchar(128) not null,
+    database_product_version varchar(256),
+    username varchar(256),
+    description varchar(512),
+    password varchar(512),
+    last_connect_message varchar(1024),
+    jdbc_url varchar(2048) not null,
+    connection_properties varchar(4000),
+    create_org_dept_id varchar(255),
+    created_by varchar(255),
+    id varchar(255) not null,
+    updated_by varchar(255),
+    primary key (id)
+);
+
+create table simpoint_dna_jdbc_dialect_sources (
+    enabled boolean,
+    created_at timestamp(6) with time zone,
+    deleted_at timestamp(6) with time zone,
+    loaded_at timestamp(6) with time zone,
+    updated_at timestamp(6) with time zone,
+    source_type varchar(32) not null,
+    name varchar(128) not null,
+    description varchar(512),
+    last_load_message varchar(1024),
+    local_jar_path varchar(2048),
+    source_url varchar(2048),
+    create_org_dept_id varchar(255),
+    created_by varchar(255),
+    id varchar(255) not null,
+    updated_by varchar(255),
+    primary key (id)
+);
+
+create table simpoint_dna_jdbc_drivers (
+    enabled boolean,
+    created_at timestamp(6) with time zone,
+    deleted_at timestamp(6) with time zone,
+    downloaded_at timestamp(6) with time zone,
+    updated_at timestamp(6) with time zone,
+    database_type varchar(64) not null,
+    version varchar(64),
+    code varchar(128) not null unique,
+    name varchar(128) not null,
+    driver_class_name varchar(256) not null,
+    description varchar(512),
+    jdbc_url_pattern varchar(1024) not null,
+    last_download_message varchar(1024),
+    download_url varchar(2048),
+    local_jar_path varchar(2048),
+    create_org_dept_id varchar(255),
+    created_by varchar(255),
+    id varchar(255) not null,
+    updated_by varchar(255),
+    primary key (id)
+);

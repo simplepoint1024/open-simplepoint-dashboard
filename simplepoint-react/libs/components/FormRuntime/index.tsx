@@ -1,5 +1,7 @@
+import {localizeFormDocument} from './localization';
+import type {CalculationPreviewLoader} from './calculationPreview';
 import {Alert, Drawer, Modal} from 'antd';
-import {useEffect, useRef, useState, type ReactNode, type Ref} from 'react';
+import {useEffect, useMemo, useRef, useState, type ReactNode, type Ref} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
 import PageSection from '@simplepoint/shared/page/Section';
@@ -15,10 +17,12 @@ import {canOpenScene, sameFormValues, sceneDraft, type SceneDraft, type FormValu
 import './style.css';
 
 export type FormRuntimeProps = {
+  calculationPreview?: CalculationPreviewLoader;
   document: ApplicationFormDocument;
   sceneId: string;
   value?: FormValues;
   systemValues?: Record<string, unknown>;
+  systemLabels?: Record<string, unknown>;
   recordState?: RecordState;
   disabled?: boolean;
   /** Browse immutable snapshots and secondary scenes without enabling any editing actions. */
@@ -36,9 +40,10 @@ export type FormRuntimeProps = {
 
 /** Shared scene host for published pages, design previews and workflow form adapters. */
 export default function FormRuntime(props: FormRuntimeProps) {
-  const {document, sceneId, value = {}, disabled = false, submitting = false, formRef,
+  const {document: sourceDocument, sceneId, value = {}, disabled = false, submitting = false, formRef,
     registry, notice, onChange, onSubmit, onAction, recordState, readOnly = false, externalSubmit = false} = props;
-  const {t} = useI18n();
+  const {t, locale} = useI18n();
+  const document = useMemo(() => localizeFormDocument(sourceDocument, locale), [sourceDocument, locale]);
   const selected = usePageSelected();
   const [stack, setStack] = useState<SceneDraft[]>([]);
   const [discard, setDiscard] = useState(false);
@@ -97,18 +102,18 @@ export default function FormRuntime(props: FormRuntimeProps) {
   return <>
     <PageSection selected={stack.length === 0}>
       {stack.length === 0 && feedback}
-      <SceneForm document={document} sceneId={sceneId} value={value} disabled={disabled} readOnly={readOnly} externalSubmit={externalSubmit} recordState={recordState}
+      <SceneForm calculationPreview={props.calculationPreview} document={document} sceneId={sceneId} value={value} disabled={disabled} readOnly={readOnly} externalSubmit={externalSubmit} recordState={recordState}
         submitting={busy} formRef={formRef} registry={registry} onChange={onChange} onSubmit={onSubmit}
         onAction={onAction ? (action, values) => void persist(action, values) : undefined}
         canOpen={allowed} onOpen={open}/>
-      {readOnly && <RecordMetadata values={props.systemValues}/>}
+      {readOnly && <RecordMetadata values={props.systemValues} labels={props.systemLabels}/>}
     </PageSection>
     {stack.map((frame, index) => {
       const scene = document.scenes.find(candidate => candidate.sceneId === frame.sceneId)!;
       const top = index === stack.length - 1;
       const content = <PageSection selected={top && !discard}>
         {top && feedback}
-        <SceneForm document={document} sceneId={frame.sceneId} value={frame.values} recordState={recordState}
+        <SceneForm calculationPreview={props.calculationPreview} document={document} sceneId={frame.sceneId} value={frame.values} recordState={recordState}
           disabled={disabled} readOnly={readOnly} externalSubmit={externalSubmit} submitting={busy} registry={registry} onChange={replaceTop}
           canOpen={allowed} onOpen={open} onApply={apply} onClose={close}
           onAction={onAction ? (action, values) => void persist(action, values) : undefined}/>

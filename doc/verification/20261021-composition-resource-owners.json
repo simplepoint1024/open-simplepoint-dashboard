@@ -1,0 +1,2129 @@
+{
+  "date": "2026-10-21",
+  "recordedAt": "2026-10-20T21:39:18.713576+00:00",
+  "status": "increment_verified_overall_goal_incomplete",
+  "scope": "Explicit historical resource ownership, selected declaration parsing and scope enforcement, prepare-time duplicate code claims, actual workflow resource and translation initialization",
+  "commands": [
+    {
+      "command": "./gradlew -I /tmp/simplepoint-resource-owner-checkstyle.gradle :simplepoint-platform:simplepoint-platform-composition:test :simplepoint-platform:simplepoint-platform-composition-spring:test :simplepoint-security:simplepoint-security-core:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api:test :simplepoint-security:simplepoint-security-oauth2-resource:test :simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-http:test :simplepoint-services:simplepoint-service-workflow:test :simplepoint-platform:simplepoint-platform-composition:verifyCompositionDependencies verifyResourceOwnerStyle verifyModuleBoundaries :simplepoint-services:simplepoint-service-workflow:installDist --console=plain",
+      "result": "BUILD SUCCESSFUL in 14s; frontend enabled, latest reports include tasks up-to-date from this increment"
+    },
+    {
+      "command": "pnpm typecheck",
+      "cwd": "simplepoint-react",
+      "result": "all eight TypeScript projects passed"
+    },
+    {
+      "command": "pnpm run i18n:check",
+      "cwd": "simplepoint-react",
+      "result": "12 tests passed; bundles current; 3604 literal and 64 reviewed dynamic calls"
+    },
+    {
+      "command": "node --test libs/components/WorkflowDesigner/bpmnTranslation.test.mjs",
+      "cwd": "simplepoint-react",
+      "result": "2 tests passed against indexed module translations"
+    },
+    {
+      "command": "java --class-path 'simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/*' /tmp/VerifyResourceArtifacts.java",
+      "result": "Installed artifact owners={workflow-http=workflow}; codes=13; locales=[en-US, zh-CN]; legacy copy absent"
+    }
+  ],
+  "totals": {
+    "tests": 177,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "projects": [
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+          "sha256": "f637a45c6fa8839c9ea2e785d5743641b73f4624d6886cf8a5f6d438728158e6",
+          "name": "org.simplepoint.platform.composition.ModuleCatalogTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+          "sha256": "55f259cc242d2ff48a7b04a72a576c348e4ca1636502492d51d940db63a6bbfe",
+          "name": "org.simplepoint.platform.composition.ModuleDefaultsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleHttpPlanTest.xml",
+          "sha256": "21c3ace1aaa92066b437c9669a4751604490aeb70a711151eb1dfbac27ea7654",
+          "name": "org.simplepoint.platform.composition.ModuleHttpPlanTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcePlanTest.xml",
+          "sha256": "87ef475088e4684e309618508406d76ca79e4fbe59ac1601fe8c0e93e25beab8",
+          "name": "org.simplepoint.platform.composition.ModuleResourcePlanTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml",
+          "sha256": "ba713c91ec3bea3e53ff43ea0e91aed034770806c025c042d7e315299fccb6a3",
+          "name": "org.simplepoint.platform.composition.ModuleResourcesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleBootstrapBootTest.xml",
+          "sha256": "3048903e46b4992c072bf5a553b729d8bc08ff933ef61b83d837cc81261bc4a2",
+          "name": "org.simplepoint.platform.composition.spring.ModuleBootstrapBootTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCallerIdentityTest.xml",
+          "sha256": "5a7e327b651aa73fd89efc10ead320a45c9f8d47f909c986ab2f98c3886269f5",
+          "name": "org.simplepoint.platform.composition.spring.ModuleCallerIdentityTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleClientDefinitionTest.xml",
+          "sha256": "c58d8757c933be5def4e6461c2bff0babd23832ab92f2a36327fef3e27384cf8",
+          "name": "org.simplepoint.platform.composition.spring.ModuleClientDefinitionTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleCredentialConfigurationTest.xml",
+          "sha256": "13803899d53f866b938559aeec840e8960b0c8bd3ed8d1452f36c29ac7abc81f",
+          "name": "org.simplepoint.platform.composition.spring.ModuleCredentialConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.ModuleInitializationBootTest.xml",
+          "sha256": "2e2c172f291456d93d6b331c92ab696490024e5c20aefb992587512de4666d0b",
+          "name": "org.simplepoint.platform.composition.spring.ModuleInitializationBootTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/test-results/test/TEST-org.simplepoint.platform.composition.spring.PlatformModuleAssemblyTest.xml",
+          "sha256": "0cae89f819ab7b301e8f0c842406edc176d9241ff5ec2ab1bf6666171c7853c4",
+          "name": "org.simplepoint.platform.composition.spring.PlatformModuleAssemblyTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-security/simplepoint-security-core",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 44,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.ResourceScopePolicyTest.xml",
+          "sha256": "b41fa55a8903ae776a5503d007884ed6847f2b877f87ef0da2cb4305ad551217",
+          "name": "org.simplepoint.security.ResourceScopePolicyTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.authentication.AuthenticationSecretCipherTest.xml",
+          "sha256": "f80b9defee9b249680db9abcd5cbc00be3e42e993b8a74e364f25619946f5328",
+          "name": "org.simplepoint.security.authentication.AuthenticationSecretCipherTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextCacheSecurityTest.xml",
+          "sha256": "1a3bd251b993e1ba750a148f44687b5b1d73fa50181cf49762d99ae0b90bef41",
+          "name": "org.simplepoint.security.context.AuthorizationContextCacheSecurityTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextRejectionTest.xml",
+          "sha256": "404ca27006892f60c7cb6075bf2bfeb14bb2fbb52b371d5db4080e9e7d02da39",
+          "name": "org.simplepoint.security.context.AuthorizationContextRejectionTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextResolverTest.xml",
+          "sha256": "e0729616943ba915c475ac0a4070c5d75783393934d2f12513a8cf8b3b79170a",
+          "name": "org.simplepoint.security.context.AuthorizationContextResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.EntityFieldsTest.xml",
+          "sha256": "4dbe840a9e685807fb06dcd494926b315e035ec8e2d95cec7a97e31c4b5ac03f",
+          "name": "org.simplepoint.security.entity.EntityFieldsTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.ResourceScopeTypesConverterTest.xml",
+          "sha256": "44b723164d02db32ef7095dbb6d33056870134f459e2fb3eaef422769b911fc3",
+          "name": "org.simplepoint.security.entity.ResourceScopeTypesConverterTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.entity.UserTest.xml",
+          "sha256": "83b7fe232eb28e7b332ef81e9ee81d8b8fb997309607cda023388e0a4a730a70",
+          "name": "org.simplepoint.security.entity.UserTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.identity.UserDisplayNameTest.xml",
+          "sha256": "151dc6c4679cb7cf330a3de8bf0c5e642b8b2c7bf45780fd0d1c5da149c73118",
+          "name": "org.simplepoint.security.identity.UserDisplayNameTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.resource.ResourceDeclarationDocumentTest.xml",
+          "sha256": "149cc19ae721902b6d1579976ae7749dc17eb9e109fa870631966cdb981dffda",
+          "name": "org.simplepoint.security.resource.ResourceDeclarationDocumentTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.configuration.ResourceAutoConfigurationTest.xml",
+          "sha256": "8167826c331678a73c8b6ac333a1a2f600d246e3ea738cb4c05c1c8ca23d11e3",
+          "name": "org.simplepoint.plugin.rbac.resource.api.configuration.ResourceAutoConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.configuration.ResourceRegistrationBoundaryTest.xml",
+          "sha256": "d909aedcc193034d7c8b17f262f759d0f8ae612807dbd352edfb2fbb5f805243",
+          "name": "org.simplepoint.plugin.rbac.resource.api.configuration.ResourceRegistrationBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.initialization.ResourceModuleInitializerTest.xml",
+          "sha256": "df5b4728e9f5d8ec966dcf31abd84600dfe1d90ad3c351e263c76e4c4ca716b3",
+          "name": "org.simplepoint.plugin.rbac.resource.api.initialization.ResourceModuleInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVoTest.xml",
+          "sha256": "07e554110f39703201a6574cd2253f6fa818c4583931dc6aa15419eb25ff2ac1",
+          "name": "org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVoTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-security/simplepoint-security-oauth2-resource",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest.xml",
+          "sha256": "5e2037adb4bddb5beaadc306d835d3a2682dc3affbf9ba9e72a9e5ad9266b370",
+          "name": "org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest.xml",
+          "sha256": "bbf38072b7080248b39d0472c28e20ce728b17242e9332a5c6dc336b214d8319",
+          "name": "org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest.xml",
+          "sha256": "8b535b3655240b97695c564db2a36b527a209e8d186950faf48b37c21d945bf0",
+          "name": "org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest.xml",
+          "sha256": "06c1c4be67147861f7fca490c10af92a312ec270743c59682af904a5357a87b2",
+          "name": "org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest.xml",
+          "sha256": "3b7e5d191625de6e98b773a1aeadbe18ef5956a061fa107be4916eda7cc8fa80",
+          "name": "org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest.xml",
+          "sha256": "49db6f682a4d5811e0a85285dda1b3a54ca0a764c7999f3ae13b611a05066a68",
+          "name": "org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest.xml",
+          "sha256": "cda398fd23f3ba1dab0bd3508dfc1b2cd2d05e394846169a84c1161683e670a8",
+          "name": "org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpArtifactTest.xml",
+          "sha256": "2272af0dc862da536800bd83adf847719cb426908a01998497493919aaa79784",
+          "name": "org.simplepoint.workflow.http.WorkflowHttpArtifactTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowHttpCompositionTest.xml",
+          "sha256": "38b64acc720ff747070fe6f48d8aa25e0dfde4ad8e9ee311dfe307dc887c39c3",
+          "name": "org.simplepoint.workflow.http.WorkflowHttpCompositionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.http.WorkflowResourceInitializationTest.xml",
+          "sha256": "8a0d947e7c6c96718f8ad678cf807243df73057b928bb2a8128575218ae00454",
+          "name": "org.simplepoint.workflow.http.WorkflowResourceInitializationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowDirectoryErrorTest.xml",
+          "sha256": "2cac1a51e3d8135774b20e0f70c2b99ddd924fd3afa40e1b2778a9d93efc69f4",
+          "name": "org.simplepoint.workflow.rest.WorkflowDirectoryErrorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest.xml",
+          "sha256": "a9434ca083260ec585ebad069986c1a7eaf1f990be13dddc862a16c4c5d2b234",
+          "name": "org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowModelingErrorTest.xml",
+          "sha256": "ee0ee6f3d8b35bbdd060389cd9becc02b3a6cd1d39057ec6ad7583dd1938074b",
+          "name": "org.simplepoint.workflow.rest.WorkflowModelingErrorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPersonalHttpTest.xml",
+          "sha256": "0d09116293999366508fa7581afda36d1518c67ffcee663e9d1d22afe631c2b0",
+          "name": "org.simplepoint.workflow.rest.WorkflowPersonalHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest.xml",
+          "sha256": "e732f8af16c54849fea7a5aee289e302dd16603f3cf6f73f2c2a6cd2afbadc31",
+          "name": "org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-workflow",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.server.config.LegacyWorkflowEngineConfigurationTest.xml",
+          "sha256": "807ec3f047f4300b7f24456c3222ebd0a6dccea81bf578d057c4c7a74d287eec",
+          "name": "org.simplepoint.workflow.server.config.LegacyWorkflowEngineConfigurationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "checkstyle": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "7e029d862e4fd1aa5ca1198be77b3334627ed256009ba9f08fb459e5e1487f9f",
+      "files": 8,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "32d649159c4219d634c2dfb2079017d8826a23e201595c9bc0d5b42c7e4a898e",
+      "files": 6,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "6c5c546fc0889c0ad2292b91a2ae6053a05228a9e8e5f8410a7aa4eb8c4cdf28",
+      "files": 4,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "62c1816ce77825a742b540dd29ace833e44b992c35710f3c4f76dd0edc4038e7",
+      "files": 2,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "85e4b29e227e58beadd13cc15eebe95a0c47f5fdc01493aaec92fa10a9521993",
+      "files": 2,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-oauth2-resource/build/reports/checkstyle/resourceOwner.xml",
+      "sha256": "dc45773c7197c208aace755b27ec898af916b3b50b61e8fce1ac1746beff3f65",
+      "files": 3,
+      "violations": 0
+    }
+  ],
+  "checkstyleFiles": [
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleInitializationRunner.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupbroken/StartupBrokenModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupduplicate/StartupDuplicateModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupone/StartupOneModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startuptwo/StartupTwoModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleInitializationBootTest.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDescriptor.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitialization.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationContext.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourceOwner.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourcePlan.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleResourcePlanTest.java",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/java/org/simplepoint/workflow/http/WorkflowHttpModule.java",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowHttpArtifactTest.java",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowHttpCompositionTest.java",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowResourceInitializationTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/main/java/org/simplepoint/plugin/rbac/resource/api/initialization/ResourceModuleInitializer.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/initialization/ResourceModuleInitializerTest.java",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/resource/ResourceDeclarationDocument.java",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/resource/ResourceDeclarationDocumentTest.java",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ResourceServerAutoConfiguration.java",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ClasspathResourceScopeRegistry.java",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/SelectedResourceScopeRegistryTest.java"
+  ],
+  "checkstyleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-resource-owner-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleResourceOwner', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyResourceOwnerStyle') { dependsOn checks }\n}\n",
+  "distribution": {
+    "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow",
+    "jars": [
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/HdrHistogram-2.2.2.jar",
+        "sha256": "22d1d4316c4ec13a68b559e98c8256d69071593731da96136640f864fa14fad8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/HikariCP-7.0.2.jar",
+        "sha256": "f1e612fa27345be3107a85431e8a8aeb205c15364ab2f2d411e40a9d7bb08095"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/LatencyUtils-2.0.3.jar",
+        "sha256": "a32a9ffa06b2f4e01c5360f8f9df7bc5d9454a5d373cd8f361347fa5a57165ec"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/ST4-4.3.4.jar",
+        "sha256": "f927ac384c46d749f8b5ec68972a53aed21e00313509299616edb73bfa15ff33"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/accessors-smart-2.6.0.jar",
+        "sha256": "222c9f547bb20a99fc486403a398352d1306fb671b38abd7ecab6401df170e61"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/amqp-client-5.27.1.jar",
+        "sha256": "0869bc05f025f959e627f0bd8a4443fafd82c89007e926110069f631a6278f69"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/android-json-0.0.20131108.vaadin1.jar",
+        "sha256": "dfb7bae2f404cfe0b72b4d23944698cb716b7665171812a0a4d0f5926c0fac79"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/angus-activation-2.0.3.jar",
+        "sha256": "a6bd35c538cf90fff941ad6258c40c08fca0b5c9c3f536c657114f27ce0527a7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/angus-mail-2.0.5.jar",
+        "sha256": "b4d8c30d35f455def6c7a05fe595a1e62ea2b80cac3efec1e9ccf4118b23168a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/annotations-13.0.jar",
+        "sha256": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/antlr-runtime-3.5.3.jar",
+        "sha256": "68bf9f5a33dfcb34033495c587e6236bef4e37aa6612919f5b1e843b90669fb9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/antlr4-4.13.2.jar",
+        "sha256": "e6f0b10d2ad206f338afe16867fc47148b6729d6e3a260ea28379b91f03a3657"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/antlr4-runtime-4.13.2.jar",
+        "sha256": "dd3e8a13a2d669bf84fb8d834de35ce4875f27157698d206241ec8488aadcaf7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/asm-9.7.1.jar",
+        "sha256": "8cadd43ac5eb6d09de05faecca38b917a040bb9139c7edeb4cc81c740b713281"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/aspectjweaver-1.9.25.1.jar",
+        "sha256": "4fe86fdc18faea571f29129c70eaad5d121363504a06d7907be88f6c60ba3116"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/assertj-core-3.27.6.jar",
+        "sha256": "b27872b049abc88e23c853ce5917945dd57d43bd31175d852e3941d2a6fd0231"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/awaitility-4.3.0.jar",
+        "sha256": "ee58568ea5945dcf988551501655183dc184e23e45a8e013fdfd9036194e6f7b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/bcprov-jdk18on-1.81.jar",
+        "sha256": "249f396412b0c0ce67f25c8197da757b241b8be3ec4199386c00704a2457459b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/byte-buddy-1.17.8.jar",
+        "sha256": "2b5ddc8c1f4234bdb7cb45338a8e10a13e0e3ca473e91d5d821d681127ea8ba1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/byte-buddy-agent-1.17.8.jar",
+        "sha256": "5b17113e66e77ca6f8af07ff367c216df964a980f0e9f11e3b1aa793253aa64f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/checker-qual-3.49.5.jar",
+        "sha256": "508c83c62c344f6f7ee28f47b88a8797d6116d043bfd1ca0576c828dd1df2880"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/classmate-1.7.1.jar",
+        "sha256": "cc3299e5df4fc24180e69477c890d07d38db79dd2decc0ef20e74a986897c0a1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/commons-codec-1.20.0.jar",
+        "sha256": "6af66595f9f6a7bb58ce66518d6888d40b547c366d2262f06676eee19528ff66"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/commons-io-2.21.0.jar",
+        "sha256": "7d643a2afea8b058b762aa6fb90e5b256f6c729739f8b3784c3370ddc609e88d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/commons-lang3-3.20.0.jar",
+        "sha256": "69e5c9fa35da7a51a5fd2099dfe56a2d8d32cf233e2f6d770e796146440263f4"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/commons-logging-1.3.5.jar",
+        "sha256": "6d7a744e4027649fbb50895df9497d109f98c766a637062fe8d2eabbb3140ba4"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/consul-api-1.4.5.jar",
+        "sha256": "b2ff1bb292a68314d3cf2fe45eb74f9ee269b1ce8cd2b6e4ec1093bf4ad38605"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/content-type-2.3.jar",
+        "sha256": "60349793e006fba96b532cb0c21e10e969fe0db8d87f91c3b9eaf82ba2998895"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/error_prone_annotations-2.41.0.jar",
+        "sha256": "a56e782b5b50811ac204073a355a21d915a2107fce13ec711331ad036f660fcc"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/evictor-1.0.0.jar",
+        "sha256": "1fd9d733b0381178dc0ce69fbc720a50eb3185906c7b4db345025dd6b666d99a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-batch-service-8.0.0.jar",
+        "sha256": "74a42a1d5d5156a04eff16db2d8897b5b38ffeb19f3c72eda0328a556077087c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-batch-service-api-8.0.0.jar",
+        "sha256": "c67836d38880501dd2f73d944071cea810bfeb52d4f03b3db279ca4d4473803e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-bpmn-converter-8.0.0.jar",
+        "sha256": "b3af6e161f2ed5153acf5cff3d2e29c2741dd1edc1baed21a72aa2408a8d6826"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-bpmn-model-8.0.0.jar",
+        "sha256": "52965a1b2f3c4932df5430f5cf50b8715cb4b291f62ae64e5d2ff973729fb864"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-cmmn-api-8.0.0.jar",
+        "sha256": "7b1be5bd0ed0fdf1bc6fa1ebf719ba1e3edd43f0fd9964a6c4a065f9ac879980"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-cmmn-model-8.0.0.jar",
+        "sha256": "4cc8a8e2831c8220df6e502b41c0c54d69b37314e40b71056998a2b8cc4cc640"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-content-api-8.0.0.jar",
+        "sha256": "d6c46eafbde377239703983a59de2446380ba37e5bc3524d1f754de9e1f65fe1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-dmn-api-8.0.0.jar",
+        "sha256": "17557bf22bf763e543edb272b61b99cacb721d63725428cb1f13eece3b640929"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-dmn-model-8.0.0.jar",
+        "sha256": "027e1d09f31025d662c9cbafed904cedd3bb12fadbbff6f88d8639a6b4f8a871"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-engine-8.0.0.jar",
+        "sha256": "e81615c4c2f7332c184f31d362e34a807c6c745e6b9da745e73b2d3adb4f5850"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-engine-common-8.0.0.jar",
+        "sha256": "05fc5f40f78d1abb4e584b3f0c7a93d16141d678644185f5ace58bcae0841b5b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-engine-common-api-8.0.0.jar",
+        "sha256": "36a234176382bf3758664b9700fb4917641b1c3726e486009c7355665b9a2b36"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-entitylink-service-8.0.0.jar",
+        "sha256": "f96c4909babb314959f2bcaa58073af22a5ec923ec0689cdffdb3e7166672ba5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-entitylink-service-api-8.0.0.jar",
+        "sha256": "67acc5931a22ce270b1b18390cc81e48d420e37f2e79196c76f69050f4885cdb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-8.0.0.jar",
+        "sha256": "d2776d7caeb9940cafeb2218e68558f13029c25233eebc63cb22c5f7db8c65bb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-api-8.0.0.jar",
+        "sha256": "797d3cd2bf6e08377d132d2ff35454c99f4f26a831dfeb2c05a44b2321668bed"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-configurator-8.0.0.jar",
+        "sha256": "8daf430d1f202f32f440397fa48fc28ea42b06f1d3c7cd2da7363468725b2055"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-json-converter-8.0.0.jar",
+        "sha256": "fbd9b7de728aa7d54b11c8f53e48cf9b17a9d37e15b313367a8fccc2faf2ee66"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-model-8.0.0.jar",
+        "sha256": "5097281e49bc48dbaf620bc2dd25fe6550ab3fa0377decbea49429e7f874bcd7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-spring-8.0.0.jar",
+        "sha256": "34dbc930f628a324adc1e8bd6cc31ff64fba232f948cb8c7fd466d7412788024"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-event-registry-spring-configurator-8.0.0.jar",
+        "sha256": "e6a9867a41664791db6532698a20d8d9df07c2de7a99a8ad97d8f70a32d006c5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-eventsubscription-service-8.0.0.jar",
+        "sha256": "ee5d9e1b632353c8a98a3fcf860b5f7cdb430251e202e9f82dea6e85f835f06f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-eventsubscription-service-api-8.0.0.jar",
+        "sha256": "536636089820fb024fd56ecd6c9f07dcd6ac55307df5058565f020c3aa467faf"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-form-api-8.0.0.jar",
+        "sha256": "f24a07ba4b2bdd5ed1a7fd11a3b4f46d782f70eb96dcd277ae7fa2910f4f888d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-form-model-8.0.0.jar",
+        "sha256": "8753b3a2685e34cb0e111d864c31657f2b4c4edf8bb46fbfc663d24a2c13541e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-http-common-8.0.0.jar",
+        "sha256": "34690d73fe02c470669ee122111e9d8a9b8c08e78ab80ce1e9ce47b19cc79b69"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-identitylink-service-8.0.0.jar",
+        "sha256": "d6219efec419ae063785e116b31f50e5c9d6e68f1f6830157c2306c0d8b6d8b1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-identitylink-service-api-8.0.0.jar",
+        "sha256": "cdaf63e19887cd369ad6e9c493eb93a569daf5befcc31d0bbbe409e35db078f5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-idm-api-8.0.0.jar",
+        "sha256": "906defa0a203fdff917f964f8b56347540ac78ef565c3804c7994f819f09929d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-idm-engine-8.0.0.jar",
+        "sha256": "a6e5859bf4b7d76db7bee10b4b33157f92ea25444fa36375e3ca4ee4491eef99"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-idm-engine-configurator-8.0.0.jar",
+        "sha256": "9435fc3a939d54594bd5408e45a3024b578a51d7748577682a8f7d0ba8c8c093"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-image-generator-8.0.0.jar",
+        "sha256": "9646e19058c84e3ea0ce5ade7919363210678d7970e8f6492674e42a4d64e597"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-job-service-8.0.0.jar",
+        "sha256": "a8b9e085386ba914ec53aa6e0a0cda8904e4c5b7f025f1226d76170ad7ecc8ca"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-job-service-api-8.0.0.jar",
+        "sha256": "0b62c8227f2a6bf4261f9fff3b80c863a40f56eed31feb0d9134df106924d412"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-job-spring-service-8.0.0.jar",
+        "sha256": "afef9250815c5027c4c7fb38dad22873d47435e3c9ca334371ab4352f551500d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-mail-8.0.0.jar",
+        "sha256": "dc81b885bd303347e9a591529ad696e17f573fde52ea6a141d11e1f6b8ef7456"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-process-validation-8.0.0.jar",
+        "sha256": "83ee8d16818f6558a69ca4698c243744ba5e8e3abb165a26d60b26c8d63ef127"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-spring-8.0.0.jar",
+        "sha256": "5c627451378b924299607167070ea8867cad6b00d091984fd11fbbadb50cedf0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-spring-common-8.0.0.jar",
+        "sha256": "e2492f956c6d5568ea266ce02e6682565a7a2072c9f540e2038629b0a87d1f59"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-task-service-8.0.0.jar",
+        "sha256": "3e5026e628461c1a3a1a7b6e2350454c1ba371fc48257fd20e1ecdb269ee897d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-task-service-api-8.0.0.jar",
+        "sha256": "8bff4f041e6ed3f630bc4c6db8a4f7f81c1a7f371fec2d2fa4a659123c58ae28"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-variable-service-8.0.0.jar",
+        "sha256": "9d4cdd53580c3a5432d9933f6669e51c2d1f4de145683096e2abb07837cbc7b6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/flowable-variable-service-api-8.0.0.jar",
+        "sha256": "313654f403760e0de3332c1125f7518f0937cb1413fe08b6ad93c8701c130631"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/gson-2.13.2.jar",
+        "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hamcrest-3.0.jar",
+        "sha256": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hamcrest-core-3.0.jar",
+        "sha256": "b78a3a81692f421cc01fc17ded9a45e9fb6f3949c712f8ec4d01da6b8c06bc6e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hibernate-core-7.2.0.Final.jar",
+        "sha256": "5f47cb1788ef4127026ff288ace52a4465c6cff1020d378cdcdcb52ae00ff6e8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hibernate-models-1.0.1.jar",
+        "sha256": "bdb42c4979001742ebc098f3b206dd1057dc93be55c50a31c3f027d3eed06412"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hibernate-validator-9.0.1.Final.jar",
+        "sha256": "25f40118fa4c50f8522d090d25d52d5a38953b0ccd1250835f052e7bd3164ce0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/httpclient-4.5.14.jar",
+        "sha256": "c8bc7e1c51a6d4ce72f40d2ebbabf1c4b68bfe76e732104b04381b493478e9d6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/httpcore-4.4.16.jar",
+        "sha256": "6c9b3dd142a09dc468e23ad39aad6f75a0f2b85125104469f026e52a474e464f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/hutool-all-5.8.42.jar",
+        "sha256": "a400d0b2a17f135f73f004a7daf72b4300d0a314a9207580c05ec8948454faeb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/icu4j-72.1.jar",
+        "sha256": "3df572b240a68d13b5cd778ad2393e885d26411434cd8f098ac5987ea2e64ce3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/istack-commons-runtime-4.1.2.jar",
+        "sha256": "7fd6792361f4dd00f8c56af4a20cecc0066deea4a8f3dec38348af23fc2296ee"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-annotations-2.20.jar",
+        "sha256": "959a2ffb2d591436f51f183c6a521fc89347912f711bf0cae008cdf045d95319"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-core-2.20.1.jar",
+        "sha256": "ffab4d957daa2796cf24cb66d0b78a7090f1bcbe17c3a4578f09affaaf137089"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-core-3.0.3.jar",
+        "sha256": "4149bb2b3bbffb5339089174e26f454081e6a01a104d24b22f78a16b948799eb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-databind-2.20.1.jar",
+        "sha256": "34bbeb4526fff4f8565b12106bf85a6afcbae858966d489b54214ac46b2e26e8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-databind-3.0.3.jar",
+        "sha256": "dfbb79130910decf063125c1e693a39c5ec8fb8b478d7f39671901d47ce7f6a2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-dataformat-properties-2.20.1.jar",
+        "sha256": "9deddb12f796e9de3de7c1b6b82f22219b895f1bbaac2eb833fbf362742cafad"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-dataformat-toml-2.20.1.jar",
+        "sha256": "3936e3fb83edd2754bb317d17a63cded43b5fac4fb82eabb4aaa502bb52f9835"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-dataformat-xml-2.20.1.jar",
+        "sha256": "190ad4eba35d89dba3517da279e0690681c4745174b94b09ea78f81ceae140f0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-dataformat-yaml-2.20.1.jar",
+        "sha256": "030f1d91f7df278e86e1ba3e129fb520871ac16ce53017c735f708823be970db"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-datatype-jsr310-2.20.1.jar",
+        "sha256": "692be83c7e2eebb53b995c11d813c603a7d716d60c9d2d4fb9486ecb105f9291"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jackson-module-kotlin-2.20.1.jar",
+        "sha256": "22d28ca992bfb686d8231fb4972edbcfc1976e8dc806a1b7a58f85abcad3d69c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.activation-api-2.1.4.jar",
+        "sha256": "c9db52100ce6c8aac95cc39075f95720d2e561b11f8051b81c121ad4effd7004"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.annotation-api-3.0.0.jar",
+        "sha256": "b01f55552284cfb149411e64eabca75e942d26d2e1786b32914250e4330afaa2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.inject-api-2.0.1.jar",
+        "sha256": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.mail-api-2.1.5.jar",
+        "sha256": "aa493753acb7a8c45ba8f4c9cf1230a74e20237056dd5b5c8bc86c583e8cfa0e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.persistence-api-3.2.0.jar",
+        "sha256": "be8a26b0e75c84c1b7600f759256fbc68d60333d89ec0ce3f784fc3ffa09aa8c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.transaction-api-2.0.1.jar",
+        "sha256": "50c0a7c760c13ae6c042acf182b28f0047413db95b4636fb8879bcffab5ba875"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.validation-api-3.1.1.jar",
+        "sha256": "63ce00156388c365f3ac1be71fcfaf114682fc0c452020b5df6e7ec236e142ab"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jakarta.xml.bind-api-4.0.4.jar",
+        "sha256": "c507ca69a8c6dd11bf4afeec9e0d412c4fa3933fffb0a84680ea5727e8472124"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/java-uuid-generator-5.1.0.jar",
+        "sha256": "ef66f9c90fb18b4b9f2b1c0cc01b686a3c2dbd07384874533caa5f4556e24a43"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jaxb-core-4.0.6.jar",
+        "sha256": "ebbd274207b4860d0dc6e2d44d6dbdb5945cede01222d2e50661d45f5d46c0f7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jaxb-runtime-4.0.6.jar",
+        "sha256": "1c0d57f8c25f9605d5a2f7ad0a87581893776ac85b00b101b2651258edaa9118"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jboss-logging-3.6.1.Final.jar",
+        "sha256": "5e08a4b092dc85b337f0910a740571d8720cfa565fabd880a8caf94a657ca416"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jcip-annotations-1.0-1.jar",
+        "sha256": "4fccff8382aafc589962c4edb262f6aa595e34f1e11e61057d1c6a96e8fc7323"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jcl-over-slf4j-2.0.17.jar",
+        "sha256": "affd06771589ebfe454bb11315a4f466ecaa135b95f3e7939534cf1d2fd7064c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/joda-time-2.14.0.jar",
+        "sha256": "1e2da6f9eb65f20a25d9a3186831ed2b3fb14f7a48e1ef8206135ee58cb143d3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/json-path-2.10.0.jar",
+        "sha256": "890daa95dd3892d34d9fabc27cd5153656e6f369358625c88f4dc7b79cbd6c5a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/json-smart-2.6.0.jar",
+        "sha256": "1ae4b561458afb540be8ec5c6dbb4f2e715a319a7ae64854998aaf924770d61b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jsonassert-1.5.3.jar",
+        "sha256": "719095c07d4203961320da593441d8b3b643c18eb1d81aa98ea933bb7eb351ba"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jsonschema-generator-4.38.0.jar",
+        "sha256": "ade4aeb301db4028ac6bcba016c31405677e37aae6eebaf13c99de3fdb3531b4"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jsonschema-module-jackson-4.38.0.jar",
+        "sha256": "36fbd3f1c27379c3ba8420ac2cb0b42411f7bc3b3df8bdd11d8d7e024a1c28ca"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jsonschema-module-jakarta-validation-4.38.0.jar",
+        "sha256": "7ebc1f2ecfdec214286ca9a6cbbab586819418bf77a87312da70ca8f1ff4d6e9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jspecify-1.0.0.jar",
+        "sha256": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/jul-to-slf4j-2.0.17.jar",
+        "sha256": "a7afcd23b9cfd1475e55c94f943b808c5922035e7e2c2a5c65a487a4106bc538"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-4.13.2.jar",
+        "sha256": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-jupiter-6.0.1.jar",
+        "sha256": "bd7af281dfef8dcc1d08a503ce9304597b65e1850a0db82c99ab6d8cb1031b14"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-jupiter-api-6.0.1.jar",
+        "sha256": "a3ca8c7e567436093e4a6703d5d4aac02dbea36106ea32fd1367b56de20d4e02"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-jupiter-engine-6.0.1.jar",
+        "sha256": "7476a56f4aaab57fc2f459847cd6bfb712b3bd04a9ac0b89ed9573f7adc2c550"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-jupiter-params-6.0.1.jar",
+        "sha256": "9566e249b4d4c7d53a6c8908f577885ce2d4c6313c916bdfbf7ffbc526b8a36f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-platform-commons-6.0.1.jar",
+        "sha256": "f8853f45c10f380ddb157cf42abba9b073474f05cc40335b585055f85538dcad"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/junit-platform-engine-6.0.1.jar",
+        "sha256": "f49577073a7ae184c718d9b43ae0d8edcb8abfc5ac738735ee3339d4652e92bf"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/kotlin-reflect-2.2.21.jar",
+        "sha256": "44380abf37d245ce5c0f294f43512d1c39a59642bfa463922c74e96877cf49f8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/kotlin-stdlib-2.2.21.jar",
+        "sha256": "6558a3d233da56a20934b32159f9db5f86ed5816ef098f78a2c223dc6abb79dd"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/kotlin-stdlib-jdk7-2.2.21.jar",
+        "sha256": "b785922f11e6d91a6dd1d75cb0aef1ce37b83f8de0e3a2139139dfb823bb8a2c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/kotlin-stdlib-jdk8-2.2.21.jar",
+        "sha256": "c62275c50ee591ca2f82c7ba42696b791600c25844f47e84bd9460302a0d5238"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/lang-tag-1.7.jar",
+        "sha256": "e8c1c594e2425bdbea2d860de55c69b69fc5d59454452449a0f0913c2a5b8a31"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/lettuce-core-6.8.1.RELEASE.jar",
+        "sha256": "43bacfe92bbb2b848fd2afb1826fcfe8b4554785dfd29e99ec6c6554c26b1742"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/log4j-api-2.25.3.jar",
+        "sha256": "e886682920fa0fb9d6eb6395dcb4de088443f8646c89c5e5846e168e327f406f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/log4j-to-slf4j-2.25.3.jar",
+        "sha256": "90a09280390c54a28ac1514ded7c5293f3fe62f4448bf371b4e2415272e67a3d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/logback-classic-1.5.22.jar",
+        "sha256": "875f31c4b4dc49808e503490701a21cee3e7279800d9c76601da82685342e54b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/logback-core-1.5.22.jar",
+        "sha256": "7561b7a525364612966ff3823f8c62a81a3262742d455301f479273ef55570b8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/micrometer-commons-1.16.2.jar",
+        "sha256": "0ba6c40a25d7779c1162d54dd0b39ef7aabc9c20214238f0c28036c9099901d7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/micrometer-core-1.16.1.jar",
+        "sha256": "27bc3b318c0af677775375fbdc3be2c29af5c12ef2afc52572434308f3abf198"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/micrometer-jakarta9-1.16.1.jar",
+        "sha256": "ad650b6eaf7c905251f476e86f03f5504fe2e49a305da75b15d2359516232c2f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/micrometer-observation-1.16.2.jar",
+        "sha256": "d75994254246410ddb9a712c48215c8a400ae63af0b7b14cbefaccf79b87f9e1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/mockito-core-5.20.0.jar",
+        "sha256": "d1a96d252128d3a4247cfd8a2e76412efa3cc103977be17933c942117a24f374"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/mockito-junit-jupiter-5.20.0.jar",
+        "sha256": "fd6c703c2b00b914f3adbc27b18077a708f3d6992f19242c444e737c6cce024e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/mybatis-3.5.19.jar",
+        "sha256": "93eea616ae355751bd5fbabb57f0732713fbe79f3196f33c51a0aeeb4255862a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/mysql-connector-j-9.5.0.jar",
+        "sha256": "f2ca3dfaf00d4aa311470db7ea3051962944ba0cb60005a2f75467549c39f425"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-buffer-4.2.9.Final.jar",
+        "sha256": "d013a96acea4889bc01ee03738d53c2e4a05e3faec14c25a92b4224c77d7a408"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-4.2.9.Final.jar",
+        "sha256": "e2917d864734ace395ef8c6763917b7e6019ad53b8a7cf8f40a3bd52268de744"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-base-4.2.9.Final.jar",
+        "sha256": "284a28b84f54bace36a9e602e3d9694696d22c56f27197af046e1a6547f2b093"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-compression-4.2.9.Final.jar",
+        "sha256": "4523a65fe95bf474afdcfaf7e2c214b088d2376dacc43737be2acf968520be7e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-dns-4.2.9.Final.jar",
+        "sha256": "0ef731ea4042db603385398987e02f5a9bd88d6e5ae7e62a9ab4e07f9e70ca8a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-marshalling-4.2.9.Final.jar",
+        "sha256": "4799bdd314e23ad32c256c7f5e738a52d0bd97b9d5fe7f2e8f0888067f6a0df7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-codec-protobuf-4.2.9.Final.jar",
+        "sha256": "105619e295036397f07786b56fc7e4f45a81e258726cb09f561fe90c167f3c40"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-common-4.2.9.Final.jar",
+        "sha256": "99d965d507b09599ab2d215e940c690d4f7ce8cd97ff13776aa17eb4e0d90b8a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-handler-4.2.9.Final.jar",
+        "sha256": "e16126c711c1c8217342882cc0d9086007852cb0f99a351cfebe7725e8c7e100"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-resolver-4.2.9.Final.jar",
+        "sha256": "f4c3742aa434700e0a263eb8ae9e0b1ae82686743e21d0fc6ba348da59636053"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-resolver-dns-4.2.9.Final.jar",
+        "sha256": "54d24d4d1b8466d7c092b115c3bb2b0a55a18f91f0d870d9f1fa818b9fc3b010"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-transport-4.2.9.Final.jar",
+        "sha256": "0ae2c16b00262ebb5d672fc9f6aa7be92bb063ebcb0826c3c06e06a19bdd1c3e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/netty-transport-native-unix-common-4.2.9.Final.jar",
+        "sha256": "49345a5dc68dd32b7fe9d3d23640d918c0e8e5dacbb3fc169e0c231a1fc7edea"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/nimbus-jose-jwt-10.6.jar",
+        "sha256": "7ef3b0dd4a27407639d469cd75e7770463b4ee36e2c13535465da175d3b8f964"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/oauth2-oidc-sdk-11.30.1.jar",
+        "sha256": "b671d28e2ebb3b01848a0811d366e687c618ffd467b9d5a1536f5f93c449ed61"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/objenesis-3.3.jar",
+        "sha256": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/opentest4j-1.3.0.jar",
+        "sha256": "48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/org.abego.treelayout.core-1.0.3.jar",
+        "sha256": "fa5e31395c39c2e7d46aca0f81f72060931607b2fa41bd36038eb2cb6fb93326"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/postgresql-42.7.8.jar",
+        "sha256": "2a32a9dcbc42d67a50ad3a0de5efd102c8d2be46720045f2cbd6689f160ab7c7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/reactive-streams-1.0.4.jar",
+        "sha256": "f75ca597789b3dac58f61857b9ac2e1034a68fa672db35055a8fb4509e325f28"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/reactor-core-3.8.1.jar",
+        "sha256": "8e5f32e2f323159fff06344ad363b8e066420f3bbddaf8455d94cb922cc85099"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/reactor-extra-3.6.0.jar",
+        "sha256": "c5a85dcc376847b8324a634b353b6a56dde96ae35dfef068cf66d0eaa8edf5f6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/redis-authx-core-0.1.1-beta2.jar",
+        "sha256": "cc56edb08b3df8562cddac108dca61907d21cc4ad04de05e9f5d1b01058390af"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-api.jar",
+        "sha256": "4c6d2f49b7746d3c3182ef338789ac271d857b1aa2b4d2cd511ebc4f97f5dcd7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-boot-config-consul-starter.jar",
+        "sha256": "2a5091f8ab1d9fb44133206bcc3ba4ea894e076697d30644b90df286cddec421"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-boot-starter.jar",
+        "sha256": "e2a390668a7e4223ca05826f5e8eea7f34da7a7fccf688b148f13f17664e330c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-cache-core.jar",
+        "sha256": "55ece52a032acac9b2e37e91bd1c99f71f31e666e2f5f2f9b014a6d183fa265e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-cache-redis.jar",
+        "sha256": "ff37781e9402255888955d3cb4447b749d5c191724b9a6a6368f4dc7dc27d7f7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-core.jar",
+        "sha256": "ec6b1b9c2c13bd24503af86d341195ad5c317386716cc232fbfddc8655002390"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-data-cp.jar",
+        "sha256": "3aac94f334ed98dc33dadaf2aa45241c4b393d67d57ac53c41fc47bfd991acaa"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-data-jpa.jar",
+        "sha256": "469c13d99854c6021901264cf763d6c570da9e86fe040f5ddadae54f6bcf77b2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-data-json-schema.jar",
+        "sha256": "bef044bbf4c44ae33f8d37ecf3fbfb8aa9f4df1dd0fb0e9bcf961dcecbf7b58c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-data-migrations-api.jar",
+        "sha256": "e0ea8c0eae3dfe2a0939ec8161078745fde43116ac55d419fd57ab96331c4fae"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-events-api.jar",
+        "sha256": "d70a8fce76cc8705e54891cf979f79473f519ed559fa1c2454378d1b56f8990d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-events-jdbc.jar",
+        "sha256": "e14a1eac5840ecf9c4514416030f30195bf1e2c37e2dbddc23d199e980fde9e2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-events-rabbit.jar",
+        "sha256": "54df926a999ea421dede841881f169c407d0096285c1f6464cf96a437f7e496d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-platform-composition.jar",
+        "sha256": "1f77af2a7f9f3bbfd7593c6a7801c5407c881aaf4b33a387bbb35ad15d353a88"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-platform-http-servlet.jar",
+        "sha256": "0574966ae189bf7c493c9accb979398bc279ccd21ef7c6b90552c8ffefbbe849"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-api.jar",
+        "sha256": "6d54ceb660c3ecddc468cff01f9e84d9ee1b4fe26337923fef481e845c7f86e8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-app-form-api.jar",
+        "sha256": "55836f150e5843ffba8459cbcf612c2923a5a9a94851d8c90da4a4ea19a7ce70"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-core.jar",
+        "sha256": "8a6de67d0b6284f4ae8f9b783ca0d266268349e2e835bd6aee897137dc67273f"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-i18n-api.jar",
+        "sha256": "b8bde962af19f8b5e88fcb46ee18f05e53430f53c8512213fe51650bf0ba7a47"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-notification-api.jar",
+        "sha256": "fef807b32b00dc53644ba5c26d4e90e0cddcb25d05b226d164554a27372735e4"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-rbac-core-api.jar",
+        "sha256": "39292f991adc21e7f7921c0160ecc91b87e8aa791801922d615099cad47de7b2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-rbac-router-api.jar",
+        "sha256": "9786c3855d9ceadb8e22cd99f6863318883b03c8d1f41891b1afe2abfe2293f9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-rbac-tenant-api.jar",
+        "sha256": "1bcf66edfba1495e88f0e96260744ead75171b5d69eaa031f0666e09a0a6ff89"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-spring.jar",
+        "sha256": "7676f005a0047498eb85e39c006457180664071f5a19ae19ade8f56a63699225"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-webmvc.jar",
+        "sha256": "b719d62f46994682312c23e2228a57dcfcd4e0852b0fd5a891855816d4368fff"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-workflow-api.jar",
+        "sha256": "bd2f20c2609da260bd28f40083d704aa11f0afe8cfec514b85df3bca300d2a4e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-workflow-http.jar",
+        "sha256": "96419a47354ae15f8eb2e9234220640d765503f992d8e21f80b0322ce7b1b46c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-workflow-implementation.jar",
+        "sha256": "51787b440b8fab9a9b1ddb5d665f28e03d190da86e942c47ba67b85a752fb1b5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-plugin-workflow-migrations.jar",
+        "sha256": "73fab71ddc4220db3bbb68d6bcfdf7b5315aef7135c22a60a4adaf0ce87c3082"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-remoting-core.jar",
+        "sha256": "5374838c3e1eaaf397ee600057bd0c6268954eae3f93bc52ccc05db2f2f76a2e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-security-core.jar",
+        "sha256": "34880e62f8f70d458ed420f6fb658b089f4434208f6b1ec4dbae00e6deae5fc7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-security-oauth2-resource.jar",
+        "sha256": "cc12fb9c92c0ae4a4f5fdd2f7ebcfcc2a98e027c171a978f6108255a17010349"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-security-servlet.jar",
+        "sha256": "9232e5d6d152041a9b6333a0071d4db16c19dc9681b416879e719eae7f22caee"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-service-router-consul.jar",
+        "sha256": "fedc2bca20e667c9158efd2e4d76a4f55d7dfa2a50fa9ec91173b6f981ac4ee1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-service-router-core.jar",
+        "sha256": "ad35adcc0172bb6fb86b26e68196c4b84dd371fa854025862f88ddfc8779bc38"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/simplepoint-service-workflow.jar",
+        "sha256": "9b1c05cbd4bf52376f4e137cebb56dd56809ad0f450e7bebadffe9d9aec5dde6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/slf4j-api-2.0.17.jar",
+        "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/snakeyaml-2.5.jar",
+        "sha256": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-amqp-4.0.1.jar",
+        "sha256": "e2ea1975cc5de4657752583306722857d1d0a5401e2f6cdda1da087ca4fa6187"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-aop-7.0.3.jar",
+        "sha256": "5d6f2c77b041edb424156561f843578669dd15519f045b16061b856a6fb38175"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-aspects-7.0.2.jar",
+        "sha256": "39a83f52bbc9d4c112d35a38485386d3dc34930b97afc131538ea728ac4bcd95"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-beans-7.0.3.jar",
+        "sha256": "3d7cc670630cde2475eb079c2b5b6a85d9a2422888d6213da1aed1c0337500d6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-4.0.1.jar",
+        "sha256": "947b648ec6ddea77dfaba41cccfb4fd7b0823b7d1c43c7f3b357c1880e0ec460"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-actuator-4.0.1.jar",
+        "sha256": "08e7baae414f7b876f7655f968b9de44756209988184d9c5a45a7da3e5eb7cd7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-actuator-autoconfigure-4.0.1.jar",
+        "sha256": "675c9774147ad8151b275f3e6dadee18d7a2f64c23174d132e299a89edd4f770"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-amqp-4.0.1.jar",
+        "sha256": "df286a2b8e6c364d188c52fed8a133c67934dbb0b82bce16b2e1028bbd8e2f62"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-autoconfigure-4.0.1.jar",
+        "sha256": "5598ce8521086b5b662770b7411fc90233f393257d2e4f388d189e0ed8891272"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-cache-4.0.1.jar",
+        "sha256": "fd2749bc0e0c98ac15d499e4a5475e371f9568919877c9db20bc7857d87b546d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-data-commons-4.0.1.jar",
+        "sha256": "9f9e4b91bc8d123cf7b50c166d84c21b96b4439f639bfd14dbfe162aba793e2c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-data-jdbc-4.0.1.jar",
+        "sha256": "dd2add1bcc6780c5d056de6c07dfb5fc7675840988c13e261b53747ce6dce815"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-data-jpa-4.0.1.jar",
+        "sha256": "69bb1dbd669bb3df09db638b4b3168e482f2089d7d0d7fdeb36e8e1d9e98bfa2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-data-redis-4.0.1.jar",
+        "sha256": "124757ab9758c10930c82217ccaeda65bebbdcc16b00a4db426b18ba1f65f3ae"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-health-4.0.1.jar",
+        "sha256": "0ab37b96f45089a2cd017e0ca9b57042314f87ded21ad77b7ed06c4c55b07bee"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-hibernate-4.0.1.jar",
+        "sha256": "8614a2065885b99837982966bfe618421b6bafbf6dae8fbc0785288a542d843b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-http-client-4.0.1.jar",
+        "sha256": "3f9b71b37949bbe7398ff0cecf4dd7dd2388eced4d4e71a888d004cb2d65f44a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-http-converter-4.0.1.jar",
+        "sha256": "60b958ec12489f2a97fed379449d077232dfa5ca24315baa04b944885df940a2"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-jackson-4.0.1.jar",
+        "sha256": "4c419c426cbcb92fa8fdbf813c20a88ba950ecc78d9dfc80c515d99fdad7b5b1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-jdbc-4.0.1.jar",
+        "sha256": "db2866cc237db3983eff141f40aa409750fc8543d58cd4a38d12a918ae2a824a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-jpa-4.0.1.jar",
+        "sha256": "d020ac98443f91ea1c7f8c6ab13f70aba49fe10ebeb658dbd57efc9c81b11e08"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-micrometer-metrics-4.0.1.jar",
+        "sha256": "3490f0c747809ca4880e841553e2f9a41a820fdb5d5b9de591e003de07db3d34"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-micrometer-observation-4.0.1.jar",
+        "sha256": "3b4d7e23342265ef73ea0151579b234d9174c5664e7a03286b81d47f8ddcc5c3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-netty-4.0.1.jar",
+        "sha256": "97225de6a79ace31a17d0b106d66797e8d294f1d9c96044c65afe77a9b2927c5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-persistence-4.0.1.jar",
+        "sha256": "b6e8a12260834e76bbfc191f1dbfbd59080628b0e4dc38fe2f064b9013384bb3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-restclient-4.0.1.jar",
+        "sha256": "59419b9a497aa9f8e6dc202e3be2fa10535188ae0c30ec05dedcac06e299a8d0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-security-4.0.1.jar",
+        "sha256": "d51ed600f438e41765897fdd878c81e5136ba1ec1cd75ce72173552a569d9120"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-security-oauth2-resource-server-4.0.1.jar",
+        "sha256": "0a60532c18d89ca86b02dd8bface8d260add58d7f68903ed196383be01c23304"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-servlet-4.0.1.jar",
+        "sha256": "8274a8dfdb1e1ea1d0664977a059c9a421d7cd7a6671d400304e0164c11b03db"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-sql-4.0.1.jar",
+        "sha256": "f74bf3f85b01aa796e5c998154e6c1eb00df00ff8aa8bf3f4f9a583211bc9da5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-4.0.1.jar",
+        "sha256": "1d03d6d448c87e3fe02ee089ed3e3511370c63bd93eeae6528011cccfaaec626"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-actuator-4.0.1.jar",
+        "sha256": "d87c62692416bcc528fa4ec22b79d2a5bacfd63f3579f3cef0f7267b28ed0b6c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-amqp-4.0.1.jar",
+        "sha256": "30dbc64f7e4b943f723db5ff10ca4b6b41bf66a2dbb06bf9613bc770e292ce4c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-cache-4.0.1.jar",
+        "sha256": "a91121c6d73d228eb771cb990594c57f236cb51955116bfd4596f23d3b17ec79"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-data-jdbc-4.0.1.jar",
+        "sha256": "0f10fe2cc5cf16cfdc3facc323cd6f1918a2988a5369f8964a21b57f0b9bb5e8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-data-jpa-4.0.1.jar",
+        "sha256": "d3c633736d91c1424a8b2e20c52158075b7566431aee1070fa7613c0639e0221"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-data-redis-4.0.1.jar",
+        "sha256": "b984e62606599f86d21902c1fa0434a2695f92f81ccb8924e7e7814234dfda47"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-jackson-4.0.1.jar",
+        "sha256": "b3842926cf8fd6f72416d03da84e9f232a279f2bf7729fbb3c2e9c8d353a31bb"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-jdbc-4.0.1.jar",
+        "sha256": "c484fd89ffe13e59b1cc78bb994afc20e66b12c4138282570ffeda62bd0f2a72"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-logging-4.0.1.jar",
+        "sha256": "dc804995968d927818235a87ac38de1f335fed84b7f57c4b5cb3edc9f5a948c0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-micrometer-metrics-4.0.1.jar",
+        "sha256": "6e17e5688b549ae106bbfcefe6ad60fc97ab70e38a8d622bc23922392639f872"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-oauth2-resource-server-4.0.1.jar",
+        "sha256": "c76f89a66af6ffcba0ea2b82e002b97c5ad15a87fe91e8b06dfbd6b9711e5d21"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-security-4.0.1.jar",
+        "sha256": "5b6533344a8fd868339ba5a70732258f781ebf15a4e6ae99103ee52282af7c1a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-test-4.0.1.jar",
+        "sha256": "e52b42609ed5abca65971e5f59d92df99b771d871cccb357601c35fa8817804e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-tomcat-4.0.1.jar",
+        "sha256": "fd439e7a52f66b9cfd11e7227250017bd3a198a4ddc87970bb815786c7290a12"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-tomcat-runtime-4.0.1.jar",
+        "sha256": "029a4b3e6f2d2db29359b7743027fcf8b1e0a87cef17cf0644560f6da831c771"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-validation-4.0.1.jar",
+        "sha256": "9aa80d87c65c776b105a7665a391b2d69b3154832aeda4bf9f227619d3d4c806"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-starter-web-4.0.1.jar",
+        "sha256": "b739dd12fcad2bcbb59872c417f58684dd86b1d9f65929e0586bbf2614b895c6"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-test-4.0.1.jar",
+        "sha256": "d2d438a7ec3cb0138d904f6635cc540e3d60523e0b241f00e46eac5f95e83da7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-test-autoconfigure-4.0.1.jar",
+        "sha256": "bd813c28d064aa6428cf6507e0aa98424ba86cfeba032c0eb851964878d8f627"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-tomcat-4.0.1.jar",
+        "sha256": "c3d3e8b2a26204ac44cc3e6b6ce8b2dea489092e76ff1e3f16298febdc74459c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-transaction-4.0.1.jar",
+        "sha256": "b7889b547b629d92df43e7666e9538b7a2a4148533c5d7f8158c39fc7a94d205"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-validation-4.0.1.jar",
+        "sha256": "303813d2aa7d0789c3517fc316d4d95734f697ccd89be8da3a1dae46eabde0c9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-web-server-4.0.1.jar",
+        "sha256": "f0a538e1f2d2f9cef43feb9b04b12fac4e5872d740db2eb56e362446bc4fe98c"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-boot-webmvc-4.0.1.jar",
+        "sha256": "ba13b693fa1a8f18e519e22ea2cfc3522bf7e3d7fc796f67a01e8da01868b6c3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-commons-5.0.0.jar",
+        "sha256": "2b5afaeff60eb6c050d79d1a8ed852da85cb3ad63587dee08b0fd0c129c643f1"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-consul-config-5.0.0.jar",
+        "sha256": "ec7b3e604a8e86007d9933f94d0c40ba4f476f35821ab830fcba459cd8ba7d34"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-consul-core-5.0.0.jar",
+        "sha256": "660cb6c59999b02d00485b5c418b8d7ff43e0e495295d12d9c6ebf6a87ee9978"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-consul-discovery-5.0.0.jar",
+        "sha256": "2f0be9e55a8c0bf6428bbf27de26884161af6777a7b27053ac34c5ce1687c9f3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-context-5.0.0.jar",
+        "sha256": "7478a1ad0b273575b19f0c83b6cf37b6e939d9d81943f504f878779b2e672372"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-loadbalancer-5.0.0.jar",
+        "sha256": "c47db4a3d0bee39b0316c521f7038e517d65b6775de1aeb1b7dffa01f26039da"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-starter-5.0.0.jar",
+        "sha256": "96903ada07dea889e2d6694262c5c8e883ece8fd2707310f15757a7b16797857"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-starter-consul-5.0.0.jar",
+        "sha256": "3b9e7b13eca2f3e2a2f720f689ee351d486ce07e109347dbc622a37e5b14f956"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-starter-consul-config-5.0.0.jar",
+        "sha256": "33ee8ba1de204ecb1a68c95aad5d601f6c2c4a2b146782e19ce3cf62429668ad"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-starter-consul-discovery-5.0.0.jar",
+        "sha256": "dc352d9c2de0e76b3a0107423f0e66400b6bda64cc3fc08bc1691cd4889911d9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-cloud-starter-loadbalancer-5.0.0.jar",
+        "sha256": "7b676642e910707b4b027b27de9db9060c7a60e07db36d36796045bbaa30507e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-context-7.0.3.jar",
+        "sha256": "2c0ae4976261ad2ea16d6f5bd314e6ee13ffbaf7d8b6a4867b9a161e211a41a9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-context-support-7.0.2.jar",
+        "sha256": "227d728768076866e2b8c729753b87ad9ac373374afe0b5bad7f06ecb229c3a7"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-core-7.0.3.jar",
+        "sha256": "78d85d69a8e71f28996c7062cc91d9ce63fd1f01e9b8b87b21363ae325c9347b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-commons-4.0.1.jar",
+        "sha256": "32768bbebdaf1824c1bfae5240d556ea153d573fe537fcc7d28abf9501ff126b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-jdbc-4.0.1.jar",
+        "sha256": "f79bdbdde6a4b3dbdf7b1277adde4198e25c2ce19af050dbb64fd07f4ac90122"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-jpa-4.0.1.jar",
+        "sha256": "85bf6087a6c330d1b75e90f31405fcbd54c22fd2d51189f90444512bd73411be"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-keyvalue-4.0.1.jar",
+        "sha256": "d128852c92d7f58281acde29088edae2d8289d5aafc34e4f1ce2031d05f384fd"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-redis-4.0.1.jar",
+        "sha256": "ae6da338dd60eec18e49b6c73ec7288d4f5a066d8b2a67158e15853778ac347e"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-data-relational-4.0.1.jar",
+        "sha256": "4bbb96f70f2da2b7eecf22065fb26a2fbb1cc09621c48832e6c5bf8eaf64a4c4"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-expression-7.0.3.jar",
+        "sha256": "e4f53c026e281b79c268a4b2071938785a15606921ef5f3d2a0edc7a76566934"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-jdbc-7.0.3.jar",
+        "sha256": "75cf092a117613b4d0d3c814292e7024c1fa0197ba76b06db6f34bafef4f8002"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-messaging-7.0.2.jar",
+        "sha256": "85325abe44a21e28c8e15c6af2cecb6ccbfefc3f7585191edc1a80af3a09c6ba"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-orm-7.0.3.jar",
+        "sha256": "c29ae993794c5194e7bef700cff85e96e09c8653ee1758d0fd66384935fd0396"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-oxm-7.0.2.jar",
+        "sha256": "cd5698158f33ffd0518816bc1cbd69f1c9c2857bd891215bda73dc020af545ac"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-rabbit-4.0.1.jar",
+        "sha256": "c76eb47f4a5b5df5c022efcae52743c006ae728fc2056da5dc42dd1317c1e6ea"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-config-7.0.2.jar",
+        "sha256": "84f0532af906e60d3a9eddc596152a7f0cc522b2ba665a9d909782851fb2b4f9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-core-7.0.2.jar",
+        "sha256": "771adf6de0e761c9a5f3ed4e506822ad13a8a1de699799df5fe9a34824748bc3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-crypto-7.0.2.jar",
+        "sha256": "ad909c728a4a293981742e31e9f0e4c72d5800595632f402f831c5f7c737c43d"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-oauth2-core-7.0.2.jar",
+        "sha256": "47e0109664004b8f4b4f266cc06238e3c190128747c73402e6bd8022b7e3e300"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-oauth2-jose-7.0.2.jar",
+        "sha256": "1c948248fbd0800dab54310bf1299de9a947325976f39ada6878f6c7017e954b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-oauth2-resource-server-7.0.2.jar",
+        "sha256": "a02f1270e9bea2983ade4186c2fb254555badc8347b9ff173278a003884f2fe8"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-security-web-7.0.2.jar",
+        "sha256": "564bb85e5c2d0606de83670b2d4257d6c9e43ea518e2e820a1c19f19ef562535"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-test-7.0.2.jar",
+        "sha256": "25ec0fdcd96a5b9be7b8403a928bf78e1ba0510a705dd9b80e2b61cd7cfa8904"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-tx-7.0.3.jar",
+        "sha256": "c31afe1a8b77581d4a32c7f7fe5f9447f8a68ef7503897c2807958a06971c458"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-web-7.0.2.jar",
+        "sha256": "49767bf0effe8d4ebaaf16453ff1bffc4478f7328a687313811e56d5140feca5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/spring-webmvc-7.0.2.jar",
+        "sha256": "32e6b1e3381b6caca190a159d5859bc334bba7fef84b126b513e1487e7783b41"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/springdoc-openapi-starter-common-2.8.13.jar",
+        "sha256": "33eae47200e1e4ff549408313cb35b60a76df0308c5cc92cf274e156d2cea30b"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/springdoc-openapi-starter-webmvc-api-2.8.13.jar",
+        "sha256": "ed09c7fe7b4a68e0e0408f89b157f607e10e9374815067de3d04675abce1e4b9"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/springdoc-openapi-starter-webmvc-ui-2.8.13.jar",
+        "sha256": "a3620ca464cd9a8059a8eff0e02cbbea90776cba1cac518d0524a2cfda9275db"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/stax2-api-4.2.2.jar",
+        "sha256": "a61c48d553efad78bc01fffc4ac528bebbae64cbaec170b2a5e39cf61eb51abe"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/swagger-annotations-2.2.41.jar",
+        "sha256": "f43467d3d1aed5558e84b9505abbdc5117f59695b5f36e4c33b349d5c2c39d88"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/swagger-annotations-jakarta-2.2.36.jar",
+        "sha256": "8dd775fd27e56b3b26b9bef5ad2ab225a872e978047be77dc80fe0fe609a6419"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/swagger-core-jakarta-2.2.36.jar",
+        "sha256": "4b05633d2dc70e39b2f075a3f1b1ab2220c5e0e88e8ebad124ef09fbe3a3ed95"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/swagger-models-jakarta-2.2.36.jar",
+        "sha256": "bcf9adc6c86c9082aec573987b9ed09e2254392a5c84e5b4972dd57f5ca66997"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/swagger-ui-5.28.1.jar",
+        "sha256": "34317fd577413ca3c417bda911e936fe57db0a685c26a2f9871668209e111767"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/tomcat-annotations-api-11.0.15.jar",
+        "sha256": "f54950e49b292aefb7e62f3471aeaf462b3893e791246068319cb7c6f1e4f9e5"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/tomcat-embed-core-11.0.15.jar",
+        "sha256": "25299ce44012a34775b4e1f5237a3d6ec8af52ace658e540d4dd61ee38064ba0"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/tomcat-embed-el-11.0.15.jar",
+        "sha256": "18b3c48bb62b1b01a3bbfe8f700574dca365b09f388fe299a65f8579e8e4d22a"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/tomcat-embed-websocket-11.0.15.jar",
+        "sha256": "a74b0b165768a7fa9d0fcedce544c71523763f8d25e148f578dd78ce152fb533"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/txw2-4.0.6.jar",
+        "sha256": "fcc749785412ef3806fde1ce70f93ef5a0065dcc47fe449bc871db0795cb11af"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/webjars-locator-lite-1.1.2.jar",
+        "sha256": "47558475838d64b24a6478164a54b804db18a7e7bb199a9f632ba2bf0d30dae3"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/woodstox-core-7.1.1.jar",
+        "sha256": "02b9d022e9d47704ff8a7a859a0dbfd3b2882a8311eb7ff1e180f760ccda2712"
+      },
+      {
+        "path": "simplepoint-services/simplepoint-service-workflow/build/install/simplepoint-service-workflow/lib/xmlunit-core-2.10.4.jar",
+        "sha256": "208e0cee82aedd9183937e4b9ae44b83884179f724a706bef5795477acfcca91"
+      }
+    ],
+    "uniqueModuleAssets": {
+      "META-INF/simplepoint/modules/workflow-http/resources.json": [
+        "simplepoint-plugin-workflow-http.jar"
+      ],
+      "META-INF/simplepoint/modules/workflow-http/i18n/en-US/workflow.json": [
+        "simplepoint-plugin-workflow-http.jar"
+      ],
+      "META-INF/simplepoint/modules/workflow-http/i18n/zh-CN/workflow.json": [
+        "simplepoint-plugin-workflow-http.jar"
+      ],
+      "META-INF/simplepoint/modules/workflow-http/i18n.imports": [
+        "simplepoint-plugin-workflow-http.jar"
+      ]
+    },
+    "oldAssetCopies": [],
+    "frontendAssetCount": 76,
+    "frontendAssets": [
+      "static/mf/121.a8e854c136.css",
+      "static/mf/121.b05735acfb.js",
+      "static/mf/139.5545a4a498.js",
+      "static/mf/144.e141fb019e.js",
+      "static/mf/159.759919605b.js",
+      "static/mf/169.49eb0e06ed.js",
+      "static/mf/210.0e45b475ba.js",
+      "static/mf/210.49ddd12bc2.css",
+      "static/mf/249.64566b2141.js",
+      "static/mf/256.fc5ba3dca2.js",
+      "static/mf/302.6c68390659.js",
+      "static/mf/305.a7a3dc4b2d.css",
+      "static/mf/305.e136eb3a4c.js",
+      "static/mf/31.a77a08f9e9.js",
+      "static/mf/31.a77a08f9e9.js.LICENSE.txt",
+      "static/mf/359.2e2eb16d9c.css",
+      "static/mf/371.1dd800b455.js",
+      "static/mf/392.c1bc0d1f5d.js",
+      "static/mf/452.2e2eb16d9c.css",
+      "static/mf/452.4bc5c11ccd.js",
+      "static/mf/470.45759595c5.js",
+      "static/mf/470.a6e9edd908.css",
+      "static/mf/471.0a90f80b06.js",
+      "static/mf/499.b60ee6936b.js",
+      "static/mf/541.a7a3dc4b2d.css",
+      "static/mf/559.0f46bcb86a.js",
+      "static/mf/608.11cd13b271.js",
+      "static/mf/639.580c9d0548.js",
+      "static/mf/641.a018740000.js",
+      "static/mf/649.7f650bfef4.js",
+      "static/mf/705.8aa9483e0c.js",
+      "static/mf/709.6221fb55be.js",
+      "static/mf/72.e619a2ea7a.js",
+      "static/mf/751.61b7c73ee0.css",
+      "static/mf/751.daa65b93f5.js",
+      "static/mf/751.daa65b93f5.js.LICENSE.txt",
+      "static/mf/752.354ad8074d.js",
+      "static/mf/779.4047fe80b5.js",
+      "static/mf/797.30f213c5a9.js",
+      "static/mf/812.1e13b25b01.css",
+      "static/mf/812.400afda68e.js",
+      "static/mf/848.b633da922e.js",
+      "static/mf/852.12e22ccc42.js",
+      "static/mf/90.855cb0fb10.js",
+      "static/mf/942.81424daab6.js",
+      "static/mf/942.81424daab6.js.LICENSE.txt",
+      "static/mf/943.a013a2d74a.js",
+      "static/mf/@mf-types.d.ts",
+      "static/mf/@mf-types.zip",
+      "static/mf/@mf-types/Definitions.d.ts",
+      "static/mf/@mf-types/Instances.d.ts",
+      "static/mf/@mf-types/Management.d.ts",
+      "static/mf/@mf-types/Tasks.d.ts",
+      "static/mf/@mf-types/compiled-types/api.d.ts",
+      "static/mf/@mf-types/compiled-types/views/Definitions/index.d.ts",
+      "static/mf/@mf-types/compiled-types/views/Instances/index.d.ts",
+      "static/mf/@mf-types/compiled-types/views/Management/index.d.ts",
+      "static/mf/@mf-types/compiled-types/views/Tasks/index.d.ts",
+      "static/mf/@mf-types/compiled-types/views/useMutationScope.d.ts",
+      "static/mf/__federation_expose_Definitions.8ca9f480ed.css",
+      "static/mf/__federation_expose_Definitions.98a21dafb5.js",
+      "static/mf/__federation_expose_Instances.0952379538.js",
+      "static/mf/__federation_expose_Instances.cb0612c9a8.css",
+      "static/mf/__federation_expose_Management.9284a4b44d.js",
+      "static/mf/__federation_expose_Management.cb0612c9a8.css",
+      "static/mf/__federation_expose_Tasks.cb0612c9a8.css",
+      "static/mf/__federation_expose_Tasks.f54b7b2e37.js",
+      "static/mf/index.b2f062ed95.js",
+      "static/mf/mf-manifest.json",
+      "static/mf/mf-stats.json",
+      "static/mf/static/font/bpmn.4d5c92bfdc.eot",
+      "static/mf/static/font/bpmn.75dbcaf639.woff",
+      "static/mf/static/font/bpmn.975baf9ad1.woff2",
+      "static/mf/static/font/bpmn.ed7e52b1a2.ttf",
+      "static/mf/static/svg/bpmn.22e8d1d88d.svg",
+      "static/mf/workflow.e150100b3c.js"
+    ],
+    "probeSource": "import java.util.List;\nimport java.util.Map;\nimport org.simplepoint.platform.composition.*;\nimport org.simplepoint.security.resource.ResourceDeclarationDocument;\nimport org.simplepoint.security.oauth2.resourceserver.scope.ClasspathResourceScopeRegistry;\nimport com.fasterxml.jackson.databind.ObjectMapper;\n\nclass VerifyResourceArtifacts {\n  public static void main(String[] args) throws Exception {\n    var loader = VerifyResourceArtifacts.class.getClassLoader();\n    var plan = ModuleCatalog.discover(loader).plan(List.of(\"workflow-http\"));\n    var owners = ModuleResourcePlan.owners(plan);\n    if (!owners.equals(Map.of(\"workflow-http\", \"workflow\"))) throw new AssertionError(owners);\n    var document = ResourceDeclarationDocument.read(\"workflow-http\", \"workflow\",\n        ModuleResources.read(\"workflow-http\", loader, \"resources.json\"));\n    var scopes = new ClasspathResourceScopeRegistry(new ObjectMapper(), plan, loader);\n    if (document.codes().isEmpty() || !document.codes().equals(scopes.snapshot().keySet())) {\n      throw new AssertionError(\"Installed registration and scope declarations disagree\");\n    }\n    var translations = org.simplepoint.plugin.i18n.api.initialization.I18nModuleInitializer.readDeclarations(\"workflow-http\", loader);\n    if (!translations.keySet().equals(java.util.Set.of(\"en-US\", \"zh-CN\"))) throw new AssertionError(\"Missing locales\");\n    if (loader.getResource(\"META-INF/simplepoint/resources/workflow.json\") != null) throw new AssertionError(\"Legacy resource copy remains\");\n    System.out.println(\"Installed artifact owners=\" + owners + \"; codes=\" + document.codes().size()\n        + \"; locales=\" + translations.keySet() + \"; legacy copy absent\");\n  }\n}\n",
+    "validatedResourceCodes": 13
+  },
+  "verifiedScenarios": [
+    "Stable historical resource owner is distinct from adapter identity and host; initializer caller credentials remain module-bound",
+    "Complete owner snapshots cannot be split across local modules or distinct planned hosts",
+    "Missing registrar/owner and invalid identities fail during pure planning",
+    "Selected scope catalog ignores unselected and legacy assets, including malformed unselected declarations",
+    "Selected missing/duplicate/mismatched declarations fail; identical-scope duplicate codes across owners are rejected",
+    "One strict parser checks owner/code/tree/duplicate JSON/trailing tokens and bounded bytes/depth/count",
+    "Non-web Boot startup claims duplicate resource codes during preparation before all remote effects",
+    "Actual workflow resource and locale assets prepare without network effects and register historical workflow owner",
+    "Actual registered resource code set equals selected HTTP scope catalog",
+    "Legacy service registration and scope lookup recognize relocated module paths",
+    "Installed artifact classpath resolves selected owners, unique resource assets, 13 scope codes and two locales; old copies absent"
+  ],
+  "limitations": [
+    "Not a deployed OAuth/database/browser acceptance; no production state changed",
+    "Owner planning is not a substitute for provider-side caller/owner authorization policies",
+    "Cross-host different-owner resource-code conflicts still require global installation preflight and provider policy",
+    "Common shared namespace and complete owner snapshot partitioning need further design/implementation before separation",
+    "Remaining adapters, aggregate frontend packaging, migration/adoption installer, standalone host and all three topology acceptance remain incomplete"
+  ],
+  "environment": {
+    "productionDatabaseChanged": false,
+    "deployed": false,
+    "commitOrPush": false,
+    "temporaryInfrastructureStarted": false
+  },
+  "sources": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "f24f6f1e36485fe4018560003f3bc5afdf8f33cf40fb1294749302b0349878a9"
+    },
+    {
+      "path": "doc/design/modular_service_composition_plan.md",
+      "sha256": "0cdcc37716899aba8e8779a5fe7952ea956bdb6b5217e6f6be98379a97962568"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleInitializationRunner.java",
+      "sha256": "5bbdb0dbc6d2830a70710eedd3f09db92cd1bca8efcc8d4ce6baf77d18eb028e"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupbroken/StartupBrokenModule.java",
+      "sha256": "0df88e58305d9da737e73ac99509f4a9d210cc942d05d2e73970e3fd37064254"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupduplicate/StartupDuplicateModule.java",
+      "sha256": "13023cee2d26efba8e7f0d6eff563472a0cf1dd2de34192175f997ec8aafd8e1"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startupone/StartupOneModule.java",
+      "sha256": "84c95bcb13e1cce7b61578f3ae057cf8dcc26a5cdbec4520c4416b23b83de99c"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/startuptwo/StartupTwoModule.java",
+      "sha256": "98eca8387b8297dce110927482d323fab58eaa145d6d446eec44a66fd9dd2502"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleInitializationBootTest.java",
+      "sha256": "332deba6ab7b4743df5925ae075e8d20af7d8842ac0e25b5c565fc11eff4ae28"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules.imports",
+      "sha256": "3b719a77aad0ccb7a2f501d539513c6a75f962921363ae90e1786d7d4421a086"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules/startup-duplicate/resources.json",
+      "sha256": "edcb7242cec2e02c13389de18bc831f4ca5f5704c35ea90a1ca7f085f5b6efbf"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules/startup-one/resources.json",
+      "sha256": "489c97db605c55f866cad0250fbd29ed59f79765206858075218485b3b21968a"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/README.md",
+      "sha256": "89fdbea3e2938479d02885627d706d21296ad884ee2b1e314848e17c948b8a20"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java",
+      "sha256": "5047415937f86b49e1c2309a95b91355de53c5812e53153201d870e39614d877"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java",
+      "sha256": "86349808b96d6f90d5dcdda31aee45c3ef90fd23db40c233959aff970227e648"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDescriptor.java",
+      "sha256": "506dbccd324f10d16e9813105f7c943b637613426fdbb9138eeeb5a24d3474fa"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitialization.java",
+      "sha256": "ff54a47dd2d0398631697472a21358f357f40da957005ae23bfc749750403936"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationContext.java",
+      "sha256": "45c26ea347ae3072790a1d5a0125603f43ee57366296dbd3ca230e2668e103a8"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourceOwner.java",
+      "sha256": "a5a3e56259119abca6d22fb69a0796822a70fa337d279b4fd2c9300184a5669c"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleResourcePlan.java",
+      "sha256": "90fafe6f0159b81a9a9a98cce60e9b302c32901aa396a0b9c1cd0527901c09e7"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleResourcePlanTest.java",
+      "sha256": "21835086031bcd3fbfe363c5841ae79f5c602f50897e75730ede214335cd7a26"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-http-servlet/README.md",
+      "sha256": "a22e4ca0ed1b1c2845817d64372e1eae29ec59fdaaa2afd68ae3386c7e5d5519"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/README.md",
+      "sha256": "97cb3f6008144966ee9f8b110a93e7fbce59ebca50f1b53c311b160963941baa"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/build.gradle.kts",
+      "sha256": "4c2efcc74abddea30d5431ca45a5e5ba39ad4209fb0c7c538e09bd76ff795743"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/java/org/simplepoint/workflow/http/WorkflowHttpModule.java",
+      "sha256": "71639a5c4d2f286a5c8de0c936e1fc8e8a384f7e6b13fadb1cf5260e45913df1"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/resources/META-INF/simplepoint/modules/workflow-http/i18n.imports",
+      "sha256": "444b25a042e525b8019f48fcf2dc747160534fa6ae9d3be10bf80b1b12c0d825"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/resources/META-INF/simplepoint/modules/workflow-http/i18n/en-US/workflow.json",
+      "sha256": "191f0992e57003b5b793e9801ec4f47ce059ed88ecd61b6f84718ee035d0a5ae"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/resources/META-INF/simplepoint/modules/workflow-http/i18n/zh-CN/workflow.json",
+      "sha256": "9abde673fdc84255b6bdcef2f0fd58307085f453b9bff750f89fe59c087972b6"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/resources/META-INF/simplepoint/modules/workflow-http/resources.json",
+      "sha256": "0d89cd73854544725bb00f31228a83376138d8956b9df73786663e201efea041"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowHttpArtifactTest.java",
+      "sha256": "b2cf06d0783b0cefb6614398ee2c3c5976b048bf7c9ca7b8b567fd8ae4b14f77"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowHttpCompositionTest.java",
+      "sha256": "1c44f6ba17393f0915cf06a050d58c4a55f63dffa1bffa72e979458d52293897"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowResourceInitializationTest.java",
+      "sha256": "e9804de4bf0da10e3844475a6b68246199b783e40d45711162617e1f082f7569"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/main/java/org/simplepoint/plugin/rbac/resource/api/initialization/ResourceModuleInitializer.java",
+      "sha256": "149a8a34380a95af9844b02377182e723b168a3fa95456ef48a9be87be0dcce2"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api/src/test/java/org/simplepoint/plugin/rbac/resource/api/initialization/ResourceModuleInitializerTest.java",
+      "sha256": "12dd27638a75d3cb98647e07edae4698cb791e6d1da1768fdfb5fa7b5adfb65b"
+    },
+    {
+      "path": "simplepoint-react/libs/components/WorkflowDesigner/bpmnTranslation.test.mjs",
+      "sha256": "183f4fd9f42e7422fff6590767518682acc42b8a74199c2862679e2b46c33857"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/build.gradle.kts",
+      "sha256": "df50720b46edbb62c9b377a6023e2c00cad5978d4fe3e1cca63ea78659972da4"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/resource/ResourceDeclarationDocument.java",
+      "sha256": "53daf05e2f19ef0341e057677888253c1255ef4bfabfc12207ca1e8fe76b1613"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/resource/ResourceDeclarationDocumentTest.java",
+      "sha256": "e910de16ea341dc2f0e9a40b09ae8bbe6eaf6df373b2396562210fb1e438a32c"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-oauth2-resource/build.gradle.kts",
+      "sha256": "e7c29dd35b8ae0be3758873eefd7409df46b138446fec8680c22fe6cd04285cf"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ResourceServerAutoConfiguration.java",
+      "sha256": "7517a708a4f80fb2c129418b18b9cd90d3757a134b2f4b587f07a33ae15d18eb"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ClasspathResourceScopeRegistry.java",
+      "sha256": "13db83ac600ebcfe6d7948205b56fe8cbcce2c872e1e250a1bf9d7ed213a3be7"
+    },
+    {
+      "path": "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/SelectedResourceScopeRegistryTest.java",
+      "sha256": "a4b36af5fed4b7cc1fa2c7a664494981ca99b06b27b9a1c86b6598264edceb17"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-workflow/README.md",
+      "sha256": "286dfb30479bceffe3fbe653bd376534f6a8080ff5978bd69a8633c60e2f0518"
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-resource-owners-distribution.log",
+      "sha256": "99cdec826f409b482b6e2583d1089f96d5fa1866362a96f971eba94a49d345e1"
+    },
+    {
+      "path": "/tmp/simplepoint-resource-owner-i18n.log",
+      "sha256": "13f5b3ec252d43c1e775806c35e5ef492a1c02bff4ebcc73c712fa4248f31b6a"
+    },
+    {
+      "path": "/tmp/simplepoint-resource-owner-translation.log",
+      "sha256": "642f37137fc7ffaa087635c6f007e5ddf6b53b324d6a96154982f7e5e1dabce6"
+    },
+    {
+      "path": "/tmp/simplepoint-resource-owner-typecheck.log",
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    {
+      "path": "/tmp/simplepoint-resource-owner-artifact.log",
+      "sha256": "8bf45ad8d86441e5e560ed0019eab599961b169fdc03a50be59b615a4f8424bb"
+    }
+  ]
+}

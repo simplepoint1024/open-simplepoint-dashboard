@@ -1,0 +1,771 @@
+{
+  "date": "2026-10-21",
+  "status": "Explicit legacy bootstrap registry transfer and serialized runtime transitions verified; dictionary data adoption, installer orchestration and complete standalone remain unfinished",
+  "counts": {
+    "tests": 440,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "postgresRegistryCases": 16,
+    "postgresArchitectureMigrationCases": 10,
+    "additionalH2Cases": 16,
+    "styleFiles": 10,
+    "styleReports": 2
+  },
+  "projects": [
+    {
+      "project": "simplepoint-platform/simplepoint-platform-bootstrap-registry",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "name": "org.simplepoint.platform.bootstrap.registry.BootstrapLegacyTransfersTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/test-results/test/TEST-org.simplepoint.platform.bootstrap.registry.BootstrapLegacyTransfersTest.xml",
+            "sha256": "c0e6789320d8ef4c32768f67982f58ccfb89c4f7339b441a1c469064e1d6d082"
+          },
+          "cases": [
+            "existingModularHistoryAndMissingLegacyHistoryCannotBeSilentlyReplaced()",
+            "transferAndTargetCreationRollBackTogetherAndExactRetryRecovers()",
+            "[1] RUNNING",
+            "[2] FAILED",
+            "[3] conflict",
+            "[4] missing-time",
+            "changedSourceAfterPreviewCannotBeAdopted()",
+            "retryMustMatchOperationTargetAndExpectedRevision()",
+            "dedicatedOwnerTransferRetiresGenericExecutionWithoutCreatingNewAppliedRow()",
+            "concurrentTransfersCommitOneDurableResult()",
+            "moduleTransferPreservesAllHistoryAndSkipsCompletedInitialization()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.bootstrap.registry.ModuleBootstrapRegistryTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/test-results/test/TEST-org.simplepoint.platform.bootstrap.registry.ModuleBootstrapRegistryTest.xml",
+            "sha256": "22c65e3e25f083396b80560f12f5b9cbe1bb4f139d155d974635d235d5b49f8c"
+          },
+          "cases": [
+            "completedModuleStateSurvivesHostChangesWithoutReapplying()",
+            "historicalHostRecordsMustBeMigratedBeforeAnyNewScopeCanExecute()",
+            "[1] false",
+            "[2] true",
+            "uncertainRunningWorkAndStaleCompletionsCannotBeReplayedOrOverwriteState()"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-platform/simplepoint-platform-bootstrap",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "name": "org.simplepoint.platform.bootstrap.BootstrapExecutionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-bootstrap/build/test-results/test/TEST-org.simplepoint.platform.bootstrap.BootstrapExecutionTest.xml",
+            "sha256": "cb7f33914b3a4eb8c1c1b22f09f746d4dfb78b2b4f427fe73ca5e87d89463530"
+          },
+          "cases": [
+            "actionFailurePreservesOriginalCauseAndDoesNotPersistExceptionPayload()",
+            "completionAcknowledgementFailureNeverRecordsSuccessfulBusinessWorkAsFailed()",
+            "malformedRegistryResultDoesNotSilentlySkipRequiredInitialization()",
+            "moduleRegistryScopeCannotDependOnHostOrExceedThePersistedKeyBound()",
+            "duplicateIdentityAndOversizedMetadataFailDuringPreparation()",
+            "uncertainStartNeverExecutesOrOverwritesFailure()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.bootstrap.PlatformBootstrapEntitiesTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-bootstrap/build/test-results/test/TEST-org.simplepoint.platform.bootstrap.PlatformBootstrapEntitiesTest.xml",
+            "sha256": "0294d50881fba9089ae38147603d5a1cb56017c3443190bbc50f7af3e0c129c5"
+          },
+          "cases": [
+            "contributionSettings_defaultEnabled()",
+            "platformBootstrapProperties_resolvesContributionSettings()",
+            "contributionRecordId_settersGetters()",
+            "platformBootstrapProperties_defaultEnabled()",
+            "contributionRecord_statusConstants()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.bootstrap.PlatformBootstrapExecutorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-bootstrap/build/test-results/test/TEST-org.simplepoint.platform.bootstrap.PlatformBootstrapExecutorTest.xml",
+            "sha256": "55455eaa3ea7a0619fe0a357ca5c62776c2de72a9afcad9b43568c86340e1937"
+          },
+          "cases": [
+            "run_shouldApply_executesContributionAndMarksApplied()",
+            "run_alreadyApplied_skipsContribution()"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "name": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest.xml",
+            "sha256": "e673e9f2203bb6c246c8af6a21a55ce7835470248f6bdd3e343274194f2d3bd1"
+          },
+          "cases": [
+            "identityBaselineRetainsProductionGuardsDefaultsAndAuthenticationColumns()",
+            "[1] 3",
+            "[2] 4",
+            "[3] 5",
+            "[4] 6",
+            "bootstrapTransferUpgradePreservesAllLegacyStatesAndHistory()",
+            "[1] false",
+            "[2] true"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+            "sha256": "1e547f522f90960dc2c8d05690931808f6b7f3f9c0b685521b5fda8d3155c139"
+          }
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+            "sha256": "bbc22b031e64a4a2c41a8d4b6f231db4960a8afafe6ed4d81f9e43d03003d6a9"
+          }
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+            "sha256": "86344a5e97facc6bd5b7457eb365b00a29a001bc373f9ddccadcb2c25d1d91d8"
+          }
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+            "sha256": "c819b82675bb7841acf2ab5b0a7d1080fce6171d4f97cf87299c55cd411153ff"
+          }
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest.xml",
+            "sha256": "ad84eb0eccadc083bae9f236eed2b91044461a4d8891051b2cb32bca32aecb9d"
+          },
+          "cases": [
+            "[1] false",
+            "[2] true"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-common",
+      "tests": 388,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        {
+          "name": "org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest.xml",
+            "sha256": "181f00c503eea96f994f6c6c3a57b27e0f2b02642da972ee5cc117c95d5d75bb"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest.xml",
+            "sha256": "893344e853535ee41a40418958bdf29daab92744aad71a6bebb8ed6999e391d5"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentDirectoryHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentDirectoryHttpTest.xml",
+            "sha256": "060f8e64d84ebeb8b3ec6eb9fa9d680a0cbba7b9f7dacd77ae464c4adb69faec"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+            "sha256": "ba8b51b5c2dbd3af03434c7cc0e7053acea3b714c3750ff58c0ffa6f379e17c5"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+            "sha256": "15aa2de6684dbc04384a1c0c37182e58772d70f446909e8c7068e03245cf0e7e"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.DictionaryWriteHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DictionaryWriteHttpTest.xml",
+            "sha256": "427f05081bed0acc8abe4a12bbfe8c763861525348f97264a5ae6853d43735f1"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest.xml",
+            "sha256": "76a313a5daa13af318de4c3da99b65b7f4c866dd363ab71271dd16a820ce35e9"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest.xml",
+            "sha256": "8f105202bdc40099209a0cdb030ff731e2d015206845e6847608100b59075fe2"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+          "tests": 38,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+            "sha256": "ff76029d83d7c36e3b6f777eb859f0f814a922333a9c3c0322e68376809a1d0f"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.I18nTableQueryHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.I18nTableQueryHttpTest.xml",
+            "sha256": "ca941df8905c644137bc6b1837ec64ab20b2c5a81dcba7ebb16bda07b8b2da49"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.MultipartUploadLimitTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.MultipartUploadLimitTest.xml",
+            "sha256": "df3197ebd857136f096dae37b33643a144027f79de11d11d562a337e48e10a4a"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+            "sha256": "a3f887aba7a7e096839e4a76b86621f09a6a0aeffb7b7000ecdf9ac8a596effd"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest.xml",
+            "sha256": "aabb1c88504b2e297630a3a4781b73ab6929a990c8c725cd50da9046a2ce0329"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OrganizationSelectionHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+            "sha256": "4c3ca3692b0914aabf6f8674b93366d5b45dad9e6d7fc52d8008c02d168ede59"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+            "sha256": "d4601eac15b22a2ba29e7c718131ade93ed23d55588f5889c60f182bfa48fbed"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountBindingTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountBindingTest.xml",
+            "sha256": "561ec73dbb8ee932611525eafd9a178c647838799df7e3a7a602e6517dfb7fcc"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest.xml",
+            "sha256": "5dda9e5b7aa821a36ed44c9d920c020bec1a1036f687567630e80757395c67e5"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+          "tests": 51,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+            "sha256": "5a7cf32f1dc984ccac8d66019d0883a1ddeb086fd3391c168b3a17a1ae18ee80"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+            "sha256": "279550014f88c028c7aa0f0f51dde0d34d15e2dc01be57ee25da9a17deee6b0c"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+            "sha256": "4fea380ffcb815dbada0847e3e8ec1bf88a8ff08800b9638b116d3335ee1fcc4"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.StorageTableQueryHttpTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.StorageTableQueryHttpTest.xml",
+            "sha256": "a5f6b28f8d93547ac87b9bd89c2adf6087a270c4f17a6bcc8061fbcf7eba612d"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+            "sha256": "b864276c7dc44f18546236cca29e3a61f6d2eb67ff7570ffa216a23760867ba9"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest.xml",
+            "sha256": "f53d1e9a57714069f1296bff6c8ff0c5ec7371535c4b222e43b7128f6d0544e5"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantDirectoryHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantDirectoryHttpTest.xml",
+            "sha256": "45acfa41c75e646022f3202fb4a8c4fe0ac8baa161d72e59efa0046d047982e9"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantMemberQueryHttpTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantMemberQueryHttpTest.xml",
+            "sha256": "a0147031a16274ec52458ffa0db0544f8430aaa2ec0aff04df7345b80d7d5f3c"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+            "sha256": "b07e9ed1a917676e234cc2c032366b04ae963402ef8d9f78120565dfa3745d7c"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest.xml",
+            "sha256": "5d461ab5991ed0770e3df838fc6b0cae853dccdffb70e97f76626200105139d3"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPickerHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPickerHttpTest.xml",
+            "sha256": "ba52d468d139ef10b75f20e69af857abdcb4ea30fe712701100e4bc903d3e43d"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureAuthorizationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureAuthorizationTest.xml",
+            "sha256": "747e55eee8245c11b53b68eb9ed8041189abae9527b62fbb230b99769f9219b5"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureHttpTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserPictureHttpTest.xml",
+            "sha256": "e33143839ea31577ca29673f33e9e4c702c50ef0adc8719e250f9b393791d419"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest.xml",
+            "sha256": "e088277943b0210d5bf6157d245651c0ea2fb78c4a195ed3d4b4d8910b9fad08"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.i18n.CommonI18nMessagesTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.i18n.CommonI18nMessagesTest.xml",
+            "sha256": "60a5dccc832d58815e9a8977c714d4185a80fcfb12d85c4d05c49db656e85385"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest.xml",
+            "sha256": "cfc464aa3a43094d1a04a6c2438db7d7206b8cd868b1e27afe7e01beb5d5b8e1"
+          }
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest.xml",
+            "sha256": "da1cd1aea41405ebe9127b32329f34847c457f1dc3ff59c484c3835e0151ecad"
+          }
+        }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/bootstrapTransfer.xml",
+      "sha256": "8fb7713e4d48bf59b92a2ca0ebea6b3c5b6f488431b28cef6c4c30801e7947f6",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/bootstrapTransfer.xml",
+      "sha256": "923b3f20c0677b5e115478e39086a8481545d0bcbfb3c391ede9db356028c1bf",
+      "violations": 0
+    }
+  ],
+  "styleScope": [
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfer.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfers.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapRegistryWriteBoundary.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/service/impl/PlatformContributionServiceImpl.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/ModuleBootstrapRegistryTest.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryTestSupport.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/BootstrapLegacyTransfersTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/SupportModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/repository/PlatformContributionRepository.java"
+  ],
+  "styleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-bootstrap-transfer-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleBootstrapTransfer', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyBootstrapTransferStyle') { dependsOn checks }\n}\n",
+  "distribution": {
+    "jars": 330,
+    "remoteEntry": "common.9038349e96.js",
+    "verifiedAssetsIncludingEntry": 102
+  },
+  "artifactProbe": {
+    "source": "import java.util.*;\nimport org.simplepoint.platform.bootstrap.service.PlatformContributionService;\nimport org.simplepoint.platform.bootstrap.registry.migration.BootstrapLegacyTransfers;\nimport org.simplepoint.platform.bootstrap.registry.migration.BootstrapLegacyTransfer;\nimport org.simplepoint.platform.bootstrap.registry.migration.BootstrapRegistryWriteBoundary;\nimport org.simplepoint.platform.bootstrap.registry.service.impl.PlatformContributionServiceImpl;\nimport org.simplepoint.platform.composition.ModuleCatalog;\nimport org.simplepoint.remoting.RemoteProvider;\nimport org.springframework.transaction.annotation.Transactional;\n\npublic class VerifyBootstrapTransferArtifacts {\n  public static void main(String[] args) throws Exception {\n    var loader = VerifyBootstrapTransferArtifacts.class.getClassLoader();\n    var plan = ModuleCatalog.discover(loader).plan(List.of(\"bootstrap-registry\"));\n    if (!\"bootstrap-registry\".equals(plan.capabilityOwners().get(\"platform.contribution:1\")))\n      throw new AssertionError(\"Registry provider ownership changed\");\n    for (var method : PlatformContributionService.class.getMethods()) {\n      if (Set.of(\"preview\", \"transfer\", \"requireScope\").contains(method.getName()))\n        throw new AssertionError(\"Installer method exposed remotely\");\n    }\n    if (BootstrapLegacyTransfers.class.isAnnotationPresent(RemoteProvider.class))\n      throw new AssertionError(\"Transfer service is a remote provider\");\n    if (BootstrapLegacyTransfers.class.getMethod(\"transfer\", BootstrapLegacyTransfer.Command.class).getAnnotation(Transactional.class) == null)\n      throw new AssertionError(\"Transfer has no transaction\");\n    if (PlatformContributionServiceImpl.class.getConstructors()[0].getParameterCount() != 3)\n      throw new AssertionError(\"Runtime provider is not wired to transfer guard and mutation boundary\");\n    for (Class<?> type : List.of(BootstrapLegacyTransfers.class, BootstrapRegistryWriteBoundary.class, PlatformContributionServiceImpl.class)) {\n      if (Collections.list(loader.getResources(type.getName().replace('.', '/') + \".class\")).size() != 1)\n        throw new AssertionError(\"Duplicate or missing registry implementation\");\n    }\n    var path = \"META-INF/simplepoint/modules/bootstrap-registry/db/\";\n    if (Collections.list(loader.getResources(path + \"postgresql/V2__legacy_contribution_transfers.sql\")).size() != 1)\n      throw new AssertionError(\"Missing or duplicate V2 migration\");\n    try (var stream = loader.getResourceAsStream(path + \"manifest.properties\")) {\n      var properties = new Properties(); properties.load(stream);\n      if (!properties.getProperty(\"migrations\").contains(\"V2__legacy_contribution_transfers.sql\")\n          || !properties.getProperty(\"tables\").contains(\"simpoint_bootstrap_registry_revision\")\n          || !properties.getProperty(\"tables\").contains(\"simpoint_bootstrap_legacy_transfers\"))\n        throw new AssertionError(\"Incomplete registry migration declaration\");\n    }\n    System.out.println(\"Installed Common distribution: registry-owned local installer transfer, narrow existing RPC, runtime transfer guard/shared write boundary, atomic transfer annotation and unique declared V2 migration verified.\");\n  }\n}\n",
+    "command": "/home/ymsl/.jdks/ms-21.0.12.1/bin/java --class-path 'simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/*' /tmp/VerifyBootstrapTransferArtifacts.java",
+    "output": "Installed Common distribution: registry-owned local installer transfer, narrow existing RPC, runtime transfer guard/shared write boundary, atomic transfer annotation and unique declared V2 migration verified.\n"
+  },
+  "artifactJars": [
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-platform-bootstrap-registry.jar",
+      "sha256": "17f6f5d6fa657c1f1f00a85c0d94ea9ea52d2bfbe7f987f10831fb4bb09ccc9a"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-platform-bootstrap.jar",
+      "sha256": "76b31854c221c7996027b354fa1fc7220b8d99b09e2173aaa47c8e10dc8cfc4d"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-service-common.jar",
+      "sha256": "23d4ba20135d045f1a977ff1d8f37698fad3ae5b6474135faeb8b950f14b3e3e"
+    }
+  ],
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-bootstrap-registry:test -Psimplepoint.frontend.skip=true --console=plain",
+    "python3 /tmp/run-bootstrap-transfer-postgres.py",
+    "python3 /tmp/run-bootstrap-transfer-final.py",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyBootstrapTransferStyle verifyModuleBoundaries :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-bootstrap-transfer-checkstyle.gradle --console=plain"
+  ],
+  "postgresRunner": "from pathlib import Path\nimport os,subprocess\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-bootstrap-transfer-pg.env').read_text().splitlines())\nenv=dict(os.environ,JAVA_HOME='/home/ymsl/.jdks/ms-21.0.12.1',SP_BOOTSTRAP_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/bootstrap_test',SP_BOOTSTRAP_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_MIGRATIONS_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/migration_test',SP_MIGRATIONS_POSTGRES_USER='resource_test',SP_MIGRATIONS_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'])\nargs=['./gradlew',':simplepoint-platform:simplepoint-platform-bootstrap-registry:test',':simplepoint-platform:simplepoint-platform-bootstrap:test',':simplepoint-platform:simplepoint-platform-composition-verification:test','--tests','*IdentityModuleMigrationPostgresTest','--tests','*SupportModuleMigrationPostgresTest','--tests','*PackagedPersistenceTest','--tests','*RepositoryOwnershipTest','--tests','*RemoteContractBoundaryTest','--tests','*PlatformDeploymentPlanTest',':simplepoint-services:simplepoint-service-common:test','verifyBootstrapTransferStyle','verifyModuleBoundaries','-I','/tmp/simplepoint-bootstrap-transfer-checkstyle.gradle','-Psimplepoint.frontend.skip=true','--console=plain']\nwith open('/tmp/simplepoint-bootstrap-transfer-postgres.log','w') as log:\n result=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT)\nprint('Bootstrap transfer PostgreSQL regression exit:',result.returncode)\nraise SystemExit(result.returncode)\n",
+  "finalPostgresRunner": "from pathlib import Path\nimport os,subprocess\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-bootstrap-transfer-pg.env').read_text().splitlines())\nenv=dict(os.environ,JAVA_HOME='/home/ymsl/.jdks/ms-21.0.12.1',SP_BOOTSTRAP_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/bootstrap_test',SP_BOOTSTRAP_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_MIGRATIONS_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/migration_test',SP_MIGRATIONS_POSTGRES_USER='resource_test',SP_MIGRATIONS_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'])\nargs=['./gradlew',':simplepoint-platform:simplepoint-platform-bootstrap-registry:test',':simplepoint-platform:simplepoint-platform-bootstrap:test',':simplepoint-platform:simplepoint-platform-composition-verification:test','--tests','*IdentityModuleMigrationPostgresTest','--tests','*SupportModuleMigrationPostgresTest','--tests','*PackagedPersistenceTest','--tests','*RepositoryOwnershipTest','--tests','*RemoteContractBoundaryTest','--tests','*PlatformDeploymentPlanTest',':simplepoint-services:simplepoint-service-common:installDist','verifyBootstrapTransferStyle','verifyModuleBoundaries','-I','/tmp/simplepoint-bootstrap-transfer-checkstyle.gradle','--console=plain']\nwith open('/tmp/simplepoint-bootstrap-transfer-final.log','w') as log:\n result=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT)\nprint('Bootstrap transfer PostgreSQL regression exit:',result.returncode)\nraise SystemExit(result.returncode)\n",
+  "postgresEnvironment": {
+    "image": "postgres:17",
+    "container": "simplepoint-bootstrap-transfer-test",
+    "port": "127.0.0.1:45436",
+    "databases": [
+      "bootstrap_test",
+      "migration_test"
+    ],
+    "storage": "tmpfs /var/lib/postgresql/data",
+    "isolation": "Registry tests use fresh per-test schemas and production V1/V2 SQL with Hibernate validation; zero owned schemas remain after tests",
+    "cleanup": "Container removed with volumes and temporary secret env file deleted. No business database modified."
+  },
+  "verificationNotes": [
+    "440 is a per-class latest-results aggregate across execution batches, not a claim that all 440 reran after final style-only edits.",
+    "The first PostgreSQL batch passed registry 16, bootstrap 13 and Common 388; architecture failed two stale support table-count assertions. Existing identity V4/V5/V6/V7 added seven declared control tables. Updated expected shared/separate counts and reran all 23 selected architecture tests successfully.",
+    "Final PostgreSQL batch passed registry 16 and architecture 23, and built frontend-enabled installDist. It failed one Checkstyle indentation warning in a test SQL text block; formatting was corrected and final style/boundary/distribution gates passed. No SQL semantics changed in that final edit.",
+    "Early H2 fixture EntityManager ambiguity and physical naming mismatch were corrected before its passing 16-test run. H2 was an earlier transport-independent fixture run; PostgreSQL covers the final runtime boundary simplification and generic owner target.",
+    "Database tests cover missing/uncertain/conflicting sources, complete source preview comparison, retained history, module-target completion, external-owner retirement, repeat/stale operations, database rollback and concurrent durable completion.",
+    "The registry scope guard checks ledger identities. It is not proof that caller-supplied module scope equals authenticated module identity; installer credential/caller policy work remains required.",
+    "No frontend sources changed in this increment. Installed remote entry plus 101 declared JS/CSS assets verified nonempty; no new frontend typecheck execution is claimed."
+  ],
+  "sources": [
+    {
+      "path": "doc/design/modular_service_composition_plan.md",
+      "sha256": "f02a7fa4e0ca57187acd0aa7d0ceb1dd81752cc2dc80c0f70dd43b2bd3806d83"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build.gradle.kts",
+      "sha256": "668e300ac9593efda6dcc5007a759a3b5d35ea7275c19cf612bfc5ea2fdbe59c"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfer.java",
+      "sha256": "db4ecbcc45ca7350a8460dce87ff9fe4f20dc4bcf11c8d90ae972bb67464abc5"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfers.java",
+      "sha256": "1c4b883c67c5a6bfb0145d08dcd8258708b0eb4d289bc606406c3c9d2f4c5843"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapRegistryWriteBoundary.java",
+      "sha256": "4b6af8a6f0fdd41cb3b70dc0375481be646a4431f24fea7117c34c5605cc0e83"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/repository/PlatformContributionRepository.java",
+      "sha256": "146f39b882674808b59378eddae6454ad45ed82251d6e2864dd34824b2a7c3e0"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/service/impl/PlatformContributionServiceImpl.java",
+      "sha256": "3a5aa8967f9e88be5d6d2001afb171d609b97425baed9702f1ffeb77cd1142dc"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/resources/META-INF/simplepoint/modules/bootstrap-registry/db/manifest.properties",
+      "sha256": "b0254c0346acb7f58d211ea08f46153c9d684e860eb1cd7d9e884488b41187db"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/resources/META-INF/simplepoint/modules/bootstrap-registry/db/postgresql/V2__legacy_contribution_transfers.sql",
+      "sha256": "34f276f4e12486df359589bb062fdf33429100d8ead417b1548e58bfbf086f51"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/BootstrapLegacyTransfersTest.java",
+      "sha256": "d0b00e143806e5f5dd7070c59ca9743a8feb279acf35a7e367b34177970b9bdc"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/BootstrapRegistryTestSupport.java",
+      "sha256": "9ce89d9568665cf573c4afd4f1a019867316e0f4485df0e8d19d6d8581c712d0"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/ModuleBootstrapRegistryTest.java",
+      "sha256": "150904f16dba8583adc19657e8b5c49c96ef5b4fe34163432413f7ba9195f6ae"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap/README.md",
+      "sha256": "890595e225a61b0104a4fd425d7926651089955f3c0eecba026da886430b7185"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java",
+      "sha256": "8092ad22ed28681182551fdfac756657ed5341c9f1b2a6d67ddbb2877f1939d4"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/SupportModuleMigrationPostgresTest.java",
+      "sha256": "22a7c2a0fa4280ffe9c210445967078e703610aa7704ebddcd91b744411e1deb"
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-bootstrap-transfer-h2.log",
+      "sha256": "19470504d46fafa3e55836d6324f139f72e63d7131d42f7d45124380de12064a"
+    },
+    {
+      "path": "/tmp/simplepoint-bootstrap-transfer-postgres.log",
+      "sha256": "0ac889849d2c3c6a07fd3d8350e4f664219da89b50221fa6269cd051b3dd4a28"
+    },
+    {
+      "path": "/tmp/simplepoint-bootstrap-transfer-final.log",
+      "sha256": "4e6f363ac492de618117d60435cb6c3556347b40ab2ba7c58e0d810c3a0aa618"
+    },
+    {
+      "path": "/tmp/simplepoint-bootstrap-transfer-style-final.log",
+      "sha256": "0a442672b9c00fef4e17faeecee1221f5ee0f5a7d1ac51c21d5cdbd411102952"
+    },
+    {
+      "path": "/tmp/simplepoint-bootstrap-transfer-artifact.log",
+      "sha256": "526584e723824efb5600e40db683b9a6f28e1ce14d0fe0310aadb00271466b43"
+    }
+  ],
+  "limits": [
+    "Only successful, consistent legacy registry state is transferred. Uncertain RUNNING/FAILED recovery is deliberately not inferred from timestamps.",
+    "A generic owner-target receipt does not migrate or validate business dictionaries. Target-domain data adoption and installer handoff are still required.",
+    "This local admin capability is not exposed via RPC or HTTP. Full installer operation persistence, identity mapping, old-client revocation and authenticated module caller policies remain incomplete.",
+    "V2 must precede new registry binaries. Old executors/binaries must actually stop before transfer; a database marker does not fence old binaries that do not consult it.",
+    "Registry transfer is atomic for one contribution only. It does not claim a cross-domain transaction or atomic whole-install batch.",
+    "No production deployment, Consul configuration mutation, commit or push. Formal standalone and complete three-topology business acceptance remain pending."
+  ]
+}

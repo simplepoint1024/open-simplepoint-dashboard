@@ -2,17 +2,8 @@
 // Generated from Calculation.g4 by ANTLR 4.13.2
 // noinspection ES6UnusedImports,JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 
-import {
-	ATN,
-	ATNDeserializer, DecisionState, DFA, FailedPredicateException,
-	RecognitionException, NoViableAltException, BailErrorStrategy,
-	Parser, ParserATNSimulator,
-	RuleContext, ParserRuleContext, PredictionMode, PredictionContextCache,
-	TerminalNode, RuleNode,
-	Token, TokenStream,
-	Interval, IntervalSet
-} from 'antlr4';
-import CalculationVisitor from "./CalculationVisitor.ts";
+import {type ATN, ATNDeserializer, type DecisionState, DFA, FailedPredicateException, RecognitionException, NoViableAltException, type BailErrorStrategy, Parser, ParserATNSimulator, type RuleContext, ParserRuleContext, type PredictionMode, PredictionContextCache, type TerminalNode, type RuleNode, Token, type TokenStream, type Interval, type IntervalSet} from 'antlr4';
+import type CalculationVisitor from "./CalculationVisitor.ts";
 
 // for running tests with parameters, TODO: discuss strategy for typed parameters in CI
 // eslint-disable-next-line no-unused-vars

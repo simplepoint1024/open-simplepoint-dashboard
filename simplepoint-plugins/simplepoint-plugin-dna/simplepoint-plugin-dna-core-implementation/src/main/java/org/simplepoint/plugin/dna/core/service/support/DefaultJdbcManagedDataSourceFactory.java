@@ -1,5 +1,6 @@
 package org.simplepoint.plugin.dna.core.service.support;
 
+import com.zaxxer.hikari.HikariDataSource;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.lang.reflect.Method;
@@ -16,6 +17,7 @@ import org.simplepoint.data.datasource.properties.SimpleDataSourceProperties;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDriverDefinition;
 import org.simplepoint.plugin.dna.core.api.spi.JdbcManagedDataSourceFactory;
+import org.simplepoint.plugin.dna.core.configuration.ManagedJdbcPoolProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,14 +27,19 @@ import org.springframework.stereotype.Component;
 public class DefaultJdbcManagedDataSourceFactory implements JdbcManagedDataSourceFactory {
 
   private final JdbcDriverArtifactManager artifactManager;
+  private final ManagedJdbcPoolProperties poolProperties;
 
   /**
    * Creates a default managed datasource factory.
    *
    * @param artifactManager driver artifact manager
+   * @param poolProperties deployment connection budget
    */
-  public DefaultJdbcManagedDataSourceFactory(final JdbcDriverArtifactManager artifactManager) {
+  public DefaultJdbcManagedDataSourceFactory(final JdbcDriverArtifactManager artifactManager,
+      final ManagedJdbcPoolProperties poolProperties) {
+    poolProperties.validate();
     this.artifactManager = artifactManager;
+    this.poolProperties = poolProperties;
   }
 
   /** {@inheritDoc} */
@@ -58,9 +65,36 @@ public class DefaultJdbcManagedDataSourceFactory implements JdbcManagedDataSourc
     properties.setUrl(dataSource.getJdbcUrl());
     properties.setUsername(dataSource.getUsername());
     properties.setPassword(dataSource.getPassword());
-    DataSource delegate = withContextClassLoader(classLoader, () -> properties.initializeDataSourceBuilder().build());
-    applyConnectionProperties(delegate, dataSource.getConnectionProperties());
-    return new SimpleDataSource(new ClassLoaderAwareDataSource(delegate, classLoader));
+    HikariDataSource delegate = null;
+    try {
+      delegate = withContextClassLoader(classLoader,
+          () -> properties.initializeDataSourceBuilder().type(HikariDataSource.class).build());
+      delegate.setMaximumPoolSize(poolProperties.getMaximumPoolSize());
+      delegate.setMinimumIdle(poolProperties.getMinimumIdle());
+      delegate.setConnectionTimeout(poolProperties.getConnectionTimeoutMs());
+      delegate.setIdleTimeout(poolProperties.getIdleTimeoutMs());
+      applyConnectionProperties(delegate, dataSource.getConnectionProperties());
+      return new SimpleDataSource(new ClassLoaderAwareDataSource(delegate, classLoader));
+    } catch (RuntimeException | Error failure) {
+      closeResources(delegate, classLoader, failure);
+      throw failure;
+    }
+  }
+
+  private static void closeResources(final HikariDataSource source,
+      final ApplicationClassLoader loader, final Throwable failure) {
+    try {
+      if (source != null) {
+        source.close();
+      }
+    } catch (RuntimeException closeFailure) {
+      failure.addSuppressed(closeFailure);
+    }
+    try {
+      loader.close();
+    } catch (java.io.IOException closeFailure) {
+      failure.addSuppressed(closeFailure);
+    }
   }
 
   private static ClassLoader resolveParentClassLoader() {
@@ -156,15 +190,24 @@ public class DefaultJdbcManagedDataSourceFactory implements JdbcManagedDataSourc
     T get() throws Exception;
   }
 
-  private static final class ClassLoaderAwareDataSource implements DataSource {
+  private static final class ClassLoaderAwareDataSource implements DataSource, AutoCloseable {
 
-    private final DataSource delegate;
+    private final HikariDataSource delegate;
 
-    private final ClassLoader classLoader;
+    private final ApplicationClassLoader classLoader;
 
-    private ClassLoaderAwareDataSource(final DataSource delegate, final ClassLoader classLoader) {
+    private ClassLoaderAwareDataSource(final HikariDataSource delegate, final ApplicationClassLoader classLoader) {
       this.delegate = delegate;
       this.classLoader = classLoader;
+    }
+
+    @Override
+    public void close() throws java.io.IOException {
+      try {
+        delegate.close();
+      } finally {
+        classLoader.close();
+      }
     }
 
     @Override

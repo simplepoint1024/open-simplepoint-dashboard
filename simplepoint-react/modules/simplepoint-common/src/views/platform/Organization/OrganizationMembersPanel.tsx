@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Alert, App, Empty, Input, Modal, Space, Spin, Tag, Typography} from 'antd';
 import {useSchema} from '@simplepoint/shared/hooks/useSchema';
@@ -22,13 +23,14 @@ const actions: TableButtonProps[] = [
   {key: 'remove', sort: 2, icon: 'UserDeleteOutlined', text: 'i18n:tenant-members.removeFromOrganization', danger: true,
     argumentMinSize: 1, argumentMaxSize: 1},
 ];
-type Props = {organization?: OrganizationOption; scope: string; onBlockedChange?: (blocked: boolean) => void};
+type Props = {organization?: OrganizationOption; scope: string; externalBlocked?: boolean; onBlockedChange?: (blocked: boolean) => void};
 export default function OrganizationMembersPanel(props: Props) {
   return <MemberSession key={JSON.stringify([props.scope, props.organization?.id])} {...props}/>;
 }
-function MemberSession({organization, scope, onBlockedChange}: Props) {
+function MemberSession({organization, scope, onBlockedChange, externalBlocked = false}: Props) {
   const {t, ensure} = useI18n(), {message} = App.useApp(), selected = usePageSelected();
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]), [page, setPage] = useState(0);
+  const [size, setSize] = useState<number>(DEFAULT_TABLE_PAGE_SIZE), [candidateSize, setCandidateSize] = useState<number>(DEFAULT_TABLE_PAGE_SIZE);
   const [keywordInput, setKeywordInput] = useState(''), [keyword, setKeyword] = useState('');
   const [candidateOpen, setCandidateOpen] = useState(false), candidateOpenRef = useRef(false);
   const [candidatePage, setCandidatePage] = useState(0), [candidateInput, setCandidateInput] = useState(''), [candidateKeyword, setCandidateKeyword] = useState('');
@@ -42,20 +44,21 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
   const flight = useRef(false), alive = useRef(true), request = useRef<AbortController | null>(null), candidateForm = useRef<SFormHandle>(null), typeForm = useRef<SFormHandle>(null);
   const schema = useSchema(`${base}/by-organization`, {enabled: !!organization?.id});
   const querySchema = schema.data?.schema?.['x-query'] ? schema.data.schema as unknown as QuerySchema : undefined;
-  const blocked = candidateOpen || !!typeEditor || !!removal || saving;
+  const ownedBlock = candidateOpen || !!typeEditor || !!removal || saving;
+  const blocked = ownedBlock || externalBlocked;
   usePageRetention(false, blocked);
-  useLayoutEffect(() => {onBlockedChange?.(blocked); return () => onBlockedChange?.(false);}, [blocked, onBlockedChange]);
+  useLayoutEffect(() => {onBlockedChange?.(ownedBlock); return () => onBlockedChange?.(false);}, [ownedBlock, onBlockedChange]);
   useEffect(() => {void ensure(['tenant-members', 'platform-accounts', 'common']);}, [ensure]);
   useEffect(() => {alive.current = true; return () => {alive.current = false; request.current?.abort();};}, []);
   useEffect(() => {setSelectedKeys([]);}, [page, keyword, memberQuery]);
 
-  const members = useData(['organization-members', scope, organization?.id, keyword, page, memberQuery],
+  const members = useData(['organization-members', scope, organization?.id, keyword, page, size, memberQuery],
     ({signal}) => get<RawPage<Member>>(`${base}/by-organization`,
-      {...transportFilters(memberQuery.filters), ...(memberQuery.sort ? {sort: memberQuery.sort} : {}), orgId: organization?.id, keyword, page, size: 20}, {signal}).then(raw => normalizePage(raw, 20)),
+      {...transportFilters(memberQuery.filters), ...(memberQuery.sort ? {sort: memberQuery.sort} : {}), orgId: organization?.id, keyword, page, size}, {signal}).then(raw => normalizePage(raw, size)),
     {enabled: !!organization?.id && !!querySchema, retry: false});
-  const candidates = useData(['organization-candidates', scope, organization?.id, candidateKeyword, candidatePage, candidateQuery],
+  const candidates = useData(['organization-candidates', scope, organization?.id, candidateKeyword, candidatePage, candidateSize, candidateQuery],
     ({signal}) => get<RawPage<Member>>(`${base}/organization-candidates`,
-      {...transportFilters(candidateQuery.filters), ...(candidateQuery.sort ? {sort: candidateQuery.sort} : {}), orgId: organization?.id, keyword: candidateKeyword, page: candidatePage, size: 10}, {signal}).then(raw => normalizePage(raw, 10)),
+      {...transportFilters(candidateQuery.filters), ...(candidateQuery.sort ? {sort: candidateQuery.sort} : {}), orgId: organization?.id, keyword: candidateKeyword, page: candidatePage, size: candidateSize}, {signal}).then(raw => normalizePage(raw, candidateSize)),
     {enabled: !!organization?.id && candidateOpen && !!querySchema, retry: false});
   const capabilities = useData(['organization-member-capabilities', scope], ({signal}) => get<{manage: boolean; remove: boolean}>(`${base}/by-organization/capabilities`, undefined, {signal}),
     {enabled: !!organization?.id});
@@ -77,7 +80,7 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
     return !!definition && typeof definition === 'object' && definition['x-field-access'] !== 'MASKED';});
   const selectedMember = members.data?.content.find(row => selectedKeys.includes(row.userId));
   const current = () => alive.current && scope === getQueryScopeSnapshot();
-  const canOpen = () => current() && !flight.current && !candidateOpenRef.current && !typeRef.current && !removalRef.current;
+  const canOpen = () => current() && !externalBlocked && !flight.current && !candidateOpenRef.current && !typeRef.current && !removalRef.current;
   const close = () => {if (flight.current) return; candidateOpenRef.current = false; candidateRef.current = undefined;
     typeRef.current = null; removalRef.current = null; setCandidateOpen(false); setCandidate(undefined); setTypeEditor(null); setRemoval(null); setError('');};
   const write = async (operation: (signal: AbortSignal) => Promise<unknown>, success: string) => {
@@ -142,7 +145,7 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
   const writeError = error && <Alert type="error" showIcon title={error}/>;
   return <section className="organization-members-panel" aria-label={t('tenant-members.panel', '组织用户')}>
     {!organization ? <Empty description={t('tenant-members.selectOrganization', '请从左侧选择组织，查看本级及下级用户')}/> : <>
-      <div className="organization-members-header"><div><Typography.Title level={5}>{organization.name}</Typography.Title>
+      <div className="organization-members-header"><div><Typography.Title level={5}>{t('organizations.members', '人员列表')} · {organization.name}</Typography.Title>
         <Typography.Text type="secondary">{t('tenant-members.descendantsHint', '显示当前组织及所有下级组织的用户')}</Typography.Text></div></div>
       <Input.Search allowClear disabled={!canSearch || blocked} value={keywordInput} placeholder={t('tenant-members.search', '搜索姓名、邮箱或用户 ID')}
         onChange={event => {setKeywordInput(event.target.value); if (!event.target.value) {setKeyword(''); setPage(0);}}}
@@ -160,8 +163,8 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
           isButtonDisabled={button => !canAssign || blocked || button.key === 'remove' && !identifiableMember(selectedMember)}
           onButtonEvents={{add: openCandidates, remove}}/>}
         dataSource={members.isError ? [] : members.data?.content ?? []} loading={members.isFetching} refresh={() => {if (!blocked) void members.refetch();}}
-        pagination={{current: page + 1, pageSize: 20, total: members.data?.page.totalElements ?? 0, disabled: blocked,
-          showSizeChanger: false, onChange: next => {if (!blocked) setPage(next - 1);}}} scroll={{x: 680}}/></div>
+        pagination={{current: page + 1, pageSize: size, total: members.data?.page.totalElements ?? 0, disabled: blocked,
+          onChange: (next, nextSize) => {if (!blocked) {setSize(nextSize); setPage(nextSize === size ? next - 1 : 0);}}}} scroll={{x: 680}}/></div>
     </>}
     <Modal wrapClassName="organization-member-candidates" open={candidateOpen && selected} title={t('tenant-members.addTenantUser', '添加租户用户')} width={760}
       onCancel={close} onOk={() => {if (!flight.current) {if (writable('userType')) candidateForm.current?.submit(); else assign({});}}}
@@ -186,8 +189,8 @@ function MemberSession({organization, scope, onBlockedChange}: Props) {
             getCheckboxProps: row => ({disabled: saving || !identifiableMember(row)}),
             onChange: keys => chooseCandidate(candidates.data?.content.find(row => row.userId === keys[0]))}}
           onRow={row => ({onClick: () => {if (!saving && identifiableMember(row)) chooseCandidate(row);}})}
-          pagination={{current: candidatePage + 1, pageSize: 10, total: candidates.data?.page.totalElements ?? 0, disabled: saving,
-            showSizeChanger: false, onChange: next => {if (!saving) {chooseCandidate(undefined); setCandidatePage(next - 1);}}}}/>
+          pagination={{current: candidatePage + 1, pageSize: candidateSize, total: candidates.data?.page.totalElements ?? 0, disabled: saving,
+            onChange: (next, nextSize) => {if (!saving) {chooseCandidate(undefined); setCandidateSize(nextSize); setCandidatePage(nextSize === candidateSize ? next - 1 : 0);}}}}/>
         {dictionary.isError && <Alert type="error" showIcon title={t('table.loadFail', '加载失败')} action={retry(dictionary.refetch)}/>}
         {writable('userType') && (typeOptions.length ? <SForm ref={candidateForm} hideSubmit schema={typeSchema} formData={candidateDraft} disabled={saving}
           onChange={event => {if (!flight.current) setCandidateDraft(event.formData ?? {});}} onSubmit={event => assign(event.formData ?? {})}/>

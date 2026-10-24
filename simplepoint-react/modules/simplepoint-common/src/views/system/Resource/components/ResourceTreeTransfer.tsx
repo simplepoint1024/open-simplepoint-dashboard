@@ -7,7 +7,7 @@ import {DeleteOutlined, ReloadOutlined, SearchOutlined} from '@simplepoint/share
 import type {DataNode} from 'antd/es/tree';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
-import {fetchAssignedTree, fetchChildren, fetchSubtreeCodes, ResourceRelevantVo} from '@/api/system/resource';
+import {fetchDistributionAssignedTree, fetchDistributionChildren, fetchDistributionSubtreeCodes, ResourceRelevantVo} from '@/api/system/resource';
 import type {RequestOptions} from '@simplepoint/shared/api/client';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
@@ -59,7 +59,7 @@ function resourceKey(resource: ResourceRelevantVo) {
 }
 
 function assignableCode(resource?: ResourceRelevantVo) {
-  if (!assignmentKey(resource?.code) || resource?.grantable !== true || resource?.disabled !== false) return null;
+  if (!assignmentKey(resource?.code) || resource?.distributable !== true || resource?.disabled !== false) return null;
   return resource!.code;
 }
 
@@ -90,7 +90,7 @@ function toTreeNode(resource: ResourceRelevantVo, t: Translate): ResourceTreeNod
   return {
     key,
     isLeaf: !resource.hasChildren,
-    disableCheckbox: resource.disabled !== false || !assignmentKey(resource.id) || ((!assignmentKey(resource.code) || resource.grantable !== true) && !resource.hasChildren),
+    disableCheckbox: resource.disabled !== false || !assignmentKey(resource.id) || ((!assignmentKey(resource.code) || resource.distributable !== true) && !resource.hasChildren),
     resource,
     title: (
       <Space size={8} wrap data-resource-id={assignmentKey(resource.id)}>
@@ -101,7 +101,7 @@ function toTreeNode(resource: ResourceRelevantVo, t: Translate): ResourceTreeNod
         </Tag>
         {resource.code ? <Typography.Text type="secondary" code>{resource.code}</Typography.Text> : null}
         {resource.grantable === false ? (
-          <Tag color="default">{t('resources.boolean.notGrantable', '仅结构')}</Tag>
+          <Tag color="default">{t('resources.boolean.roleNotGrantable', '不可授予角色')}</Tag>
         ) : null}
       </Space>
     ),
@@ -115,7 +115,7 @@ function toAssignedTreeNode(
   disabled = false,
 ): ResourceTreeNode {
   const key = resourceKey(resource);
-  const code = assignableCode(resource);
+  const code = assignmentKey(resource.code);
   const assigned = resource.checked === true && !!code;
   const icon = renderResourceIcon(resource);
   const node: ResourceTreeNode = {
@@ -305,7 +305,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
     const context = JSON.stringify([rootPage, keyword, revision, treeRevision, locale]);
     reads.cancel('tree');
     if (treeContext.current !== context) reads.clearErrors('tree');
-    return reads.run('tree:root', signal => fetchChildren({
+    return reads.run('tree:root', signal => fetchDistributionChildren({
       page: String(rootPage - 1), size: String(TREE_PAGE_SIZE), sort: 'sort,asc', keyword,
     }, {signal, notifyOnError: false}), page => {
       const reachable = reachableServerPage(rootPage, page.page);
@@ -328,7 +328,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
   const loadChildren = useCallback((node: ResourceTreeNode) => {
     const resource = node.resource;
     if (!assignmentKey(resource?.id) || !resource?.hasChildren || node.children?.length) return Promise.resolve();
-    return reads.run('tree:child:' + node.key + ':0', signal => fetchChildren({
+    return reads.run('tree:child:' + node.key + ':0', signal => fetchDistributionChildren({
       parentId: resource.id, page: '0', size: String(TREE_PAGE_SIZE), sort: 'sort,asc',
     }, {signal, notifyOnError: false}), page => setTreeData(previous => replaceNodeChildren(
       previous, node.key, toChildTreeNodes(page, node, t))));
@@ -336,7 +336,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
   const loadMoreChildren = useCallback((node: ResourceTreeNode) => {
     const more = node.loadMore;
     if (!more || !assignmentKey(more.parentId)) return Promise.resolve();
-    return reads.run('tree:child:' + more.parentKey + ':' + more.page, signal => fetchChildren({
+    return reads.run('tree:child:' + more.parentKey + ':' + more.page, signal => fetchDistributionChildren({
       parentId: more.parentId, page: String(more.page), size: String(TREE_PAGE_SIZE), sort: 'sort,asc',
     }, {signal, notifyOnError: false}), page => setTreeData(previous => appendNodeChildren(
       previous, more.parentKey, toChildTreeNodes(page, {key: more.parentKey,
@@ -355,7 +355,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
       if (!codes) {
         const resource = captured.node.resource;
         if (resource?.hasChildren && assignmentKey(resource.id)) {
-          const resolved = await fetchSubtreeCodes(resource.id, {signal: request.signal, notifyOnError: false});
+          const resolved = await fetchDistributionSubtreeCodes(resource.id, {signal: request.signal, notifyOnError: false});
           if (!Array.isArray(resolved) || resolved.some(code => assignmentKey(code) === undefined)) {
             throw new Error(t('permissions.unavailable', '资源标识暂不可用'));
           }
@@ -399,8 +399,10 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
   }, [loadMoreChildren]);
   const handleAssignedRemove = useCallback((node: ResourceTreeNode) => {
     if (!node.resource || loadErrorRef.current || reads.isBusy() || operation.isBusy()) return;
-    void updateAssignment({node, checked: false,
-      relatedCodes: findAncestorCodes([...treeDataRef.current, ...assignedTreeDataRef.current], node.key)});
+    const code = assignmentKey(node.resource.code);
+    if (!code || node.resource.checked !== true) return;
+    // Row removal targets this assignment, including disabled or no-longer-distributable entries.
+    void updateAssignment({node, checked: false, relatedCodes: [], resolvedCodes: [code]});
   }, [updateAssignment, reads.isBusy, operation.isBusy]);
   const buildAssignedTreeNode = useCallback(
     (resource: ResourceRelevantVo, translate: Translate) => toAssignedTreeNode(resource, translate, handleAssignedRemove),
@@ -414,7 +416,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
       setAssignedTreeData([]); setAssignedRootTotal(0); setAssignedRootPage(1);
       setAssignedExpandedKeys([]); setAssignedLoadedKeys([]); return Promise.resolve();
     }
-    return reads.run('assigned-tree:root', signal => fetchAssignedTree(assignedCodes, {
+    return reads.run('assigned-tree:root', signal => fetchDistributionAssignedTree(assignedCodes, {
       page: String(assignedRootPage - 1), size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
     }, {signal, notifyOnError: false}), page => {
       const reachable = reachableServerPage(assignedRootPage, page.page);
@@ -432,7 +434,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
   const loadAssignedChildren = useCallback((node: ResourceTreeNode) => {
     const resource = node.resource;
     if (!assignmentKey(resource?.id) || !resource?.hasChildren || node.children?.length || !assignedCodes.length) return Promise.resolve();
-    return reads.run('assigned-tree:child:' + node.key + ':0', signal => fetchAssignedTree(assignedCodes, {
+    return reads.run('assigned-tree:child:' + node.key + ':0', signal => fetchDistributionAssignedTree(assignedCodes, {
       parentId: resource.id, page: '0', size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
     }, {signal, notifyOnError: false}), page => setAssignedTreeData(previous => replaceNodeChildren(
       previous, node.key, toChildTreeNodes(page, node, t, buildAssignedTreeNode))));
@@ -440,7 +442,7 @@ function ResourceTransferSession({enabled = true, reloadKey, fetchAssignedCodes,
   const loadMoreAssignedChildren = useCallback((node: ResourceTreeNode) => {
     const more = node.loadMore;
     if (!more || !assignmentKey(more.parentId) || !assignedCodes.length) return Promise.resolve();
-    return reads.run('assigned-tree:child:' + more.parentKey + ':' + more.page, signal => fetchAssignedTree(assignedCodes, {
+    return reads.run('assigned-tree:child:' + more.parentKey + ':' + more.page, signal => fetchDistributionAssignedTree(assignedCodes, {
       parentId: more.parentId, page: String(more.page), size: String(ASSIGNED_TREE_PAGE_SIZE), sort: 'sort,asc',
     }, {signal, notifyOnError: false}), page => setAssignedTreeData(previous => appendNodeChildren(
       previous, more.parentKey, toChildTreeNodes(page, {key: more.parentKey,

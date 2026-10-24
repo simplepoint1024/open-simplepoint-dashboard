@@ -1,0 +1,690 @@
+{
+  "date": "2026-10-21",
+  "status": "Verified library increment; complete deployment installer and standalone remain unfinished.",
+  "counts": {
+    "tests": 115,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "projects": [
+    {
+      "project": "simplepoint-platform-bootstrap-registry",
+      "counts": {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.bootstrap.registry.BootstrapLegacyTransfersTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-bootstrap-registry/TEST-org.simplepoint.platform.bootstrap.registry.BootstrapLegacyTransfersTest.xml",
+            "sha256": "bc0212d3443505ad1c75e74a443d0c8b155740ead0caaea86ccee1c9bd30a8bb"
+          },
+          "cases": [
+            "existingModularHistoryAndMissingLegacyHistoryCannotBeSilentlyReplaced()",
+            "transferAndTargetCreationRollBackTogetherAndExactRetryRecovers()",
+            "[1] RUNNING",
+            "[2] FAILED",
+            "[3] conflict",
+            "[4] missing-time",
+            "changedSourceAfterPreviewCannotBeAdopted()",
+            "retryMustMatchOperationTargetAndExpectedRevision()",
+            "dedicatedOwnerTransferRetiresGenericExecutionWithoutCreatingNewAppliedRow()",
+            "concurrentTransfersCommitOneDurableResult()",
+            "moduleTransferPreservesAllHistoryAndSkipsCompletedInitialization()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.bootstrap.registry.ModuleBootstrapRegistryTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-bootstrap-registry/TEST-org.simplepoint.platform.bootstrap.registry.ModuleBootstrapRegistryTest.xml",
+            "sha256": "f3b6134f94f37ac851db9e77be7ee75702ff1cba828a4dda17ab357479df091a"
+          },
+          "cases": [
+            "completedModuleStateSurvivesHostChangesWithoutReapplying()",
+            "historicalHostRecordsMustBeMigratedBeforeAnyNewScopeCanExecute()",
+            "[1] false",
+            "[2] true",
+            "uncertainRunningWorkAndStaleCompletionsCannotBeReplayedOrOverwriteState()"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-platform-composition-verification",
+      "counts": {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.verification.DictionaryAdoptionHandoffPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.DictionaryAdoptionHandoffPostgresTest.xml",
+            "sha256": "8ced429409197b90937cf54d138b649bcf1b4192be86c09ebc5ce1eb21d2f6ce"
+          },
+          "cases": [
+            "retiredRegistryAndDictionaryAdoptionResumeAcrossRestartAndTargetFailure()",
+            "durableInstallerReconcilesSourceCommitAndResumesFailedTargetAfterRestart()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest.xml",
+            "sha256": "e314b28d0c46ef892adfd4f74c8282286307d3f3c766acc5453e23c969722705"
+          },
+          "cases": [
+            "identityBaselineRetainsProductionGuardsDefaultsAndAuthenticationColumns()",
+            "[1] 3",
+            "[2] 4",
+            "[3] 5",
+            "[4] 6",
+            "[5] 7",
+            "bootstrapTransferUpgradePreservesAllLegacyStatesAndHistory()",
+            "[1] false",
+            "[2] true"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+            "sha256": "0ac09c675210fb92250ea15986d7c2aba9ff44b292f0d82f016f5295eda637ab"
+          },
+          "cases": [
+            "actualRepositoriesAndMappingsCanUseIndependentStorageGroups()",
+            "actualDomainPersistenceIsOwnedAndOnlySelectedModulesAreScanned()",
+            "storageInheritsIdentityStoreAndConflictingAssignmentsAreRejected()",
+            "everyActualModuleDeclaresItsMigrationOwnership()",
+            "actualRepositoriesAndMappingsStartTogetherInOnePersistenceUnit()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+            "sha256": "b24e6278cdacfdd58cacb01d136572edda02128ed1a02ff31679058c6673b588"
+          },
+          "cases": [
+            "domainAssembliesDoNotImportRunnableServiceApplications()",
+            "localClosureIncludesPublicationCacheBridgeAndManagedRuntime()",
+            "optionalCommonHttpAdaptersOwnDisjointSubtreesAndNoDomainControllers()",
+            "declarationsCoverEveryPackagedRemoteContractAndOneRealComponentProvider()",
+            "actualDomainsHaveEquivalentCapabilitySetsAcrossThreeTopologies()",
+            "splittingAnActualLocalDependencyAcrossServicesIsRejected()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+            "sha256": "fb5adff1724e3987be436331c10be40f3734d7c057e8329f55b9b9441c0c5974"
+          },
+          "cases": [
+            "publicCapabilitiesContainNoEntitiesOrInternalCrud()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+            "sha256": "28226d05a6a00b15af3f7d43bf709474e6e1d36fabbc117fc2c1a3ed1029202e"
+          },
+          "cases": [
+            "referencesToAnotherDomainRepositoryRequireItsLocalDependencyClosure()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-composition-verification/TEST-org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest.xml",
+            "sha256": "bd5994b819f7901ff7694e275e18b7e46be8a886ee8c6c2f50586a5c2e225161"
+          },
+          "cases": [
+            "[1] false",
+            "[2] true"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-platform-installation-jdbc",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.installation.jdbc.JdbcInstallationJournalTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-platform-installation-jdbc/TEST-org.simplepoint.platform.installation.jdbc.JdbcInstallationJournalTest.xml",
+            "sha256": "b3ddf089e00d043410f677fc7edebdb806ecaf3a7b72f70e0b7a42c9b55d3f98"
+          },
+          "cases": [
+            "nonIdempotentFailureRequiresOwnerCompletionRatherThanBlindRetry()",
+            "openingAnInvalidBatchRollsBackTargetAndAllPlanRows()",
+            "failedActionUsesDurableRetryAndNeverStoresProviderDiagnosticText()",
+            "runningAttemptNeedsEvidenceAndLateAcknowledgementIsFenced()",
+            "parallelRunnersCannotBothClaimOneAttempt()",
+            "domainActionDoesNotHoldTheJournalTransaction()",
+            "journalCommitFailureDoesNotConvertSuccessfulBusinessActionToFailure()",
+            "unavailableOwnerEvidenceKeepsTheExistingAttemptUnchanged()",
+            "lostJournalAcknowledgementReconcilesDurableOwnerReceipt()",
+            "plansGenerationsAndStepOrderCannotDriftOnResume()",
+            "wrongAdapterFailsBeforeJournalOrDomainWrites()",
+            "actionCommitThenTransportFailureDoesNotRepeatItsEffect()",
+            "completedOperationsSurviveNewRunnerWithoutRepeatingActions()"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugin-rbac-tenant-implementation",
+      "counts": {
+        "tests": 60,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest.xml",
+            "sha256": "4b0efaac7ca016a90408f696b7ba2a8a67154ca3c238f5f1756ba72158b9732d"
+          },
+          "cases": [
+            "renameUpdatesChildCodesAndSingleDeleteRemovesChildren()",
+            "missingRevisionRowFailsClosedBeforeBusinessWrites()",
+            "deleteAllUsesSameAggregateCleanup()",
+            "nontransactionalReadonlyAndPreloadedContextsAreRejected()",
+            "repeatedDeclarationRetainsIdsAndEntersOncePerTransaction()",
+            "bulkDictionaryDefaultsAndItemSingleDeleteCannotBypassBoundary()",
+            "anotherWriterWaitsForCommitAndReadsCommittedMetadata()",
+            "batchCreateValidatesItemsAndRollsBackEarlierRows()",
+            "lateDatabaseFailureRollsBackEntireBatchAndRevision()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest.xml",
+            "sha256": "8d7f8003e70676127a0583512619a5e1b31a584cbe825861649645fc948d2228"
+          },
+          "cases": [
+            "create_throwsWhenDictionaryDoesNotExist()",
+            "create_throwsWhenDictionaryCodeIsNull()",
+            "modifyById_throwsWhenItemNotFound()",
+            "create_throwsWhenValueIsNull()",
+            "create_throwsWhenDictionaryCodeIsBlank()",
+            "create_throwsWhenNameIsNull()",
+            "modifyById_throwsDictionaryNotExistWhenCodeInheritedFromCurrentIsInvalid()",
+            "create_keepsExplicitEnabledFalse()",
+            "create_setsEnabledTrueWhenNullAndNoCurrent()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryLegacyAdoptionsTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryLegacyAdoptionsTest.xml",
+            "sha256": "cac8cff35bede0f0dc7e716bb35df649b206f7617d6e430de59a313ce5a10ae7"
+          },
+          "cases": [
+            "[1] dictionary",
+            "[2] item",
+            "[3] empty",
+            "[1] dictionary",
+            "[2] item",
+            "adoptionPreservesAllStorageAndCarriesCompletionIntoFirstDeployment()",
+            "laterAppliedUpgradeTakesPrecedenceOverHistoricalAdoption()",
+            "changedPreviewIsRejectedWithoutClaimingCodes()",
+            "retryCannotChangeTheRecordedOperationOrRegistryEvidence()",
+            "ownershipAndDeploymentApprovalCannotBeOverwrittenByAdoption()",
+            "concurrentAdoptionSharesOneDurableCompletion()",
+            "storageFailureRollsBackOwnershipAndReceiptAndRetryCanResume()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryRegistrationTransactionTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryRegistrationTransactionTest.xml",
+            "sha256": "0cf0405619faffd0b9a9510e7bef19d09834c7727673398da2772b3c735222c2"
+          },
+          "cases": [
+            "reservedCodesAndManagedIdentitiesCannotBeRecreatedRenamedOrDeleted()",
+            "dataFailureRollsBackCompletionAndAllowsExactRetry()",
+            "identicalContentAcrossDeploymentChangesRetainsAdministrativeOverrides()",
+            "wrongCallerAndChangedContentCannotUseAnApproval()",
+            "[1] active",
+            "[2] deleted",
+            "[3] orphan",
+            "installerRetriesMustMatchWholeOperationAndExpectedGeneration()",
+            "upgradeAndRetirementFenceOldClientsAndLegacyStartup()",
+            "concurrentApplicationsReturnOneDurableCompletion()",
+            "completionRetryDoesNotOverwriteLaterAdministrativeEdits()",
+            "conflictingOwnerRollsBackEntireInstallationBatch()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryRegistrationTransportTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryRegistrationTransportTest.xml",
+            "sha256": "9fa6d4e8649aa17a34782e5735d22885a2666e1572f91e07a82f44e9cba29b5f"
+          },
+          "cases": [
+            "localIsolationAndJsonDispatchShareTheSameDurableCompletionAndAuthorization()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest.xml",
+            "sha256": "1af9dbfd155dc04cfaf5179268d8ca36ca05afd157e9dea5d60967d0587d7fbd"
+          },
+          "cases": [
+            "create_setsEnabledTrueWhenNull()",
+            "options_throwsWhenCodeIsBlank()",
+            "removeByIds_deletesDictionaryItemsBeforeDictionaries()",
+            "options_delegatesToItemRepository()",
+            "options_throwsWhenCodeIsNull()",
+            "create_keepsExistingEnabledTrue()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "modifyById_throwsWhenDictionaryNotFound()",
+            "create_keepsExistingEnabledFalse()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest.xml",
+            "sha256": "92010ed4bb1e79107693dfd5b332c698c4c2c8c59206db971a1184257ad2ce60"
+          },
+          "cases": [
+            "bootstrapContribution_existingDictionary_modifiesInsteadOfCreate()",
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_existingDictionaryItem_modifiesInsteadOfCreate()",
+            "bootstrapContribution_noExistingData_createsDictionaryAndItems()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest.xml",
+            "sha256": "69d35f92e1f81c22fb41ee4b9b1f109b8b8bd3fe4323468add6dc42ba1d6f81d"
+          },
+          "cases": [
+            "registersBothInternationalizedModes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": {
+            "path": "/tmp/simplepoint-installation-final-results/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest.xml",
+            "sha256": "e79a835934168ca99579103bbd420fc2c7516a904ad709ce44d83868c930bb7c"
+          },
+          "cases": [
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_createsDictionaryAndAllTenantTypes()"
+          ]
+        }
+      ]
+    }
+  ],
+  "additionalH2Run": {
+    "report": {
+      "path": "/tmp/simplepoint-installation-h2-results/TEST-org.simplepoint.platform.installation.jdbc.JdbcInstallationJournalTest.xml",
+      "sha256": "95c1421a0a0cd5aee6fe9dc3e4d2efe3a48a9626e03243177dae3e54c8f7a803"
+    },
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "includedInTotal": false
+  },
+  "style": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/installation.xml",
+      "sha256": "3809141b960e80fb36cf389a65bd0b67d387708902ad5d76da17eee8d57e5fc1",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/installation.xml",
+      "sha256": "778e5fcc67ad405bda09093b542f8153c0694cfbce61f9ecb115fb887b4f647c",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/build/reports/checkstyle/installation.xml",
+      "sha256": "40cd669dd0d210a495d2a67e3f2e2785990faee871b744a32ecb12ca0a7aa44f",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-dictionary/build/reports/checkstyle/installation.xml",
+      "sha256": "26bfa05505eb8de6b06f8e84d7dab2624c2268ff3e4d1c770b8e893b6fd6eac0",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/build/reports/checkstyle/installation.xml",
+      "sha256": "4c174b6cac50d9d2360f464352e2118d97e264e930f2376dddd027dc371d136d",
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/reports/checkstyle/installation.xml",
+      "sha256": "a349d2cc9edfeab08529f18fa5c18124937595ec450f077a17735c19a75cb742",
+      "violations": 0
+    }
+  ],
+  "styleScope": [
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfers.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/DictionaryAdoptionHandoffPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationAction.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationException.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationFingerprint.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationJournal.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationPlan.java",
+    "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationRunner.java",
+    "simplepoint-platform/simplepoint-platform-installation-dictionary/src/main/java/org/simplepoint/platform/installation/dictionary/DictionaryAdoptionInstallation.java",
+    "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/java/org/simplepoint/platform/installation/jdbc/InstallationJournalMigrations.java",
+    "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/java/org/simplepoint/platform/installation/jdbc/JdbcInstallationJournal.java",
+    "simplepoint-platform/simplepoint-platform-installation-jdbc/src/test/java/org/simplepoint/platform/installation/jdbc/JdbcInstallationJournalTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/DictionaryLegacyAdoptions.java"
+  ],
+  "styleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-installation-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleInstallation', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyInstallationStyle') { dependsOn checks }\n}\n",
+  "distribution": {
+    "jars": 330,
+    "entry": "common.9038349e96.js",
+    "verifiedAssetsIncludingEntry": 102,
+    "installerLibrariesIncluded": false
+  },
+  "artifactProbe": {
+    "source": "import java.util.*;\nimport org.simplepoint.platform.installation.*;\nimport org.simplepoint.platform.installation.jdbc.*;\nimport org.simplepoint.platform.installation.dictionary.DictionaryAdoptionInstallation;\nimport org.simplepoint.platform.bootstrap.registry.migration.BootstrapLegacyTransfer;\nimport org.simplepoint.platform.bootstrap.registry.migration.BootstrapLegacyTransfers;\nimport org.simplepoint.plugin.rbac.tenant.service.initialize.DictionaryLegacyAdoptions;\nimport org.simplepoint.platform.dictionary.registration.DictionaryRegistrationService;\nimport org.simplepoint.platform.composition.ModuleCatalog;\nimport org.simplepoint.remoting.RemoteProvider;\nimport org.springframework.transaction.annotation.Transactional;\n\npublic class VerifyInstallationArtifacts {\n  public static void main(String[] args) throws Exception {\n    var loader = VerifyInstallationArtifacts.class.getClassLoader();\n    for (Class<?> type : List.of(InstallationRunner.class, JdbcInstallationJournal.class,\n        DictionaryAdoptionInstallation.class, BootstrapLegacyTransfers.class,\n        DictionaryLegacyAdoptions.class)) {\n      if (Collections.list(loader.getResources(type.getName().replace('.', '/') + \".class\")).size() != 1)\n        throw new AssertionError(\"Missing/duplicate artifact: \" + type.getName());\n      if (type.isAnnotationPresent(RemoteProvider.class))\n        throw new AssertionError(\"Installer API exposed as RPC\");\n    }\n    var source = BootstrapLegacyTransfers.class.getMethod(\"findCompletion\", BootstrapLegacyTransfer.Identity.class);\n    var target = DictionaryLegacyAdoptions.class.getMethod(\"findCompletion\", String.class);\n    for (var method : List.of(source, target)) {\n      var tx = method.getAnnotation(Transactional.class);\n      if (tx == null || !tx.readOnly()) throw new AssertionError(\"Receipt lookup must be read-only\");\n    }\n    if (DictionaryRegistrationService.class.getDeclaredMethods().length != 1\n        || !DictionaryRegistrationService.class.getDeclaredMethods()[0].getName().equals(\"apply\"))\n      throw new AssertionError(\"Runtime registration contract widened\");\n    var migrations = InstallationJournalMigrations.plan(\"journal\");\n    if (migrations.schemas().size() != 1 || !migrations.undeclaredModules().isEmpty())\n      throw new AssertionError(\"Unexpected journal schema plan\");\n    var schema = migrations.schemas().getFirst();\n    if (!schema.module().equals(\"installation-journal\") || !schema.store().equals(\"journal\")\n        || !new HashSet<>(schema.tables()).equals(Set.of(\"simpoint_installation_targets\",\n            \"simpoint_installation_operations\", \"simpoint_installation_steps\", \"simpoint_installation_attempts\")))\n      throw new AssertionError(\"Journal ownership changed\");\n    String path = \"META-INF/simplepoint/modules/installation-journal/db/\";\n    for (String asset : List.of(\"manifest.properties\", \"postgresql/V1__installation_journal.sql\"))\n      if (Collections.list(loader.getResources(path + asset)).size() != 1)\n        throw new AssertionError(\"Missing/duplicate migration asset\");\n    var plan = ModuleCatalog.discover(loader).plan(List.of(\"identity\"));\n    if (!\"identity\".equals(plan.capabilityOwners().get(\"security.dictionary-registration:1\")))\n      throw new AssertionError(\"Runtime dictionary owner changed\");\n    System.out.println(\"Verified built installer libraries plus installed Common domain providers: unique classes, four declared journal tables, unique V1 assets, local read-only receipts, unchanged narrow runtime RPC and dictionary owner. Installer libraries are separate artifacts, not a deployed installation host.\");\n  }\n}\n",
+    "command": "/home/ymsl/.jdks/ms-21.0.12.1/bin/java --class-path 'simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/*:simplepoint-platform/simplepoint-platform-installation/build/libs/*:simplepoint-platform/simplepoint-platform-installation-jdbc/build/libs/*:simplepoint-platform/simplepoint-platform-installation-dictionary/build/libs/*:simplepoint-data/simplepoint-data-migrations-api/build/libs/*' /tmp/VerifyInstallationArtifacts.java",
+    "output": "Verified built installer libraries plus installed Common domain providers: unique classes, four declared journal tables, unique V1 assets, local read-only receipts, unchanged narrow runtime RPC and dictionary owner. Installer libraries are separate artifacts, not a deployed installation host.\n"
+  },
+  "artifactJars": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/build/libs/simplepoint-platform-installation.jar",
+      "sha256": "76d581b9f4e8f5b4918f71280382720c0eeac0ea68f7471821cdc5a6ecd8797f"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-dictionary/build/libs/simplepoint-platform-installation-dictionary.jar",
+      "sha256": "f546cd0393f47f66020151c011911a4b0d84f3b78465ce638bd8dad317948b80"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/build/libs/simplepoint-platform-installation-jdbc.jar",
+      "sha256": "7393853682174044616d35348a112ae9199062c6421d079b2ff6a802c503338a"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-platform-bootstrap-registry.jar",
+      "sha256": "f3568717ffb563fad9d3a43536322a99ef671dcb05adfa0fc5e95f718eacd72c"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-plugin-rbac-tenant-implementation.jar",
+      "sha256": "f86b115c5737fba7cf2fbbcf257cab25fe58c4f95c3d5591a0a5546a5c4ddc0a"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-service-common.jar",
+      "sha256": "23d4ba20135d045f1a977ff1d8f37698fad3ae5b6474135faeb8b950f14b3e3e"
+    },
+    {
+      "path": "simplepoint-data/simplepoint-data-migrations-api/build/libs/simplepoint-data-migrations-api.jar",
+      "sha256": "e0ea8c0eae3dfe2a0939ec8161078745fde43116ac55d419fd57ab96331c4fae"
+    }
+  ],
+  "commands": [
+    "python3 /tmp/run-installation-postgres.py",
+    "python3 /tmp/run-installation-final.py",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyInstallationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-installation:verifyInstallationCoreDependencies :simplepoint-platform:simplepoint-platform-installation-jdbc:verifyInstallationJdbcDependencies :simplepoint-platform:simplepoint-platform-installation:jar :simplepoint-platform:simplepoint-platform-installation-jdbc:jar :simplepoint-platform:simplepoint-platform-installation-dictionary:jar :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-installation-checkstyle.gradle --console=plain",
+    "/home/ymsl/.jdks/ms-21.0.12.1/bin/java --class-path 'simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/*:simplepoint-platform/simplepoint-platform-installation/build/libs/*:simplepoint-platform/simplepoint-platform-installation-jdbc/build/libs/*:simplepoint-platform/simplepoint-platform-installation-dictionary/build/libs/*:simplepoint-data/simplepoint-data-migrations-api/build/libs/*' /tmp/VerifyInstallationArtifacts.java"
+  ],
+  "postgresRunner": "from pathlib import Path\nimport os,subprocess\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-installation-pg.env').read_text().splitlines())\nenv=dict(os.environ,JAVA_HOME='/home/ymsl/.jdks/ms-21.0.12.1',SP_INSTALLATION_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/installation_test',SP_INSTALLATION_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_MIGRATIONS_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/migration_test',SP_MIGRATIONS_POSTGRES_USER='resource_test',SP_MIGRATIONS_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'])\nargs=['./gradlew',':simplepoint-platform:simplepoint-platform-installation-jdbc:test',':simplepoint-platform:simplepoint-platform-installation:verifyInstallationCoreDependencies',':simplepoint-platform:simplepoint-platform-installation-jdbc:verifyInstallationJdbcDependencies',':simplepoint-platform:simplepoint-platform-bootstrap-registry:test',':simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test','--tests','*Dictionary*Test',':simplepoint-platform:simplepoint-platform-composition-verification:test','--tests','*IdentityModuleMigrationPostgresTest','--tests','*SupportModuleMigrationPostgresTest','--tests','*DictionaryAdoptionHandoffPostgresTest','--tests','*PackagedPersistenceTest','--tests','*RepositoryOwnershipTest','--tests','*RemoteContractBoundaryTest','--tests','*PlatformDeploymentPlanTest','verifyInstallationStyle','verifyModuleBoundaries',':simplepoint-services:simplepoint-service-common:installDist','-I','/tmp/simplepoint-installation-checkstyle.gradle','--console=plain']\nwith open('/tmp/simplepoint-installation-postgres.log','w') as log:\n result=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT)\nprint('Installation journal PostgreSQL regression exit:',result.returncode)\nraise SystemExit(result.returncode)\n",
+  "finalPostgresRunner": "from pathlib import Path\nimport os,subprocess\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-installation-pg.env').read_text().splitlines())\nenv=dict(os.environ,JAVA_HOME='/home/ymsl/.jdks/ms-21.0.12.1',SP_INSTALLATION_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/installation_test',SP_INSTALLATION_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_MIGRATIONS_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/migration_test',SP_MIGRATIONS_POSTGRES_USER='resource_test',SP_MIGRATIONS_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'])\nargs=['./gradlew',':simplepoint-platform:simplepoint-platform-installation-jdbc:test',':simplepoint-platform:simplepoint-platform-installation:verifyInstallationCoreDependencies',':simplepoint-platform:simplepoint-platform-installation-jdbc:verifyInstallationJdbcDependencies',':simplepoint-platform:simplepoint-platform-composition-verification:test','--tests','*DictionaryAdoptionHandoffPostgresTest',':simplepoint-platform:simplepoint-platform-installation:jar',':simplepoint-platform:simplepoint-platform-installation-jdbc:jar',':simplepoint-platform:simplepoint-platform-installation-dictionary:jar','verifyInstallationStyle','verifyModuleBoundaries',':simplepoint-services:simplepoint-service-common:installDist','-I','/tmp/simplepoint-installation-checkstyle.gradle','--console=plain']\nwith open('/tmp/simplepoint-installation-final.log','w') as log:\n result=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT)\nprint('Installation journal PostgreSQL regression exit:',result.returncode)\nraise SystemExit(result.returncode)\n",
+  "postgresEnvironment": {
+    "image": "postgres:17",
+    "container": "simplepoint-installation-test",
+    "port": "127.0.0.1:45436",
+    "databases": [
+      "installation_test",
+      "migration_test",
+      "migration_identity_test",
+      "migration_installation_test"
+    ],
+    "storage": "tmpfs /var/lib/postgresql/data",
+    "cleanup": "Owned labeled container removed with volumes; temporary credential env file deleted. No business database/configuration changed."
+  },
+  "verificationNotes": [
+    "115 counts the latest result for each test class, not duplicate runs. Primary reports archived before focused runs; final 13-case JDBC and two-case handoff reports replace their previous class reports.",
+    "Primary 114 tests passed but build failed four Javadoc style warnings; final 13 JDBC and two handoff tests passed but build failed two variable-distance warnings. Final local-variable qualifiers fixed these; final style, dependency, module boundary, jar and frontend-enabled distribution run succeeded.",
+    "Final installer JDBC 13 cases and two handoff cases use actual PostgreSQL. Primary bootstrap-registry 16 and tenant dictionary 60 use H2. Other selected architecture cases include actual module migrations on PostgreSQL and packaged planning checks; none are skipped.",
+    "Initial H2 fixture closed the DDL connection captured by H2 CHECK IN comparison; fixture retains that connection until teardown. Twelve H2 cases passed after correction. The additional receipt-lookup-unavailable case ran in final PostgreSQL only.",
+    "Three-database handoff uses actual module migrations, independently committed domain and journal transactions, Spring context restart, missing source journal acknowledgement, target constraint failure, and resumed completion. It verifies one source attempt, two target attempts, unchanged business dictionary content and zero deployment approvals.",
+    "Journal-only tests cover complete replay, owner proof reconciliation, lookup failure, action exception after owner commit, uncertain running recovery, stale attempts, non-idempotent recovery refusal, plan/generation conflicts, ordered steps, adapter mismatch, concurrent claim, atomic plan rollback and no journal transaction around domain actions.",
+    "Artifact probe uses independently built installer library JARs plus installed Common domain JARs. Installer libraries are deliberately absent from Common runtime; no installer CLI/service or standalone distribution is claimed.",
+    "No frontend source modifications or new typecheck claimed; installDist ran with frontend packaging and verified the declared assets."
+  ],
+  "sources": [
+    {
+      "path": "build.gradle.kts",
+      "sha256": "13850d319e3df1383d83a864a054af4f3669a122e9b903fa6a8805f678494bd1"
+    },
+    {
+      "path": "doc/design/modular_service_composition_plan.md",
+      "sha256": "426b06614379dd5752195911a8a7f09aed6afee4d03f2b129d3a3ca472984495"
+    },
+    {
+      "path": "settings.gradle.kts",
+      "sha256": "b0cabbe45accebb7f9e7f873e7ab8d98f320f04265c98c8089161cf4b229352b"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/migration/BootstrapLegacyTransfers.java",
+      "sha256": "82540a99e89b284c09d224ca869bdbeda061f6e0fc57ce5ac53b03bb4c7fd895"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-bootstrap/README.md",
+      "sha256": "623df098a67de1d6749ddfbe51663620988a76afd936256adbd3db408b233833"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts",
+      "sha256": "5308bf599c76284e835f33799a7fd1373f00ef6cc77e19a45357a835e51ba7d1"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/DictionaryAdoptionHandoffPostgresTest.java",
+      "sha256": "a0ddaf3bfd5168206240d1701eeb63bd44977b3d047164954425040d79719d3f"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java",
+      "sha256": "94c5e27f56e3c555604289212587e6ab52aa40c234ae6699be566570942c1a21"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-registration/README.md",
+      "sha256": "87dd0652138f1a75014c0c2c0786833ac0be821ee585b55f17a0197d2c98b065"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-dictionary/build.gradle.kts",
+      "sha256": "81e1b00a1085ea09cf0ababa7dcd803a7299f1012c78a5529e0beb0f1683d018"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-dictionary/src/main/java/org/simplepoint/platform/installation/dictionary/DictionaryAdoptionInstallation.java",
+      "sha256": "d4d8a7dd2fbd79fd56b8c95d84c3823e14ead213a9f81de4ba34d06bba038388"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/build.gradle.kts",
+      "sha256": "9e686346cb0909597d91f4d35c513c9018f93dfb99a5454a22f925e42c29ce64"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/java/org/simplepoint/platform/installation/jdbc/InstallationJournalMigrations.java",
+      "sha256": "db18d329ce7a6fc52f1c33943cba71d0dffce0ed782908715e0527b4bc0903e8"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/java/org/simplepoint/platform/installation/jdbc/JdbcInstallationJournal.java",
+      "sha256": "375db6b16d98c1685b021d9170ab03d72169e3b77aac43c8d14d169a8b28272f"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/resources/META-INF/simplepoint/modules/installation-journal/db/manifest.properties",
+      "sha256": "ddd5f973044358d4d63ca48f77f7a5361436a6e66df96783b65113a623833081"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/src/main/resources/META-INF/simplepoint/modules/installation-journal/db/postgresql/V1__installation_journal.sql",
+      "sha256": "e0d1a3f390e8e716bc998627bf8455091d58bc021160b92821fb61bf2fd725fc"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation-jdbc/src/test/java/org/simplepoint/platform/installation/jdbc/JdbcInstallationJournalTest.java",
+      "sha256": "45fa571b06ce83f9499e8beeeeac49277cb30a99c11b2686a7fc62d6e8c781c9"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/README.md",
+      "sha256": "40283e7daafc0045451062e38e957248b7adfed7a4c28c49edc2d9ca47c8d971"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/build.gradle.kts",
+      "sha256": "ff380e5efe2765b730734e1d46745f72093fb72f2bb3aee8fd9c737c572f5219"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationAction.java",
+      "sha256": "3d20dc36ffa3225805034b248c57f73fdc83593fbe5f4774a81d011704659add"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationException.java",
+      "sha256": "57979605a763cf8cf5089c77986d930685ac7c1bf36d6d36538d46420fcbfdc0"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationFingerprint.java",
+      "sha256": "2163a338a380a9fc5ecc46d4163a17fe1f6d10660a9e683ebe241c6615cc49bd"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationJournal.java",
+      "sha256": "faa40c485659381d22e46c90285af183149b735bef5efa55b80e260c9beefb8a"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationPlan.java",
+      "sha256": "b04dbf50f4e96d0008d96a1d3adfa7999a34f156fae322560db23aa1924eeb3a"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-installation/src/main/java/org/simplepoint/platform/installation/InstallationRunner.java",
+      "sha256": "60d4b5c2e8ee2831a9abed9b05be94066d7c5000f1a2969ed3ee42182cc38214"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/DictionaryLegacyAdoptions.java",
+      "sha256": "6109cf177d3da8445fd68f067d17d869a14b69d08005a76d3aa7f0292f783315"
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-installation-compile.log",
+      "sha256": "4ba2ccb2452decdbade72c0c4fbc297766e3e88091d8f52771bb339d69baf625"
+    },
+    {
+      "path": "/tmp/simplepoint-installation-h2.log",
+      "sha256": "2d6881431b3e55142c8659d4e45361c6e5ba9145326242fb085de6cdc50c1f87"
+    },
+    {
+      "path": "/tmp/simplepoint-installation-postgres.log",
+      "sha256": "ad4e4ea1f7bf8e9ce1588500b5065dfd2c8c34a2500616d5b75570c918c6e45f"
+    },
+    {
+      "path": "/tmp/simplepoint-installation-final.log",
+      "sha256": "4c64b74dd0e02cf4ccf0318f9a6ea60253dd16370f032fa32bb083beb621bfd3"
+    },
+    {
+      "path": "/tmp/simplepoint-installation-package-final.log",
+      "sha256": "e9b4113abe6dc53c7991cda6cde01a46f5ad2f024b1790d0f39264ea1c3c8bd1"
+    },
+    {
+      "path": "/tmp/simplepoint-installation-artifact.log",
+      "sha256": "c6ae7f1b83b724d9aa98513a3f243c2c190dba38be826031912c1aea37ed2a01"
+    }
+  ],
+  "limits": [
+    "Immutable plan metadata and fingerprints are durable; complete reviewed input payloads and historical release provenance are not yet persisted/resolved by a formal entry point.",
+    "Caller-provided release fingerprint and retirement evidence fingerprint do not authenticate artifacts or prove an old process has stopped. Trusted management authorization and evidence collection remain required.",
+    "The dictionary adapter covers exactly registry retirement and dictionary adoption. It does not provision identities, approve dictionaries/resources, publish configuration or establish whole-platform readiness.",
+    "RECONCILE_ONLY uncertain work cannot be blindly replayed; generic cancellation/compensation is not implemented. Domain adapters must truthfully implement durable idempotency before automatic retry is allowed.",
+    "No runtime RPC/HTTP installation methods, actual network deployment, production configuration/data changes, commit or push.",
+    "Credential lifecycle, caller policies, MQ ACL, configuration/process rollout, other legacy adoption, remaining module entrances, formal one-JVM standalone and three-topology full business verification remain unfinished."
+  ]
+}

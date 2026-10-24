@@ -26,18 +26,18 @@ public interface JpaTenantRepository extends BaseRepository<Tenant, String>, Ten
   @Override
   @Query(
       """
-select
-    new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType, t.logo)
-from Tenant t
-where t.ownerId = :userId
-   or exists (
-       select utr.id
-       from TenantUserRelevance utr
-       where utr.tenantId = t.id and utr.userId = :userId
-   )
-order by
-    case when t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL then 1 else 0 end,
-    t.name
+      select
+          new org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo(t.id, t.name, t.tenantType, t.logo)
+      from Tenant t
+      where t.ownerId = :userId
+         or exists (
+             select utr.id
+             from TenantUserRelevance utr
+             where utr.tenantId = t.id and utr.userId = :userId
+         )
+      order by
+          case when t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL then 1 else 0 end,
+          t.name
       """)
   Set<NamedTenantVo> getTenantsByUserId(@Param("userId") String userId);
 
@@ -45,13 +45,15 @@ order by
   @Query(
       """
       select t from Tenant t
-      where t.ownerId = :ownerId
+      where t.ownerId = :ownerId and t.deletedAt is null
         and t.tenantType = org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL
       """)
   Optional<Tenant> findPersonalTenantByOwnerId(@Param("ownerId") String ownerId);
 
   @Override
-  @Query("select coalesce(t.authorizationVersion, 0) from Tenant t where t.id = :tenantId")
+  @Query(
+      "select coalesce(t.authorizationVersion, 0) from Tenant t where t.id = :tenantId and"
+          + " t.deletedAt is null")
   Long getTenantAuthorizationVersion(@Param("tenantId") String tenantId);
 
   @Override

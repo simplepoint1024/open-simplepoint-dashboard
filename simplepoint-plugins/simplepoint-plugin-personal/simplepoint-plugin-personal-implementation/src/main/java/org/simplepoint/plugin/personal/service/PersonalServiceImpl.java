@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.personal.api.PersonalInboxGateway;
 import org.simplepoint.plugin.personal.api.PersonalModels.ActionInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ChecklistEntry;
@@ -98,7 +99,7 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
   private static Pageable bounded(Pageable page) {
     int number = page == null || page.isUnpaged() ? 0 : page.getPageNumber();
     int size =
-        page == null || page.isUnpaged() ? 20 : Math.min(100, Math.max(1, page.getPageSize()));
+        page == null || page.isUnpaged() ? 20 : Math.min(TablePagination.MAX_PAGE_SIZE, Math.max(1, page.getPageSize()));
     if (number < 0 || (long) number * size > 1_000_000) {
       throw new IllegalArgumentException("分页范围过大");
     }

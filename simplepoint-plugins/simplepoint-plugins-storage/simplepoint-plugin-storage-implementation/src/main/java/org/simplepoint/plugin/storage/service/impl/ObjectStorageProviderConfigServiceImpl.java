@@ -53,26 +53,24 @@ public class ObjectStorageProviderConfigServiceImpl
 
   private final List<ObjectStorageDriver> drivers;
 
-  @jakarta.persistence.PersistenceContext
-  private jakarta.persistence.EntityManager entityManager;
+  private final jakarta.persistence.EntityManager entityManager;
 
-  /**
-   * Creates the provider configuration service.
-   */
+  /** Creates the provider configuration service. */
   public ObjectStorageProviderConfigServiceImpl(
       final ObjectStorageProviderConfigRepository repository,
       final DetailsProviderService detailsProviderService,
       final ObjectStorageObjectRepository objectRepository,
       final ObjectStorageCredentialCipher credentialCipher,
       final ObjectStorageProperties properties,
-      final List<ObjectStorageDriver> drivers
-  ) {
+      final List<ObjectStorageDriver> drivers,
+      final jakarta.persistence.EntityManager entityManager) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.objectRepository = objectRepository;
     this.credentialCipher = credentialCipher;
     this.properties = properties;
     this.drivers = drivers == null ? List.of() : List.copyOf(drivers);
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -144,7 +142,8 @@ public class ObjectStorageProviderConfigServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends ObjectStorageProviderConfig> S create(final S entity) {
-    org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(ObjectStorageProviderConfig.class, "secretKey");
+    org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(
+        ObjectStorageProviderConfig.class, "secretKey");
     normalizeAndValidate(entity, null, true);
     String ciphertext = credentialCipher.encrypt(entity.getSecretKey().trim());
     entity.setSecretKey(null);
@@ -171,8 +170,20 @@ public class ObjectStorageProviderConfigServiceImpl
     // protected values before domain validation; the generic merge runs after that validation.
     var original = new org.springframework.beans.BeanWrapperImpl(current);
     var incoming = new org.springframework.beans.BeanWrapperImpl(entity);
-    for (String field : List.of("name", "type", "endpoint", "region", "accessKey", "bucket", "basePath",
-        "pathStyleAccess", "publicBaseUrl", "enabled", "defaultProvider", "description")) {
+    for (String field :
+        List.of(
+            "name",
+            "type",
+            "endpoint",
+            "region",
+            "accessKey",
+            "bucket",
+            "basePath",
+            "pathStyleAccess",
+            "publicBaseUrl",
+            "enabled",
+            "defaultProvider",
+            "description")) {
       if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(
           getAuthorizationContext(), ObjectStorageProviderConfig.class, field)) {
         incoming.setPropertyValue(field, original.getPropertyValue(field));
@@ -182,7 +193,8 @@ public class ObjectStorageProviderConfigServiceImpl
     normalizeAndValidate(entity, current.getId(), false);
     String ciphertext = current.getSecretKeyCiphertext();
     if (trimToNull(entity.getSecretKey()) != null) {
-      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(ObjectStorageProviderConfig.class, "secretKey");
+      org.simplepoint.core.jackson.FieldPermissionPolicy.requireWritable(
+          ObjectStorageProviderConfig.class, "secretKey");
       ciphertext = credentialCipher.encrypt(entity.getSecretKey().trim());
     }
     entity.setSecretKey(null);

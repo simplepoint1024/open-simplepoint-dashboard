@@ -42,7 +42,7 @@
       }
     },
     "x-query" : {
-      "maxPageSize" : 100,
+      "maxPageSize" : 500,
       "maxNodes" : 32,
       "maxDepth" : 4,
       "maxSort" : 3,

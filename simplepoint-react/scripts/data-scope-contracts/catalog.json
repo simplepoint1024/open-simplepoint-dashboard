@@ -8,9 +8,72 @@
         "owner": "createdBy",
         "department": "id",
         "properties": {
-          "parentId": {
+          "sort": {
+            "type": "java.lang.Integer",
+            "title": "排序",
+            "operators": [
+              "equals",
+              "not:equals",
+              "in",
+              "not:in",
+              "between",
+              "not:between",
+              "than:greater",
+              "than:less",
+              "than:equal:greater",
+              "than:equal:less",
+              "is:null",
+              "is:not:null"
+            ],
+            "values": [],
+            "readOnly": false
+          },
+          "createdBy": {
             "type": "java.lang.String",
-            "title": "上级组织",
+            "title": "createdBy",
+            "operators": [
+              "equals",
+              "not:equals",
+              "in",
+              "not:in",
+              "is:null",
+              "is:not:null"
+            ],
+            "values": [],
+            "readOnly": true
+          },
+          "updatedAt": {
+            "type": "java.time.Instant",
+            "title": "updatedAt",
+            "operators": [],
+            "values": [],
+            "readOnly": true
+          },
+          "name": {
+            "type": "java.lang.String",
+            "title": "组织名称",
+            "operators": [
+              "like",
+              "not:like",
+              "equals",
+              "not:equals",
+              "in",
+              "not:in",
+              "between",
+              "not:between",
+              "than:greater",
+              "than:less",
+              "than:equal:greater",
+              "than:equal:less",
+              "is:null",
+              "is:not:null"
+            ],
+            "values": [],
+            "readOnly": false
+          },
+          "code": {
+            "type": "java.lang.String",
+            "title": "组织编码",
             "operators": [
               "like",
               "not:like",
@@ -44,27 +107,12 @@
             "values": [],
             "readOnly": true
           },
-          "code": {
-            "type": "java.lang.String",
-            "title": "组织编码",
-            "operators": [
-              "like",
-              "not:like",
-              "equals",
-              "not:equals",
-              "in",
-              "not:in",
-              "between",
-              "not:between",
-              "than:greater",
-              "than:less",
-              "than:equal:greater",
-              "than:equal:less",
-              "is:null",
-              "is:not:null"
-            ],
+          "createdAt": {
+            "type": "java.time.Instant",
+            "title": "createdAt",
+            "operators": [],
             "values": [],
-            "readOnly": false
+            "readOnly": true
           },
           "type": {
             "type": "java.lang.String",
@@ -88,27 +136,6 @@
             "values": [],
             "readOnly": false
           },
-          "createdBy": {
-            "type": "java.lang.String",
-            "title": "createdBy",
-            "operators": [
-              "equals",
-              "not:equals",
-              "in",
-              "not:in",
-              "is:null",
-              "is:not:null"
-            ],
-            "values": [],
-            "readOnly": true
-          },
-          "createdAt": {
-            "type": "java.time.Instant",
-            "title": "createdAt",
-            "operators": [],
-            "values": [],
-            "readOnly": true
-          },
           "description": {
             "type": "java.lang.String",
             "title": "描述",
@@ -131,50 +158,9 @@
             "values": [],
             "readOnly": false
           },
-          "updatedAt": {
-            "type": "java.time.Instant",
-            "title": "updatedAt",
-            "operators": [],
-            "values": [],
-            "readOnly": true
-          },
-          "enabled": {
-            "type": "java.lang.Boolean",
-            "title": "启用",
-            "operators": [
-              "equals",
-              "not:equals",
-              "in",
-              "not:in",
-              "is:null",
-              "is:not:null"
-            ],
-            "values": [],
-            "readOnly": false
-          },
-          "sort": {
-            "type": "java.lang.Integer",
-            "title": "排序",
-            "operators": [
-              "equals",
-              "not:equals",
-              "in",
-              "not:in",
-              "between",
-              "not:between",
-              "than:greater",
-              "than:less",
-              "than:equal:greater",
-              "than:equal:less",
-              "is:null",
-              "is:not:null"
-            ],
-            "values": [],
-            "readOnly": false
-          },
-          "name": {
+          "parentId": {
             "type": "java.lang.String",
-            "title": "组织名称",
+            "title": "上级组织",
             "operators": [
               "like",
               "not:like",
@@ -188,6 +174,27 @@
               "than:less",
               "than:equal:greater",
               "than:equal:less",
+              "is:null",
+              "is:not:null"
+            ],
+            "values": [],
+            "readOnly": false
+          },
+          "leaderId": {
+            "type": "java.lang.String",
+            "title": "i18n:organizations.title.leaderId",
+            "operators": [],
+            "values": [],
+            "readOnly": false
+          },
+          "enabled": {
+            "type": "java.lang.Boolean",
+            "title": "启用",
+            "operators": [
+              "equals",
+              "not:equals",
+              "in",
+              "not:in",
               "is:null",
               "is:not:null"
             ],

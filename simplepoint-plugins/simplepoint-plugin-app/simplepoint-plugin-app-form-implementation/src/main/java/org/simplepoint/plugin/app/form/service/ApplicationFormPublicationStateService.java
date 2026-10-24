@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormPageBindingStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationStep;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationView;
@@ -301,17 +302,32 @@ public class ApplicationFormPublicationStateService {
 
   private void requireNoOtherOpenPublication(
       final String tenantId, final String formId, final int targetVersion) {
+    // Schema preparation remains reusable DATA_READY after page cancellation. It must not
+    // permanently block later versions once every release of that version has terminated.
+    // A data-only preparation or any live release still protects the shared physical model.
     boolean present =
         entityManager
                 .createQuery(
                     "select count(publication) from ApplicationFormPublicationEntity publication"
                         + " where publication.tenantId = :tenant and publication.formId = :form and"
-                        + " publication.formVersion <> :version and publication.status in :states",
+                        + " publication.formVersion <> :version and publication.status in :states"
+                        + " and (publication.status <> :ready or not exists ("
+                        + " select cancelled.id from ApplicationFormPageBindingEntity cancelled"
+                        + " where cancelled.tenantId = publication.tenantId and cancelled.formId = publication.formId"
+                        + " and cancelled.formVersion = publication.formVersion and cancelled.status = :cancelled)"
+                        + " or exists (select live.id from ApplicationFormPageBindingEntity live"
+                        + " where live.tenantId = publication.tenantId and live.formId = publication.formId"
+                        + " and live.formVersion = publication.formVersion and live.status not in :closed))",
                     Long.class)
                 .setParameter("tenant", tenantId)
                 .setParameter("form", formId)
                 .setParameter("version", targetVersion)
                 .setParameter("states", OPEN_STATES)
+                .setParameter("ready", ApplicationFormPublicationStatus.DATA_READY)
+                .setParameter("cancelled", ApplicationFormPageBindingStatus.CANCELLED)
+                .setParameter("closed", Set.of(
+                    ApplicationFormPageBindingStatus.CANCELLED,
+                    ApplicationFormPageBindingStatus.RETIRED))
                 .getSingleResult()
             > 0;
     if (present) {

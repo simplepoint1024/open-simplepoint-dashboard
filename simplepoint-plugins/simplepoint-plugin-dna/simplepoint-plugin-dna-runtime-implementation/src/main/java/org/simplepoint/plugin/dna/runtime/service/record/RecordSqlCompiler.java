@@ -195,10 +195,10 @@ public class RecordSqlCompiler {
       final String createRecordId
   ) {
     if (mutation instanceof RecordCreateMutation create) {
-      return create(model, access, create, now, createRecordId);
+      return create(model, access, create.values(), now, createRecordId);
     }
     if (mutation instanceof RecordUpdateMutation update) {
-      return update(model, access, update, now);
+      return update(model, access, update, update.values(), now);
     }
     if (mutation instanceof RecordDeleteMutation delete) {
       return delete(model, access, delete, now);
@@ -206,18 +206,62 @@ public class RecordSqlCompiler {
     throw invalid("Unsupported record mutation");
   }
 
+  /**
+   * Internal complete values may include many calculated/defaulted columns. Public request limits
+   * still apply to the original mutation; all supplied internal fields retain schema/type checks.
+   */
+  RecordSqlStatement computedMutation(final RuntimeRecordModel model, final RecordAccessContext access,
+      final RecordMutation mutation, final Map<String, Object> values, final Instant at, final String createRecordId) {
+    if (mutation instanceof RecordCreateMutation) {
+      return create(model, access, values, at, createRecordId);
+    }
+    if (mutation instanceof RecordUpdateMutation update) {
+      return update(model, access, update, values, at);
+    }
+    return mutation(model, access, mutation, at, createRecordId);
+  }
+
+  /** Validates untrusted intent without inventing values for server-computed required fields. */
+  void validateIntent(final RuntimeRecordModel model, final RecordAccessContext access,
+      final RecordMutation mutation, final Set<String> computedFieldIds) {
+    if (mutation instanceof RecordDeleteMutation) {
+      return;
+    }
+    var values = mutation instanceof RecordCreateMutation create ? create.values()
+        : ((RecordUpdateMutation) mutation).values();
+    var definitions = fields(model);
+    validateWriteFields(access, definitions, values.keySet());
+    for (var entry : values.entrySet()) {
+      if (computedFieldIds.contains(definitions.get(entry.getKey()).fieldId())) {
+        throw denied("Calculated record fields are server controlled");
+      }
+      logical(definitions.get(entry.getKey()), entry.getValue());
+    }
+    if (mutation instanceof RecordCreateMutation) {
+      for (var field : definitions.values()) {
+        if (!field.nullable() && field.defaultValue() == null && !values.containsKey(field.code())
+            && !computedFieldIds.contains(field.fieldId())) {
+          throw invalid("Required record field is missing: " + field.code());
+        }
+      }
+    } else {
+      rejectScopeFieldMutation(model, access.rowScope(),
+          values.keySet().stream().map(model::activeCode).collect(Collectors.toSet()));
+    }
+  }
+
   private RecordSqlStatement create(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordCreateMutation mutation,
+      final Map<String, Object> input,
       final Instant now,
       final String requestedRecordId
   ) {
     Map<String, LogicalFieldDefinition> definitions = fields(model);
-    validateWriteFields(access, definitions, mutation.values().keySet());
+    validateWriteFields(access, definitions, input.keySet());
     for (LogicalFieldDefinition field : definitions.values()) {
       if (!field.nullable() && field.defaultValue() == null
-          && !mutation.values().containsKey(field.code())) {
+          && !input.containsKey(field.code())) {
         throw invalid("Required record field is missing: " + field.code());
       }
     }
@@ -225,8 +269,16 @@ public class RecordSqlCompiler {
         ? UUID.randomUUID().toString() : requestedRecordId;
     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
     for (LogicalFieldDefinition field : model.requestedSchema().fields()) {
-      if (mutation.values().containsKey(field.code())) {
-        values.put(model.activeCode(field.code()), logical(field, mutation.values().get(field.code())));
+      if (input.containsKey(field.code())) {
+        values.put(model.activeCode(field.code()), logical(field, input.get(field.code())));
+      }
+    }
+    // Calcite JDBC metadata does not expose database defaults to its INSERT validator. Bind
+    // trusted active defaults explicitly, including columns added after the requested schema.
+    for (var field : model.activeSchema().fields()) {
+      if (!values.containsKey(field.code()) && field.defaultValue() != null) {
+        values.put(field.code(), logical(field,
+            org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(field.defaultValue())));
       }
     }
     values.put("id", recordId);
@@ -260,21 +312,22 @@ public class RecordSqlCompiler {
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final RecordUpdateMutation mutation,
+      final Map<String, Object> input,
       final Instant now
   ) {
     Map<String, LogicalFieldDefinition> definitions = fields(model);
-    validateWriteFields(access, definitions, mutation.values().keySet());
+    validateWriteFields(access, definitions, input.keySet());
     rejectScopeFieldMutation(
         model,
         access.rowScope(),
-        mutation.values().keySet().stream().map(model::activeCode).collect(Collectors.toSet())
+        input.keySet().stream().map(model::activeCode).collect(Collectors.toSet())
     );
     RecordSqlParameters parameters = new RecordSqlParameters();
     List<String> assignments = new ArrayList<>();
     for (LogicalFieldDefinition field : model.requestedSchema().fields()) {
-      if (mutation.values().containsKey(field.code())) {
+      if (input.containsKey(field.code())) {
         assignments.add(quote(model.activeCode(field.code())) + " = "
-            + parameters.add(logical(field, mutation.values().get(field.code()))));
+            + parameters.add(logical(field, input.get(field.code()))));
       }
     }
     assignments.add(quote("updated_by") + " = " + parameters.add(access.actor().actorId()));
@@ -565,7 +618,7 @@ public class RecordSqlCompiler {
     result.add("id");
     result.add("record_version");
     Collection<String> candidates = requested == null || requested.isEmpty()
-        ? model.requestedFieldCodes()
+        ? model.requestedFieldCodes().stream().filter(access.readableFields()::contains).toList()
         : requested;
     for (String field : candidates) {
       ensureField(model, field);
@@ -628,9 +681,11 @@ public class RecordSqlCompiler {
           .filter(code -> model.requestedField(code) != null
               && java.util.Set.of("INT32", "INT64").contains(model.requestedField(code).type().name())
               && access.readableFields().contains(code) && !access.maskedFields().contains(code)).findFirst();
-      if (ordinal.isPresent()) fields.put(ordinal.get(), quote(model.activeCode(ordinal.get())) + " ASC");
-      else if (access.readableFields().contains("created_at") && !access.maskedFields().contains("created_at"))
+      if (ordinal.isPresent()) {
+        fields.put(ordinal.get(), quote(model.activeCode(ordinal.get())) + " ASC");
+      } else if (access.readableFields().contains("created_at") && !access.maskedFields().contains("created_at")) {
         fields.put("created_at", quote("created_at") + " DESC");
+      }
     }
     fields.putIfAbsent("id", quote("id") + " ASC");
     return String.join(", ", fields.values());
@@ -669,8 +724,26 @@ public class RecordSqlCompiler {
     return type::convert;
   }
 
+  /** Resolves a persisted canonical value through the same strict type path used by ordinary writes. */
+  Object canonicalParameter(final LogicalFieldDefinition field, final LogicalValue value) {
+    try {
+      var input = org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(value);
+      var normalized = valueConverter.normalize(field, input);
+      if (!normalized.equals(value)) {
+        throw new IllegalArgumentException("Stored publication value differs from its canonical field value");
+      }
+      return logicalParameter(field, normalized);
+    } catch (IllegalArgumentException failure) {
+      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Stored publication value is not canonical for its frozen field", failure);
+    }
+  }
+
   private Object logical(final LogicalFieldDefinition field, final Object value) {
-    LogicalValue normalized = valueConverter.normalize(field, value);
+    return logicalParameter(field, valueConverter.normalize(field, value));
+  }
+
+  private static Object logicalParameter(final LogicalFieldDefinition field, final LogicalValue normalized) {
     if (normalized.canonicalValue() == null) {
       return null;
     }
@@ -686,7 +759,7 @@ public class RecordSqlCompiler {
       case TIME -> LocalTime.parse(raw);
       case DATETIME -> Timestamp.from(Instant.parse(raw));
       case UUID -> raw;
-      case BINARY -> Base64.getUrlDecoder().decode(raw);
+      case BINARY -> Base64.getDecoder().decode(raw);
     };
   }
 

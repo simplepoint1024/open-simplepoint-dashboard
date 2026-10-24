@@ -27,9 +27,9 @@ import org.simplepoint.plugin.rbac.core.rest.controller.UsersController;
 import org.simplepoint.plugin.rbac.core.service.impl.*;
 import org.simplepoint.plugin.rbac.tenant.api.entity.*;
 import org.simplepoint.plugin.rbac.tenant.api.repository.*;
+import org.simplepoint.plugin.rbac.tenant.api.service.PersonalTenantProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.*;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.security.access.AccessDeniedException;
@@ -50,12 +50,16 @@ class UserRoleAssignmentHttpTest {
 
   @BeforeEach
   void setup() {
-    var registry = new StandardServiceRegistryBuilder()
-        .applySetting("hibernate.connection.url", "jdbc:h2:mem:role-assignment-" + UUID.randomUUID())
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop")
-        .applySetting("hibernate.hbm2ddl.halt_on_error", true)
-        .applySetting("hibernate.physical_naming_strategy", "org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl")
-        .build();
+    var registry =
+        new StandardServiceRegistryBuilder()
+            .applySetting(
+                "hibernate.connection.url", "jdbc:h2:mem:role-assignment-" + UUID.randomUUID())
+            .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+            .applySetting("hibernate.hbm2ddl.halt_on_error", true)
+            .applySetting(
+                "hibernate.physical_naming_strategy",
+                "org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl")
+            .build();
     factory = new MetadataSources(registry).addAnnotatedClass(User.class).addAnnotatedClass(Role.class)
         .addAnnotatedClass(Tenant.class).addAnnotatedClass(TenantUserRelevance.class).addAnnotatedClass(UserRoleRelevance.class)
         .buildMetadata().buildSessionFactory();
@@ -90,11 +94,21 @@ class UserRoleAssignmentHttpTest {
     queryProxy.setProxyTargetClass(true);
     queryProxy.addAdvice(new org.springframework.dao.support.PersistenceExceptionTranslationInterceptor(
         new org.springframework.orm.jpa.vendor.HibernateJpaDialect()));
-    var service = new UsersServiceImpl(null, mock(UserRepository.class), details,
-        new JpaRepositoryFactory(em).getRepository(JpaUserRoleRelevanceRepository.class), tenants,
-        mock(TenantUserRelevanceRepository.class), roleRepository, mock(ResourceAuthorizationVersionService.class),
-        mock(ResourceGrantLogRemoteService.class), mock(ObjectProvider.class), (UserRoleCandidateQuery) queryProxy.getProxy(),
-        new org.simplepoint.plugin.rbac.core.service.impl.UserPickerQuery(em));
+    var service =
+        new UsersServiceImpl(
+            null,
+            mock(UserRepository.class),
+            details,
+            new JpaRepositoryFactory(em).getRepository(JpaUserRoleRelevanceRepository.class),
+            tenants,
+            mock(TenantUserRelevanceRepository.class),
+            roleRepository,
+            mock(ResourceAuthorizationVersionService.class),
+            mock(ResourceGrantLogRemoteService.class),
+            mock(PersonalTenantProvisioningService.class),
+            (UserRoleCandidateQuery) queryProxy.getProxy(),
+            new org.simplepoint.plugin.rbac.core.service.impl.UserPickerQuery(em),
+            em);
     mvc = MockMvcBuilders.standaloneSetup(new UsersController(service)).setControllerAdvice(new GlobalExceptionHandler())
         .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter())
         .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver()).build();
@@ -116,7 +130,9 @@ class UserRoleAssignmentHttpTest {
   }
 
   org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder items(boolean selected) {
-    return get("/users/role-candidates").param("userId", member.getId()).param("selected", String.valueOf(selected))
+    return get("/users/role-candidates")
+        .param("userId", member.getId())
+        .param("selected", String.valueOf(selected))
         .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
   }
 
@@ -129,9 +145,13 @@ class UserRoleAssignmentHttpTest {
 
   @Test
   void selectedAndAvailablePagesAreCountedInSqlBeyondOneHundred() throws Exception {
-    mvc.perform(items(true).param("page", "5").param("size", "20")).andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalElements").value(120)).andExpect(jsonPath("$.content[0].name").value("Candidate100"));
-    mvc.perform(items(false)).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(122))
+    mvc.perform(items(true).param("page", "5").param("size", "20"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(120))
+        .andExpect(jsonPath("$.content[0].name").value("Candidate100"));
+    mvc.perform(items(false))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(122))
         .andExpect(jsonPath("$.content[0].name").value("Candidate120"));
     mvc.perform(items(false).param("sort", "name,desc", "authority,asc")).andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].name").value("Candidate241"));
@@ -139,25 +159,37 @@ class UserRoleAssignmentHttpTest {
 
   @Test
   void advancedHeadersAndKeywordIntersectWithoutEscapingTheAssignmentSide() throws Exception {
-    String ast = """
-        {"version":1,"where":{"op":"and","children":[
-          {"op":"or","children":[{"field":"name","op":"equals","value":"Candidate119"},{"field":"name","op":"equals","value":"Candidate239"}]},
-          {"op":"not","children":[{"field":"authority","op":"equals","value":"ROLE_NONE"}]}]}}
-        """;
-    mvc.perform(items(false).param("$query", ast).param("description", "like:239").param("keyword", "Candidate239"))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+    String ast =
+        """
+{"version":1,"where":{"op":"and","children":[
+  {"op":"or","children":[{"field":"name","op":"equals","value":"Candidate119"},{"field":"name","op":"equals","value":"Candidate239"}]},
+  {"op":"not","children":[{"field":"authority","op":"equals","value":"ROLE_NONE"}]}]}}
+""";
+    mvc.perform(
+            items(false)
+                .param("$query", ast)
+                .param("description", "like:239")
+                .param("keyword", "Candidate239"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.content[0].id").value(roles.get(239).getId()));
-    mvc.perform(items(true).param("$query", ast)).andExpect(status().isOk())
-        .andExpect(jsonPath("$.content[0].name").value("Candidate119")).andExpect(jsonPath("$.totalElements").value(1));
+    mvc.perform(items(true).param("$query", ast))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].name").value("Candidate119"))
+        .andExpect(jsonPath("$.totalElements").value(1));
   }
 
   @Test
   void deletedAssignmentsAndForeignAssignmentsDoNotHideAvailableRoles() throws Exception {
-    for (int i : List.of(240, 241)) mvc.perform(items(false).param("id", "equals:" + roles.get(i).getId()))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
-    for (int i : List.of(242, 243)) for (boolean side : List.of(true, false))
-      mvc.perform(items(side).param("id", "equals:" + roles.get(i).getId())).andExpect(status().isOk())
-          .andExpect(jsonPath("$.totalElements").value(0));
+    for (int i : List.of(240, 241))
+      mvc.perform(items(false).param("id", "equals:" + roles.get(i).getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalElements").value(1));
+    for (int i : List.of(242, 243))
+      for (boolean side : List.of(true, false))
+        mvc.perform(items(side).param("id", "equals:" + roles.get(i).getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalElements").value(0));
   }
 
   @Test
@@ -171,35 +203,52 @@ class UserRoleAssignmentHttpTest {
 
   void assertDenied(String id) {
     for (String path : List.of("/users/role-candidates", "/users/role-candidates/schema")) {
-      var error = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(get(path).param("userId", id)
-          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
+      var error =
+          assertThrows(
+              jakarta.servlet.ServletException.class,
+              () ->
+                  mvc.perform(
+                      get(path)
+                          .param("userId", id)
+                          .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)));
       assertInstanceOf(AccessDeniedException.class, error.getCause());
     }
   }
 
   @Test
   void ownerWithoutMembershipCanBeQueriedButNonManagerCannotReadTheCatalog() throws Exception {
-    mvc.perform(get("/users/role-candidates").param("userId", owner.getId()).param("selected", "true")
-            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    mvc.perform(
+            get("/users/role-candidates")
+                .param("userId", owner.getId())
+                .param("selected", "true")
+                .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(0));
     authorize(outsider.getId(), AuthorizationScopeType.TENANT, AuthorizationActorRole.TENANT_MEMBER);
     assertDenied(member.getId());
   }
 
   @Test
   void invalidAndUnauthorizedFieldsAndUnboundedPagesAreRejected() throws Exception {
-    for (var param : Map.of("tenantId", "outside", "deletedAt", "is:null", "size", "100000").entrySet())
-      mvc.perform(items(false).param(param.getKey(), param.getValue())).andExpect(status().isBadRequest())
+    for (var param :
+        Map.of("tenantId", "outside", "deletedAt", "is:null", "size", "100000").entrySet())
+      mvc.perform(items(false).param(param.getKey(), param.getValue()))
+          .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.code").value("INVALID_QUERY"));
     context.setFieldPermissions(Map.of(Role.class.getName() + "#description", "HIDDEN",
         Role.class.getName() + "#authority", "MASKED"));
-    mvc.perform(items(false)).andExpect(status().isOk()).andExpect(jsonPath("$.content[0].description").doesNotExist())
+    mvc.perform(items(false))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].description").doesNotExist())
         .andExpect(jsonPath("$.content[0].authority").value("***"));
     mvc.perform(items(false).param("description", "like:239")).andExpect(status().isBadRequest());
     mvc.perform(items(false).param("sort", "authority,asc")).andExpect(status().isBadRequest());
-    mvc.perform(get("/users/role-candidates/schema").param("userId", member.getId())
-            .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.schema.properties.description").doesNotExist())
+    mvc.perform(
+            get("/users/role-candidates/schema")
+                .param("userId", member.getId())
+                .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.schema.properties.description").doesNotExist())
         .andExpect(jsonPath("$.schema['x-query'].fields.authority").doesNotExist());
     authorize(owner.getId(), AuthorizationScopeType.TENANT, AuthorizationActorRole.TENANT_OWNER);
     context.setFieldPermissions(Map.of(Role.class.getName() + "#id", "MASKED"));
@@ -210,16 +259,35 @@ class UserRoleAssignmentHttpTest {
   @Test
   void assignmentRestoresDeletedRowsAndDuplicateSubmissionDoesNotDuplicateGrants() throws Exception {
     String id = roles.get(240).getId();
-    for (int i = 0; i < 2; i++) mutate("authorize", member.getId(), List.of(id)).andExpect(status().isOk());
+    for (int i = 0; i < 2; i++)
+      mutate("authorize", member.getId(), List.of(id)).andExpect(status().isOk());
     em.flush();
-    assertEquals(1L, em.createQuery("select count(r) from UserRoleRelevance r where r.tenantId=:t and r.userId=:u and r.roleId=:r and r.deletedAt is null", Long.class)
-        .setParameter("t", tenant.getId()).setParameter("u", member.getId()).setParameter("r", id).getSingleResult());
-    mvc.perform(items(true).param("id", "equals:" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+    assertEquals(
+        1L,
+        em.createQuery(
+                "select count(r) from UserRoleRelevance r where r.tenantId=:t and r.userId=:u and"
+                    + " r.roleId=:r and r.deletedAt is null",
+                Long.class)
+            .setParameter("t", tenant.getId())
+            .setParameter("u", member.getId())
+            .setParameter("r", id)
+            .getSingleResult());
+    mvc.perform(items(true).param("id", "equals:" + id))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1));
     assign(240, "outside", member.getId(), false); em.flush();
     mutate("unauthorized", member.getId(), List.of(id)).andExpect(status().isOk());
-    mvc.perform(items(false).param("id", "equals:" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
-    assertEquals(1L, em.createQuery("select count(r) from UserRoleRelevance r where r.tenantId='outside' and r.roleId=:r", Long.class)
-        .setParameter("r", id).getSingleResult());
+    mvc.perform(items(false).param("id", "equals:" + id))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(1));
+    assertEquals(
+        1L,
+        em.createQuery(
+                "select count(r) from UserRoleRelevance r where r.tenantId='outside' and"
+                    + " r.roleId=:r",
+                Long.class)
+            .setParameter("r", id)
+            .getSingleResult());
   }
 
   @Test
@@ -243,12 +311,17 @@ class UserRoleAssignmentHttpTest {
     var response = mvc.perform(get("/users/role-candidates/schema").param("userId", member.getId())
         .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context)).andExpect(status().isOk()).andReturn();
     var mapper = new ObjectMapper();
-    try (var fixture = getClass().getResourceAsStream("/query-contracts/role-assignment-schema.fixture.json")) {
+    try (var fixture =
+        getClass().getResourceAsStream("/query-contracts/role-assignment-schema.fixture.json")) {
       assertNotNull(fixture);
-      assertEquals(mapper.readTree(fixture), mapper.readTree(response.getResponse().getContentAsString(
-          java.nio.charset.StandardCharsets.UTF_8)), "Browser query contract must match the real HTTP response");
+      assertEquals(
+          mapper.readTree(fixture),
+          mapper.readTree(
+              response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8)),
+          "Browser query contract must match the real HTTP response");
     }
-    var output = java.nio.file.Path.of("build/generated-test-resources/role-assignment-schema.json");
+    var output =
+        java.nio.file.Path.of("build/generated-test-resources/role-assignment-schema.json");
     java.nio.file.Files.createDirectories(output.getParent());
     java.nio.file.Files.writeString(output, response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
   }

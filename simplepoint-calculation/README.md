@@ -34,6 +34,22 @@ trusted Java code and must be bounded, side-effect-free and safe for concurrent 
 Lazy memoized arguments support conditionals without evaluating unused branches.
 A record/aggregate evaluation uses one clock snapshot.
 
+### Typed host results
+
+The optional fourth `FormulaAggregatePlan` constructor argument is a `ResultAdapter`:
+`(scope, fieldId, value) -> adaptedValue`. It validates or converts each computed
+value before downstream formulas can observe it. This lets a host enforce integer
+ranges, declared decimal scales, required values and business validation while the
+engine remains independent of those contracts. An adapter must be deterministic,
+bounded, side-effect-free and safe for concurrent use. It must not read storage or
+perform authorization calls.
+
+Adapted values are checked against the engine's value envelope and lists are copied.
+A rejected producer aborts the aggregate; a downstream `IFERROR` cannot bypass that
+field's validation. The three-argument constructor preserves identity adaptation.
+Hosts decide whether rounding is permitted. The form adapter requires explicit
+`ROUND` when a result has more fractional digits than its declared storage scale.
+
 ## DSL v1 semantics
 
 The leading `=` is optional. Function names and boolean/null literals are case
@@ -109,12 +125,23 @@ corepack pnpm@11.15.1 -C simplepoint-react --filter @simplepoint/calculation-edi
 Both parser tests read `src/test/resources/formula-syntax.tsv`, including Unicode,
 escaping, exact decimal text, precedence and canonical round trips.
 
+Every registered function also has a named example in
+`src/test/resources/function-acceptance.tsv`. These fixed-clock expressions, result
+types and expected values are shared with the planned business acceptance ledger.
+`StandardFunctionsTest` executes the examples, rejects missing/duplicate catalog
+coverage, and checks argument-count bounds for every registered function. This
+proves engine behavior; published-form acceptance is recorded separately in
+`doc/design/form_calculation_delivery_plan.md` and its coverage matrix.
+
 ## Platform integration status
 
-The independent engine and editor are implemented. They are not yet connected to
-published form fields or DNA record persistence. Existing COMPUTED fields still
-have their legacy behavior until that integration is completed. Do not treat this
-module's tests as evidence that published forms calculate values correctly.
+The independent engine and editor are implemented. APP now has optional versioned
+formula metadata, typed aggregate compilation, dependency-based permission
+restriction, and designer catalog/sample-preview endpoints. Formula-backed drafts
+are validated, but their publication is deliberately rejected until transactional
+DNA execution and backfill are available. Legacy COMPUTED placeholders remain
+non-persistent. Do not treat library or preview tests as evidence that published
+forms calculate and store values correctly.
 
 Remaining integration must cover immutable optional formula metadata, server-owned
 calculation writes, original request idempotency, optimistic aggregate versions,

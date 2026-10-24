@@ -30,8 +30,8 @@ class PermissionMetadataQueryDatabaseTest {
         .applySetting("hibernate.session_factory.statement_inspector", (org.hibernate.resource.jdbc.spi.StatementInspector) sql -> {statements.add(sql); return sql;})
         .build()).addAnnotatedClass(Resource.class).buildMetadata().buildSessionFactory();
     em = factory.openSession(); em.beginTransaction(); context = new AuthorizationContext();
-    context.setUserId("verified-caller"); context.setResources(new HashSet<>());
-    context.setAttributes(Map.of("X-Tenant-Id", "metadata-tenant"));
+    context.setUserId("verified-caller"); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.PLATFORM); context.setResources(new HashSet<>());
+
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     expressions = new PermissionExpressionService(em); fields = new FieldScopeCatalog(em);
     for (int index = 0; index < 521; index++) {String code = "page-" + String.format("%03d", index); register(code, metadata); context.getResources().add(code);}
@@ -69,11 +69,11 @@ class PermissionMetadataQueryDatabaseTest {
     var valid = expressions.validate("page-520", "name = \"正确组织\"", null);
     assertEquals("name = \"正确组织\"", valid.expression()); assertEquals(1, rows());
     assertEquals(1, factory.getStatistics().getQueryExecutionCount()); assertEquals(0, factory.getStatistics().getEntityLoadCount());
-    assertTrue(statements.stream().filter(sql -> sql.startsWith("select")).allMatch(sql -> sql.contains("code=?") && sql.contains("fetch first ? rows only")));
+    assertTrue(statements.stream().filter(sql -> sql.startsWith("select")).allMatch(sql -> sql.contains("code in") && sql.contains("fetch first ? rows only")));
   }
   @Test void deniedUnknownAndEmptyTargetsCannotTriggerADirectoryReadEvenForAnAdministratorFlag() {
     // AuthorizationContext resources are initialize-once; install the genuinely new authorization snapshot.
-    context = new AuthorizationContext(); context.setUserId("verified-caller"); context.setIsAdministrator(true); context.setResources(Set.of());
+    context = new AuthorizationContext(); context.setUserId("verified-caller"); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.PLATFORM); context.setIsAdministrator(true); context.setResources(Set.of());
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     assertTrue(expressions.catalog().isEmpty()); assertTrue(fields.pages().isEmpty());
     for (String target : Arrays.asList(null, "", " ", "page-520", "unrelated-0"))
@@ -104,4 +104,21 @@ class PermissionMetadataQueryDatabaseTest {
     assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> expressions.validate("page-520", "name = \"x\"", null));
     assertTrue(statements.isEmpty());
   }
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"missing-scope", "missing-tenant", "platform-with-tenant", "tenant-without-catalog"})
+  void invalidNamespaceCannotReadThePlatformAsATenantFallback(String reason) {
+    var caller = new AuthorizationContext(); caller.setUserId("verified-caller"); caller.setResources(Set.of("page-520"));
+    if (!reason.equals("missing-scope")) {
+      caller.setScopeType(reason.equals("platform-with-tenant") ? org.simplepoint.core.AuthorizationScopeType.PLATFORM
+          : org.simplepoint.core.AuthorizationScopeType.TENANT);
+    }
+    if (!reason.equals("missing-tenant")) caller.setAttributes(Map.of("X-Tenant-Id", "metadata-tenant"));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, caller); resetEvidence();
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, expressions::catalog);
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, fields::pages);
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, fields::entries);
+    assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> fields.nodes(null, org.springframework.data.domain.PageRequest.of(0, 20)));
+    assertTrue(statements.isEmpty());
+  }
+
 }

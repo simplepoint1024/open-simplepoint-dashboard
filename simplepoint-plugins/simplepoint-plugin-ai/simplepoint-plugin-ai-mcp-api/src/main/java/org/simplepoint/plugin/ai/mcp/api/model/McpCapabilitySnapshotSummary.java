@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.mcp.api.model;
 
 import java.time.Instant;
+import org.simplepoint.core.query.TablePagination;
 
 /** Safe workbench summary of one immutable MCP capability snapshot. */
 @org.simplepoint.core.query.TableQuery(
@@ -12,7 +13,7 @@ import java.time.Instant;
       @org.simplepoint.core.query.QueryField("schemaHash"),
       @org.simplepoint.core.query.QueryField("active")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public record McpCapabilitySnapshotSummary(
     String id,
     String serverId,

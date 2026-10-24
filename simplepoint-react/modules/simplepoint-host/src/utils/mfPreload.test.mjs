@@ -20,3 +20,9 @@ test('ignores local, external, iframe and malformed component specs', () => {
   assert.equal(parseRemotePreloadTarget('common'), undefined);
   assert.equal(parseRemotePreloadTarget('common/'), undefined);
 });
+
+test('host-owned workspace pages do not preload a nonexistent host remote', () => {
+  for (const component of ['host/TenantResources','host/TenantPackages','host/TenantSettings','host/TenantHome']) {
+    assert.equal(parseRemotePreloadTarget(component),undefined);
+  }
+});

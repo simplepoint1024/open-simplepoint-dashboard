@@ -2,67 +2,101 @@ package org.simplepoint.plugin.rbac.tenant.service.initialize;
 
 import java.util.Map;
 import java.util.Objects;
+import org.simplepoint.platform.bootstrap.BootstrapContribution;
+import org.simplepoint.platform.dictionary.DictionaryContribution;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary;
 import org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem;
 import org.simplepoint.plugin.rbac.tenant.api.service.DictionaryItemService;
 import org.simplepoint.plugin.rbac.tenant.api.service.DictionaryService;
 
-/**
- * Shared registration support for dictionaries shipped by platform modules.
- */
+/** Shared registration support for dictionaries shipped by platform modules. */
 public final class BuiltInDictionaryRegistrar {
 
-  private BuiltInDictionaryRegistrar() {
+  private BuiltInDictionaryRegistrar() {}
+
+  /** Adapts metadata to the legacy ledger while the supplied writer owns the transaction. */
+  public static BootstrapContribution contribution(
+      DictionaryContribution declaration,
+      java.util.function.Consumer<DictionaryContribution> writer) {
+    Objects.requireNonNull(declaration, "declaration");
+    Objects.requireNonNull(writer, "writer");
+    return BootstrapContribution.versioned(
+        declaration.moduleCode(),
+        "dictionary",
+        declaration.contributionKey(),
+        declaration.version(),
+        declaration.order(),
+        () -> writer.accept(declaration));
+  }
+
+  static void apply(
+      DictionaryContribution declaration,
+      DictionaryService dictionaries,
+      DictionaryItemService items) {
+    for (var dictionary : declaration.dictionaries()) {
+      ensureDictionary(
+          dictionaries,
+          dictionary.code(),
+          dictionary.name(),
+          dictionary.description(),
+          dictionary.sort());
+      for (var item : dictionary.items()) {
+        ensureItem(
+            items,
+            dictionary.code(),
+            item.value(),
+            item.name(),
+            item.i18nKey(),
+            item.description(),
+            item.sort());
+      }
+    }
   }
 
   /**
    * Creates a built-in dictionary or refreshes its platform-owned metadata.
    *
    * @param dictionaryService dictionary management service
-   * @param code              stable dictionary code
-   * @param name              display name
-   * @param description       dictionary description
-   * @param sort              display order
+   * @param code stable dictionary code
+   * @param name display name
+   * @param description dictionary description
+   * @param sort display order
    * @return the persisted dictionary
    */
   public static Dictionary ensureDictionary(
-      DictionaryService dictionaryService,
-      String code,
-      String name,
-      String description,
-      int sort
-  ) {
-    return dictionaryService.findAll(Map.of("code", code))
-        .stream()
+      DictionaryService dictionaryService, String code, String name, String description, int sort) {
+    return dictionaryService.findAll(Map.of("code", code)).stream()
         .findFirst()
-        .map(existing -> {
-          existing.setName(name);
-          existing.setDescription(description);
-          existing.setSort(sort);
-          existing.setEnabled(Boolean.TRUE);
-          return (Dictionary) dictionaryService.modifyById(existing);
-        })
-        .orElseGet(() -> {
-          Dictionary dictionary = new Dictionary();
-          dictionary.setName(name);
-          dictionary.setCode(code);
-          dictionary.setDescription(description);
-          dictionary.setSort(sort);
-          dictionary.setEnabled(Boolean.TRUE);
-          return dictionaryService.create(dictionary);
-        });
+        .map(
+            existing -> {
+              existing.setName(name);
+              existing.setDescription(description);
+              existing.setSort(sort);
+              existing.setEnabled(Boolean.TRUE);
+              return (Dictionary) dictionaryService.modifyById(existing);
+            })
+        .orElseGet(
+            () -> {
+              Dictionary dictionary = new Dictionary();
+              dictionary.setName(name);
+              dictionary.setCode(code);
+              dictionary.setDescription(description);
+              dictionary.setSort(sort);
+              dictionary.setEnabled(Boolean.TRUE);
+              return dictionaryService.create(dictionary);
+            });
   }
 
   /**
    * Creates a built-in dictionary item or refreshes its platform-owned metadata.
    *
    * @param dictionaryItemService dictionary item management service
-   * @param dictionaryCode        owning dictionary code
-   * @param value                 stable item value
-   * @param name                  fallback display name
-   * @param i18nKey               internationalization key
-   * @param description           item description
-   * @param sort                  display order
+   * @param dictionaryCode owning dictionary code
+   * @param value stable item value
+   * @param name fallback display name
+   * @param i18nKey internationalization key
+   * @param description item description
+   * @param sort display order
    */
   public static void ensureItem(
       DictionaryItemService dictionaryItemService,
@@ -71,13 +105,12 @@ public final class BuiltInDictionaryRegistrar {
       String name,
       String i18nKey,
       String description,
-      int sort
-  ) {
-    DictionaryItem current = dictionaryItemService.findAll(Map.of("dictionaryCode", dictionaryCode))
-        .stream()
-        .filter(item -> Objects.equals(item.getValue(), value))
-        .findFirst()
-        .orElse(null);
+      int sort) {
+    DictionaryItem current =
+        dictionaryItemService.findAll(Map.of("dictionaryCode", dictionaryCode)).stream()
+            .filter(item -> Objects.equals(item.getValue(), value))
+            .findFirst()
+            .orElse(null);
     if (current == null) {
       current = new DictionaryItem();
       current.setDictionaryCode(dictionaryCode);
@@ -95,12 +128,7 @@ public final class BuiltInDictionaryRegistrar {
   }
 
   private static void applyItemMetadata(
-      DictionaryItem item,
-      String name,
-      String i18nKey,
-      String description,
-      int sort
-  ) {
+      DictionaryItem item, String name, String i18nKey, String description, int sort) {
     item.setName(name);
     item.setI18nKey(i18nKey);
     item.setDescription(description);

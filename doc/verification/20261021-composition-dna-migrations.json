@@ -1,0 +1,1854 @@
+{
+  "date": "2026-10-21",
+  "scope": "DNA core/federation/runtime module migrations and saved SQL model ownership",
+  "status": "increment_verified_overall_goal_incomplete",
+  "verificationMethod": "Full regression followed by targeted corrections and verification. Effective results use the latest result for each test suite; the entire 728-case regression was not repeated after test-only corrections.",
+  "environment": {
+    "java": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "database": {
+      "postgres": {
+        "image": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+        "runningBeforeCleanup": true,
+        "oomKilled": false,
+        "version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+        "remainingTestSchemas": {
+          "migration_test": 0,
+          "dna_runtime": 0
+        }
+      },
+      "mysql": {
+        "image": "sha256:24989179f58856db763f418010c1169fecc944e3ec1ea7e921572d83eb070f70",
+        "runningBeforeCleanup": true,
+        "oomKilled": false,
+        "version": "8.4.11",
+        "remainingTestDatabases": 0,
+        "durabilitySettings": "1\t1"
+      }
+    },
+    "credentialHandling": "Random disposable credentials passed through environment only; values excluded."
+  },
+  "commands": [
+    "./gradlew -I /tmp/simplepoint-dna-migration-checkstyle.gradle verifyDnaMigrationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test :simplepoint-services:simplepoint-service-dna:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-dna-migration-checkstyle.gradle verifyDnaMigrationStyle verifyModuleBoundaries :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test --tests *OwnedRecordServiceDatabaseTest :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-services:simplepoint-service-dna:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-dna-migration-checkstyle.gradle verifyDnaMigrationStyle verifyModuleBoundaries :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test --tests *OwnedRecordServiceDatabaseTest -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "databaseEnvironmentKeys": [
+    "SP_MIGRATIONS_POSTGRES_URL/USER/PASSWORD",
+    "DNA_RUNTIME_TEST_POSTGRES_URL/USER/PASSWORD",
+    "DNA_RUNTIME_TEST_MYSQL_URL/USER/PASSWORD"
+  ],
+  "fullRegressionResults": [
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "totals": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation",
+      "totals": {
+        "tests": 133,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.core.rest.controller.JdbcDialectPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.rest.controller.JdbcMetadataPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.AbstractJdbcDatabaseDialectTest",
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.ClickhouseJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.DamengJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.MysqlJdbcDatabaseDialectTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.OracleJdbcDatabaseDialectTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.PostgresqlJdbcDatabaseDialectTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.SqlServerJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDataSourceDefinitionServiceImplTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDdlOperationServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDialectManagementServiceImplTest",
+          "tests": 17,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDriverDefinitionServiceImplTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcMetadataBrowserServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcMetadataManagementServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.support.JdbcDriverArtifactManagerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
+      "totals": {
+        "tests": 321,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.DashboardControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.FederationSqlConsoleControllerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.SqlConsolePermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.DataAssetServiceImplTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.DataQualityRuleServiceImplTest",
+          "tests": 32,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationCatalogServiceImplTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationDdlStatementProcessorTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationDmlStatementProcessorTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcConnectionUserServiceImplTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcDriverServiceImplTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcMetadataQueryServiceImplTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryPolicyServiceImplTest",
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryTemplateServiceImplTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSchemaServiceImplTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlAuditorTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlCatalogScopeTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlConsoleServiceImplTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationViewServiceImplTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.JdbcGrantPermissionsDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssemblerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetadataSupportTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcSocketAuthenticationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheServiceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizerTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
+      "totals": {
+        "tests": 198,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.configuration.DnaRuntimeAssemblyTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.PhysicalModelServiceDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.PhysicalResourceProjectionDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateServiceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordServiceDatabaseTest",
+          "tests": 5,
+          "failures": 2,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordAdmissionControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordAggregateValidationTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationAccessTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationConstraintsTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationEvaluatorTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationServiceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationStoreTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCompletenessDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordConstraintRejectionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateCoordinatorTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateReceiptStoreTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordFieldWriteValidationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordInspectionServiceTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationBatchDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationCheckpointTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationCoordinatorDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchCompilerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStagesTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStoreTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordReadSessionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordResourceFenceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSchemaCompatibilityTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordServicesDatabaseTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSnapshotStoreTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSnapshotValidationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerCalculatedValuesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordStateTransitionValidationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordTemporalDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordViolationResultTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendDatabaseIntegrationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeJdbcConnectionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeRecordModelResolverTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeCallerGuardTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeServiceImplTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.MysqlRuntimeSchemaDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotCodecTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialectIntegrationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.DefaultDialectCapabilityResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.PhysicalPlacementSupportTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaValidatorTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverterTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-dna",
+      "totals": {
+        "tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.dna.model.controller.DnaDataModelControllerHttpTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.model.service.DnaDataModelCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeCalciteConfigurationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeExceptionHandlerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeGovernanceCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeRecordControllerHttpTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeSchemaReviewTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.server.DnaTableQueryHttpTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "effectiveTotals": {
+    "tests": 728,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "effectiveResults": [
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "totals": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation",
+      "totals": {
+        "tests": 133,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.core.rest.controller.JdbcDialectPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.rest.controller.JdbcMetadataPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.AbstractJdbcDatabaseDialectTest",
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.ClickhouseJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.DamengJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.MysqlJdbcDatabaseDialectTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.OracleJdbcDatabaseDialectTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.PostgresqlJdbcDatabaseDialectTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.dialect.SqlServerJdbcDatabaseDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDataSourceDefinitionServiceImplTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDdlOperationServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDialectManagementServiceImplTest",
+          "tests": 17,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcDriverDefinitionServiceImplTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcMetadataBrowserServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.impl.JdbcMetadataManagementServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.core.service.support.JdbcDriverArtifactManagerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
+      "totals": {
+        "tests": 321,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.DashboardControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.FederationSqlConsoleControllerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.rest.controller.SqlConsolePermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.DataAssetServiceImplTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.DataQualityRuleServiceImplTest",
+          "tests": 32,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationCatalogServiceImplTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationDdlStatementProcessorTest",
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationDmlStatementProcessorTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcConnectionUserServiceImplTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcDriverServiceImplTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcMetadataQueryServiceImplTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryPolicyServiceImplTest",
+          "tests": 18,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryTemplateServiceImplTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSchemaServiceImplTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlAuditorTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlCatalogScopeTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlConsoleServiceImplTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.FederationViewServiceImplTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.impl.JdbcGrantPermissionsDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssemblerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetadataSupportTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcSocketAuthenticationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheServiceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizerTest",
+          "tests": 22,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
+      "totals": {
+        "tests": 198,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.configuration.DnaRuntimeAssemblyTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.PhysicalModelServiceDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.PhysicalResourceProjectionDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateServiceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordServiceDatabaseTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordAdmissionControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordAggregateValidationTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationAccessTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationConstraintsTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationEvaluatorTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationServiceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationStoreTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCompletenessDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordConstraintRejectionTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateCoordinatorTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateReceiptStoreTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordFieldWriteValidationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordInspectionServiceTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationBatchDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationCheckpointTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationCoordinatorDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchCompilerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStagesTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStoreTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordReadSessionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordResourceFenceTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSchemaCompatibilityTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordServicesDatabaseTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSnapshotStoreTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSnapshotValidationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerCalculatedValuesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordStateTransitionValidationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordTemporalDatabaseTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordViolationResultTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendDatabaseIntegrationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeJdbcConnectionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeRecordModelResolverTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeCallerGuardTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeServiceImplTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.MysqlRuntimeSchemaDialectTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotCodecTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialectIntegrationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.DefaultDialectCapabilityResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.PhysicalPlacementSupportTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaValidatorTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverterTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-dna",
+      "totals": {
+        "tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.dna.model.controller.DnaDataModelControllerHttpTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.model.service.DnaDataModelCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeCalciteConfigurationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeExceptionHandlerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeGovernanceCatalogTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeRecordControllerHttpTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.runtime.RuntimeSchemaReviewTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.dna.server.DnaTableQueryHttpTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "correctionHistory": [
+    "The first full regression completed with two old H2 expectations that failed operations leave no receipt. Existing implementation, design and real database tests require a durable rejection. Corrected these tests to verify rejection replay and zero parent/detail/snapshot rows with one rejection receipt; new corrected commands use a new operation key.",
+    "The corrected aggregate suite ran 5 cases successfully; the 28-case composition suite also reran successfully with an additional real PostgreSQL permission-array read assertion.",
+    "After correcting a test-method abbreviation style violation, the final command passed all five scoped style reports, module boundaries and the 5-case aggregate suite."
+  ],
+  "styleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/dnaMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/build/reports/checkstyle/dnaMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/build/reports/checkstyle/dnaMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/reports/checkstyle/dnaMigration.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-services/simplepoint-service-dna/build/reports/checkstyle/dnaMigration.xml",
+      "violations": 0
+    }
+  ],
+  "styleSources": [
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/DnaCoreModule.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/entity/DnaDataModel.java",
+    "simplepoint-services/simplepoint-service-dna/src/test/java/org/simplepoint/dna/model/service/DnaDataModelCatalogTest.java",
+    "simplepoint-services/simplepoint-service-dna/src/main/java/org/simplepoint/dna/model/service/DnaDataModelCatalog.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/DnaModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordMaintenanceControlDatabaseTest.java",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordServiceDatabaseTest.java"
+  ],
+  "styleTaskContract": {
+    "configuration": "checkstyle/google_checks.xml",
+    "maxWarnings": 0,
+    "classpath": "owning project test compile classpath"
+  },
+  "verifiedScenarios": [
+    "Dependency-ordered installation of three manifests owning 22 PostgreSQL control tables",
+    "All 22 domain entities validate and query in shared storage and with runtime on a separate store; mandatory core/federation co-storage remains intact",
+    "Federation JDBC permission sets round-trip through PostgreSQL array mapping",
+    "Restart preserves model data, applies zero migrations and retains independent module histories",
+    "Runtime baseline matches existing six SQL migration scripts for columns, constraints and indexes; legacy scripts replay in a second schema without same-name constraint interference",
+    "Receipt tenant ownership/result completeness, active model versions and resource generation/tenant constraints reject invalid data",
+    "Real maintenance-control fixture installs versioned modules then validates mappings while PostgreSQL/MySQL target publication, maintenance, offline and recovery scenarios run",
+    "Saved SQL model catalogue tests pass after entity relocation; old host class is absent from build output"
+  ],
+  "limitations": [
+    "Only five logical domain modules currently have SQL manifests; incomplete platform coverage still prevents full installation.",
+    "PostgreSQL is the only declared DNA control schema dialect; MySQL tests target runtime-managed business storage, not a MySQL control schema.",
+    "The complete suite mixes unit/H2 tests and gated real database tests. No claim that all 728 cases use real PostgreSQL or MySQL.",
+    "Runtime-managed business/child tables and target infrastructure journals remain under existing runtime protocols, not fixed control schema migrations.",
+    "Formal host startup still uses its existing path. Remaining domain schemas, shared event/Flowable contributions, legacy adoption, installation ordering, HTTP extraction, standalone and full topology acceptance remain unfinished.",
+    "No business environment deployment, existing business database mutation, frontend distribution build, commit or push."
+  ],
+  "sourceSha256": {
+    "doc/deployment/sql/20261013-dna-record-create-idempotency.sql": "e7d649460820c8f883a0ee362f25093babb39b0571d36ef4a5528c3ea71e02ad",
+    "doc/design/modular_service_composition_plan.md": "2f1bf45803ab6efb28908589cf065c8ec770cee4950de7a0d25ec9336fc97ff0",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "40845e13a2a3346bbb2b1a4217af472c8eb0ab921e95f9ab328cf8479c3cf592",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "038dd67ea20d34683e6b8da2ca80c2ec29504c38a5c33c5af10e0564b5931d93",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java": "e7295d5720f16cd1b8ea57bef80533d958f3155032c557e775ac53975f5efbe3",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/DnaModuleMigrationPostgresTest.java": "91ecb8c767305edf45bf328183c0e8df6d1c0688d5949efce16b2cf18a3df3c1",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/MigrationPostgresDatabase.java": "5e21aa65cf8968b1214c705222a8fcf782398dd6dd91f198694b70656470735a",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "508fb99d715d12af28791df49bfd141970cb7d42d13341cd16a1ad50105d473c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/DnaCoreModule.java": "f5050204a3285d7e777ddf58b8dd2a6acec482f12ef4ff86046ea728ac2a8ddc",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/resources/META-INF/simplepoint/modules/dna-core/db/manifest.properties": "5c2276f628718913e3692c40ba6d7023fb62de74be4819d09af4c393dbae9999",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/resources/META-INF/simplepoint/modules/dna-core/db/postgresql/V1__dna_core_foundation.sql": "ac8d6089aadf9ef2b721739a825e835bed3e72f0249a142e56603f3fd34f023a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/entity/DnaDataModel.java": "71ecd931b46396fb0c7b00179ff980f452715b0ed2cf250bc2854ec31fb61d30",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java": "8852f815ed8f9c2a4c32548e64f694e88561550aa148ffdaf487ea0d1817a449",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/resources/META-INF/simplepoint/modules/dna-federation/db/manifest.properties": "f21b64a8034265cee18d40919e7ec037af38769d3319c6be881b3591b060895c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/resources/META-INF/simplepoint/modules/dna-federation/db/postgresql/V1__dna_federation_foundation.sql": "d3c3c96b5e1800196a00bd99590ec3ff5b5f217b2bda13795567f812ee89d190",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build.gradle.kts": "a94abc656af8b8dfcd56f9229e2e645260f973dec148ad92ebb8de9ec3377a04",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java": "7df9c1f9603d1e86a2b1f25b33f8de6544c99d2a4fd5859473001f386a184049",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/resources/META-INF/simplepoint/modules/dna-runtime/db/manifest.properties": "61a4286e370deb8b313979c0b7ab9dd82ef007eeb5c52b531a65434e14c543e6",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/resources/META-INF/simplepoint/modules/dna-runtime/db/postgresql/V1__dna_runtime_foundation.sql": "731bed2eecbc26d5a37fda418ec46e4e6e40e0ce1ac5d2e7cea8ca3532cecb16",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordServiceDatabaseTest.java": "9be0412b49bd26bece9e1c0f42ed259a1a5f9f4f5118b88b2024168dbea896c8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordMaintenanceControlDatabaseTest.java": "c5f02ad34b25be727ed7e484e1698c80d7c9383789f7bf51788177d9cd31533f",
+    "simplepoint-services/simplepoint-service-dna/src/main/java/org/simplepoint/dna/model/service/DnaDataModelCatalog.java": "0e2c69e1f156ecaef5fe5b53bbde1a3ba54ef404f8b0a73c02638dc143af09cd",
+    "simplepoint-services/simplepoint-service-dna/src/test/java/org/simplepoint/dna/model/service/DnaDataModelCatalogTest.java": "86c001edaf99c9ac3e6b8e3d2f94f3f82ab8ae9cb58f9cae3f1a0c1f6a3aa31c"
+  },
+  "removedPaths": [
+    "simplepoint-services/simplepoint-service-dna/src/main/java/org/simplepoint/dna/model/entity/DnaDataModel.java"
+  ],
+  "cleanup": {
+    "containersRemoved": true,
+    "anonymousVolumesRemoved": true,
+    "temporaryCredentialFilesRemoved": true,
+    "remainingTestSchemasBeforeRemoval": 0
+  }
+}

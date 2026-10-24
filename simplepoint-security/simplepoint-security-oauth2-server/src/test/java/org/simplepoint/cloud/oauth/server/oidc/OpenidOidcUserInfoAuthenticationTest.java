@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.core.oidc.OidcScopes;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,7 +30,7 @@ class OpenidOidcUserInfoAuthenticationTest {
 
   @Test
   void apply_openidSubjectByUserIdLoadsUserById() {
-    UsersService usersService = org.mockito.Mockito.mock(UsersService.class);
+    UserManagementService usersService = org.mockito.Mockito.mock(UserManagementService.class);
     User user = user("u1", "user@example.com");
     when(usersService.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
 
@@ -44,7 +44,7 @@ class OpenidOidcUserInfoAuthenticationTest {
 
   @Test
   void apply_legacyLoginSubjectFallsBackAndNormalizesSubject() {
-    UsersService usersService = org.mockito.Mockito.mock(UsersService.class);
+    UserManagementService usersService = org.mockito.Mockito.mock(UserManagementService.class);
     User user = user("u1", "simplepoint@mail.com");
     when(usersService.findByIdForAuthorization("simplepoint@mail.com")).thenReturn(Optional.empty());
     when(usersService.loadUserByUsername("simplepoint@mail.com")).thenReturn(user);
@@ -58,7 +58,7 @@ class OpenidOidcUserInfoAuthenticationTest {
 
   @Test
   void apply_unknownOpenidSubjectKeepsSubjectWithoutFailing() {
-    UsersService usersService = org.mockito.Mockito.mock(UsersService.class);
+    UserManagementService usersService = org.mockito.Mockito.mock(UserManagementService.class);
     when(usersService.findByIdForAuthorization("simplepoint-service-common")).thenReturn(Optional.empty());
     when(usersService.loadUserByUsername("simplepoint-service-common"))
         .thenThrow(new UsernameNotFoundException("not found"));
@@ -72,7 +72,7 @@ class OpenidOidcUserInfoAuthenticationTest {
 
   @Test
   void profileNameUsesLegacyComponentsButNeverDisclosesEmailWithoutEmailScope() {
-    UsersService usersService = org.mockito.Mockito.mock(UsersService.class);
+    UserManagementService usersService = org.mockito.Mockito.mock(UserManagementService.class);
     User user = user("u1", "private@example.test");
     user.setNickname("Not a real name");
     user.setFamilyName(" 张 ");

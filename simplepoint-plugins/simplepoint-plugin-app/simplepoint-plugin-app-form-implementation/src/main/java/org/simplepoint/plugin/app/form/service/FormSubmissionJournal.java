@@ -198,6 +198,20 @@ public class FormSubmissionJournal {
     row.setUpdatedAt(clock.instant());
   }
 
+  /** Ends only a pre-data intent whose DNA operation has a durable negative receipt. */
+  public void rejected(String id, String token) {
+    var row = locked(id, token);
+    if (row == null) {
+      return;
+    }
+    if (!"PREPARED".equals(row.getStep()) || row.getSnapshotJson() != null || row.getProcessInstanceId() != null) {
+      throw conflict("Only an uncommitted submission may be rejected");
+    }
+    row.setStep("TERMINAL");
+    ready(row, "FAILED", clock.instant());
+    row.setErrorCode("RECORD_OPERATION_REJECTED");
+  }
+
   /** Explicit retry keeps the same intent, data receipt and process operation key. */
   public void retry(String id, String tenant, String actor) {
     var row =

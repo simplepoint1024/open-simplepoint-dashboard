@@ -37,13 +37,16 @@ class JdbcDriverDefinitionServiceImplTest {
 
   @Test
   void forbiddenDriverActionsDoNotDownloadUploadOrDisconnect() {
-    var context = new org.simplepoint.core.AuthorizationContext(); context.setUserId("reader");
+    var context = new org.simplepoint.core.AuthorizationContext();
+    context.setUserId("reader");
     context.setResourceDataScopes(java.util.Map.of("drivers.view",
         new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
     org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     org.simplepoint.core.ResourcePolicyContext.set("drivers.view");
     try {
-      var row = new JdbcDriverDefinition(); row.setId("foreign"); row.setCreatedBy("other");
+      var row = new JdbcDriverDefinition();
+      row.setId("foreign");
+      row.setCreatedBy("other");
       when(repository.findActiveById("foreign")).thenReturn(Optional.of(row));
       when(repository.findAllByIds(java.util.List.of("foreign"))).thenReturn(java.util.List.of(row));
       var service = new JdbcDriverDefinitionServiceImpl(repository, detailsProviderService, artifactManager, dataSourceService);

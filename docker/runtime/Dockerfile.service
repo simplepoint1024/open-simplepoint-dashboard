@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+# Supply the complete, frontend-verified installDist as the named distribution context.
+# Example: --build-context distribution=.../build/install/simplepoint-service-common
+ARG RUNTIME_IMAGE=eclipse-temurin:21.0.12_8-jre-jammy
+FROM ${RUNTIME_IMAGE}
+ARG SERVICE
+ARG HEALTH_PORT
+ARG HEALTH_PATH=/actuator/health
+RUN case "$SERVICE" in \
+      authorization|common|auditing|dna|ai|app|workflow|mcp-gateway|host) ;; \
+      *) echo 'Unsupported service distribution' >&2; exit 1 ;; \
+    esac \
+    && case "$HEALTH_PORT" in ''|*[!0-9]*) exit 1 ;; esac \
+    && test "$HEALTH_PORT" -ge 1 && test "$HEALTH_PORT" -le 65535 \
+    && case "$HEALTH_PATH" in /actuator/health|/actuator/health/readiness) ;; *) exit 1 ;; esac \
+    && groupadd --system --gid 10001 simplepoint \
+    && useradd --system --uid 10001 --gid simplepoint --home-dir /opt/simplepoint --shell /usr/sbin/nologin simplepoint \
+    && install -d -o simplepoint -g simplepoint /opt/simplepoint /opt/simplepoint/data/dna /opt/simplepoint/plugins
+WORKDIR /opt/simplepoint
+COPY --from=distribution --chown=10001:10001 / /opt/simplepoint/
+COPY --chmod=0555 docker/runtime/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN test -x "/opt/simplepoint/bin/simplepoint-service-${SERVICE}"
+ENV SIMPLEPOINT_START_SCRIPT=/opt/simplepoint/bin/simplepoint-service-${SERVICE} \
+    SIMPLEPOINT_HEALTH_PORT=${HEALTH_PORT} \
+    SIMPLEPOINT_HEALTH_PATH=${HEALTH_PATH} \
+    SIMPLEPOINT_WAIT_TIMEOUT=180
+USER 10001:10001
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=12 \
+    CMD curl -fsS "http://127.0.0.1:${SIMPLEPOINT_HEALTH_PORT}${SIMPLEPOINT_HEALTH_PATH}" >/dev/null || exit 1
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

@@ -15,5 +15,5 @@ export function usePermissionLabels(enabled = true) {
     void ensure([...new Set(['permissions', 'organizations', ...pages.map(([code]) => code.replace(/\.view$/, '').split('.')[0]),
       ...titles.filter(title => title?.startsWith('i18n:')).map(title => title.slice(5).split('.')[0])])]);
   }, [query.data, enabled, ensure, locale]);
-  return {...query, labels: useMemo(() => permissionLabels(t, query.data), [t, query.data]), t, locale};
+  return {...query, labels: useMemo(() => permissionLabels(t, query.data, locale), [t, query.data, locale]), t, locale};
 }

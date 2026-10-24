@@ -35,21 +35,52 @@ class ClientCredentialsServiceRouterAccessTokenProviderTest {
         new ClientCredentialsServiceRouterAccessTokenProvider(
             builder.build(),
             properties,
-            Clock.fixed(Instant.parse("2026-07-05T00:00:00Z"), ZoneOffset.UTC)
-        );
+            Clock.fixed(Instant.parse("2026-07-05T00:00:00Z"), ZoneOffset.UTC));
 
-    server.expect(once(), requestTo("http://authorization/oauth2/token"))
+    server
+        .expect(once(), requestTo("http://authorization/oauth2/token"))
         .andExpect(method(HttpMethod.POST))
         .andExpect(header("Authorization", "Basic c2ltcGxlcG9pbnQtc2VydmljZS1jb21tb246c2VjcmV0"))
         .andExpect(content().contentType(MediaType.APPLICATION_FORM_URLENCODED))
         .andExpect(content().string("grant_type=client_credentials&scope=service-router.invoke"))
-        .andRespond(withSuccess(
-            "{\"access_token\":\"jwt-token\",\"token_type\":\"Bearer\",\"expires_in\":300}",
-            MediaType.APPLICATION_JSON
-        ));
+        .andRespond(
+            withSuccess(
+                "{\"access_token\":\"jwt-token\",\"token_type\":\"Bearer\",\"expires_in\":300}",
+                MediaType.APPLICATION_JSON));
 
     assertThat(provider.getAccessToken()).isEqualTo("jwt-token");
     assertThat(provider.getAccessToken()).isEqualTo("jwt-token");
+    server.verify();
+  }
+
+  @Test
+  void rejectionEvictsMatchingTokenAndPreservesConcurrentReplacement() {
+    RestClient.Builder builder = RestClient.builder();
+    final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    ServiceRouterProperties.InternalAuth.Oauth2 properties =
+        new ServiceRouterProperties.InternalAuth.Oauth2();
+    properties.setTokenUri("http://authorization/oauth2/token");
+    properties.setClientId("test-client");
+    properties.setClientSecret("test-secret");
+    for (String token : List.of("old-token", "new-token")) {
+      server
+          .expect(requestTo("http://authorization/oauth2/token"))
+          .andRespond(
+              withSuccess(
+                  "{\"access_token\":\"" + token + "\",\"expires_in\":300}",
+                  MediaType.APPLICATION_JSON));
+    }
+    ClientCredentialsServiceRouterAccessTokenProvider provider =
+        new ClientCredentialsServiceRouterAccessTokenProvider(builder.build(), properties);
+    assertThat(provider.getAccessToken()).isEqualTo("old-token");
+    provider.invalidate("unrelated-token");
+    assertThat(provider.getAccessToken()).isEqualTo("old-token");
+    provider.invalidate("old-token");
+    assertThat(provider.getAccessToken()).isEqualTo("new-token");
+    // A delayed 401 from another request cannot evict the replacement obtained above.
+    provider.invalidate("old-token");
+    provider.invalidate(null);
+    assertThat(provider.getAccessToken()).isEqualTo("new-token");
     server.verify();
   }
 }

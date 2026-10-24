@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-23",
+  "scope": "existing-data-postgresql18-rehearsal",
+  "source": "Read-only consistent dump of current environment; independently restored into loopback PostgreSQL 18.6. Existing services and database were not modified.",
+  "migration": {
+    "identityBefore": 8,
+    "identityAfter": 17,
+    "allSelectedSchemasVerified": true
+  },
+  "adoption": {
+    "tenants": 13,
+    "readyTenants": 13,
+    "pendingTenantsRemain": false,
+    "repeatReturnsSameReceipt": true,
+    "credits": 664,
+    "balances": 651
+  },
+  "originalData": {
+    "comparedTables": 221,
+    "unchangedTables": 214,
+    "changes": [
+      {
+        "table": "simpoint_installation_attempts",
+        "before": {
+          "table": "simpoint_installation_attempts",
+          "count": 71,
+          "fingerprint": "eca6ad1b8c2727df10a635362d92d419"
+        },
+        "after": {
+          "table": "simpoint_installation_attempts",
+          "count": 72,
+          "fingerprint": "212d950cdd2883fa8698aed0dc22ba64"
+        }
+      },
+      {
+        "table": "simpoint_installation_operations",
+        "before": {
+          "table": "simpoint_installation_operations",
+          "count": 4,
+          "fingerprint": "405cddf09eabd9118327c9f70992a3c2"
+        },
+        "after": {
+          "table": "simpoint_installation_operations",
+          "count": 5,
+          "fingerprint": "075c03d5896faaae6a0845a89beab57d"
+        }
+      },
+      {
+        "table": "simpoint_installation_steps",
+        "before": {
+          "table": "simpoint_installation_steps",
+          "count": 71,
+          "fingerprint": "831c8c547b274fea340e2f6c1300ec75"
+        },
+        "after": {
+          "table": "simpoint_installation_steps",
+          "count": 72,
+          "fingerprint": "627aa58afb50f273a6962d37bce07722"
+        }
+      },
+      {
+        "table": "simpoint_installation_targets",
+        "before": {
+          "table": "simpoint_installation_targets",
+          "count": 4,
+          "fingerprint": "41f8a108da65b62456995178157adb63"
+        },
+        "after": {
+          "table": "simpoint_installation_targets",
+          "count": 5,
+          "fingerprint": "00915b129321a5e2dda677ac1caf2377"
+        }
+      },
+      {
+        "table": "simpoint_saas_tenant_resources",
+        "before": {
+          "table": "simpoint_saas_tenant_resources",
+          "count": 389,
+          "fingerprint": "9a2578e115b9257b7fa96e74e2b390e4"
+        },
+        "after": {
+          "table": "simpoint_saas_tenant_resources",
+          "count": 930,
+          "fingerprint": "c37cda43bb5da410bee72babce84b683"
+        }
+      },
+      {
+        "table": "simpoint_saas_tenants",
+        "before": {
+          "table": "simpoint_saas_tenants",
+          "count": 13,
+          "fingerprint": "3a56cc1117db109efdda6408f52a9d4e"
+        },
+        "after": {
+          "table": "simpoint_saas_tenants",
+          "count": 13,
+          "fingerprint": "786d1c3a1561d537ef10f3e528746f85"
+        }
+      },
+      {
+        "table": "sp_migration_689f6a627384c7dcb2dcc1487e540223",
+        "before": {
+          "table": "sp_migration_689f6a627384c7dcb2dcc1487e540223",
+          "count": 8,
+          "fingerprint": "ad1d0b6ef2db55f0abf478b00d55801d"
+        },
+        "after": {
+          "table": "sp_migration_689f6a627384c7dcb2dcc1487e540223",
+          "count": 17,
+          "fingerprint": "daef62fd9efd9eb0644a7bed28680749"
+        }
+      }
+    ],
+    "liveGrantRows": 307,
+    "revokedGrantRows": 25,
+    "grantDataUnchanged": true,
+    "businessDataUnchanged": true
+  },
+  "authorityRehearsal": {
+    "moduleClients": 21,
+    "resourceAuthorities": 6,
+    "dictionaryAuthorities": 2,
+    "freshOperation": true,
+    "applied": true
+  },
+  "limitations": [
+    "Rehearsal uses the existing source catalog; formal cutover must register current declarations before reviewing/adopting the live tenant cohort.",
+    "This is migration and offline authority validation; it does not replace real login, UI, workflow or MQ acceptance after deployment."
+  ]
+}

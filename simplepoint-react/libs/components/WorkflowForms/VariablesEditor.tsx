@@ -1,12 +1,13 @@
+import {asyncComponent} from '../AsyncComponent';
 import {Alert, Spin} from 'antd';
-import {forwardRef, lazy, memo, Suspense, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
+import {forwardRef, memo, Suspense, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import type {WorkflowRuntimeForm, WorkflowFormAdapter, WorkflowFormBinding} from '../WorkflowDesigner/contracts';
 import {useWorkflowFormAdapters} from './useWorkflowFormAdapters';
 import {ordinaryVariablesIssue, runtimeSchema, variablesIssue, editableWorkflowVariables} from './model';
 import {captureWorkflowVariables, type WorkflowVariablesSnapshot} from './capture';
 
-const SForm = lazy(() => import('../SForm'));
+const SForm = asyncComponent(() => import('../SForm'));
 export type WorkflowVariablesEditorHandle = {
   getValues: (expectedForm: WorkflowRuntimeForm) => Record<string, unknown>;
 };

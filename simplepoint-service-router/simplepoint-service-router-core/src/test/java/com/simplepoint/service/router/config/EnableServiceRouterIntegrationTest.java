@@ -10,8 +10,11 @@ import com.simplepoint.service.router.invocation.RemoteRequest;
 import com.simplepoint.service.router.invocation.RemoteResponse;
 import com.simplepoint.service.router.invocation.ServiceInvocationDispatcher;
 import com.simplepoint.service.router.registry.CapabilityRegistry;
+import com.simplepoint.service.router.registry.LocalServiceRegistry;
 import com.simplepoint.service.router.routing.ServiceDiscovery;
 import com.simplepoint.service.router.routing.ServiceRoute;
+import com.simplepoint.service.router.web.ServiceRouterController;
+import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -21,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.remoting.RemoteContract;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.env.MapPropertySource;
 
 class EnableServiceRouterIntegrationTest {
 
@@ -65,6 +70,44 @@ class EnableServiceRouterIntegrationTest {
     }
   }
 
+  @Test
+  void routesToLocalFactoryMethodProviderThroughTheSameBoundary() {
+    try (var context = new AnnotationConfigApplicationContext(LocalProviderConfig.class)) {
+      LocalEcho service = context.getBean(LocalEcho.class);
+
+      assertThat(Proxy.isProxyClass(service.getClass())).isTrue();
+      assertThat(service.echo("value")).isEqualTo("local:value");
+      assertThat(context.getBean(CapabilityRegistry.class).capabilities())
+          .extracting(capability -> capability.name()).containsExactly("sample.LocalEcho");
+    }
+  }
+
+  @Test
+  void remoteSelectionIsHonoredEvenWhenLocalProviderExists() {
+    try (var context = new AnnotationConfigApplicationContext(LocalProviderConfig.class)) {
+      context.getBean(ServiceRouterProperties.class).getConsumer().setLocalFirst(false);
+
+      assertThat(context.getBean(LocalEcho.class).echo("value")).isEqualTo("remote:value");
+    }
+  }
+
+  @Test
+  void disablingRemoteExportsRetainsLocalProvidersAndConsumerCalls() {
+    try (var context = new AnnotationConfigApplicationContext()) {
+      context.getEnvironment().getPropertySources().addFirst(new MapPropertySource(
+          "local-only-host", Map.of("simplepoint.service-router.provider.enabled", "false")));
+      context.register(LocalProviderConfig.class);
+      context.refresh();
+
+      assertThat(context.getBean(CapabilityRegistry.class).capabilities()).isEmpty();
+      assertThat(context.getBeansOfType(ServiceRouterController.class)).isEmpty();
+      assertThat(context.getBean(LocalServiceRegistry.class).all()).hasSize(1);
+      assertThat(context.getBean(LocalEcho.class).echo("value")).isEqualTo("local:value");
+      context.getBean(ServiceRouterProperties.class).getConsumer().setLocalFirst(false);
+      assertThat(context.getBean(LocalEcho.class).echo("value")).isEqualTo("remote:value");
+    }
+  }
+
   @EnableServiceRouter(basePackageClasses = RemoteEchoService.class)
   static class TestConfig {
 
@@ -90,6 +133,39 @@ class EnableServiceRouterIntegrationTest {
     @Bean
     AuditServiceImpl auditService(final AtomicReference<Instant> capturedAuditInstant) {
       return new AuditServiceImpl(capturedAuditInstant);
+    }
+  }
+
+  @EnableServiceRouter(basePackageClasses = LocalEcho.class)
+  static class LocalProviderConfig {
+
+    @Bean
+    @Lazy
+    LocalEcho localEcho() {
+      return new LocalEchoProvider();
+    }
+
+    @Bean
+    RemoteInvoker remoteInvoker() {
+      return (route, request) -> RemoteResponse.success("remote:" + request.args().getFirst());
+    }
+
+    @Bean
+    ServiceDiscovery serviceDiscovery() {
+      return service -> List.of(
+          new ServiceRoute("remote", "remote-1", URI.create("http://remote"), Map.of()));
+    }
+  }
+
+  @RemoteContract(name = "sample.LocalEcho")
+  public interface LocalEcho {
+    String echo(String value);
+  }
+
+  public static class LocalEchoProvider implements LocalEcho {
+    @Override
+    public String echo(final String value) {
+      return "local:" + value;
     }
   }
 

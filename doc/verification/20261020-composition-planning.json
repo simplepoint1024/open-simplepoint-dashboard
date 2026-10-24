@@ -1,0 +1,199 @@
+{
+  "generatedAt": "2026-10-20T10:30:02.197889+00:00",
+  "scope": "S1 planning, selected Spring assembly fixtures, routing/export behavior and DNA/authorization regression; not a live topology acceptance",
+  "wholeGoalComplete": false,
+  "stageS1Complete": false,
+  "deployed": false,
+  "java": "21.0.12.1",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-composition:check :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-service-router:simplepoint-service-router-core:test :simplepoint-service-router:simplepoint-service-router-core:checkstyleMain :simplepoint-service-router:simplepoint-service-router-core:checkstyleTest :simplepoint-service-router:simplepoint-service-router-consul:check :simplepoint-services:simplepoint-service-dna:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "build": "SUCCESSFUL",
+  "testSuites": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-consul",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-dna",
+      "tests": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "checkstyle": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "scope": "test",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-consul",
+      "scope": "main",
+      "violations": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-consul",
+      "scope": "test",
+      "violations": 0
+    }
+  ],
+  "moduleBoundaries": "passed including DNA audit persistence exclusion",
+  "compositionRuntimeDependencies": "verified JDK and simplepoint-remoting-core only",
+  "limitations": [
+    "Consul registration tests use a mocked registration, not a real Consul server",
+    "Spring selection tests use fixture modules, not production databases or event identities",
+    "Only APP form, DNA core/runtime and workflow have initial declarations",
+    "No standalone service, distribution, deployment, frontend or cross-topology acceptance in this evidence"
+  ],
+  "sha256": {
+    "build.gradle.kts": "b081a300efa9ff463615320333011fc242bcee2283c2ca44bf03e5d9b8e0fef2",
+    "gradle/module-boundaries.gradle.kts": "eebd04697abceb9cc231a4b30e9efbd39d66bc7612882c717c6457d1f99a3a6b",
+    "settings.gradle.kts": "d01d568d9b1d8c49e99170fe37049b863dda0056f521b8292caaeda1ff12bab9",
+    "simplepoint-platform/simplepoint-platform-composition/build.gradle.kts": "7a2640d19bd3262587ccde8281a28e0d260301faf34d13c3419f0923a45e6c0b",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/DeploymentPlan.java": "dd6fad572a77e352fa30eb30c89b0e7907a2a48bec309b08aa719a9733412a4f",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCatalog.java": "b3c9a51a5c6af508c06642df6670f43297df5bc670c4681e5a7923a099ae2c81",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleCompositionException.java": "55fd42387727475dde320eaf1868705c8430eb5c8f89f114eeaaf25166b6fc37",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDependency.java": "860221d93ce0a95adcd011dfacb43481800536de7ca2cd1587ed36d53c9bf0c9",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleDescriptor.java": "f2d4ec6973afe747564c4a7599665278354a56386a5b85ea451104da1ae37134",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModulePlan.java": "0a28ec9f130e6e0f124abb1b8d9829c894c8d2422fdabfc6db3a5d821bad4f6f",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/PlatformModule.java": "c3c5c65566ac556271c0d5607c1218bf43565aeeaf23048df561e9afbc072dce",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleCatalogTest.java": "c746585f0541e4aa04d5f58bd8604547ee297a9504af63219f1d51f0271db9df",
+    "simplepoint-platform/simplepoint-platform-composition-spring/build.gradle.kts": "6463bade59d63afddbddd54b5ccfb2c4bcd7492f0a90501c13965b40c28f6621",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/EnablePlatformModules.java": "4b15cbdf9aaa298adb298e7bd2b75a2bfb13ebaeaa8da7ac076f88848b94706b",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleCapabilityValidator.java": "7df1c9d1c14358f61416edd6edd537160a5cff2bc0a9ea7b2ccb77675be96246",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/PlatformModuleRegistrar.java": "2aa12e75d73de6370d420982d4775fa71e964feb2c4663281a0decaa662057f5",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/Greeting.java": "d82d2075632f17531ea499235bb6be173583c4e46725476a462b61124ea9b02d",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/first/FirstModule.java": "859c6ee3b7c37956c0f9e2f0d0abac01298d66e7c5f6e7556f2ee960623cec42",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/missing/MissingModule.java": "f8315ee80e06647ef758fccc83026372b0e01f6dd7f26ed1f80dfbd354df678f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/remote/RemoteModule.java": "f29302f09403128b5c8c1cd14eed5051dd99ddb765d050d8f7e1cf549d8b9dfc",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/second/SecondModule.java": "3477fc57ba90deed7fa37cb54fe23907657c1c82a0f62dcfbdf344a6a118e9af",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/undeclared/UndeclaredModule.java": "c6a95b86f5ef6bdface01f5f837f56e901b3103ba5cbab1df8788500a63c86de",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/unused/UnusedModule.java": "9099910a3091a25c7a60a076743a3aceba7d91fa0c1d348a14d019ebea416e22",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/PlatformModuleAssemblyTest.java": "582c3d3e88ba213d1a420c4f5fb39d82eec99bf30a016eb50c9165bdbf9ea4f8",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules.imports": "08298d7ccc04439612ec3960dea8eac6bf11114fcf152459c6069e5c51451083",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/build.gradle.kts": "424f6e1d6064aceea7095d208febe670f7bbad66c33789afda35cde694904bdc",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java": "5c03a7fea1e2b34db546724d47294514fddb812174341451fe302cb22b98e3b3",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "ef7d0d00e8badc5a733a11cada982caffe354109b802edcb74f3c963ebbcbec7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/build.gradle.kts": "16216377dcdc02ff8889ac6271a1a94dfd07064742fc07d2c9d8a0e0601c7ba5",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/DnaCoreModule.java": "216828e6ab471c0ec0b5c6562517a0f1724f9c0017dac5a1d469221d41a658e8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "1fd532c80ee9a0531f2543e316a43682fbca7d3b6920086ebe7a5a051716fe0d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build.gradle.kts": "fbd50c4228136736343c6f212d7c366957f0c271393545445c3d241a4375f51c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java": "cebe057349f5fa04f65f4a2a47e66ded167041269d604e86a59679c6cbfcd47b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "01a259efcfc7af04a82ef1e4a02ea89c80a186d517b9ae958f0f8aa081e785ea",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build.gradle.kts": "21a2a5693ff882062e6a8037a6327441a0ccb8c7423368e0b4c70f58904fd20d",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java": "c3aeb42401bc8bc8c1bcfe1a631b69b69ea8def5e4a546ee5d6beb6d0167f08d",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules.imports": "5aeb54dfac5a31bbf433eb4905853345a4df590aa33bef03fc5f05af886995ae",
+    "simplepoint-remoting/simplepoint-remoting-core/build.gradle.kts": "494fed4867386246920010802f3a432d2429d18beb58bff4ed999a341f5ba9d0",
+    "simplepoint-service-router/simplepoint-service-router-consul/build.gradle.kts": "5ca00f2b0d507f0e5f8b36a3388c5f16068013cf8db1ed0c335b28db8ec07986",
+    "simplepoint-service-router/simplepoint-service-router-consul/src/main/java/com/simplepoint/service/router/consul/ServiceRouterConsulAutoConfiguration.java": "7586f33f7a0618acba11bc988ff1b9fbe15e9520ebc205bb3def9b40db952198",
+    "simplepoint-service-router/simplepoint-service-router-consul/src/main/java/com/simplepoint/service/router/consul/ServiceRouterDiscoveryMetadata.java": "09c0ba30e5e066eb2678affcc8dd39b8f8eddad85e724afba6965b8e243845d6",
+    "simplepoint-service-router/simplepoint-service-router-consul/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports": "75674d5acc1e2c312996337e72adf43889843eb2eab36cacdfbdb2386f74f531",
+    "simplepoint-service-router/simplepoint-service-router-consul/src/test/java/com/simplepoint/service/router/consul/ServiceRouterConsulAutoConfigurationTest.java": "d72dc0236a25ac3cb572d5f9be04fe0ad4be1599082e751c7dcd04d78c5f167a",
+    "simplepoint-service-router/simplepoint-service-router-core/build.gradle.kts": "077dfbdeea656ee2806df910783bf0f725f6f96982bf2afaf8e49051c927560e",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/EnableServiceRouter.java": "b39b64d8ee9e766c8f3fb0847b3505611b4c1f4ae8799df51a4c94e3357b7d31",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/RoutedMethod.java": "294c175a2e39b2bcdbdb36b9103dc36f3b7a949119ca543ce096e88da1211497",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/RoutedService.java": "3d9626323c77c9441f34e32d6d6f5a41c83d8c8a565ba7a4f22b948dcd298924",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProperties.java": "7bb6f2ca6b51d943f1a70660cb8a14ec0f3b25146800548cdeec7cd70cf79c11",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProxyBeanDefinitionRegistryPostProcessor.java": "84e47483eac8509bb832801a6f69ae397100c6260869db57f79943f1e29b61a5",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProxyDefinitions.java": "a6b1da8de5ab4c1b513ebd3dab62f571ffb19de5c522039a8271fa6334e5c2df",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRegistrar.java": "51998dbd6ef00da542fe16159a347af0537d3753120cdb0fd9a121305f3ae5be",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRuntimeConfiguration.java": "340f51e3aded24094cbd0b837437f07ed50353ac4bee05035e58e9f1d1298a1b",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/AmbiguousServiceProviderException.java": "da52ed7c886f59d5f94ac7d9332d65a4e2c8bc8c2a9cd2331af42dc301832ddf",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/ServiceRouteNotFoundException.java": "9135b3ee19eef5c20bc801fdd5a09d6a967ec8fd5261d641040d8edfd338a881",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/ServiceRouterException.java": "582673850eecd42001ef23a561b5c3d069dfa890a0ad6c4c023b2a1ef896a5cd",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ClientCredentialsServiceRouterAccessTokenProvider.java": "4c6e6efd96ac336f002b1780261f4af2babc24c4a75c7010956f04eb37aeadcb",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/NoFallback.java": "f6ea4e29cd490689a31c5547803aefb168956829a599f5b08ab088d6f8de91c3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/NoOpServiceRouterAccessTokenProvider.java": "3c50ddba9a97d26385a53a7306f981bd6346096b9b206f0894233a761eece030",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteInvoker.java": "94e37583d2a586ff7b92c425a3297d8a61e2ad1310387f701eb6d5f4f7792766",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteRequest.java": "d24c90242527384f9ad1345d500c7d74f80066c995ac1d096473890ee2919820",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteResponse.java": "8b80c1388795b5cdba1ec104737d84d8c939f23f7b05d8a2fc0e0603bdff669f",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RestClientRemoteInvoker.java": "99b4a6f4cfc632710672d2a1ba981d9439b4291760141b6ba2bbc85968059078",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcher.java": "7a49f71dd9d612b8c78f2c8dbdea42b78e0dfa668ccf7bf3a70243540de96f40",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceRouterAccessTokenProvider.java": "eb1820c94a0bef9ef78fd790cc3c68af74a6c2b6627257b19c3aa13d2c9eb642",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/loadbalance/LoadBalancer.java": "529265657cda0170c106a7ca0b1f20b440c83080f6ee26ac092c395e8531b8d3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/loadbalance/RoundRobinLoadBalancer.java": "6b7753d29e1d1b455e838ad38e61e8029d5cfa3cf0cc7969eb9b5ed28c2cb3f5",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedMethodMetadata.java": "1112c7198687986ca273db88d36746951617860b9bb91fc4b590568729e2256d",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedServiceMetadata.java": "069eb569748541447aea9e2d8a98b205eeee6dfbcd9ce06a7743e2f6881bd952",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedServiceMetadataResolver.java": "f4fff7427cea18b481296a4951b9a14de3287948f6035a5672e8420ad73e83df",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java": "0aaabbea6ea3f31b177b341b708528cffb3d549fa7a2bf8c17d74e1939b95680",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterProxyFactoryBean.java": "4cbca0d6839b282f27237724be39986f201a247ffe285a66cc5b26c396c831ca",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/ApplicationContextLocalServiceRegistry.java": "17b876162fe6b64bf642f023e2139915fcf3c9ae4a2f8aeaaff05495365af413",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/CapabilityRegistry.java": "8ad1b4c2e60f5f37758fcd4c5c01a794f1fe80a94e96dfdd00216002c20afa8d",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/LocalRoutedService.java": "20fcd6d3da4b230be5dde58180a6658e684573541c36a94f3ffc37fa26abbbd2",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/LocalServiceRegistry.java": "71bbd7e5c928a1d8df0fabc1907a99fc9cd2890d29c0c08e07f131b997a2ce72",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/DiscoveryClientServiceDiscovery.java": "340bf40454c781b2383ce7cb00ab7020668dd8247368b8eafe72b4d1fd49e207",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/ServiceDiscovery.java": "5690a48fa6ecf75523062adfeeff026657e9a36148b2d53d44ac19aa48a2dd08",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/ServiceRoute.java": "468e1896a7e34762968e2fe95c1bfafda306fd0daaf7068f8332a82f9e3591d8",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/tracing/TraceContext.java": "4d4a60a621c288f4ea43d6db6919b9c61bb6adafe030a32af2c2c6df3a64daf4",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/web/ServiceRouterController.java": "28292c9ef975bebc4cd10bd8cd61810ff5347b433adbea152bc57968f73a1f16",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/config/EnableServiceRouterIntegrationTest.java": "509bd8ad4c31ef0e629da349837a41806bdf77ea053cd94384cee3c997a2ad0f",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/config/ServiceRouterProxyDefinitionsTest.java": "cb7013ada403d0ee8d98198452a852a2ede7fe319180a10c8c76a6a4fe38cb34",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/ClientCredentialsServiceRouterAccessTokenProviderTest.java": "60162c996536c93e0abb5a9db8a8a9e3e91afedf53a409295adc46cd4dc99339",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/RestClientRemoteInvokerTest.java": "b7ebb57acb05e2baca1901c0fc8e8b68f756bf9ccef90a35ec3a6736c2cec506",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcherTest.java": "56f1d7deb641a794910750cb8943031ee264fdcdaf2810b9d831e3bd11ed5a68",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/loadbalance/RoundRobinLoadBalancerTest.java": "d99e64cfe6402e188c84c3ca9587477250c97c0ad726afe2e61a17bc81ecf3a1",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/metadata/RoutedServiceMetadataResolverTest.java": "bfab26ee2dac34b4fc4cedfa81eaeeb9d7345f4bb531481d124c48c05a95981e",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/RemoteBusinessErrorRoutingTest.java": "d75e7504ceab703c2960924cbbb150f8faec95e0469ac186520ac669a2f063c7",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandlerTest.java": "97c048046202c9e80f4a520538b6f9334e4e33296d35573459034c1c7bac3c29",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/registry/ApplicationContextLocalServiceRegistryTest.java": "29edc2b2a9517851ea1399c7ba08fa52c3315f88c7da9ca443383d918dd8ddf2",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/routing/DiscoveryClientServiceDiscoveryTest.java": "66031f08aeeff5d280778ee55dc0d3a8fab7b6796cf3404ff0cf37774f6ea39d",
+    "simplepoint-services/simplepoint-service-authorization/src/main/resources/application.properties": "9905c759729d59fcc9b3cdc922993dff073acc69e54841343963949773c38ae8",
+    "simplepoint-services/simplepoint-service-dna/build.gradle.kts": "cb2035fdd964ab4d05e4987c6f1212c6254ae6eb36d276270bfa6babc0f2579a"
+  }
+}

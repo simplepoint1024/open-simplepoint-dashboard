@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
+import org.simplepoint.core.annotation.PermissionFields;
 import org.simplepoint.core.annotation.PermissionResource;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 
 /** Immutable metadata observed during a scan; never contains Redis values. */
@@ -50,12 +52,16 @@ import org.simplepoint.core.query.TableQuery;
       @QueryField("persistent"), @QueryField("size"), @QueryField("editable"),
       @QueryField("observedAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public record RedisEntryMetadata(
     @Schema(title = "i18n:monitoring.redis.key") String key,
     @Schema(title = "i18n:monitoring.redis.type") RedisEntryType type,
     @Schema(title = "i18n:monitoring.redis.ttlObserved") Long ttlSeconds,
-    @Schema(title = "i18n:monitoring.redis.permanentFlag") Boolean persistent,
+    @PermissionFields(resource = RedisEntrySummary.class, value = "ttlSeconds")
+        @Schema(title = "i18n:monitoring.redis.permanentFlag")
+        Boolean persistent,
     @Schema(title = "i18n:monitoring.redis.sizeObserved") Long size,
-    @Schema(title = "i18n:monitoring.redis.stringKey") Boolean editable,
+    @PermissionFields(resource = RedisEntrySummary.class, value = "type")
+        @Schema(title = "i18n:monitoring.redis.stringKey")
+        Boolean editable,
     @Schema(title = "i18n:monitoring.redis.observedAt") Instant observedAt) {}

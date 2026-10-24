@@ -13,16 +13,28 @@ import java.util.Objects;
 import java.util.UUID;
 
 /** Versioned, transport independent business event; never contains an authentication snapshot. */
-public record EventMessage(UUID eventId, String eventType, int schemaVersion, String producer,
-                           String tenantId, String resourceId, long generation,
-                           String operationId, String correlationId, Instant occurredAt,
-                           JsonNode payload) {
+public record EventMessage(
+    UUID eventId,
+    String eventType,
+    int schemaVersion,
+    String producer,
+    String tenantId,
+    String resourceId,
+    long generation,
+    String operationId,
+    String correlationId,
+    Instant occurredAt,
+    JsonNode payload) {
   /** Validates the envelope and snapshots its mutable JSON payload. */
   public EventMessage {
     Objects.requireNonNull(eventId, "eventId");
     token(eventType, "eventType");
     token(producer, "producer");
-    text(tenantId, "tenantId");
+    if (tenantId == null
+        || tenantId.isBlank()
+        || tenantId.codePointCount(0, tenantId.length()) > 255) {
+      throw new IllegalArgumentException("Invalid tenantId");
+    }
     text(resourceId, "resourceId");
     text(operationId, "operationId");
     text(correlationId, "correlationId");

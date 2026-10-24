@@ -30,6 +30,21 @@ import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.
 class RuntimeRecordModelResolverTest {
 
   @Test
+  void cancellationValidatesHistoricalIdentityWithoutAllowingIncompatibleBusinessWrites() {
+    var fixture = fixture(true);
+    var reference = new RecordSchemaReference(1, fixture.requestedChecksum());
+    assertThatThrownBy(() -> fixture.resolver().resolve(fixture.actor(), "model-1", reference))
+        .isInstanceOf(DnaRuntimeException.class);
+    var target = fixture.resolver().resolveForCancellation(fixture.actor(), "model-1", reference);
+    assertThat(target.requestedVersion()).isEqualTo(1);
+    assertThat(target.activeVersion()).isEqualTo(2);
+    assertThatThrownBy(() -> fixture.resolver().resolveForCancellation(fixture.actor(), "model-1",
+        new RecordSchemaReference(1, "b".repeat(64)))).isInstanceOf(DnaRuntimeException.class);
+    assertThatThrownBy(() -> fixture.resolver().resolveForCancellation(
+        new RuntimeActor("other-tenant", "user-a"), "model-1", reference)).isInstanceOf(DnaRuntimeException.class);
+  }
+
+  @Test
   void resolvesAnExactHistoricalSnapshotAndCurrentFieldProjection() {
     Fixture fixture = fixture();
 
@@ -62,6 +77,10 @@ class RuntimeRecordModelResolverTest {
   }
 
   private static Fixture fixture() {
+    return fixture(false);
+  }
+
+  private static Fixture fixture(boolean incompatible) {
     final PhysicalModelRepository modelRepository = mock(PhysicalModelRepository.class);
     final PhysicalModelBindingRepository bindingRepository =
         mock(PhysicalModelBindingRepository.class);
@@ -71,7 +90,7 @@ class RuntimeRecordModelResolverTest {
         new ObjectMapper().findAndRegisterModules()
     );
     PhysicalSchemaDefinition requested = schema("title", 64);
-    PhysicalSchemaDefinition active = schema("subject", 128);
+    PhysicalSchemaDefinition active = schema("subject", incompatible ? 32 : 128);
     final EncodedSchema requestedEncoded = codec.encode(requested);
     final EncodedSchema activeEncoded = codec.encode(active);
 

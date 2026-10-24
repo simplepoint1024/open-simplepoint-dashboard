@@ -236,7 +236,7 @@ class RedisEntryQueryServiceTest {
     }
     for (Pageable pageable :
         List.of(
-            PageRequest.of(0, 101),
+            PageRequest.of(0, 501),
             Pageable.unpaged(),
             PageRequest.of(0, 20, Sort.by("valuePreview")))) {
       assertThatThrownBy(() -> service.query(Map.of(), pageable, "*", null, false))

@@ -2,6 +2,8 @@
   "name": "@simplepoint/components",
   "version": "1.0.0",
   "dependencies": {
-    "@simplepoint/shared": "workspace:*"
+    "@simplepoint/shared": "workspace:*",
+    "@simplepoint/calculation": "workspace:*",
+    "@simplepoint/calculation-editor": "workspace:*"
   }
 }

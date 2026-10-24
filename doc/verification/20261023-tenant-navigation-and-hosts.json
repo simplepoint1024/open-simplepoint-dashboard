@@ -1,0 +1,364 @@
+{
+  "verifiedAt": "2026-10-23T08:27:20.560190+00:00",
+  "status": "partial-S4-tenant-navigation-managed-host-and-http-scope",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Organization and personal navigation use one tenant catalog; no stored mode, platform fallback or managed/platform merge; alias expiry is rechecked against the tenant graph",
+    "Managed registration resolves parent and host within the ready tenant directory; tenant-qualified code/path conflicts, fresh tenant locking and owner namespace remain enforced",
+    "Tenant host availability, applicable scope, page type, executable component and dependency hierarchy gate authorization and activation; host grants are never implicitly added",
+    "Generated navigation resolves the current tenant host component without rewriting immutable publication metadata",
+    "Tenant and personal administrators cannot use hasRole alternatives or inherited schema to bypass missing tenant entitlements; shared domain-owned endpoints retain their own data policy boundary",
+    "Explicit application membership and package acquisition include non-grantable executable capabilities such as hidden hosts; no role grant or public access is invented; current time balance still gates use"
+  ],
+  "validation": {
+    "simplepoint-services/simplepoint-service-common": [
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+        "reportSha256": "927683ce3d457d1cccbbbb543434b3f530cc81dd48ed30e9a12fde7059f77f5e"
+      },
+      {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+        "reportSha256": "603076f669d9727bb4eb14e2342aab2931ffe4b86473d688465d8b60e000d01e"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+        "reportSha256": "598eaac9fda6dfd77c9423a733943f1126ec44cd92abcc7bd7da8ad97e009478"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+        "reportSha256": "a816e808b20d1ae5ab77d1a49b48102b59e27d75b2043dad8916f8fc500fb4ee"
+      },
+      {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "reportSha256": "09571169d70c5c0e19c110a94821bfba585f307bdf5820e942c88470fb180bef"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+        "reportSha256": "6a387785c8faa5beabc4e78c43ed8c9de9aa64a4fb519cadf34b7e331d9a52d9"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+        "reportSha256": "0a3feb14737852413807891614f54e958831285326dee84c3628f9e177edab9c"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation": [
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest.xml",
+        "reportSha256": "312614e8ec8a76880d34e15c673f53cd0223e2527abd3db835dfbfe368870b81"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest.xml",
+        "reportSha256": "9bae90cb3eb45aec2792168bd9d9085156ae45f574d7d2758c3b4087d499e1e5"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest.xml",
+        "reportSha256": "b76e3a06a5139c0b16d1253e1606d0708de686aaec8deed9075ed3c6d4d38dcf"
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest.xml",
+        "reportSha256": "a8b2f238c2235c3a89b256ecc2a0945f4c9e34c0c15f3e079c712094056e645f"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest.xml",
+        "reportSha256": "9c5e93dcc14723a81497226c32ee5f92661431ecad617d83999c0058b11cd19c"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest.xml",
+        "reportSha256": "9bf1e38fae5793cce3f4305c5146e7968790df1c97d11b2b659b2e9197e5e08b"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest.xml",
+        "reportSha256": "ecf7c149e08d6bc13aa982771064dad087e65834917ff584c708f69a2bae792d"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest.xml",
+        "reportSha256": "d4eec60d7bfd2605d2e87c2cbf2f0407a42d70add2a8f40910f75e5e962a7ddd"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest.xml",
+        "reportSha256": "4023f41b9273f3f6da4ed00a40feeb304002754a01358b6fdbac6ea96c5a7ae9"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest.xml",
+        "reportSha256": "c056e22e54c684adeaeb634393468c8a503601b99d06679e6b40ef1e7a7013cd"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest.xml",
+        "reportSha256": "76b377918b16b048d0f4cce1251566328b9534d14ab1b40ddea3836b11ac12ed"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation": [
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest.xml",
+        "reportSha256": "0186f344732316a3394a7c5b1162e56ca2420a3731402c0b8d5cf42f43e2892d"
+      },
+      {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImplTest.xml",
+        "reportSha256": "166fce0230ec17bb3b1ea5cb162ae1e5affb65288d0a9f656d72c70301239cca"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest.xml",
+        "reportSha256": "d06663ca491fd3445e7e42f51a3ed62b5408c534e9b38f59242945b406f85e50"
+      },
+      {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "reportSha256": "6b974788c5c559bfaafd0f76787783ec097eeb77bab84fe055d187d0e9c280d5"
+      }
+    ],
+    "simplepoint-security/simplepoint-security-oauth2-resource": [
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.context.AuthorizationContextExpiryHttpTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextExpiryHttpTest.xml",
+        "reportSha256": "4f902ec06dbb626c89e7e1500ef8df5276a328277345b0be2f84b9c7d9e32ba4"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest.xml",
+        "reportSha256": "b33edb56fdfc5b82dc3b56b358b741781d31984ed324edfa1076a618975c8ab2"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest.xml",
+        "reportSha256": "532ea38230c07e0f22cdf70bcc3a2e7d3160d5067c61a0af90e938cf1fea20da"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.composition.ModuleAuthorizationContextsTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.composition.ModuleAuthorizationContextsTest.xml",
+        "reportSha256": "71b9e70022bd4a353a2a65f68ea826cfd02c65902b7d24f18da80095fdb838ad"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest.xml",
+        "reportSha256": "d8546a722c36867b452704429f423a0dbdea253a73dc4d609e46d031ccf09832"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest.xml",
+        "reportSha256": "e5c0b2ec6808823190aadd225e4d3fbc613ed9bce25aaaf3ad13e5547be63525"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest.xml",
+        "reportSha256": "ed4c041ddc355c4c725212f270a0a2a080c0f008bf6e60b5ac6f21c0ff3fae3f"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest.xml",
+        "reportSha256": "9ce54bc0285b5809c3c28abbfd97c93241020f89a1c55dbb1fd9df128110e0fe"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest",
+        "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/test-results/test/TEST-org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest.xml",
+        "reportSha256": "f47500e84b1916398de4b66fdb7523652dac0b81ccf25b2fa5e285ddd5ba4854"
+      }
+    ]
+  },
+  "testCount": 342,
+  "postgresql": {
+    "version": "17",
+    "tests": 85,
+    "database": "disposable loopback container, isolated schema per test, no production data",
+    "schema": "exact identity migration manifest and Hibernate validate",
+    "cases": [
+      "managed lifecycle, offline grants and stale generation replay",
+      "APP/REPORT and organization/personal scopes",
+      "tenant-only host identity and host loss",
+      "explicit package assignment, activation, expiry, duration accumulation and idempotency",
+      "tenant directory management and bounded scalar graph"
+    ]
+  },
+  "quality": {
+    "checkstyle": {
+      "scope": "11 listed Java sources; unrelated legacy tests not included",
+      "files": [
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ManagedTenantResourceRoutesTest.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceServiceImpl.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceServiceImplTest.java",
+        "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptor.java",
+        "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptorTest.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageAssignmentServiceImpl.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourcePlatformImporter.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageActivationServiceImplTest.java",
+        "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImplTest.java"
+      ],
+      "passed": true
+    },
+    "moduleBoundaries": "passed",
+    "earlierBroadRegression": {
+      "commonTests": 442,
+      "routerTests": 78,
+      "securityTests": 50,
+      "note": "passed before final host predicate/distribution refinement; final relevant reports are listed separately, not added again"
+    }
+  },
+  "limitations": [
+    "S4 remains incomplete: platform directory APIs and legacy tenant licensing branches must be retired or separated from platform authoring",
+    "Legacy generated pages still require explicit host acquisition during adoption; this increment does not establish rollout readiness",
+    "Manual platform application assignment UI still models grantable rather than distributable capabilities and must be aligned",
+    "Full event recovery, standard package/resource pages, installer migration, browser scenarios and microservice/single deployment acceptance remain outstanding",
+    "No local live service deployment, production mutation, commit or push; H2 HTTP fixtures do not replace complete login and browser verification"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "17bb8dcf69ddaa70e8495bf1642afb6022fe9fa895821699e3594954437d1604",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ManagedTenantResourceRoutesTest.java": "6d2940149f69bf873172e2e2a2215cf335ebd43782d35a5207cb45a1c0f74609",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceServiceImpl.java": "b7ce0590ad53bbc65df5c25cff82d47309545d0ca09ea8bf3ada80727bbdf442",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "c87359698a6dc7eb72153f270afa8cad9640f6666cb10562fcab74b6bb3a8881",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceServiceImplTest.java": "0feb053d9bfcedd40ac59d25d8b2dd5c4dd8bca40941752014be938711fd17bc",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptor.java": "04ac36ada8f6da59302d1627b2312ae2df2a700ce00cef661ff7c37ea314294c",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptorTest.java": "09f5ad4d9c0f6399c99006844d3c2508937d96d41ffc9ce61b24811a3af4cf1e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageAssignmentServiceImpl.java": "7f40b37d13e4e8f9826cc4ed999c1066e89e92b86ceaa25434d7e44c6a9dd4f9",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourcePlatformImporter.java": "f50cfcc2519b763dcd5616f0bf951da32b9cc67f159d9367360aaf19e9b23389",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageActivationServiceImplTest.java": "a59792e195f6137d9475582fc8646f8b1109c1ed061ff542e3ec3ce60033e3c0",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImplTest.java": "3dc5382fca25d3fec03c5eeb407f007c8de06f44d4f84d4ef737e24bb8183d6a",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java": "abf5d00643313221d6fc149be42cbbe92febfff62a962bff67817e1aff138aaa",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build.gradle.kts": "69225f3a3274315eb2b91b3ed0db68de4eb8da33c2b53ea1e42c466ecd5c7509"
+  }
+}

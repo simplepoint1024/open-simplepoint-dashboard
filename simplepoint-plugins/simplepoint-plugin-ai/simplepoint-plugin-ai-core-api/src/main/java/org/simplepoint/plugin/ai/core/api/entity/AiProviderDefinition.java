@@ -21,6 +21,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderType;
 import org.simplepoint.plugin.ai.core.api.model.AiProviderVendor;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
@@ -118,7 +119,7 @@ import org.springframework.core.annotation.Order;
     @org.simplepoint.core.query.QueryField("lastMessage"),
     @org.simplepoint.core.query.QueryField("lastTestedAt"),
     @org.simplepoint.core.query.QueryField("lastSyncedAt")
-}, maxPageSize = 500)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class AiProviderDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

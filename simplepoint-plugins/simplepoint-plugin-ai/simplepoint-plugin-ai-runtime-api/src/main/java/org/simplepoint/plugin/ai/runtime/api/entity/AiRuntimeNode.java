@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.runtime.api.model.AiRuntimeErrorCodeSerializer;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeNodeStatus;
@@ -61,7 +62,7 @@ import org.simplepoint.plugin.ai.runtime.api.model.RuntimeNodeStatus;
       @QueryField("registeredAt"),
       @QueryField("createdAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class AiRuntimeNode extends BaseEntityImpl<String> {
 
   @Column(name = "node_id", length = 64, nullable = false)

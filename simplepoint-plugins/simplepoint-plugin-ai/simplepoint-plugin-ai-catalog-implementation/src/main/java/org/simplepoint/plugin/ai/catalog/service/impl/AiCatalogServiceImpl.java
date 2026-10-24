@@ -12,6 +12,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.catalog.api.entity.AiCatalogEntry;
 import org.simplepoint.plugin.ai.catalog.api.entity.AiCatalogSyncState;
 import org.simplepoint.plugin.ai.catalog.api.model.AiCatalogImportRequest;
@@ -160,7 +161,7 @@ public class AiCatalogServiceImpl implements AiCatalogService {
       final int page,
       final int size) {
     int normalizedPage = Math.max(0, page);
-    int normalizedSize = Math.max(1, Math.min(size, 100));
+    int normalizedSize = Math.max(1, Math.min(size, TablePagination.MAX_PAGE_SIZE));
     String keyword = normalize(query);
     if (keyword != null && keyword.length() > 200) {
       throw new IllegalArgumentException("Catalog query must not exceed 200 characters");

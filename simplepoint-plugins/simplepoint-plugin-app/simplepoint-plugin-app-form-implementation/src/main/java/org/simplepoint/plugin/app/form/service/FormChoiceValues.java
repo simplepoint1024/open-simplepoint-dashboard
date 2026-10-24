@@ -8,7 +8,6 @@ import java.time.LocalTime;
 import java.util.UUID;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormFieldType;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 
 /** Shared scalar choice semantics for publication validation, record writes and UI schemas. */
 final class FormChoiceValues {
@@ -18,7 +17,7 @@ final class FormChoiceValues {
 
   /** Persistent values must round-trip through the DNA microsecond contract; predicate thresholds may be finer. */
   static void validateStoredTemporal(final FormFieldDefinition field, final Object value) {
-    if (value == null || field.storageMode() == FormStorageMode.TRANSIENT || field.storageMode() == FormStorageMode.COMPUTED) {
+    if (value == null || !field.persistent()) {
       return;
     }
     int nanos = switch (field.type()) {

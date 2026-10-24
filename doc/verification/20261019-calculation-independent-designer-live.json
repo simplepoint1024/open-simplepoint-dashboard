@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "at": "2026-10-19T04:45:44.984782+00:00",
+  "checks": {
+    "independentJava": {
+      "passed": true,
+      "classpath": [
+        "simplepoint-calculation.jar",
+        "antlr4-runtime-4.13.2.jar"
+      ],
+      "assertions": [
+        "exact decimal dependency evaluation",
+        "Unicode input and concatenation",
+        "no Spring, persistence or platform jars"
+      ]
+    },
+    "independentEditor": {
+      "passed": true,
+      "assertions": [
+        "pointer drag",
+        "keyboard insertion",
+        "Unicode literals",
+        "expression/visual round trip",
+        "invalid draft preservation",
+        "PC/tablet/phone bounds",
+        "no platform requests"
+      ]
+    },
+    "actualDesigner": {
+      "startedAt": "2026-10-19T04:42:00.733Z",
+      "originalExpression": "[quantity]*[rate]+1",
+      "originalStorageCode": "total",
+      "savedRevision": 9,
+      "passed": true,
+      "restoredRevision": 10,
+      "preview": {
+        "total": "14",
+        "normalized_total": "24"
+      },
+      "finishedAt": "2026-10-19T04:44:24.393Z"
+    }
+  },
+  "logSha256": {
+    "/tmp/sp-calculation-independent-editor-build.log": "ff4bc37aebfde1c2c240d753c5b554ce0eef32ff35199489f5eaa98500ac6cab",
+    "/tmp/sp-calculation-independent-editor-browser.log": "36a4a3ab827888fe44ba7bd5e911183f879db539158f27f8a6c0ff89a74a5c48",
+    "/tmp/sp-calculation-independent-java.log": "17c926fabf1d4ca9d28aa798ff73442f85b067a54e89072b7c16b5272e9f8692"
+  },
+  "privateArtifactSha256": "e5f6998b7190651cca8ee22030df03a9cc999bd75ffa3e9feb5467b02c4f4d63",
+  "sources": {
+    "simplepoint-react/scripts/smoke-calculation-editor.mjs": "4bf7c0c51df597a46e1df9fda5cd140c46dee1328f871c02b5cecbc8cde0dc08",
+    "scripts/business/calculation-acceptance/browser-designer.mjs": "7add636748fa632853fa0e1ce1e6e72c80dc6e98615021e9e1bab56b361eeef1"
+  }
+}

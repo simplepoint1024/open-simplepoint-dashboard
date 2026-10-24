@@ -13,6 +13,10 @@ import org.springframework.data.domain.Pageable;
  */
 public interface OrganizationService extends BaseService<Organization, String> {
 
+  /** Reads an accessible organization and reference names without expanding field permissions. */
+  org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationDetails details(String id);
+
+
   /** Reads a bounded draft selection side without changing organization or permission data. */
   Page<org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow> selection(
       org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelection draft, Pageable pageable);

@@ -5,11 +5,6 @@ import type {RequestOptions} from '@simplepoint/shared/api/client';
 
 const {baseUrl} = api['platform.tenants'];
 
-export interface TenantPackagesRelevanceDto {
-  tenantId: string | null;
-  packageCodes?: string[];
-}
-
 export interface TenantUsersRelevanceDto {
   tenantId: string | null;
   userIds?: string[];
@@ -20,18 +15,6 @@ export interface UserRelevanceVo {
   name: string;
   email?: string;
   phoneNumber?: string;
-}
-
-export async function fetchAuthorized(params: Pick<TenantPackagesRelevanceDto, 'tenantId'>) {
-  return await get<string[]>(`${baseUrl}/authorized`, params as Record<string, string>);
-}
-
-export async function fetchAuthorize(data: TenantPackagesRelevanceDto, options?: RequestOptions) {
-  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/authorize`, data, options);
-}
-
-export async function fetchUnauthorized(data: TenantPackagesRelevanceDto, options?: RequestOptions) {
-  return await post<TenantPackagesRelevanceDto>(`${baseUrl}/unauthorized`, data, options);
 }
 
 export async function fetchOwnerItems(params: {page: string; size: string}) {

@@ -12,6 +12,9 @@ public interface ExternalIdentityProviderRepository
   /** Finds an active provider by database id. */
   Optional<ExternalIdentityProvider> findActiveById(String id);
 
+  /** Locks the provider while serializing binding or provider lifecycle changes. */
+  Optional<ExternalIdentityProvider> findActiveByIdForUpdate(String id);
+
   /** Finds an active provider by its OAuth2 registration id. */
   Optional<ExternalIdentityProvider> findActiveByRegistrationId(String registrationId);
 

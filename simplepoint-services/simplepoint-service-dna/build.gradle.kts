@@ -55,7 +55,7 @@ dependencies {
     // 引入API文档
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-http"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation"))
@@ -63,7 +63,7 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation"))
 
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-implementation"))
+    // DNA produces audit records through the contract; Auditing owns their persistence and APIs.
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

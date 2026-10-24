@@ -293,7 +293,7 @@ class ApplicationFormServiceDatabaseTest {
         .page().totalElements()).isEqualTo(1);
     assertThatThrownBy(() -> catalog.page("app-a", Map.of("tenantId", "equals:tenant-b"),
         0, 20, List.of())).isInstanceOf(InvalidQueryException.class);
-    assertThatThrownBy(() -> catalog.page("app-a", Map.of(), 0, 101, List.of()))
+    assertThatThrownBy(() -> catalog.page("app-a", Map.of(), 0, 501, List.of()))
         .isInstanceOf(ApplicationFormException.class);
     assertThatThrownBy(() -> catalog.page("app-a", Map.of(), 0, 20,
         List.of("code,asc", "code,desc")))

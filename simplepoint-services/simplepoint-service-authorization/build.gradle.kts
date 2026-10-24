@@ -6,6 +6,9 @@ application {
     mainClass.set("org.simplepoint.authorization.server.Authorization")
 }
 dependencies {
+    implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2")
 
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     // 引入Consul全局配置支持
@@ -22,7 +25,11 @@ dependencies {
     implementation(project(":simplepoint-security:simplepoint-security-core"))
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-    implementation(project(":simplepoint-security:simplepoint-security-oauth2-server"))
+    implementation(project(":simplepoint-security:simplepoint-security-oauth2-server")) {
+        // Legacy Authorization hosts local identity authentication but never the credential RPC
+        // provider; Common keeps its sole advertisement. Modular hosts select the full domain.
+        exclude(module = "simplepoint-plugin-rbac-credentials")
+    }
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))

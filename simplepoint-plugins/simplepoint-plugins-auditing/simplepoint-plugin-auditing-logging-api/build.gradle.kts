@@ -1,4 +1,5 @@
 dependencies{
+    api(project(":simplepoint-events:simplepoint-events-api"))
     api(project(":simplepoint-core"))
     api(project(":simplepoint-remoting:simplepoint-remoting-core"))
     api(project(":simplepoint-security:simplepoint-security-core"))

@@ -13,6 +13,7 @@ import {
 import {isMachineErrorCode, localizedServerMessage, selectApiErrorMessage} from './errorMessage';
 import {redirectToLogin} from './session';
 import {createRequestSignal} from './requestSignal';
+import {addCsrfHeader} from './csrf';
 import {
   classifySessionProbeResponse,
   isAuthenticationRedirectResponse,
@@ -484,6 +485,7 @@ async function sendRequest(
 ) {
   const {signal, cleanup, isTimeout} = createRequestSignal(externalSignal, timeoutMs);
   try {
+    await addCsrfHeader(finalUrl, method, headers);
     return await fetch(finalUrl, {
       ...fetchOptions,
       method,

@@ -1,0 +1,4342 @@
+{
+  "schemaVersion": 1,
+  "scope": "Complete form/calculation/DNA/workflow delivery; planning matrix, not acceptance evidence",
+  "plan": "doc/design/form_calculation_delivery_plan.md",
+  "catalog": "doc/verification/20261017-calculation-acceptance-catalogs.json",
+  "wholeGoalComplete": true,
+  "sourceFiles": [
+    {
+      "path": "simplepoint-calculation/src/main/java/org/simplepoint/calculation/StandardFunctions.java",
+      "sha256": "349b407086ab9d2183b4fd3dc653f73df1a8d8e89588a8caaa09bb549e708683"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/DefaultFormComponentRegistry.java",
+      "sha256": "b173a40760b282366a2441b5232c022a4ca8e6c35a8ded2d690f9ebec073edfe"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/component/StandardComponentsContributor.java",
+      "sha256": "c5d837b507854ff6341c51dff2a85303a7f5c64ac1360a4a2669362e4c9a67a8"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/component/DetailComponentContributor.java",
+      "sha256": "6ecb6d6a460626ea9c580a71e6ac37c79bc8c254108af58748d212be41ad7168"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/component/MatrixComponentContributor.java",
+      "sha256": "e908a730cabf0ae5823935bcd74feac27bf1a51f3d5a818529424cb9ccaff1ce"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-api/src/main/resources/META-INF/simplepoint/workflow/modeling.json",
+      "sha256": "5aed1dcea45ab4bb11addc4b1f9f972e378f6a05e55a0dcbbcf3b4a513becbee"
+    },
+    {
+      "path": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "sha256": "688b7ac9fdd59136d11210b7f07a59b041f0313acab506211f398176a14b5e87"
+    },
+    {
+      "path": "simplepoint-calculation/src/test/resources/function-boundaries.tsv",
+      "sha256": "0703d6627e0b44793324f27262302b93d1a0eeebb13345615aaed349639d126b"
+    },
+    {
+      "path": "simplepoint-calculation/src/test/java/org/simplepoint/calculation/StandardFunctionBoundaryTest.java",
+      "sha256": "dd5d2cb6d499140cb4271be86015aab1b97c44ecc0e72d5fd322866e86673d78"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "CAL-01",
+      "steps": "独立库在无平台依赖工程编译执行；独立编辑器无平台请求运行",
+      "expected": "同样表达式得到相同结果；B5",
+      "businessForms": [
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-independent-designer-live.json",
+          "sha256": "85041e84b47c5d3882b7ea684bb567ed3f0923ff307c574b4977b7d5cbde24a3",
+          "checkId": "checks.independentJava"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-independent-designer-live.json",
+          "sha256": "85041e84b47c5d3882b7ea684bb567ed3f0923ff307c574b4977b7d5cbde24a3",
+          "checkId": "checks.independentEditor"
+        }
+      ]
+    },
+    {
+      "id": "CAL-02",
+      "steps": "逐函数执行普通、空值、类型错误、边界样例；共享语法双端往返",
+      "expected": "目录中每个函数均有命名用例和可见验算行；B5，并关联 B1/B2/B3/B4 的真实用途",
+      "businessForms": [
+        "B5",
+        "B1",
+        "B2",
+        "B3",
+        "B4"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-function-edge-milestone.json",
+          "sha256": "0b6cee7634a9c98c1909820fb70eda908052cf038408eccd7ae6975739c1bb79",
+          "checkId": "checks.everyFunctionEdges"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "all 63 persisted function rows and real browser create/edit and approval checks"
+        }
+      ]
+    },
+    {
+      "id": "CAL-03",
+      "steps": "鼠标拖拽、键盘插入/移动、文本反解析、撤销重做、无效草稿切换",
+      "expected": "无内容丢失，错误指向字段/位置，不能发布非法公式；B1/B5",
+      "businessForms": [
+        "B1",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.independentAndHostedEditor"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-bounded-api-milestone.json",
+          "sha256": "8ababd6b7e6977e8516e3449d8abff736ed6b3473e405bb63a4cc7891b88819b",
+          "checkId": "invalid/cyclic expressions and unchanged draft"
+        }
+      ]
+    },
+    {
+      "id": "CAL-04",
+      "steps": "金额精度、大整数、Unicode、日期时间、一个上下文的 NOW/TODAY",
+      "expected": "明确且可复现的值；中日文/emoji不截断，日期不因时区漂移；B1/B2/B5",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-function-edge-milestone.json",
+          "sha256": "0b6cee7634a9c98c1909820fb70eda908052cf038408eccd7ae6975739c1bb79",
+          "checkId": "checks.exactValuesAndClock"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "all 63 persisted function rows and real browser create/edit and approval checks"
+        }
+      ]
+    },
+    {
+      "id": "CAL-05",
+      "steps": "主字段依赖、明细行公式、引用主表、主表汇总明细、空集合、循环",
+      "expected": "正确顺序与作用域，循环/未知引用在保存前拒绝；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-bounded-api-milestone.json",
+          "sha256": "8ababd6b7e6977e8516e3449d8abff736ed6b3473e405bb63a4cc7891b88819b",
+          "checkId": "checks.dependencyValidation"
+        }
+      ]
+    },
+    {
+      "id": "CAL-06",
+      "steps": "输入超长/过深/过多节点与行、昂贵函数、错误格式",
+      "expected": "有界失败，无挂死，无提交内容泄露；B5",
+      "businessForms": [
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-bounded-api-milestone.json",
+          "sha256": "8ababd6b7e6977e8516e3449d8abff736ed6b3473e405bb63a4cc7891b88819b",
+          "checkId": "checks.boundedPublicCalls"
+        }
+      ]
+    },
+    {
+      "id": "DAT-01",
+      "steps": "新增、编辑部分字段、清空/增加/删除明细、删除父记录",
+      "expected": "主从值和版本一致，全部走 DNA/Calcite；B1/B2/B3",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "checks.aggregateCrud + checks.inlineEditor"
+        }
+      ]
+    },
+    {
+      "id": "DAT-02",
+      "steps": "并发编辑同一主记录、编辑与删除明细交错、公式发布与写入交错",
+      "expected": "一个合法提交或明确冲突，无丢失更新/混合版本；B1",
+      "businessForms": [
+        "B1"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.boundedAggregateAndConcurrentEdits"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.publicationMaintenance"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "checks.aggregateCrud"
+        }
+      ]
+    },
+    {
+      "id": "DAT-03",
+      "steps": "相同命令重试、不同内容同键、响应丢失、服务重启重试",
+      "expected": "原结果复用、冲突拒绝，无重复记录/通知/审批；B1/B2",
+      "businessForms": [
+        "B1",
+        "B2"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-fault-recovery-milestone.json",
+          "sha256": "d9a25c894e1ad67af2d21ecc744d8d8228265c4c0d339b99935fcad10a9d1761",
+          "checkId": "checks.browser-response-loss + checks.aggregate-restart + checks.rpc-timeout"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "CRUD identical and changed-body idempotency checks"
+        }
+      ]
+    },
+    {
+      "id": "DAT-04",
+      "steps": "修改普通请求伪造计算列、直接 Record/事务/聚合 API、旧页面",
+      "expected": "不可绕过当前公式及字段权限；B1/B5",
+      "businessForms": [
+        "B1",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-acceptance.json",
+          "sha256": "e9827e4e6865fde17b1f04b60c8ec73288572eeccc7f3dfa8b4fe1a2d49e608e",
+          "checkId": "checks.directRuntimeAndAuthorization + quality.realDatabaseAndFieldPolicy + checks.publishedOperationPolicies.apiChecks"
+        }
+      ]
+    },
+    {
+      "id": "DAT-05",
+      "steps": "中间计算或子行校验/SQL失败后读取主从、回执和快照",
+      "expected": "全部回滚，不留下半行/版本前进；B1",
+      "businessForms": [
+        "B1"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.durableRejection"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "checks.aggregateCrud"
+        }
+      ]
+    },
+    {
+      "id": "DAT-06",
+      "steps": "计算结果筛选/排序/分页/索引；改名后历史页读取",
+      "expected": "使用服务端存储值，分页前排序，稳定身份保持；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.computedIndex"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.versionedCalculationHistory"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-auth-query-milestone.json",
+          "sha256": "6284131d2896d76c9ad2da4a941b38c5b6113dfec1b0bed4a64371a7d8ec9451",
+          "checkId": "server calculated queries"
+        }
+      ]
+    },
+    {
+      "id": "PUB-01",
+      "steps": "草稿→发布→资源上线，普通用户从菜单进入列表",
+      "expected": "真实 schema/资源/权限完整，公式生效后才开放；B1",
+      "businessForms": [
+        "B1"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents: actual designer, immutable publication, grants, ordinary menu and standard CRUD"
+        }
+      ]
+    },
+    {
+      "id": "PUB-02",
+      "steps": "有存量数据更改公式、分批回填、失败后恢复、重复完成消息",
+      "expected": "激活时全量符合新公式，无新旧混读；旧审批不变；B1/B5",
+      "businessForms": [
+        "B1",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.publicationMaintenance"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "checks.publicationRecovery"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.versionedCalculationHistory"
+        }
+      ]
+    },
+    {
+      "id": "PUB-03",
+      "steps": "回填期间并发写/读、取消、重启、旧 generation 重放",
+      "expected": "明确维护状态/隔离，旧事实不覆盖新版本，可安全恢复；B5",
+      "businessForms": [
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.publicationMaintenance"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json",
+          "sha256": "16a71dfaf53d9cb3ac330270a48bf8f590cec44619a26062c54b77cdd50a358f",
+          "checkId": "checks.publicationRecovery + checks.resourceLifecycle"
+        }
+      ]
+    },
+    {
+      "id": "PUB-04",
+      "steps": "下线→权限收回→旧链接/缓存访问→重新上线",
+      "expected": "数据/历史保留，旧普通授权不复活；B5隔离资源",
+      "businessForms": [
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-ui-event-milestone.json",
+          "sha256": "1cc45ca07d35000eb75f622b6b94b07321cc7a3144b22a519adcb4ab07422d17",
+          "checkId": "checks.mq-recovery"
+        }
+      ]
+    },
+    {
+      "id": "SEC-01",
+      "steps": "隐藏/脱敏来源、派生字段自身脱敏、多级依赖",
+      "expected": "列表/详情/历史/预览/筛选/计数/排序不泄露；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-security-history-milestone.json",
+          "sha256": "749b8621206864d5b136c367bad2db023c3079a379985353844030fd6f94a739",
+          "checkId": "checks.transitiveFieldPermissions"
+        }
+      ]
+    },
+    {
+      "id": "SEC-02",
+      "steps": "跨租户、跨部门、非参与者、无设计权限、撤销授权后保留页签",
+      "expected": "服务端拒绝，旧缓存不重新显示，正常参与人仍可用；B1/B2",
+      "businessForms": [
+        "B1",
+        "B2"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-acceptance.json",
+          "sha256": "e9827e4e6865fde17b1f04b60c8ec73288572eeccc7f3dfa8b4fe1a2d49e608e",
+          "checkId": "checks.directRuntimeAndAuthorization + checks.retainedRevocation"
+        }
+      ]
+    },
+    {
+      "id": "SEC-03",
+      "steps": "新增/编辑隐藏/只读、生命周期锁、子字段策略和普通校验",
+      "expected": "客户端交互一致且直接 API不能绕过；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-acceptance.json",
+          "sha256": "e9827e4e6865fde17b1f04b60c8ec73288572eeccc7f3dfa8b4fe1a2d49e608e",
+          "checkId": "checks.publishedOperationPolicies + checks.directRuntimeAndAuthorization.lifecycle + quality.realDatabaseAndFieldPolicy"
+        }
+      ]
+    },
+    {
+      "id": "UI-01",
+      "steps": "组件分组图标、图标工具栏、抽屉拖宽/折叠、属性图标页签",
+      "expected": "无重复标题/文字按钮堆积，键盘可达，状态保留；全部设计表单",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-ui-event-milestone.json",
+          "sha256": "1cc45ca07d35000eb75f622b6b94b07321cc7a3144b22a519adcb4ab07422d17",
+          "checkId": "checks.designer-inspectors + checks.designer-layout + checks.twelve-component-configuration"
+        }
+      ]
+    },
+    {
+      "id": "UI-02",
+      "steps": "每个组件设计→发布→新增/编辑→详情→待办/已办",
+      "expected": "类型值不丢失；明细有界横纵滚动、行内编辑/删除/加号；B1/B2/B3/B4",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "UI-03",
+      "steps": "默认列拖拽/键盘排序，列表/卡片切换和分页，账户偏好",
+      "expected": "正确分页、排序和跨登录偏好，无第二 CRUD 控制器；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.columnOrderAndAccountPreferences"
+        }
+      ]
+    },
+    {
+      "id": "UI-04",
+      "steps": "PC/iPad/Phone、长标签/长表达式、中文/日文、切换保留页签",
+      "expected": "1440/768/390实际视口验证，错误/加载可理解，无溢出或错误记录；全部",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.auditLabelsAndRetainedOwners"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.boundedAggregateAndConcurrentEdits"
+        }
+      ]
+    },
+    {
+      "id": "UI-05",
+      "steps": "图像、附件、Markdown、图标、警告等展示/下载与恶意输入",
+      "expected": "安全渲染、合法下载、只读不可修改，禁止不安全 URL/HTML；B1/B3",
+      "businessForms": [
+        "B1",
+        "B3"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.safeDisplaysAndAttachments"
+        }
+      ]
+    },
+    {
+      "id": "UI-06",
+      "steps": "普通员工/审批人查看创建人、部门、租户等审计信息；隐藏/脱敏授权与跨租户引用",
+      "expected": "有权读取时显示可理解名称；名称投影不得扩大人员/组织查询权限，隐藏字段不触发查询，失效引用有明确回退",
+      "businessForms": [
+        "B1",
+        "B2"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.auditLabelsAndRetainedOwners"
+        }
+      ]
+    },
+    {
+      "id": "WF-01",
+      "steps": "计算后提交，用可信总额选择负责人/财务/总监分支",
+      "expected": "实际流程路径与持久化结果相符，不能用伪造金额选路；B1",
+      "businessForms": [
+        "B1"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-acceptance.json",
+          "sha256": "e9827e4e6865fde17b1f04b60c8ec73288572eeccc7f3dfa8b4fe1a2d49e608e",
+          "checkId": "checks.directRuntimeAndAuthorization.forgedWorkflowValues + checks.finalCleanup (completed live business branches retained in prior workflow evidence)"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.parallel-multi-instance through checks.descriptive-diagram (seven actual advanced executions)"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-live-business-milestone.json",
+          "sha256": "2d2fad968bf337a075d2eaf53f089df74bcb078699180f1a70888ea980c31f05",
+          "checkId": "workflowChecks: amount 4800/5000/6800, currency-converted routing and nine B1–B5 real business paths"
+        }
+      ]
+    },
+    {
+      "id": "WF-02",
+      "steps": "通过、驳回、修订重提、撤回/取消、认领/转交/抄送等实际公开动作",
+      "expected": "允许的动作按规则变化，终态不显示进行中；B1/B2/B3/B4",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowLifecycle"
+        }
+      ]
+    },
+    {
+      "id": "WF-03",
+      "steps": "已支持的并行、条件、多实例、汇合及失败路径",
+      "expected": "每个建模能力具备执行证据，不仅画布图形；B3/B4",
+      "businessForms": [
+        "B3",
+        "B4"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "advanced executed capabilities and invalid executable BPMN rejection"
+        }
+      ]
+    },
+    {
+      "id": "WF-04",
+      "steps": "改公式/布局/字段后打开旧待办、已办、提交历史",
+      "expected": "保留版本与原结果；当前授权裁剪；附件可下载；B1",
+      "businessForms": [
+        "B1"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.versionedCalculationHistory"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-security-history-milestone.json",
+          "sha256": "749b8621206864d5b136c367bad2db023c3079a379985353844030fd6f94a739",
+          "checkId": "checks.transitiveFieldPermissions"
+        }
+      ]
+    },
+    {
+      "id": "OPS-01",
+      "steps": "MQ短暂停止/恢复、重复消息、RPC超时、应用重启",
+      "expected": "本地事实可追溯，事件最终完成，幂等无重复，服务健康分离；隔离验证环境",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-fault-recovery-milestone.json",
+          "sha256": "d9a25c894e1ad67af2d21ecc744d8d8228265c4c0d339b99935fcad10a9d1761",
+          "checkId": "checks.rpc-timeout + checks.event-infrastructure + checks.aggregate-restart + checks.health"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-ui-event-milestone.json",
+          "sha256": "1cc45ca07d35000eb75f622b6b94b07321cc7a3144b22a519adcb4ab07422d17",
+          "checkId": "checks.mq-recovery"
+        }
+      ]
+    },
+    {
+      "id": "OPS-02",
+      "steps": "完整打包/部署后直接访问模块入口、抽屉、审批深链和刷新恢复",
+      "expected": "实际资源哈希匹配，无404/错误首页/失效路由；全部",
+      "businessForms": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-acceptance.json",
+          "sha256": "e9827e4e6865fde17b1f04b60c8ec73288572eeccc7f3dfa8b4fe1a2d49e608e",
+          "checkId": "deployment + checks.deployedEntries + checks.finalCleanup"
+        }
+      ]
+    },
+    {
+      "id": "OPS-03",
+      "steps": "大明细和多页记录、连续编辑/试算、并发普通用户",
+      "expected": "无无限扫描/内存增长，计算和发布预算可观测；记录固定样本与延时，不伪造SLA；B1/B5",
+      "businessForms": [
+        "B1",
+        "B5"
+      ],
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.boundedAggregateAndConcurrentEdits"
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "COMPONENT-layout.form",
+      "type": "layout.form",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-layout.grid",
+      "type": "layout.grid",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-layout.group",
+      "type": "layout.group",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-layout.tabs",
+      "type": "layout.tabs",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.text",
+      "type": "display.text",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.text",
+      "type": "field.text",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.textarea",
+      "type": "field.textarea",
+      "version": "1",
+      "businessForms": [
+        "B2"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.json",
+      "type": "field.json",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.number",
+      "type": "field.number",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.switch",
+      "type": "field.switch",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.select",
+      "type": "field.select",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.date",
+      "type": "field.date",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.time",
+      "type": "field.time",
+      "version": "1",
+      "businessForms": [
+        "B2"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.datetime",
+      "type": "field.datetime",
+      "version": "1",
+      "businessForms": [
+        "B2"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.user",
+      "type": "field.user",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.role",
+      "type": "field.role",
+      "version": "1",
+      "businessForms": [
+        "B4"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.organization",
+      "type": "field.organization",
+      "version": "1",
+      "businessForms": [
+        "B4"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.tenant",
+      "type": "field.tenant",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.attachment",
+      "type": "field.attachment",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.save",
+      "type": "action.save",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.submit",
+      "type": "action.submit",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.reset",
+      "type": "action.reset",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.open-dialog",
+      "type": "action.open-dialog",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.open-drawer",
+      "type": "action.open-drawer",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.close",
+      "type": "action.close",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-action.apply",
+      "type": "action.apply",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-layout.matrix",
+      "type": "layout.matrix",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-layout.cell",
+      "type": "layout.cell",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-data.detail",
+      "type": "data.detail",
+      "version": "1",
+      "businessForms": [
+        "B1"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.divider",
+      "type": "display.divider",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.image",
+      "type": "display.image",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.alert",
+      "type": "display.alert",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.progress",
+      "type": "display.progress",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.icon",
+      "type": "display.icon",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-display.markdown",
+      "type": "display.markdown",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.rating",
+      "type": "field.rating",
+      "version": "1",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.cascader",
+      "type": "field.cascader",
+      "version": "1",
+      "businessForms": [
+        "B4"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    },
+    {
+      "id": "COMPONENT-field.transfer",
+      "type": "field.transfer",
+      "version": "1",
+      "businessForms": [
+        "B4"
+      ],
+      "steps": [
+        "在对应业务场景从分组列表添加组件，配置属性、保存并重新打开",
+        "发布并进入普通用户的标准列表，验证新增/编辑或场景动作",
+        "查看详情、待办/已办，核对值、权限、只读及布局",
+        "在 1440/768/390 视口及键盘操作下复验"
+      ],
+      "expected": "属性与值完整保留，遵守组件契约及平台交互；数据组件可编辑且可只读；布局/展示不误写业务值；动作具有实际效果与服务端授权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-components-live-milestone.json",
+          "sha256": "672d24b90e3fa2f39481f4ba058a21882100138152e65c50b6387daa687d9c92",
+          "checkId": "checks.allComponents"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "id": "FUNCTION-IF",
+      "name": "IF",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "IF(TRUE,\"yes\",1/0)",
+      "expectedType": "STRING",
+      "expectedEscaped": "yes",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.IF"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-IFERROR",
+      "name": "IFERROR",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "IFERROR(TEXT(1,\"unknown\"),\"fallback\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "fallback",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.IFERROR"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-AND",
+      "name": "AND",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "AND(TRUE,1,0)",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "false",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.AND"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-OR",
+      "name": "OR",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "OR(FALSE,0,1)",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "true",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.OR"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-NOT",
+      "name": "NOT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "NOT(0)",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "true",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.NOT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ISBLANK",
+      "name": "ISBLANK",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ISBLANK(NULL)",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "true",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ISBLANK"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ISNUMBER",
+      "name": "ISNUMBER",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ISNUMBER(\"1\")",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "false",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ISNUMBER"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ISTEXT",
+      "name": "ISTEXT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ISTEXT(\"1\")",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "true",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ISTEXT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-COALESCE",
+      "name": "COALESCE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "COALESCE(NULL,\"\",\"available\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "available",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.COALESCE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SUM",
+      "name": "SUM",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SUM(1,2,3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "6",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SUM"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-AVERAGE",
+      "name": "AVERAGE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "AVERAGE(1,2,3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.AVERAGE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-MIN",
+      "name": "MIN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "MIN(1,-2,3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.MIN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-MAX",
+      "name": "MAX",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "MAX(1,-2,3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.MAX"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-COUNT",
+      "name": "COUNT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "COUNT(1,\"two\",\"3\",NULL)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.COUNT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-COUNTA",
+      "name": "COUNTA",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "COUNTA(0,FALSE,\"\",NULL)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.COUNTA"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-PRODUCT",
+      "name": "PRODUCT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "PRODUCT(1.2,3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3.6",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.PRODUCT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ABS",
+      "name": "ABS",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ABS(-1.25)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1.25",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ABS"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SIGN",
+      "name": "SIGN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SIGN(-0.1)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SIGN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-INT",
+      "name": "INT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "INT(-1.1)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.INT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ROUND",
+      "name": "ROUND",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ROUND(1.235,2)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1.24",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ROUND"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ROUNDUP",
+      "name": "ROUNDUP",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ROUNDUP(-1.231,2)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-1.24",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ROUNDUP"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-ROUNDDOWN",
+      "name": "ROUNDDOWN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "ROUNDDOWN(-1.239,2)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-1.23",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.ROUNDDOWN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TRUNC",
+      "name": "TRUNC",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TRUNC(-1.9)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "-1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TRUNC"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-MOD",
+      "name": "MOD",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "MOD(-3,2)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.MOD"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-POWER",
+      "name": "POWER",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "POWER(2,-3)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "0.125",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.POWER"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SQRT",
+      "name": "SQRT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SQRT(9)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SQRT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-PI",
+      "name": "PI",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "PI()",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3.1415926535897932384626433832795028842",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.PI"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SIN",
+      "name": "SIN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SIN(0)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "0",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SIN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-COS",
+      "name": "COS",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "COS(0)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.COS"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TAN",
+      "name": "TAN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TAN(0)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "0",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TAN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-EXP",
+      "name": "EXP",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "EXP(0)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.EXP"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-LN",
+      "name": "LN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "LN(1)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "0",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.LN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-LOG10",
+      "name": "LOG10",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "LOG10(100)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.LOG10"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-VALUE",
+      "name": "VALUE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "VALUE(\"1.25\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1.25",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.VALUE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-NUMBER",
+      "name": "NUMBER",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "NUMBER(TRUE)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "1",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.NUMBER"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-BOOLEAN",
+      "name": "BOOLEAN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "BOOLEAN(0)",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "false",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.BOOLEAN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-STRING",
+      "name": "STRING",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "STRING(TRUE)",
+      "expectedType": "STRING",
+      "expectedEscaped": "TRUE",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.STRING"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TEXT",
+      "name": "TEXT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TEXT(0.125,\"0.0%\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "12.5%",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TEXT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-LEN",
+      "name": "LEN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "LEN(\"汉😀日\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.LEN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-LOWER",
+      "name": "LOWER",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "LOWER(\"ABC汉\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "abc汉",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.LOWER"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-UPPER",
+      "name": "UPPER",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "UPPER(\"abc汉\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "ABC汉",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.UPPER"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TRIM",
+      "name": "TRIM",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TRIM(\"  a   b  \")",
+      "expectedType": "STRING",
+      "expectedEscaped": "a b",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TRIM"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-CLEAN",
+      "name": "CLEAN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "CLEAN(\"a\\tb\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "ab",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.CLEAN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-EXACT",
+      "name": "EXACT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "EXACT(\"a\",\"A\")",
+      "expectedType": "BOOLEAN",
+      "expectedEscaped": "false",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.EXACT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-CONCAT",
+      "name": "CONCAT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "CONCAT(\"a\",1,TRUE)",
+      "expectedType": "STRING",
+      "expectedEscaped": "a1TRUE",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.CONCAT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-CONCATENATE",
+      "name": "CONCATENATE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "CONCATENATE(\"a\",\"b\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "ab",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.CONCATENATE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TEXTJOIN",
+      "name": "TEXTJOIN",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TEXTJOIN(\",\",TRUE,\"a\",\"\",NULL,\"b\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "a,b",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TEXTJOIN"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-LEFT",
+      "name": "LEFT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "LEFT(\"😀汉日\",2)",
+      "expectedType": "STRING",
+      "expectedEscaped": "😀汉",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.LEFT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-RIGHT",
+      "name": "RIGHT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "RIGHT(\"汉日😀\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "😀",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.RIGHT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-MID",
+      "name": "MID",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "MID(\"汉😀日\",2,1)",
+      "expectedType": "STRING",
+      "expectedEscaped": "😀",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.MID"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-REPT",
+      "name": "REPT",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "REPT(\"汉\",3)",
+      "expectedType": "STRING",
+      "expectedEscaped": "汉汉汉",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.REPT"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SUBSTITUTE",
+      "name": "SUBSTITUTE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SUBSTITUTE(\"a-b-b\",\"b\",\"x\",2)",
+      "expectedType": "STRING",
+      "expectedEscaped": "a-b-x",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SUBSTITUTE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-REPLACE",
+      "name": "REPLACE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "REPLACE(\"汉😀日\",2,1,\"字\")",
+      "expectedType": "STRING",
+      "expectedEscaped": "汉字日",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.REPLACE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-FIND",
+      "name": "FIND",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "FIND(\"汉\",\"汉字汉\",2)",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.FIND"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-SEARCH",
+      "name": "SEARCH",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "SEARCH(\"x\",\"İ😀X\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "3",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.SEARCH"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-DATE",
+      "name": "DATE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "DATE(2024,2,30)",
+      "expectedType": "DATE",
+      "expectedEscaped": "2024-03-01",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.DATE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-DATEVALUE",
+      "name": "DATEVALUE",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "DATEVALUE(\"2024-02-29\")",
+      "expectedType": "DATE",
+      "expectedEscaped": "2024-02-29",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.DATEVALUE"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-TODAY",
+      "name": "TODAY",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "TODAY()",
+      "expectedType": "DATE",
+      "expectedEscaped": "2026-10-16",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.TODAY"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-NOW",
+      "name": "NOW",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "NOW()",
+      "expectedType": "DATETIME",
+      "expectedEscaped": "2026-10-16T00:00:00",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.NOW"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-YEAR",
+      "name": "YEAR",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "YEAR(\"2024-02-29\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2024",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.YEAR"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-MONTH",
+      "name": "MONTH",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "MONTH(\"2024-02-29\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.MONTH"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-DAY",
+      "name": "DAY",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "DAY(\"2024-02-29\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "29",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.DAY"
+        }
+      ]
+    },
+    {
+      "id": "FUNCTION-DAYS",
+      "name": "DAYS",
+      "caseSource": "simplepoint-calculation/src/test/resources/function-acceptance.tsv",
+      "expressionEscaped": "DAYS(\"2024-03-01\",\"2024-02-28\")",
+      "expectedType": "NUMBER",
+      "expectedEscaped": "2",
+      "unitClock": "2026-10-16T00:00:00Z",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在公式验算台账创建该函数的计算字段并设置样例输入",
+        "发布后通过标准页面新增及编辑，读取持久化结果",
+        "提交验算确认流程，在待办和已办核对提交快照",
+        "以参数不足/过多负例验证配置被拒绝；时间函数另核对服务端窗口及重试不变"
+      ],
+      "expected": "与命名样例的类型和值一致；服务端拒绝不合法参数；TODAY/NOW 实际环境采用服务端时间窗口",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-all-functions-live.json",
+          "sha256": "e6040ab0c6011ad4f207704baa7d7126b88735273241a46a2ba4eeaebef553c1",
+          "checkId": "functions.DAYS"
+        }
+      ]
+    }
+  ],
+  "workflow": [
+    {
+      "id": "WORKFLOW-diagramTypes-Participant",
+      "contractCategory": "diagramTypes",
+      "capability": "Participant",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-diagramTypes-Lane",
+      "contractCategory": "diagramTypes",
+      "capability": "Lane",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-diagramTypes-DataObjectReference",
+      "contractCategory": "diagramTypes",
+      "capability": "DataObjectReference",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-diagramTypes-DataStoreReference",
+      "contractCategory": "diagramTypes",
+      "capability": "DataStoreReference",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-diagramTypes-Group",
+      "contractCategory": "diagramTypes",
+      "capability": "Group",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-diagramTypes-TextAnnotation",
+      "contractCategory": "diagramTypes",
+      "capability": "TextAnnotation",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "发布与历史图保持该描述元素，不产生虚假待办",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.descriptive-diagram"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-user-task",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-user-task",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-user-task"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-exclusive-gateway",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-exclusive-gateway",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-exclusive-gateway"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-parallel-gateway",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-parallel-gateway",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-parallel-gateway"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-inclusive-gateway",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-inclusive-gateway",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-inclusive-gateway"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-none-start",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-none-start",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-none-start"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-none-end",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-none-end",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-none-end"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-none-start-event",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-none-start-event",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-none-start-event"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ],
+      "coverageNote": "Legacy alias: supplied callback survives platform filtering. Current installed BPMN catalog uses replace-with-none-start; no nonexistent UI click claimed."
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-none-end-event",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-none-end-event",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-none-end-event"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ],
+      "coverageNote": "Legacy alias: supplied callback survives platform filtering. Current installed BPMN catalog uses replace-with-none-end; no nonexistent UI click claimed."
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-collapsed-subprocess",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-collapsed-subprocess",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-collapsed-subprocess"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-expanded-subprocess",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-expanded-subprocess",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-expanded-subprocess"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-subprocess",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-subprocess",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-subprocess"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ],
+      "coverageNote": "Installed legacy diagram repair entry targets ordinary bpmn:SubProcess; platform preserves the callback and excludes executable task variants. Unsupported legacy source kinds are not creatable as new platform processes."
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-sequence-flow",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-sequence-flow",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-sequence-flow"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-default-flow",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-default-flow",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-default-flow"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-conditional-flow",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-conditional-flow",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-conditional-flow"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-data-object-reference",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-data-object-reference",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-data-object-reference"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-replacementEntries-replace-with-data-store-reference",
+      "contractCategory": "replacementEntries",
+      "capability": "replace-with-data-store-reference",
+      "businessForms": [
+        "B3"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "执行真实业务实例并核对运行路径及历史图"
+      ],
+      "expected": "建模保存/发布/实例执行匹配配置；描述元素保持布局",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-final-boundaries-milestone.json",
+          "sha256": "e1ecbe1bc9d6e3ca155689707fec25eca0216729b4cc764ca507c44b59b13228",
+          "checkId": "checks.workflowModeling: replace-with-data-store-reference"
+        },
+        {
+          "path": "doc/verification/20261019-calculation-version-ui-milestone.json",
+          "sha256": "04d3a4fc22f823475382b8743255160e0d774b5d81f28759194b08e72725ae51",
+          "checkId": "checks.publishedWorkflowDiagrams"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-scriptTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "scriptTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-scriptTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-serviceTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "serviceTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-serviceTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-businessRuleTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "businessRuleTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-businessRuleTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-sendTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "sendTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-sendTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-receiveTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "receiveTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-receiveTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-callActivity",
+      "contractCategory": "prohibitedElements",
+      "capability": "callActivity",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-callActivity"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-prohibitedElements-manualTask",
+      "contractCategory": "prohibitedElements",
+      "capability": "manualTask",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-manualTask"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-unsupportedCollaborationElements-participantMultiplicity",
+      "contractCategory": "unsupportedCollaborationElements",
+      "capability": "participantMultiplicity",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-participantMultiplicity"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-unsupportedCollaborationElements-messageFlow",
+      "contractCategory": "unsupportedCollaborationElements",
+      "capability": "messageFlow",
+      "businessForms": [
+        "B5"
+      ],
+      "steps": [
+        "在业务流程副本中配置该元素/操作并保存",
+        "通过正式发布API验证",
+        "核对拒绝代码及原发布版本未改变"
+      ],
+      "expected": "服务端拒绝不受支持或不安全的执行元素，无版本/实例产生",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.reject-messageFlow"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-parallel-multi-instance",
+      "contractCategory": "runtime",
+      "capability": "parallel-multi-instance",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.parallel-multi-instance"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-sequential-multi-instance",
+      "contractCategory": "runtime",
+      "capability": "sequential-multi-instance",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.sequential-multi-instance"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-standard-loop-before",
+      "contractCategory": "runtime",
+      "capability": "standard-loop-before",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.standard-loop-before"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-standard-loop-after",
+      "contractCategory": "runtime",
+      "capability": "standard-loop-after",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.standard-loop-after"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-nested-subprocess",
+      "contractCategory": "runtime",
+      "capability": "nested-subprocess",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.nested-subprocess"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-claim",
+      "contractCategory": "runtime",
+      "capability": "claim",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.parallel-multi-instance"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-complete",
+      "contractCategory": "runtime",
+      "capability": "complete",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.parallel-multi-instance"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-reject",
+      "contractCategory": "runtime",
+      "capability": "reject",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4",
+        "B2"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.lifecycle-reject"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-withdraw",
+      "contractCategory": "runtime",
+      "capability": "withdraw",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4",
+        "B2"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.lifecycle-withdraw"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-cancel",
+      "contractCategory": "runtime",
+      "capability": "cancel",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4",
+        "B2"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.lifecycle-cancel"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-resubmit",
+      "contractCategory": "runtime",
+      "capability": "resubmit",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4",
+        "B2"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.lifecycle-reject"
+        }
+      ]
+    },
+    {
+      "id": "WORKFLOW-runtime-copied-history",
+      "contractCategory": "runtime",
+      "capability": "copied-history",
+      "businessForms": [
+        "B1",
+        "B3",
+        "B4",
+        "B2"
+      ],
+      "steps": [
+        "搭建对应节点/操作的实际业务流程并提交",
+        "以审批/申请/抄送角色执行该路径",
+        "核对任务数量、执行顺序、权限、终态及重试结果"
+      ],
+      "expected": "流程行为匹配建模与操作契约，旧审批结果保留，无额外任务或越权",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261019-calculation-workflow-schema-milestone.json",
+          "sha256": "e071aa0d68fa8d729e16040044a1f53cf81fa64967f3feba099dc400ab3f351a",
+          "checkId": "checks.lifecycle-reject"
+        }
+      ]
+    }
+  ]
+}

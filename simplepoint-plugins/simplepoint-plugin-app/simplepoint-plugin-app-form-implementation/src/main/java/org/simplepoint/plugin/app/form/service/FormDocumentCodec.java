@@ -90,7 +90,7 @@ public class FormDocumentCodec {
                             .toList(),
                         detail.indexes().stream()
                             .sorted(Comparator.comparing(FormIndexDefinition::indexId))
-                            .toList()))
+                            .toList(), detail.labelLocalization()))
             .toList(), document.constraints(), document.presentation());
   }
 
@@ -109,7 +109,7 @@ public class FormDocumentCodec {
         field.scale(),
         canonicalValue(field.defaultValue()),
         field.choices(),
-        field.writePolicy(), field.validation(), field.access());
+        field.writePolicy(), field.validation(), field.access(), field.calculation(), field.labelLocalization());
   }
 
   private FormSceneDefinition canonicalScene(final FormSceneDefinition scene) {
@@ -137,7 +137,7 @@ public class FormDocumentCodec {
         component.targetSceneId(),
         component.readOnly(),
         properties,
-        component.children().stream().map(this::canonicalComponent).toList());
+        component.children().stream().map(this::canonicalComponent).toList(), component.labelLocalization());
   }
 
   private FormRuleDefinition canonicalRule(final FormRuleDefinition rule) {

@@ -1,3 +1,4 @@
+import {resolveHostComponent} from './hostComponent.ts';
 import {getInstance} from '@module-federation/runtime';
 
 export type RemotePreloadTarget = {
@@ -7,7 +8,7 @@ export type RemotePreloadTarget = {
 
 /** Convert `remote/expose/path` into the shape expected by the MF runtime. */
 export function parseRemotePreloadTarget(spec: string): RemotePreloadTarget | undefined {
-  if (!spec || spec.startsWith('.') || spec.includes(':')) return undefined;
+  if (!spec || resolveHostComponent(spec) || spec.startsWith('.') || spec.includes(':')) return undefined;
   const separator = spec.indexOf('/');
   if (separator <= 0 || separator === spec.length - 1) return undefined;
   return {

@@ -10,14 +10,22 @@ export class FormulaError extends Error {
   readonly code: string;
   readonly line: number;
   readonly column: number;
-  constructor(code: string, line = 1, column = 0) {
+  readonly path?: readonly number[];
+  constructor(code: string, line = 1, column = 0, path?: readonly number[]) {
     super(code); this.name = 'FormulaError'; this.code = code; this.line = line; this.column = column;
+    this.path = path && Object.freeze([...path]);
   }
 }
 export const node = (kind: FormulaKind, text: string, children: readonly FormulaNode[] = []): FormulaNode =>
   Object.freeze({kind, text, children: Object.freeze([...children])});
 
+const sourceLocations = new WeakMap<FormulaNode, {line: number; column: number}>();
 function build(context: ParserRuleContext): FormulaNode {
+  const result = buildNode(context);
+  if (!sourceLocations.has(result)) sourceLocations.set(result, {line: context.start.line, column: context.start.column});
+  return result;
+}
+function buildNode(context: ParserRuleContext): FormulaNode {
   if (context instanceof FormulaContext) return build(context.comparison());
   if (context instanceof PercentageContext) {
     let value = build(context.unary());
@@ -31,8 +39,8 @@ function build(context: ParserRuleContext): FormulaNode {
   }
   if (context instanceof AtomContext) {
     if (context.NUMBER()) return node('NUMBER', context.NUMBER().getText());
-    if (context.STRING()) return node('STRING', context.STRING().getText().slice(1, -1).replaceAll('""', '"'));
-    if (context.FIELD()) return node('FIELD', context.FIELD().getText().slice(1, -1).replaceAll(']]', ']'));
+    if (context.STRING()) return node('STRING', context.STRING().getText().slice(1, -1).split('""').join('"'));
+    if (context.FIELD()) return node('FIELD', context.FIELD().getText().slice(1, -1).split(']]').join(']'));
     if (context.TRUE() || context.FALSE()) return node('BOOLEAN', context.getText().toUpperCase());
     if (context.NULL()) return node('NULL', 'NULL');
     if (context.IDENTIFIER()) return node('CALL', context.IDENTIFIER().getText().toUpperCase(), context.comparison_list().map(build));
@@ -96,8 +104,8 @@ export function printFormula(root: FormulaNode): string {
   validateTree(root);
   const render = (value: FormulaNode): string => {
     switch (value.kind) {
-      case 'STRING': return '"' + value.text.replaceAll('"', '""') + '"';
-      case 'FIELD': return '[' + value.text.replaceAll(']', ']]') + ']';
+      case 'STRING': return '"' + value.text.split('"').join('""') + '"';
+      case 'FIELD': return '[' + value.text.split(']').join(']]') + ']';
       case 'NUMBER': case 'BOOLEAN': case 'NULL': return value.text;
       case 'CALL': return value.text + '(' + value.children.map(render).join(',') + ')';
       case 'UNARY': return value.text === '%' ? '(' + render(value.children[0]) + ')%' : value.text + '(' + render(value.children[0]) + ')';
@@ -120,21 +128,45 @@ export function formulaReferences(root: FormulaNode): ReadonlySet<string> {
   return references;
 }
 
+/** Presentation only. Stored formulas always retain stable field identities. */
+export function displayFormula(root: FormulaNode, fields: readonly FormulaField[]): string {
+  validateTree(root);
+  const names = new Map(fields.map(field => [field.id, field.group ? `${field.group} · ${field.label}` : field.label]));
+  const counts = new Map<string, number>();
+  for (const name of names.values()) counts.set(name, (counts.get(name) ?? 0) + 1);
+  const render = (value: FormulaNode): string => {
+    if (value.kind === 'FIELD') {
+      const label = names.get(value.text);
+      return '[' + (label ? label + ((counts.get(label) ?? 0) > 1 ? ` · ${value.text}` : '') : value.text) + ']';
+    }
+    if (value.kind === 'STRING') return '"' + value.text.split('"').join('""') + '"';
+    if (value.kind === 'CALL') return value.text + '(' + value.children.map(render).join(', ') + ')';
+    if (value.kind === 'BINARY') return '(' + render(value.children[0]) + ' ' + value.text + ' ' + render(value.children[1]) + ')';
+    if (value.kind === 'UNARY') return value.text === '%' ? '(' + render(value.children[0]) + ')%' : value.text + '(' + render(value.children[0]) + ')';
+    return value.text;
+  };
+  return render(root);
+}
+
 /** Catalogs are supplied by the host and must match the evaluator's version. */
 export function validateFormula(root: FormulaNode, fields: readonly FormulaField[], functions: readonly FormulaFunction[]): void {
   validateTree(root);
   const knownFields = new Set(fields.map(field => field.id));
   const registry = new Map(functions.map(fn => [fn.name, fn]));
-  const pending = [root];
+  const pending = [{value: root, path: [] as number[]}];
   while (pending.length) {
-    const value = pending.pop()!;
-    if (value.kind === 'FIELD' && !knownFields.has(value.text)) throw new FormulaError('UNKNOWN_FIELD');
+    const {value, path} = pending.pop()!;
+    const fail = (code: string): never => {
+      const location = sourceLocations.get(value);
+      throw new FormulaError(code, location?.line ?? 1, location?.column ?? 0, path);
+    };
+    if (value.kind === 'FIELD' && !knownFields.has(value.text)) fail('UNKNOWN_FIELD');
     if (value.kind === 'CALL') {
       const fn = registry.get(value.text);
-      if (!fn) throw new FormulaError('UNKNOWN_FUNCTION');
-      if (value.children.length < fn.minArguments || value.children.length > fn.maxArguments) throw new FormulaError('ARGUMENT_COUNT');
+      if (!fn) fail('UNKNOWN_FUNCTION');
+      if (value.children.length < fn!.minArguments || value.children.length > fn!.maxArguments) fail('ARGUMENT_COUNT');
     }
-    pending.push(...value.children);
+    for (let index = value.children.length - 1; index >= 0; index--) pending.push({value: value.children[index], path: [...path, index]});
   }
 }
 

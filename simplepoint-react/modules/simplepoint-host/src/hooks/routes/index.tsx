@@ -1,3 +1,4 @@
+import {hasVisibleNavigation} from '@/store/routes/visibility';
 import {createIcon} from "@simplepoint/shared/types/icon";
 import {getRouteKey, RouteInfo, MenuItemType} from "@/store/routes";
 import type {MenuProps} from "antd";
@@ -67,9 +68,10 @@ const buildNavigationFromFlat = (
 ): MenuItemType[] => {
   return routes
     .filter((route) => route.parentId === parent && route.routeKind !== 'hidden')
-    .map((route) => {
+    .flatMap((route) => {
       const children = buildNavigationFromFlat(routes, navigate, remoteRegistryKey, route.id);
-      return toMenuItem(route, navigate, remoteRegistryKey, children.length > 0 ? children : undefined);
+      return hasVisibleNavigation(route, children.length)
+        ? [toMenuItem(route, navigate, remoteRegistryKey, children)] : [];
     });
 };
 
@@ -81,12 +83,13 @@ const buildNavigationFromTree = (
   navigate: (path: string) => void,
   remoteRegistryKey?: string,
 ): MenuItemType[] => {
-  return (nodes || []).filter(route => route.routeKind !== 'hidden').map((route) => {
+  return (nodes || []).filter(route => route.routeKind !== 'hidden').flatMap((route) => {
     const raw = route.children;
     const builtChildren = Array.isArray(raw) && raw.length > 0
       ? buildNavigationFromTree(raw, navigate, remoteRegistryKey)
       : undefined;
-    return toMenuItem(route, navigate, remoteRegistryKey, builtChildren);
+    return hasVisibleNavigation(route, builtChildren?.length ?? 0)
+      ? [toMenuItem(route, navigate, remoteRegistryKey, builtChildren)] : [];
   });
 };
 

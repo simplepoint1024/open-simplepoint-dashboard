@@ -32,6 +32,8 @@ public class WorkflowException extends org.simplepoint.remoting.RemoteBusinessEx
     NOT_FOUND,
     CONFLICT,
     FORBIDDEN,
-    ENGINE_FAILURE
+    ENGINE_FAILURE,
+    DIRECTORY_PREPARING,
+    DIRECTORY_UNAVAILABLE
   }
 }

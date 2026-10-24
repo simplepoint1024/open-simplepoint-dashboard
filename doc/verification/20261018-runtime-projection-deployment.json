@@ -1,0 +1,1192 @@
+{
+  "status": "CURRENT_IMPLEMENTATION_DEPLOYED_AND_REGRESSION_VERIFIED",
+  "at": "2026-10-17T19:29:55.215Z",
+  "version": "20261018-runtime-projection1",
+  "baseCommit": "7085a8eefaa7283dc990f21f26d7fa379294fc01",
+  "sourceDigest": "c8689f38d1ee9f0d3b13f751202083a64619a580db6a461b896a0ce901f73da2",
+  "services": [
+    {
+      "service": "authorization",
+      "image": "simplepoint203/authorization:20261017-audit-labels1",
+      "imageId": "sha256:bb30bad1c84358ae347ba483185410d5a11a0f2a3c4760a861aceb5de93bd265",
+      "health": "healthy"
+    },
+    {
+      "service": "common",
+      "image": "simplepoint203/common:20261017-audit-labels2",
+      "imageId": "sha256:3bcae89bed1e5b5ac9b9439867551cd0af506bf031e7f8ed2bb11cf7b7a70764",
+      "health": "healthy"
+    },
+    {
+      "service": "auditing",
+      "image": "simplepoint203/auditing:20261017-audit-labels2",
+      "imageId": "sha256:f0a56b420697d5936f832aa360a1c70cea8a292506ed17b7dd7134fd992f1cc7",
+      "health": "healthy"
+    },
+    {
+      "service": "dna",
+      "image": "simplepoint203/dna:20261018-publication-service1",
+      "imageId": "sha256:bc2cdb3bd089605211a0a8ad00108e8d900d3470e4b290b3308ee62c31a8127e",
+      "health": "healthy"
+    },
+    {
+      "service": "ai",
+      "image": "simplepoint203/ai:20261017-audit-labels2",
+      "imageId": "sha256:6ad41dc7a0f7b9fa3646b3408f6c430fd6069e57efbec05dcf16aa6af1dd7d67",
+      "health": "healthy"
+    },
+    {
+      "service": "app",
+      "image": "simplepoint203/app:20261018-runtime-projection1",
+      "imageId": "sha256:66dcbf53ab803096631160d044182f31da14f798f0d7743e033abcfea8267e10",
+      "health": "healthy"
+    },
+    {
+      "service": "workflow",
+      "image": "simplepoint203/workflow:20261017-audit-labels2",
+      "imageId": "sha256:d80fc3f4469bf8385d81edbcfe1c11bf8b8381037d3514fd48347d04f4c4ea51",
+      "health": "healthy"
+    },
+    {
+      "service": "mcp-gateway",
+      "image": "simplepoint203/mcp-gateway:20261017-audit-labels1",
+      "imageId": "sha256:7f56f1dc62d9cc255d118881843e942b70a4812150cf32fd93f5652b58fa9cbd",
+      "health": "healthy"
+    },
+    {
+      "service": "host",
+      "image": "simplepoint203/host:20261017-i18n-recovery1",
+      "imageId": "sha256:c2afeda96e096528ef0d37f3f23406dae0fc96ceb67e27e0427a8a74ccc3395c",
+      "health": "healthy"
+    }
+  ],
+  "implemented": [
+    "Use FormFieldDefinition.persistent for formula-backed record, list, query and permission fields; exclude legacy computed placeholders",
+    "Mark formula permission descriptors read-only while retaining stable identities and ordinary query operators",
+    "Share FormWorkflowFields across workflow catalog, binding validation and submission mapping; exclude attachments, transient fields, legacy placeholders and unsupported JSON variables"
+  ],
+  "quality": {
+    "passed": true,
+    "modules": {
+      "simplepoint-plugin-app-form-implementation": {
+        "tests": 271,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "checkstyleMain": "passed",
+        "resultDigest": "6199e43c32432f4d99ba3f175dcce209fc69b9fe7884f401e77841d9c957894b"
+      },
+      "simplepoint-service-app": {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "checkstyleMain": "passed",
+        "resultDigest": "104b1da38c2e4d5a3fa1a0cdb91e06ba70de7b4a3010e48acfc4498512a5d5e1"
+      }
+    },
+    "frontendTypecheck": "passed",
+    "uiAudit": "40/40",
+    "frontendDistribution": "passed",
+    "appImplementationTestEvidence": "20261018-calculation-runtime-projection.json; unchanged source verified",
+    "serviceTests": "rerun with this build",
+    "newMigrations": []
+  },
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-17T19:29:55.067Z",
+    "version": "20261018-runtime-projection1",
+    "sourceDigest": "c8689f38d1ee9f0d3b13f751202083a64619a580db6a461b896a0ce901f73da2",
+    "services": [
+      {
+        "service": "app",
+        "version": "20261018-runtime-projection1",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 262,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  },
+  "backup": {
+    "originalVersion": "20261018-publication-recovery2",
+    "restoration": {
+      "passed": true,
+      "dumpSha256": "5bdd1cef5ecdbcb09daee7830f0384ac8d9a2a861539fde5f84cbe52aaab00f9",
+      "postgresVersion": "18.6",
+      "network": "no TCP listener; private owner-only Unix socket",
+      "extensions": [
+        {
+          "extname": "pg_trgm",
+          "extversion": "1.6"
+        },
+        {
+          "extname": "plpgsql",
+          "extversion": "1.0"
+        },
+        {
+          "extname": "vector",
+          "extversion": "0.8.7"
+        }
+      ],
+      "allBusinessTablesRestored": 5,
+      "businessRowCountsMatch": true,
+      "writeFencesMatch": true,
+      "temporaryClusterRemoved": true
+    },
+    "rollbackImageAndComposeRetained": true,
+    "newMigrations": [],
+    "businessDataRewritten": false
+  },
+  "verification": {
+    "artifacts": {
+      "passed": true,
+      "at": "2026-10-17T19:26:17.138Z",
+      "services": [
+        {
+          "service": "common",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "2018daee7d7e64df2fecd1747afc7cfe31dede4a097a2f26c37048bfa16d3bec",
+          "entrySha256": "15d19ea429963cd76f664ee63640f0aed4fb3590218c6e4817468152972c4b03"
+        },
+        {
+          "service": "auditing",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "2914dcf369939ed52722ee8a1b659c06c68f3d33ef8335b3edf2c58447d02df1",
+          "entrySha256": "3800c75d365228eaaf72ae73b50f66017ad2f778b53706812da7c272411eb7bc"
+        },
+        {
+          "service": "dna",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "3cf40aede3aa1fdb4e9c738b545654752ba8a6a81472411009b70658c350cd80",
+          "entrySha256": "e50960eedc95d7552c7b81a87d00428fcf6604dfb239d1cf9d74f4376dc278be"
+        },
+        {
+          "service": "ai",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "232513d53192c75d648b428be6f1ee6ff6b09fa88fdc8d3745397e060fd4683d",
+          "entrySha256": "430664ae183665f3c89755f307ff717b5f9f895aa44f35f97aadf10aa9c15ae9"
+        },
+        {
+          "service": "app",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "c636cf527256dd2fc86706d066191a6759bcfb99f918c360dbff232676d550c4",
+          "entrySha256": "a7443e74e95b6261704cd31f9fa1da390c7dbf71fc910f88827aa75514f3cba3"
+        },
+        {
+          "service": "workflow",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "5500ba43a9af92a292cf2bd658f8c1bceede224adc69f10ae2a679b111edce27",
+          "entrySha256": "d5c3bb7019400001bb85b7a951e78da1e205e3e8840c29af71f4692073899891"
+        }
+      ]
+    },
+    "host": {
+      "passed": true,
+      "at": "2026-10-17T19:26:17.400Z",
+      "indexSha256": "ce63c688289df06f53588d41d8204efb0aa31b35dbe80de303fbac0268f45c9a",
+      "entries": [
+        {
+          "path": "/assets/js/index.ee404c122b.js",
+          "sha256": "5268360508824010779efc012853e4bf370e61c1e9ea3b717fd8cca2d8dac8d7"
+        }
+      ]
+    },
+    "preservation": {
+      "passed": true,
+      "at": "2026-10-17T19:26:15.609Z",
+      "models": 5,
+      "allBusinessRowCountsUnchanged": true,
+      "allWriteFencesUnchanged": true,
+      "activeSchemaVersionsUnchanged": true
+    },
+    "migrationAndScheduler": {
+      "passed": true,
+      "at": "2026-10-17T19:29:37.810Z",
+      "migrationColumns": [
+        "recovery_actor_id",
+        "recovery_error",
+        "recovery_failures",
+        "recovery_not_before",
+        "recovery_role_id"
+      ],
+      "recoveryIndex": true,
+      "scheduledFormulaOperations": 0,
+      "serviceHealthy": true,
+      "observedSeconds": 244,
+      "runtimeErrorCount": 0,
+      "scope": "Real service startup and idle scheduled scans verified. No live formula dispatch, interrupted publication or authority revocation was simulated."
+    },
+    "workflowCatalog": {
+      "passed": true,
+      "at": "2026-10-17T19:26:19.155Z",
+      "checks": [
+        {
+          "code": "office_meeting_room",
+          "fields": 19,
+          "scenes": 1,
+          "ordinaryUserMetadataDenied": true,
+          "authorizedRuntimePageDiscovered": true
+        },
+        {
+          "code": "office_daily_report",
+          "fields": 14,
+          "scenes": 1,
+          "ordinaryUserMetadataDenied": true,
+          "authorizedRuntimePageDiscovered": true
+        },
+        {
+          "code": "office_expense_claim",
+          "fields": 19,
+          "scenes": 1,
+          "ordinaryUserMetadataDenied": true,
+          "authorizedRuntimePageDiscovered": true
+        }
+      ],
+      "scope": "Real immutable ordinary form versions and actual grants; formula-backed catalog fixtures separately covered by persistence tests."
+    },
+    "businessFlows": {
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "id": "9887013575a3dd927d1a80d17a446d6b24f759830ee532917314b088d5174a76",
+          "recordId": "5344c91f-1d40-50c1-a81a-53773fb169a3",
+          "processInstanceId": "a622b69f-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "COMPLETED",
+          "detailRows": 0,
+          "approvalCount": 1
+        },
+        {
+          "code": "office_daily_report",
+          "id": "8a62bb98e878ddfbcb81d7ff72f05395e4ea17e0de0666ed2b5af03cd5b4b78a",
+          "recordId": "16a00483-145d-56f0-89b9-8162595f4bd0",
+          "processInstanceId": "b5505d40-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2,
+          "approvalCount": 1
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "35d167b438a1144f244ccfb26fdc23c94dfc95eb192356c2c5b9c03f1fee1659",
+          "recordId": "cd11a081-7ed1-502c-8f5f-bf7df1f2c7bf",
+          "processInstanceId": "c3ff36f1-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2,
+          "approvalCount": 2
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "9ac968af020c0a83dd679e59b448b586d77888e652d71a2595d4d113d477a80f",
+          "recordId": "9e8106e2-d63f-5225-ab59-23e49cc4fd4a",
+          "processInstanceId": "d3850fbd-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2,
+          "approvalCount": 3
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "9035976b8f5d4a9f5028e6e3084afb6d64ff7bdde1d3fa63c03cbc7318a51e4e",
+          "recordId": "7fa31ed4-e18c-5246-8c0b-360df7f35018",
+          "processInstanceId": "e24db311-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "REJECTED",
+          "detailRows": 2,
+          "approvalCount": 0
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "726be4b727806abd8fa77b5da65933b3a21c50a020e3aea8bbb8c5b3483598e9",
+          "recordId": "e25c0321-a526-5ff6-9c75-2e5c0b455673",
+          "processInstanceId": "f0b23d51-ca60-11f1-ab74-26bd1c76e7f3",
+          "finalStatus": "COMPLETED",
+          "detailRows": 2,
+          "approvalCount": 2
+        }
+      ],
+      "checks": [
+        "meeting end must follow start",
+        "daily report requires detail rows",
+        "daily hours must equal exact detail sum",
+        "expense cannot tamper with routing amount",
+        "expense requires attachments",
+        "expense rejects forged storage reference",
+        "meeting: employee → administration → completed, immutable record",
+        "daily: parent + two detail rows → manager → completed",
+        "expense <= 5000: manager → finance, attachment bytes verified",
+        "expense > 5000: manager → director → finance, exact amount routing",
+        "rejection → linked new revision → completed; original business evidence preserved",
+        "administration cannot access financial form; applicant cannot approve any stage"
+      ],
+      "pendingTestTasks": 0,
+      "orphanDetails": [
+        {
+          "name": "费用明细",
+          "orphans": 0
+        },
+        {
+          "name": "工作明细",
+          "orphans": 0
+        }
+      ],
+      "events": [
+        {
+          "owner": "app",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 90
+        },
+        {
+          "owner": "app",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "common",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "INBOX",
+          "state": "DONE",
+          "count": 45
+        },
+        {
+          "owner": "dna",
+          "direction": "OUTBOX",
+          "state": "DONE",
+          "count": 45
+        }
+      ],
+      "quarantine": 0,
+      "notifications": [
+        {
+          "status": "SENT",
+          "count": 195
+        }
+      ]
+    },
+    "records": {
+      "passed": true,
+      "at": "2026-10-17T19:26:25.577Z",
+      "recordIds": [
+        "0087741c-ba82-51ce-8a75-115334b85bdd",
+        "fd2a5a25-63a4-5281-8476-bf8f9e490ade"
+      ],
+      "unicodeRoundTrip": true,
+      "detailPrependEditDelete": true,
+      "newestBeforePagination": true,
+      "updatingOlderRecordDoesNotMoveItFirst": true,
+      "cleanedRecordIds": [
+        "0087741c-ba82-51ce-8a75-115334b85bdd",
+        "fd2a5a25-63a4-5281-8476-bf8f9e490ade"
+      ],
+      "activeTemporaryRecords": 0
+    },
+    "attachments": {
+      "passed": true,
+      "at": "2026-10-17T19:29:31.560Z",
+      "uploadedObjectId": "23b1f52c-fe68-4dfd-92ce-8a2f30cfb422",
+      "bytes": 863,
+      "sha256": "15f10d5b604ef9c57fad08fae1cce18a5da0dd6218ab60e07aefe3df337f2653",
+      "downloadHashMatched": true,
+      "deleted": true,
+      "postDeletionStatus": 404
+    },
+    "permissions": {
+      "passed": true,
+      "at": "2026-10-17T19:28:59.804Z",
+      "noGrantChanges": true,
+      "checks": [
+        {
+          "role": "manager",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "manager",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "employee",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "business-form",
+          "status": 403
+        }
+      ]
+    },
+    "identities": {
+      "passed": true,
+      "at": "2026-10-17T19:26:20.455Z",
+      "actor": "employee",
+      "noGrantChanges": true,
+      "checks": [
+        {
+          "code": "office_meeting_room",
+          "recordId": "a24d9d31-f2fa-5b6f-a8b2-517bcea450ea",
+          "submissionId": "f5215f48f013dc163ccd3942d4c5e48990ba98eb506e59a3b9935f1b59c72a70",
+          "listRows": 5,
+          "fields": [
+            "updatedBy",
+            "tenantId",
+            "createdBy",
+            "createOrgDeptId"
+          ],
+          "oldSnapshotReadable": true,
+          "originalIdsPreserved": true
+        },
+        {
+          "code": "office_daily_report",
+          "recordId": "cf02b499-f1a6-5236-8ccb-c6abcbb103c1",
+          "submissionId": "95c32ecb64f5f2366addf7d8b0721e907bf4bed0dc2d709fbf2b1958dc272cbe",
+          "listRows": 5,
+          "fields": [
+            "updatedBy",
+            "tenantId",
+            "createdBy",
+            "createOrgDeptId"
+          ],
+          "oldSnapshotReadable": true,
+          "originalIdsPreserved": true
+        },
+        {
+          "code": "office_expense_claim",
+          "recordId": "ca68005c-c7ff-5346-8bb6-8fea9eb6ec77",
+          "submissionId": "9437868a1e7bc0bc739265fbb469dcabe9412d7df2b4627544639eb39972a1cb",
+          "listRows": 5,
+          "fields": [
+            "updatedBy",
+            "tenantId",
+            "createdBy",
+            "createOrgDeptId"
+          ],
+          "oldSnapshotReadable": true,
+          "originalIdsPreserved": true
+        },
+        {
+          "endpoint": "/common/users/schema",
+          "status": 403
+        },
+        {
+          "endpoint": "/common/organizations/schema",
+          "status": 403
+        },
+        {
+          "endpoint": "/common/_simplepoint/service-router/invoke",
+          "status": 403
+        }
+      ]
+    },
+    "browser": {
+      "passed": true,
+      "at": "2026-10-17T19:29:26.035Z",
+      "list": true,
+      "cards": true,
+      "detailViewports": [
+        1440,
+        768,
+        390
+      ],
+      "columnVisibilityRestored": true
+    },
+    "details": {
+      "passed": true,
+      "at": "2026-10-17T19:29:14.370Z",
+      "forms": [
+        {
+          "code": "office_daily_report",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1021,
+            "scrollWidth": 1860,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        },
+        {
+          "code": "office_expense_claim",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1021,
+            "scrollWidth": 1780,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        }
+      ],
+      "actor": "admin",
+      "propertyTabsWithIcons": true,
+      "businessMutations": 0
+    },
+    "modelDefinition": {
+      "passed": true,
+      "at": "2026-10-17T19:29:18.280Z",
+      "fieldCount": 11,
+      "structuredSchema": true,
+      "indexesTab": true,
+      "rawJsonTextarea": false,
+      "dnaWrites": 0
+    },
+    "preview": {
+      "passed": true,
+      "at": "2026-10-17T19:29:30.787Z",
+      "views": [
+        {
+          "device": "PC",
+          "width": 1120,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        },
+        {
+          "device": "iPad",
+          "width": 768,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        },
+        {
+          "device": "Phone",
+          "width": 390,
+          "inHeader": false,
+          "insideForm": true,
+          "rightInset": 16,
+          "top": 180,
+          "headerBottom": 144,
+          "bottom": 216,
+          "contentTop": 224,
+          "background": "rgb(22, 119, 255)",
+          "color": "rgb(255, 255, 255)",
+          "primary": "rgb(22, 119, 255)"
+        }
+      ],
+      "pinnedOnScroll": true,
+      "businessMutations": 0
+    },
+    "historicalSnapshots": {
+      "passed": true,
+      "cases": 6
+    },
+    "publicationReplay": {
+      "passed": true,
+      "at": "2026-10-17T19:26:22.483Z",
+      "checks": [
+        {
+          "code": "office_meeting_room",
+          "releaseId": "66c4a581-052e-4486-9386-cdecec196cb9",
+          "status": "ACTIVE",
+          "resumeReplayUnchanged": true,
+          "publicationReplayUnchanged": true,
+          "ordinaryUserDenied": true
+        },
+        {
+          "code": "office_daily_report",
+          "releaseId": "3e3d617c-49ed-4926-9bd3-576e677f1676",
+          "status": "ACTIVE",
+          "resumeReplayUnchanged": true,
+          "publicationReplayUnchanged": true,
+          "ordinaryUserDenied": true
+        },
+        {
+          "code": "office_expense_claim",
+          "releaseId": "f220476c-a862-48d0-b6c3-a7670431bfe6",
+          "status": "ACTIVE",
+          "resumeReplayUnchanged": true,
+          "publicationReplayUnchanged": true,
+          "ordinaryUserDenied": true
+        }
+      ],
+      "writePoliciesUnchanged": true,
+      "noNewPublications": true,
+      "scope": "Idempotent replay of existing active releases; nonterminal batching is deployed in DNA and covered by isolated service/database tests; APP formula publication remains guarded."
+    },
+    "calculatorPreview": {
+      "passed": true,
+      "at": "2026-10-17T19:26:18.437Z",
+      "checks": [
+        "live catalog: 63 functions, version 1",
+        "exact decimal aggregate preview: 28.53 + 15.68 = 44.21",
+        "reject forged output",
+        "reject unknown reference",
+        "reject dependency cycle",
+        "reject division by zero",
+        "reject too many rows",
+        "ordinary business user cannot use designer calculator",
+        "form ownership resolved before trial",
+        "preview leaves saved business form draft unchanged"
+      ],
+      "result": {
+        "values": {
+          "total": "44.21"
+        },
+        "details": {
+          "lines": [
+            {
+              "amount": "28.53"
+            },
+            {
+              "amount": "15.68"
+            }
+          ]
+        }
+      },
+      "functions": 63,
+      "previewOnly": true,
+      "publicationEnabled": false
+    },
+    "formulaInfrastructure": {
+      "passed": true,
+      "at": "2026-10-17T19:29:37.694Z",
+      "infrastructure": [
+        {
+          "table": "simpoint_dna_record_publications_v1",
+          "checksum": "4303e00b4718ee7e842f5c1ac14391d172c185b23592176829da4ca9972fae46",
+          "rows": 0
+        },
+        {
+          "table": "simpoint_dna_publication_stages_v1",
+          "checksum": "a277b502b695d85c9ff84bfb37d570da72a346bdbd88f3f6f3919fff647ba653",
+          "rows": 0
+        },
+        {
+          "table": "simpoint_dna_publication_chunks_v1",
+          "checksum": "04823510f3e04f6770e3334ee6a0313749efd277f379568c24edeb3f917ad380",
+          "rows": 0
+        }
+      ],
+      "installedCalculationDefinitions": 0,
+      "writeFencesUnchangedAfterAllScenarios": true,
+      "scope": "DNA batch service installed; APP formula publication remains guarded. Existing business regression must not create formula jobs."
+    },
+    "browserArtifacts": [
+      {
+        "name": "office_daily_report-pending-browser",
+        "passed": true,
+        "at": "2026-10-17T19:26:57.423Z",
+        "actor": "manager",
+        "mode": "pending",
+        "taskId": "b5508459-ca60-11f1-ab74-26bd1c76e7f3",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": false,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "name": "office_daily_report-completed-browser",
+        "passed": true,
+        "at": "2026-10-17T19:27:02.384Z",
+        "actor": "manager",
+        "mode": "completed",
+        "taskId": "b5508459-ca60-11f1-ab74-26bd1c76e7f3",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": true,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "name": "office_expense_claim-pending-browser",
+        "passed": true,
+        "at": "2026-10-17T19:28:37.103Z",
+        "actor": "finance",
+        "mode": "pending",
+        "taskId": "f0d26f95-ca60-11f1-ab74-26bd1c76e7f3",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": false,
+        "downloadVerified": false,
+        "transports": []
+      },
+      {
+        "name": "office_expense_claim-completed-browser",
+        "passed": true,
+        "at": "2026-10-17T19:28:43.897Z",
+        "actor": "finance",
+        "mode": "completed",
+        "taskId": "f0d26f95-ca60-11f1-ab74-26bd1c76e7f3",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": true,
+        "downloadVerified": true,
+        "transports": []
+      }
+    ]
+  },
+  "retainedData": {
+    "verifiedSubmissions": 6,
+    "completed": 5,
+    "rejected": 1,
+    "titlePrefix": "1018运行接入验收",
+    "reason": "Named test-account acceptance records retained for review; no real payments",
+    "activeTemporaryDrafts": 0,
+    "temporaryUploads": 0,
+    "unresolvedTestTasks": 0
+  },
+  "limitations": [
+    "Formula publication remains guarded. Post-calculation authoritative validation, prospective runtime calculation, designer integration and B1–B5 real calculation forms remain incomplete. This is deployment regression of available capabilities, not final acceptance of the whole calculation engine.",
+    "Formula-backed projection was verified with APP adapter and persistence tests. Live office forms contain no formulas and therefore do not prove live calculation-based workflow routing.",
+    "Recovery startup and idle scans passed; interrupted real formula publishing and live authority revocation still require final integration verification.",
+    "The 176 final calculation acceptance items remain incomplete; existing 143 tenant implementation Checkstyle findings remain outside this patch."
+  ],
+  "screenshots": [
+    "doc/verification/20261018-runtime-phone.png",
+    "doc/verification/20261018-runtime-cards.png",
+    "doc/verification/20261018-runtime-preview.png",
+    "doc/verification/20261018-runtime-model.png"
+  ],
+  "artifactHashes": {
+    "quality.json": "537a2180a671a888e2ce2ba80576bce25385dc63cff7771dbdc67b12258f83f2",
+    "deployment.json": "6f34eacdde5db6dfc348af6c2e7585b453c9f83a3dd122322263483888651607",
+    "storage-preserved.json": "d8b4730e1885a66a3e99d0855f6864231156f2635bb890c8429921d3fc93f02e",
+    "assets-live.json": "115788281ce86c5dac4a9dfc4a4efffbf2a1d4b3ebe2dde5b636299d8b185f8e",
+    "host-assets.json": "76bfb7b7b7567b3a3b0653eb9dede1bea4ceda7a56168023e9660bcd1560ea26",
+    "calculation-live.json": "adb701cca6a9b62221873dc5358245dbe1f682c6487a6e06336d1ff420fc8421",
+    "catalog-live.json": "1a8327f260567da82cc58e79cfc4e3a84dec9f5793924bf722e34bb444aa228b",
+    "identity-live.json": "bcc03b3c632b4273370cc8d926c6e53b768ff715c9ed812562817ce8ad56876a",
+    "identity-browser.json": "944595683a451ff4c1b2c09e28a9712d4d4e5317b440b207359d6379f1e072ee",
+    "scope-live.json": "7876e2a4ff9d9aa82cfe59a580a8d855c680794ce762ea2c434fd87790ea1644",
+    "final-check.json": "2571606b997b7fb4b13b063480fecca5a36d5f0253a208b04dd284a1bafb7178",
+    "old-snapshots.json": "11ff675e87e33149281cdb049aadb4fe4b2a111c923cb924171205a15f3ea82c",
+    "publication-replay.json": "2afb19d783cf310a722caabfb85bed8128afb03d1100de96ee9cbacaed1ae21c",
+    "live-records.json": "21c32723adda2cbd797e260f45f40ef9e502b6329716e87920d20497b8e830eb",
+    "live-details.json": "431818ffd82c2f59356cdbe835f2126b85a7539955a7a7bec657350131f05ddb",
+    "model-definition.json": "e0c1beeef614553eabfc7d1d7dad5678fab34de51ff8e0a1f2f83c3080a41414",
+    "journal-final.json": "f27b5fb1fd59800e9a8c7866c1ebcbb79f1d94f6bd173ecb680a45aadc4d2b0b",
+    "recovery-live.json": "6eb1b0f44c2d960a9a4075b554b57c777b2e1444d017e795ae993320ce5964e7",
+    "live-ui.json": "7ac7e3dd5431c2278b5a548c679889b92fffe4c0729a404e91c2aad1e6e8f306",
+    "upload-live.json": "7a058ac6bcd80370af5c795073bd4f8289a8227d3ed3a7408bb92754c49d3c15",
+    "restore-check.json": "4d24436c31c7e649aba15b362ddcb8413d315d12e32ff848444d2361f55b982b",
+    "office_daily_report-pending-browser.json": "1a3f57ce1b4fed4936498508f2a42a9ae38c26fd9dd21bb88bf9e440728f9238",
+    "office_daily_report-completed-browser.json": "17064620a7be1de20551b7c0524b991600f60b155f914442bd8b6457ec9e7547",
+    "office_expense_claim-pending-browser.json": "36c5846045251398341083b3f4426e3e6f49e4cc06a2ae69ae200fa215d524be",
+    "office_expense_claim-completed-browser.json": "80f90cff051278a684e9ad143567280533586590a93a63c9bdf31ef9a685ef6f",
+    "live-flows.json": "b4fdc4d5e10970473b35b9e0ea0cc03bee0e1e0f88db48d7ffabdd46368fcf3a"
+  }
+}

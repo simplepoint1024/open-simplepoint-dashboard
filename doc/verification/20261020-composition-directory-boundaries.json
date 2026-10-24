@@ -1,0 +1,151 @@
+{
+  "date": "2026-10-20",
+  "phase": "S2 user and tenant directory contracts; full goal incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew -I /tmp/simplepoint-directory-checkstyle.gradle verifyCompositionDirectoryStyle :simplepoint-core:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test :simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-implementation:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation:test :simplepoint-platform:simplepoint-platform-composition-verification:check verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-core",
+      "tests": 348,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation",
+      "tests": 167,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+      "tests": 188,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation",
+      "tests": 372,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
+      "tests": 312,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testSummary": {
+    "discovered": 1394,
+    "passed": 1393,
+    "skipped": 1
+  },
+  "skippedReason": "WorkflowPostgresPlanTest requires WORKFLOW_TEST_POSTGRES=1 and a disposable PostgreSQL schema. This run uses the default H2 fixture and does not claim PostgreSQL query-plan acceptance.",
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "architecture": {
+    "modules": 20,
+    "remoteCapabilities": 19,
+    "remainingLegacyEntityContract": "security.user:1 / UsersService"
+  },
+  "checkstyle": {
+    "scope": "14 explicitly listed directory/guard/DNA source and test files; not a whole-repository Checkstyle pass. Composition verification also ran its normal check task.",
+    "files": [
+      "simplepoint-core/src/main/java/org/simplepoint/core/security/ServiceClientIdentity.java",
+      "simplepoint-core/src/test/java/org/simplepoint/core/security/ServiceClientIdentityTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UserDirectory.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/pojo/vo/UserDirectoryEntry.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/pojo/vo/UserDirectoryPage.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryDatabaseTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryBoundaryTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantDirectory.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantDirectoryImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantDirectoryBoundaryTest.java",
+      "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcConnectionUserServiceImpl.java",
+      "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcConnectionUserServiceImplTest.java",
+      "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/plugin/dna/federation/service/impl/JdbcGrantPermissionsDatabaseTest.java"
+    ],
+    "reports": [
+      {
+        "report": "simplepoint-core/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      },
+      {
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/build/reports/checkstyle/compositionDirectory.xml",
+        "violations": 0
+      }
+    ],
+    "reproduction": "Write initScript to /tmp/simplepoint-directory-checkstyle.gradle and files as newline-separated paths to /tmp/simplepoint-directory-style-files.txt before running command.",
+    "initScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-directory-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleCompositionDirectory', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyCompositionDirectoryStyle') { dependsOn checks }\n}\n"
+  },
+  "boundaries": [
+    "H2 checks real identity projection SQL without loading User entities; no authentication secrets in directory DTOs.",
+    "Spring invocation dispatcher tests reject unauthenticated callers and management/authentication methods outside directory contracts.",
+    "Workflow and DNA consume saas.tenant:2. DNA directory/grant snapshots consume security.user-directory:1; narrow DTOs replace directory entity access.",
+    "Directory adapters require authenticated client_credentials identity plus invocation scope; logical local service identity adaptation remains pending.",
+    "Identity/transaction equivalence, credential verification including MFA/rate limiting, storage/event composition and real standalone/mixed deployments remain incomplete.",
+    "No deployment, production data changes or claim of fully working standalone. Provider and consumers must be upgraded together for saas.tenant:2."
+  ],
+  "sourceSha256": {
+    "simplepoint-core/src/main/java/org/simplepoint/core/security/ServiceClientIdentity.java": "6ce63ea288150bdee49d11cfe1d72d2c72bfc848e030e1b097eb7670b8056242",
+    "simplepoint-core/src/test/java/org/simplepoint/core/security/ServiceClientIdentityTest.java": "8fde98c8bdf24eaf3ffaee256878b0496e530d61edd28ed7c7b42c8d226119cd",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "5f748a29c77cad22d168364b0fc350a6298a54c3bb583def362873f306d9cea1",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RemoteContractBoundaryTest.java": "6f9a7d3a4b825e8dcfeae42ed3a103ca1dad7d36c58ad58e88835c71209fc0d8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java": "2e05d66b319391957ec03377b5c108db4428fa4e56821a148827811f5037990b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcConnectionUserServiceImpl.java": "8bdb93958f8281df039113def1f1a6e2f13348ffcc359dd91ab720f70b541a2a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcDriverServiceImpl.java": "ce67e3158061588809ac967a3618f5e991827508fc2aa1fab8dd643c23c09033",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcConnectionUserServiceImplTest.java": "bc540a1b01e6cc2ff28b69f040306a28deb8a8fe4d92dca6159b941cc6de2d06",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/plugin/dna/federation/service/impl/FederationJdbcDriverServiceImplTest.java": "1c2f162a3f67b3fe67754707c79a7883613601c5775a7a6481416b81f842bb82",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/plugin/dna/federation/service/impl/JdbcGrantPermissionsDatabaseTest.java": "0329dfba88e6da567dccd9d3cf95c3bee5e585714b6eefb26edeb4cb22ffad30",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java": "660223ea559704ff01ec4b26dc122c79f91be3e5ae448d6a9d48f10c431f3158",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/service/WorkflowCenterServiceImpl.java": "14fdd34f74eedb2f44177025c70333f42016962a6af6f0a53704710e81d78e2f",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/test/java/org/simplepoint/plugin/workflow/service/WorkflowEngineFixture.java": "fac02583dcf6803d3112de9625e876125e1670627234186ea5c7bf8c63034d36",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/test/java/org/simplepoint/plugin/workflow/service/WorkflowVersionContractTest.java": "e7fad2de1230d05497601e0471f133dfc8e27f556811016e64ca6c931e90bffd",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/pojo/vo/TenantDirectoryItem.java": "ed94fae1af0549e17385deff45969df1809c964c0b8d1f950b23577f02c67859",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/pojo/vo/UserDirectoryEntry.java": "ad3d2b2ab11f54f250c8be3b3d9909d79530d22185d85b2dee2c079e0be5cd1d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/pojo/vo/UserDirectoryPage.java": "3158ba1b7f64cddc917e998880009185967e06bbd3fdef476b0f403bdf87cb7e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UserDirectory.java": "2199905f57f271553dcb1f3f25068cc7f76e66dd893afd69cecd572de625c216",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build.gradle.kts": "fe07c98858595affb52d0f1dedc180be5dc9be92253491315bfcde63a62c7712",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/TenantDirectoryService.java": "5d7393abe44b6c0ed1ac37db0a571c4de90b63a4e2c9e52d3f2b3ba175be8859",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryImpl.java": "d280df73271d5742ecd1cce5c5653751a53fa700f0351b23879c72821cad4727",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryBoundaryTest.java": "52d29fc28670da790e0d455418b3558cbf32ecab2cb70b0b03afeebe5c5c3957",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserDirectoryDatabaseTest.java": "74f72e22f58e880d3fba44ac1a81a5ec34ac9a0c981142b84a3ea86a4d04a096",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UsersServiceImplTest.java": "4e089f50a71ad1e9457406f7eae03343531eb5068bd18b6406c7be17546b0f5c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "a8032b71c8408ca719599d40dcce3b95fc6d6915832420aa53f0bcbaf37c4e4d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantDirectory.java": "edb6307276de9a57414d6360c58c7a36e18a96ec3f942d26026debd626abd89b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantService.java": "1867dd7afd855a5c2efb1a117cc3a32e7cb1d6323dd45aeb70abbcc8e5e25b91",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build.gradle.kts": "bf7d9603e462f400b21593b305e5124d6e7c8fe6c2c456661f74becd92037a73",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantDirectoryImpl.java": "d431c4ebbf4065f765cd7d4f366d6f5719f8d96710038a47800a8e74b6b1fa6c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantServiceImpl.java": "6f807e8aa4bdb54fca010ed66ef7b0aa52e65820237bfbb01a9bf9714d55f501",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantDirectoryBoundaryTest.java": "cd6b088e0dcb93b3fe8cd1e95b688e77daff79561ec21bb4da43adf2bd192980"
+  }
+}

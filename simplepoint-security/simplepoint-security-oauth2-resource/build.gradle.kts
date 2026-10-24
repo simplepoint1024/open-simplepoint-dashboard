@@ -1,5 +1,8 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    compileOnly(project(":simplepoint-service-router:simplepoint-service-router-core"))
+    testImplementation(project(":simplepoint-service-router:simplepoint-service-router-core"))
     api(libs.oauth2.oidc.sdk)
     api(project(":simplepoint-core"))
     api(project(":simplepoint-security:simplepoint-security-core"))

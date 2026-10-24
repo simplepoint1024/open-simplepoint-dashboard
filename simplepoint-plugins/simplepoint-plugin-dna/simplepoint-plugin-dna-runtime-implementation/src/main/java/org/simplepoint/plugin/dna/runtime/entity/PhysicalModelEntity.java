@@ -13,6 +13,7 @@ import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelStatus;
 
 /** Persistent identity and lifecycle state of a form-owned physical model. */
@@ -49,7 +50,7 @@ import org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelStatus;
     @org.simplepoint.core.query.QueryField("latestVersion"),
     @org.simplepoint.core.query.QueryField("activeVersion"),
     @org.simplepoint.core.query.QueryField("updatedAt")
-}, maxPageSize = 100)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class PhysicalModelEntity extends TenantBaseEntityImpl<String> {
 
   @Column(name = "app_id", length = 64, nullable = false, updatable = false)

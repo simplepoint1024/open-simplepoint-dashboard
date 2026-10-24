@@ -2,12 +2,22 @@
 
 业务只依赖 `simplepoint-events-api`；服务宿主依赖 `simplepoint-events-rabbit`。`jdbc` 管理本地事务与恢复，`rabbit` 管理传输。现存 `simplepoint-data-amqp` 是未纳入当前构建的低层/旧 RPC 封装，不具备业务事务可靠投递语义；不将旧 RPC 自动切换为事件。
 
+采用 `@EnablePlatformModules` 的组合宿主使用 [simplepoint-events-composition](simplepoint-events-composition/README.md)：从模块声明派生事件身份、发布版本和订阅，每个 owner 独立连接、存储绑定及 worker。以下单一 `simplepoint.events.service` 配置继续适用于旧服务入口，不能用于合并后的多个逻辑模块。
+
+组合安装使用独立的 [simplepoint-events-migrations](simplepoint-events-migrations/README.md)：
+根据现有事件声明和模块存储绑定，自动将每个所需存储的一份事件 schema 加入统一迁移计划。
+它不加载消息运行时；缺少适配器会被计划完整性检查拒绝。组合部署使用
+[安装器](../simplepoint-platform/simplepoint-platform-installation-host/README.md)审核并安装共享
+schema、接管历史账本及预置 broker 权限和拓扑；运行宿主只消费已安装的贡献。
+原有入口的独立安装参见下方说明，不得对已接管的共享账本重复建立基线。
+
 ## 强制契约
 
 - `EventPublisher.publish` 必须与业务修改使用同一个 DataSource 和事务管理器，并处于可写事务。事务回滚则 outbox 同时回滚。重复 eventId 不得描述不同事实。
 - `EventHandler` 只执行本地事务效果。inbox 完成、业务状态和回执 outbox 一起提交；远程调用不能放在处理事务里。每种独立业务效果有稳定 subscription ID；增加订阅要先迁移拓扑再启用发布。
 - Rabbit 接收端先持久化 inbox 再 ACK，业务处理由独立 worker 完成。ACK 和 publisher confirm 都不是业务完成。重要流程必须等待业务回执。
 - 事件为显式 JSON 信封，最大 32 KiB（UTF-8），只允许对象载荷，不启用任意 Java 类型反序列化。包含 tenant、resource、generation、operation、correlation；禁止凭据与用户授权快照。载荷仍须由业务处理器验证。
+- JSON 小数载荷按 `BigDecimal` 读取，金额和秒的小数不得经过 `double` 中转。时间契约优先使用明确的 ISO instant 字符串；包含重复时间戳的载荷必须与信封核对。登录审计 v1 兼容旧数字时间戳时只接受原信封时间的精确 IEEE double 舍入值，并使用信封恢复原时间；新字符串时间戳不允许该兼容规则，其他时间差仍被拒绝。
 - 每个服务 Rabbit 用户名必须等于 `simplepoint.events.service`。消息 user_id 由 broker 验证，接收端检查 receivedUserId、来源 exchange、route 和事件版本。生产凭据不得授予 impersonator 或其他服务的 exchange 写权限。
 - 至少一次投递。确认不确定重发原身份；多实例使用条件抢占和租约 token，旧 worker 不能覆盖新状态。业务乱序由业务对象代次和操作回执处理。
 
@@ -49,6 +59,16 @@ spring.rabbitmq.virtual-host=/simplepoint
 
 ## 服务就绪与消息通道健康
 
-APP、Common、DNA 使用 `/actuator/health/readiness` 作为容器与 Consul 的业务就绪检查，包含 `readinessState,db`。`/actuator/health` 仍保留 RabbitMQ 健康并用于基础设施监控；MQ 故障时聚合健康 DOWN，但本地数据库可用的服务仍能可靠保存 outbox、读取业务数据和接受恢复操作，避免 RPC 提供者连锁退注册。部署如果设置了 `spring.cloud.consul.discovery.health-check-url`，也必须将其路径改成 readiness；它会覆盖 health-check-path。不要用就绪检查替代 MQ/DEAD/积压告警。
+APP、Common、DNA、Workflow 使用 `/actuator/health/readiness` 作为容器与 Consul 的业务就绪检查，包含 `readinessState,db`。`/actuator/health` 仍保留 RabbitMQ 健康并用于基础设施监控；MQ 故障时聚合健康 DOWN，但本地数据库可用的服务仍能可靠保存 outbox、读取业务数据和接受恢复操作，避免 RPC 提供者连锁退注册。部署如果设置了 `spring.cloud.consul.discovery.health-check-url`，也必须将其路径改成 readiness；它会覆盖 health-check-path。不要用就绪检查替代 MQ/DEAD/积压告警。
 
 配置依据：[Spring Boot 健康分组与就绪探针](https://docs.spring.io/spring-boot/4.0/reference/actuator/endpoints.html)。
+
+## 工作流显示名称通知
+
+身份模块发布 `identity.member-labels.observed` v1，工作流订阅 `member-labels.refresh`。
+该事件只声明观察到的目录版本，不含名称、账户或授权快照。观察游标与 outbox 原子提交；
+消费者只在 inbox 事务中登记本地刷新意图，后台获取目录时不持有消费事务。
+预置队列为 `sp.events.workflow.member-labels.refresh`，绑定 `sp.events.common` 的
+`identity.member-labels.observed.v1`；身份与工作流分别使用自己的发布/消费身份及存储。
+事件 tenant 允许至多 255 个 Unicode 码点，与身份租户 ID 一致；整体信封仍限制 32 KiB。
+详见[设计与恢复边界](../doc/design/workflow_member_label_projection.md)。

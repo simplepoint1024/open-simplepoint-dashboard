@@ -52,7 +52,7 @@ public class FormSubmissionProcessor {
                           command.runtime(),
                           operationKey,
                           FormRecordState.SUBMITTED,
-                          command.values()))
+                          command.values()), accepted.snapshotRequirements())
                   : records.captureUpdate(
                       accepted.form(),
                       command.recordId(),
@@ -61,7 +61,7 @@ public class FormSubmissionProcessor {
                           command.expectedVersion(),
                           operationKey,
                           FormRecordState.SUBMITTED,
-                          command.values()));
+                          command.values()), accepted.snapshotRequirements());
           journal.captured(id, work.token(), snapshot);
         } else if ("DATA_COMMITTED".equals(work.step())) {
           var variables =
@@ -107,7 +107,12 @@ public class FormSubmissionProcessor {
             work.step(),
             code,
             failure.getClass().getSimpleName());
-        journal.failed(id, work.token(), code, false);
+        if ("PREPARED".equals(work.step()) && failure instanceof ApplicationFormException domain
+            && domain.errorCode() == org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.RECORD_OPERATION_REJECTED) {
+          journal.rejected(id, work.token());
+        } else {
+          journal.failed(id, work.token(), code, false);
+        }
         return;
       }
     }

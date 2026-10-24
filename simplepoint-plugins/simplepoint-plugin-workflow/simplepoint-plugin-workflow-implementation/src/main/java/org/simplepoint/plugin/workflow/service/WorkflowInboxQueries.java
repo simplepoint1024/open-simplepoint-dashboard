@@ -13,23 +13,24 @@ import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.constants.WorkflowResourceCodes;
 import org.simplepoint.plugin.workflow.api.model.WorkflowInboxItem;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
+import org.simplepoint.plugin.workflow.directory.WorkflowMemberLabelReader;
 import org.simplepoint.plugin.workflow.entity.WorkflowCandidateReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowInboxReadModel;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Personal inbox SQL queries. Authorization predicates are separate from all caller filters. */
 @Service
-@Transactional(readOnly = true)
 public class WorkflowInboxQueries {
   private static final Set<String> TEXT_FIELDS =
       Set.of("title", "definitionName", "taskName", "starterName", "assigneeName", "actorName");
   private final EntityManager em;
+  private final WorkflowMemberLabelReader labels;
 
   /** Creates the personal inbox adapter over native engine facts. */
-  public WorkflowInboxQueries(EntityManager em) {
+  public WorkflowInboxQueries(EntityManager em, WorkflowMemberLabelReader labels) {
     this.em = em;
+    this.labels = labels;
   }
 
   /** A notification/bookmark may target an item outside the currently visible table page. */
@@ -40,6 +41,10 @@ public class WorkflowInboxQueries {
     if (id == null || id.isBlank() || id.length() > 64) {
       throw new WorkflowException(WorkflowException.Code.NOT_FOUND, "待办不存在或当前用户无权查看");
     }
+    return labels.read(tenant, () -> task(id, tenant, user));
+  }
+
+  private WorkflowInboxItem task(String id, String tenant, String user) {
     var cb = em.getCriteriaBuilder();
     var query = cb.createQuery(WorkflowInboxReadModel.class);
     var root = query.from(WorkflowInboxReadModel.class);
@@ -71,16 +76,19 @@ public class WorkflowInboxQueries {
           case "completed" -> false;
           default -> throw new InvalidQueryException("不支持的待办分组");
         };
-    return WorkflowReadPages.query(
-        em,
-        WorkflowInboxReadModel.class,
-        WorkflowInboxItem.class,
-        filters,
-        requested,
-        pending ? "createdAt" : "handledAt",
-        TEXT_FIELDS,
-        (cb, query, root) -> boundary(cb, query, root, tenant, user, roles, pending),
-        row -> item(row, user, pending));
+    return labels.read(
+        tenant,
+        () ->
+            WorkflowReadPages.query(
+                em,
+                WorkflowInboxReadModel.class,
+                WorkflowInboxItem.class,
+                filters,
+                requested,
+                pending ? "createdAt" : "handledAt",
+                TEXT_FIELDS,
+                (cb, query, root) -> boundary(cb, query, root, tenant, user, roles, pending),
+                row -> item(row, user, pending)));
   }
 
   private Predicate boundary(

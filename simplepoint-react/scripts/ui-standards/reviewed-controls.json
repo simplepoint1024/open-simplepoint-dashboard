@@ -250,10 +250,10 @@
     {
       "file": "modules/simplepoint-host/src/layouts/navigation-bar/top-bar.tsx",
       "component": "html:button",
-      "fingerprint": "4255f5d61efaaa2dd3537151e4b2c5765a165ff47107647effc4755e46f00766",
-      "reviewedAtLine": 203,
+      "fingerprint": "b8cb1bfeb56a637102f8321b3744bdc9fc474e89ea7b4a58b67520c3e41ca87c",
+      "reviewedAtLine": 143,
       "category": "navigation-control",
-      "reason": "This global shell trigger opens tenant/role/language navigation or changes local theme/size/fullscreen, shortcuts or a project link. It is not a resource form; destructive cache cleanup uses a guarded platform action.",
+      "reason": "Workspace navigation trigger opens the shared authorized TenantSelect directory panel, preserving search, paging, keyboard access and unsaved-work navigation guards; it is not a business CRUD action.",
       "evidence": [
         "scripts/smoke-mf.mjs",
         "scripts/smoke-host-preferences.mjs"
@@ -403,17 +403,6 @@
       "evidence": [
         "scripts/smoke-host-preferences.mjs",
         "modules/simplepoint-host/src/layouts/profile/ProfileSections.tsx"
-      ]
-    },
-    {
-      "file": "modules/simplepoint-host/src/layouts/profile/index.tsx",
-      "component": "html:button",
-      "fingerprint": "a4b9aed703894c3be9694236ecdb9faad6a13274d5035c16de43408fe14da49b",
-      "reviewedAtLine": 122,
-      "category": "navigation-control",
-      "reason": "The local profile-section navigation selects About/Access/Organization/Security without a domain write; actual profile, avatar and password writes use SForm/platform actions.",
-      "evidence": [
-        "scripts/smoke-host-preferences.mjs"
       ]
     },
     {

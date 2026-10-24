@@ -4,15 +4,15 @@
 import {ParseTreeVisitor} from 'antlr4';
 
 
-import { FormulaContext } from "./CalculationParser.ts";
-import { ComparisonContext } from "./CalculationParser.ts";
-import { ConcatenationContext } from "./CalculationParser.ts";
-import { AdditionContext } from "./CalculationParser.ts";
-import { MultiplicationContext } from "./CalculationParser.ts";
-import { PowerContext } from "./CalculationParser.ts";
-import { PercentageContext } from "./CalculationParser.ts";
-import { UnaryContext } from "./CalculationParser.ts";
-import { AtomContext } from "./CalculationParser.ts";
+import type { FormulaContext } from "./CalculationParser.ts";
+import type { ComparisonContext } from "./CalculationParser.ts";
+import type { ConcatenationContext } from "./CalculationParser.ts";
+import type { AdditionContext } from "./CalculationParser.ts";
+import type { MultiplicationContext } from "./CalculationParser.ts";
+import type { PowerContext } from "./CalculationParser.ts";
+import type { PercentageContext } from "./CalculationParser.ts";
+import type { UnaryContext } from "./CalculationParser.ts";
+import type { AtomContext } from "./CalculationParser.ts";
 
 
 /**

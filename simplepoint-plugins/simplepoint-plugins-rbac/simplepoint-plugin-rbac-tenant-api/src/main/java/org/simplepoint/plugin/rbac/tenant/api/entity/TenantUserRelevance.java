@@ -4,8 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.api.schema.DictionaryField;
+import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 
 /**
@@ -31,7 +31,9 @@ public class TenantUserRelevance extends BaseEntityImpl<String> {
 
   @Override
   public void prePersist() {
-    if (userType == null || userType.isBlank()) userType = "INTERNAL";
+    if (userType == null || userType.isBlank()) {
+      userType = "INTERNAL";
+    }
     super.prePersist();
   }
 }

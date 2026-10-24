@@ -3,7 +3,6 @@ package org.simplepoint.plugin.rbac.tenant.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,26 +35,19 @@ import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersi
 @ExtendWith(MockitoExtension.class)
 class PackageServiceImplTest {
 
-  @Mock
-  PackageRepository repository;
+  @Mock PackageRepository repository;
 
-  @Mock
-  DetailsProviderService detailsProviderService;
+  @Mock DetailsProviderService detailsProviderService;
 
-  @Mock
-  PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
+  @Mock PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
 
-  @Mock
-  TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
+  @Mock TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
 
-  @Mock
-  TenantRepository tenantRepository;
+  @Mock TenantRepository tenantRepository;
 
-  @Mock
-  ResourceAuthorizationVersionService resourceAuthorizationVersionService;
+  @Mock ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
-  @InjectMocks
-  PackageServiceImpl service;
+  @InjectMocks PackageServiceImpl service;
 
   MockedStatic<AuthorizationContextHolder> contextHolder;
 
@@ -208,8 +200,50 @@ class PackageServiceImplTest {
         .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
   }
 
+  @Test
+  void tenantAndPersonalCallersCannotUsePlatformTemplatesOrHistoricalRelations() {
+    for (var scope :
+        java.util.List.of(AuthorizationScopeType.TENANT, AuthorizationScopeType.PERSONAL)) {
+      for (boolean administrator : java.util.List.of(false, true)) {
+        var context = new AuthorizationContext();
+        context.setUserId("actor");
+        context.setScopeType(scope);
+        context.setIsAdministrator(administrator);
+        context.setAttributes(java.util.Map.of("X-Tenant-Id", "tenant-a"));
+        contextHolder.when(AuthorizationContextHolder::getContext).thenReturn(context);
+        for (Runnable read :
+            java.util.List.<Runnable>of(
+                () -> service.schema(),
+                () ->
+                    service.limit(
+                        java.util.Map.of(), org.springframework.data.domain.Pageable.ofSize(20)),
+                () -> service.findById("template"),
+                () -> service.findAllByIds(java.util.List.of("template")),
+                () -> service.authorizedApplications("template"),
+                () -> service.create(new Package()),
+                () -> service.create(java.util.List.of(new Package())))) {
+          assertThatThrownBy(read::run)
+              .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        }
+      }
+    }
+    org.mockito.Mockito.verifyNoInteractions(
+        repository,
+        tenantPackageRelevanceRepository,
+        tenantRepository,
+        resourceAuthorizationVersionService);
+  }
+
+  @Test
+  void templateChangesDoNotConsultOrModifyHistoricalTenantEntitlements() {
+    service.unauthorizedApplications("template", java.util.Set.of("member"));
+    org.mockito.Mockito.verifyNoInteractions(
+        tenantPackageRelevanceRepository, tenantRepository, resourceAuthorizationVersionService);
+  }
+
   private static AuthorizationContext platformAdminContext() {
     AuthorizationContext ctx = new AuthorizationContext();
+    ctx.setUserId("admin");
     ctx.setIsAdministrator(true);
     ctx.setScopeType(AuthorizationScopeType.PLATFORM);
     return ctx;

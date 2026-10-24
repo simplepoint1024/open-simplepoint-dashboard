@@ -1,3 +1,4 @@
+import {resolveHostComponent} from './hostComponent';
 import React, {useState} from 'react';
 import {Popconfirm, Result, Space} from 'antd';
 import TableActions from '@simplepoint/components/Table/Actions';
@@ -83,7 +84,7 @@ async function loadComponentModule(spec: string, remoteRegistryKey?: string): Pr
 
 /** Start loading a remote page while the user is hovering its menu item. */
 export function prefetchLazyComponent(spec?: string, remoteRegistryKey?: string, immediate = false) {
-  if (!spec || spec.startsWith('external:') || spec.startsWith('iframe:')) return;
+  if (!spec || resolveHostComponent(spec) || spec.startsWith('external:') || spec.startsWith('iframe:')) return;
   const connection = (navigator as Navigator & {connection?: {saveData?: boolean; effectiveType?: string}}).connection;
   if (!permitsSpeculation(connection)) return;
   const key = cacheKey(spec, remoteRegistryKey);

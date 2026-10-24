@@ -19,8 +19,17 @@
     min-width: 0;
 }
 
-/* Opt-in bounded layout. Natural-height tables keep their existing document flow. */
+.sp-data-table-root:fullscreen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Default bounded layout. Explicit pixel budgets and natural-flow opt-outs retain their own sizing. */
 .sp-data-table-fit {
+    flex: 1;
     height: 100%;
     min-height: 0;
     display: flex;
@@ -44,6 +53,13 @@
 .sp-data-table-root:fullscreen .ant-table-header,
 .sp-data-table-root:fullscreen .ant-table-pagination {
     flex-shrink: 0;
+}
+
+/* A caller-provided row viewport is a height budget, including when the page has no rows. */
+.sp-data-table-root:not(.sp-data-table-fit):not(:fullscreen) > .sp-data-table .ant-table-body {
+    /* A row budget must not shrink to content inside the shared flex table shell. */
+    flex: none;
+    height: var(--sp-table-body-height, auto);
 }
 
 .sp-data-table-toolbar {
@@ -147,6 +163,7 @@
 }
 
 .sp-table-fill .ant-spin-nested-loading,
+.sp-table-stage > .sp-table-fill > .ant-spin,
 .sp-data-table-fit > .sp-table-fill > .ant-spin,
 .sp-data-table-root:fullscreen > .sp-table-fill > .ant-spin,
 .sp-table-fill .ant-spin-container {
@@ -186,6 +203,11 @@
 .sp-table-fill .ant-table-body {
     flex: 1;
     min-height: 0;
+}
+
+.sp-table-stage .ant-table-header,
+.sp-table-stage .ant-table-summary {
+    flex-shrink: 0;
 }
 
 .sp-table-fill.ant-table-wrapper .ant-table {

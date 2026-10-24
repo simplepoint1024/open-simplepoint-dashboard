@@ -13,29 +13,30 @@ import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeGuards;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantContextIds;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
+import org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
+import org.simplepoint.plugin.rbac.tenant.api.service.PersonalTenantProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
-import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.entity.User;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -47,16 +48,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Tenant service implementation. */
 @Service
-@RemoteProvider
 public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant, String>
     implements TenantService {
 
   private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
   private final TenantUserRelevanceRepository tenantUserRelevanceRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
-  private final UsersService usersService;
-  private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
+  private final UserManagementService usersService;
+  private final PersonalTenantProvisioningService personalTenants;
   private final TenantUserCandidateQuery userCandidateQuery;
+  private final TenantResourceProvisioningService resourceProvisioning;
 
   /** Tenant Service Impl. */
   public TenantServiceImpl(
@@ -65,16 +66,30 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
       TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
       TenantUserRelevanceRepository tenantUserRelevanceRepository,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      UsersService usersService,
-      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
-      TenantUserCandidateQuery userCandidateQuery) {
+      UserManagementService usersService,
+      PersonalTenantProvisioningService personalTenants,
+      TenantUserCandidateQuery userCandidateQuery,
+      TenantResourceProvisioningService resourceProvisioning) {
     super(repository, detailsProviderService);
     this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
     this.tenantUserRelevanceRepository = tenantUserRelevanceRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.usersService = usersService;
-    this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
+    this.personalTenants = personalTenants;
     this.userCandidateQuery = userCandidateQuery;
+    this.resourceProvisioning = resourceProvisioning;
+  }
+
+  @Override
+  protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<Tenant> domainClass) {
+    var context = getAuthorizationContext();
+    boolean administrator =
+        context != null
+            && context.getScopeType() == AuthorizationScopeType.PLATFORM
+            && AuthorizationScopeGuards.isPlatformAdministrator(context);
+    return super.getButtonDeclarationsSchema(domainClass).stream()
+        .filter(button -> administrator || !"config.package".equals(button.get("key")))
+        .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   @Override
@@ -144,6 +159,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     String tenantId = requireActiveTenantId();
     Tenant tenant = findById(tenantId).orElseThrow(() -> new AccessDeniedException("无权访问当前租户资料"));
     tenant.setProfileEditable(canManageTenantProfile(tenant));
+    decorateOwnerCapabilities(tenant);
     return tenant;
   }
 
@@ -179,6 +195,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     Tenant updated = getRepository().updateById(tenant);
     decorateTenantOwners(List.of(updated));
     updated.setProfileEditable(true);
+    decorateOwnerCapabilities(updated);
     return updated;
   }
 
@@ -250,9 +267,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
 
   @Override
   public Collection<String> authorizedPackages(String tenantId) {
-    Tenant tenant = requireTenant(tenantId);
-    requirePlatformAdministrator();
-    return tenantPackageRelevanceRepository.authorized(tenant.getId());
+    throw new TenantPackageException(TenantPackageException.Code.LEGACY_ASSIGNMENT_RETIRED);
   }
 
   @Override
@@ -386,37 +401,13 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<TenantPackageRelevance> authorizePackages(TenantPackagesRelevanceDto dto) {
-    String tenantId = requireTenant(dto.getTenantId()).getId();
-    requirePlatformAdministrator();
-    Set<String> packageCodes = normalizeCodes(dto.getPackageCodes());
-    if (packageCodes.isEmpty()) {
-      return List.of();
-    }
-
-    Set<TenantPackageRelevance> relations = new LinkedHashSet<>(packageCodes.size());
-    for (String packageCode : packageCodes) {
-      TenantPackageRelevance relevance = new TenantPackageRelevance();
-      relevance.setTenantId(tenantId);
-      relevance.setPackageCode(packageCode);
-      relations.add(relevance);
-    }
-
-    Collection<TenantPackageRelevance> saved = tenantPackageRelevanceRepository.saveAll(relations);
-    resourceAuthorizationVersionService.refreshTenant(tenantId);
-    return saved;
+    throw new TenantPackageException(TenantPackageException.Code.LEGACY_ASSIGNMENT_RETIRED);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorizedPackages(String tenantId, Set<String> packageCodes) {
-    Set<String> normalizedPackageCodes = normalizeCodes(packageCodes);
-    if (normalizedPackageCodes.isEmpty()) {
-      return;
-    }
-    String requiredTenantId = requireTenant(tenantId).getId();
-    requirePlatformAdministrator();
-    tenantPackageRelevanceRepository.unauthorized(requiredTenantId, normalizedPackageCodes);
-    resourceAuthorizationVersionService.refreshTenant(requiredTenantId);
+    throw new TenantPackageException(TenantPackageException.Code.LEGACY_ASSIGNMENT_RETIRED);
   }
 
   @Override
@@ -495,7 +486,17 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     validateUsersExist(Set.of(entity.getOwnerId()));
     S created = super.create(entity);
     ensureOwnerMembership(created.getId(), created.getOwnerId());
+    resourceProvisioning.initialize(created.getId());
     return created;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public List<Tenant> create(Collection<Tenant> entities) {
+    requirePlatformAdministrator();
+    Objects.requireNonNull(entities, "tenants");
+    // Every entry must pass the same owner and directory preparation as single creation.
+    return entities.stream().map(this::create).toList();
   }
 
   @Override
@@ -640,38 +641,7 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   private Tenant ensurePersonalTenantExists(String userId) {
-    if (userId == null || userId.isBlank()) {
-      return null;
-    }
-    Optional<Tenant> existing =
-        Optional.ofNullable(getRepository().findPersonalTenantByOwnerId(userId))
-            .orElse(Optional.empty());
-    if (existing.isPresent()) {
-      Tenant tenant = existing.get();
-      ensureOwnerMembership(tenant.getId(), userId);
-      provisionPersonalTenant(tenant.getId());
-      return tenant;
-    }
-    Tenant tenant = new Tenant();
-    tenant.setName(userId + " 的个人空间");
-    tenant.setDescription("个人租户");
-    tenant.setOwnerId(userId);
-    tenant.setTenantType(org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL);
-    tenant.setAuthorizationVersion(0L);
-    Tenant saved = getRepository().save(tenant);
-    ensureOwnerMembership(saved.getId(), userId);
-    provisionPersonalTenant(saved.getId());
-    return saved;
-  }
-
-  private void provisionPersonalTenant(String tenantId) {
-    if (builtInTenantProvisionerProvider == null) {
-      return;
-    }
-    BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
-    if (provisioner != null) {
-      provisioner.provisionPersonalTenant(tenantId);
-    }
+    return personalTenants.ensureForUser(userId);
   }
 
   private void validateUsersExist(Set<String> userIds) {
@@ -759,6 +729,25 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
     return tenantId;
   }
 
+  private void decorateOwnerCapabilities(Tenant tenant) {
+    var context = getAuthorizationContext();
+    boolean owner =
+        context != null
+            && Objects.equals(context.getUserId(), getRequiredAuthentication().getName())
+            && Objects.equals(context.getUserId(), tenant.getOwnerId())
+            && Objects.equals(context.getAttribute("X-Tenant-Id"), tenant.getId())
+            && (context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.TENANT
+                    && tenant.getTenantType()
+                        == org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.ORGANIZATION
+                || context.getScopeType() == org.simplepoint.core.AuthorizationScopeType.PERSONAL
+                    && tenant.getTenantType()
+                        == org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL);
+    // These are UI capabilities only; each resource/package operation revalidates database
+    // ownership.
+    tenant.setResourceManageable(owner);
+    tenant.setPackageManageable(owner);
+  }
+
   private boolean canManageTenantProfile(Tenant tenant) {
     Authentication authentication = getRequiredAuthentication();
     if (isSuperAdministrator() || Objects.equals(authentication.getName(), tenant.getOwnerId())) {
@@ -821,8 +810,8 @@ public class TenantServiceImpl extends BaseServiceImpl<TenantRepository, Tenant,
   }
 
   private static boolean isServiceRouterCaller(Authentication authentication) {
-    return authentication.getAuthorities().stream()
-        .anyMatch(authority -> "SCOPE_service-router.invoke".equals(authority.getAuthority()));
+    return org.simplepoint.core.security.ServiceClientIdentity.authenticatedClientId(authentication)
+        .isPresent();
   }
 
   private static boolean hasPlatformAccess(Authentication authentication) {

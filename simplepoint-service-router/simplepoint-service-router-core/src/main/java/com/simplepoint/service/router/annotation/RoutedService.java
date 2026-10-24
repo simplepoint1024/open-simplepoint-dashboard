@@ -37,14 +37,16 @@ public @interface RoutedService {
   long timeout() default 3000L;
 
   /**
-   * Remote invocation retry count.
+   * Remote invocation retry count for operations explicitly marked
+   * {@code @RemoteOperation(idempotent = true)}.
    *
    * @return retry count
    */
   int retries() default 0;
 
   /**
-   * Fallback implementation type.
+   * Fallback implementation type for idempotent operations after transport recovery is exhausted.
+   * Provider, authorization, protocol and local invocation failures do not use this fallback.
    *
    * @return fallback class
    */

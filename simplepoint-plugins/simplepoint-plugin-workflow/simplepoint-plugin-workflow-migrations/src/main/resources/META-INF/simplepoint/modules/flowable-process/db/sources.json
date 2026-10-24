@@ -1,0 +1,32 @@
+{
+  "license": "Apache-2.0",
+  "vendorVersion": "8.0.0",
+  "schemaVersion": "8.0.0.0",
+  "sources": [
+    {
+      "artifact": "org.flowable:flowable-engine-common:8.0.0",
+      "resource": "org/flowable/common/db/create/flowable.postgres.create.common.sql",
+      "sha256": "9854e360694ab3a25ae417e7440a94194bad33cf9f193a92f363f21bfcb919bc"
+    },
+    {
+      "artifact": "org.flowable:flowable-idm-engine:8.0.0",
+      "resource": "org/flowable/idm/db/create/flowable.postgres.create.identity.sql",
+      "sha256": "abb75b10ecd238f9b16a9a164be5d2534dc594c48943a76d3774e558da50a29a"
+    },
+    {
+      "artifact": "org.flowable:flowable-event-registry:8.0.0",
+      "resource": "org/flowable/eventregistry/db/create/flowable.postgres.create.eventregistry.sql",
+      "sha256": "41e55b5abb150e161e2e2c086b398271cd8006fd385680563fb4e25d5fd35198"
+    },
+    {
+      "artifact": "org.flowable:flowable-engine:8.0.0",
+      "resource": "org/flowable/db/create/flowable.postgres.create.engine.sql",
+      "sha256": "48fdd12cb080ab4dd6db9abef4e2b5c2f4b34d923feeca70d7db44b645f07e9f"
+    },
+    {
+      "artifact": "org.flowable:flowable-engine:8.0.0",
+      "resource": "org/flowable/db/create/flowable.postgres.create.history.sql",
+      "sha256": "62bd2fe7c2a8583aa6638e39608c49360bc3ffdb1bd9ad3511683757f2b75bab"
+    }
+  ]
+}

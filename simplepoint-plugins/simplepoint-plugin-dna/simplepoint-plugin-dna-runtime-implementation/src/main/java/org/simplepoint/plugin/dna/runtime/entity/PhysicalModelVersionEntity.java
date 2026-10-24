@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.query.TablePagination;
 
 /** Immutable serialized target schema for one physical model version. */
 @Entity
@@ -47,7 +48,7 @@ import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
     @org.simplepoint.core.query.QueryField("contractVersion"),
     @org.simplepoint.core.query.QueryField("schemaChecksum"),
     @org.simplepoint.core.query.QueryField("createdAt")
-}, maxPageSize = 100)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class PhysicalModelVersionEntity extends TenantBaseEntityImpl<String> {
 
   @Column(name = "physical_model_id", length = 36, nullable = false, updatable = false)

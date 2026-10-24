@@ -1,3 +1,5 @@
+import {localizeFormDocument} from '@simplepoint/components/FormRuntime/localization';
+import PublishedFormRuntime from '@simplepoint/components/FormRuntime/Published';
 import RuntimeForm, {
   editableValues,
   detailPayload,
@@ -28,22 +30,25 @@ import SubmissionDialog from '@simplepoint/components/ApplicationWorkflow/Submis
 import SubmissionHistory from '@simplepoint/components/ApplicationWorkflow/SubmissionHistory';
 import ResourceDrawer from '@simplepoint/components/ResourceDrawer';
 import TableActions from '@simplepoint/components/Table/Actions';
+import {recordCards} from './recordCards';
 
-type Props = {available?: boolean; descriptor: ApplicationFormRuntimeView; onInteractionLockChange?: (locked: boolean) => void};
+type Props = {available?: boolean; descriptor: ApplicationFormRuntimeView; onInteractionLockChange?: (locked: boolean) => void;
+  onReadAccessDenied?: (error: unknown) => void};
 
 /** Standard SimpleTable record manager over the page-bound APP record facade. */
-export default function RecordTable({descriptor, available = true, onInteractionLockChange}: Props) {
-  const {t} = useI18n();
+export default function RecordTable({descriptor: sourceDescriptor, available = true, onInteractionLockChange, onReadAccessDenied}: Props) {
+  const {t, locale} = useI18n();
+  const descriptor = useMemo(() => ({...sourceDescriptor, document: localizeFormDocument(sourceDescriptor.document, locale)}), [sourceDescriptor, locale]);
   const {message} = App.useApp();
   const operation = useOperationScope(descriptor.pageId);
   const queries = useQueryClient(), scope = useQueryScope();
   const [submission, setSubmission] = useState<FormRecord>();
   const [detail, setDetail] = useState<FormRecord>();
-  const [history, setHistory] = useState(false), [historyLocked, setHistoryLocked] = useState(false);
+  const [history, setHistory] = useState<string>(), [historyLocked, setHistoryLocked] = useState(false);
   const [tableLocked, setTableLocked] = useState(false);
   const interaction = useCallback((locked: boolean) => setTableLocked(locked), []);
   const writeState = useRef<RecordState>('DRAFT');
-  useEffect(() => {onInteractionLockChange?.(tableLocked || operation.busy || !!submission || !!detail || history);},
+  useEffect(() => {onInteractionLockChange?.(tableLocked || operation.busy || !!submission || !!detail || !!history);},
     [tableLocked, operation.busy, submission, detail, history, onInteractionLockChange]);
   const [pending, setPending] = useState<{method: 'POST' | 'PUT'; url: string; body: {
     runtime: ReturnType<typeof runtimeIdentity>; idempotencyKey: string; expectedVersion?: number;
@@ -63,7 +68,7 @@ export default function RecordTable({descriptor, available = true, onInteraction
   );
 
   const openRecord = async (row: RecordRow | undefined, kind: 'view' | 'submit') => {
-    if (!available || !row || tableLocked || submission || detail || history) return;
+    if (!available || !row || tableLocked || submission || detail || !!history) return;
     const request = operation.begin(); if (!request) return;
     try {
       const record = await get<FormRecord>(`${baseUrl}/${encodeURIComponent(row.id)}`, undefined, {signal: request.signal, notifyOnError: false});
@@ -77,22 +82,26 @@ export default function RecordTable({descriptor, available = true, onInteraction
     storageKey={`app.runtime.records.${descriptor.pageId}`}
     baseUrl={baseUrl}
     i18nNamespaces={['app-workbench']}
+    cards={recordCards(descriptor.document)}
     confirmDiscard
     drawerWidth="min(1100px, 94vw)"
-    isButtonDisabled={(button, _keys, rows) => !available || operation.busy || !!submission || !!detail || history
+    isButtonDisabled={(button, _keys, rows) => !available || operation.busy || !!submission || !!detail || !!history
       || button.key === 'startProcess' && rows[0]?.recordState !== 'DRAFT'}
     customButtonEvents={{startProcess: (_keys, rows) => void openRecord(rows[0], 'submit'),
-      view: (_keys, rows) => void openRecord(rows[0], 'view'), history: () => setHistory(true)}}
+      view: (_keys, rows) => void openRecord(rows[0], 'view'), history: (_keys, rows) => {if (rows[0]) setHistory(rows[0].id);}}}
     formReadOnly={Boolean(pending)}
     formCloseDisabled={Boolean(pending)}
     onInteractionLockChange={interaction}
+    onDrawerOpenChange={open => {if (!open) writeState.current = 'DRAFT';}}
+    onReadAccessDenied={onReadAccessDenied}
     loadPage={loadPage}
     loadEditingRecord={async (row, signal) => {
       const record = await get<FormRecord>(`${baseUrl}/${encodeURIComponent(row.id)}`, undefined, {signal, notifyOnError: false});
       return {...record.values, id: record.id, version: record.version, recordState: record.state};
     }}
-    renderForm={editor => <><RuntimeForm document={descriptor.document} sceneId={descriptor.sceneId}
-      value={editor.formData} recordState={editor.editingRecord?.recordState}
+    renderForm={editor => <><PublishedFormRuntime descriptor={descriptor}
+      record={editor.editingRecord ? {values: editor.editingRecord, id: editor.editingRecord.id, version: editor.editingRecord.version, state: editor.editingRecord.recordState} : undefined}
+      value={editor.formData}
       disabled={editor.disabled || editor.readOnly || !available} submitting={editor.submitting}
       onChange={editor.onChange} onAction={async (action, values) => {
         writeState.current = action === 'SUBMIT' ? 'SUBMITTED' : editor.editingRecord?.recordState ?? 'DRAFT';
@@ -150,15 +159,15 @@ export default function RecordTable({descriptor, available = true, onInteraction
     <Drawer rootClassName="app-record-detail" title={t('app.runtime.record.detail', '详情')}
       width="min(1100px, 94vw)" open={!!detail && operation.selected} destroyOnHidden={!detail} onClose={() => setDetail(undefined)}>
       {detail && <RuntimeForm document={descriptor.document} sceneId={descriptor.sceneId} value={detail.values}
-        systemValues={detail.systemValues} recordState={detail.state} readOnly/>}
+        systemValues={detail.systemValues} systemLabels={detail.systemLabels} recordState={detail.state} readOnly/>}
     </Drawer>
     <ResourceDrawer rootClassName="app-record-history" title={t('app.runtime.approvalHistory', '审批记录')}
-      open={history} defaultHeight={520} locked={historyLocked} onClose={() => setHistory(false)}>
-      {history && <SubmissionHistory applicationId={descriptor.applicationId} pageId={descriptor.pageId} onInteractionLockChange={setHistoryLocked}/>}
+      open={!!history} defaultHeight={520} locked={historyLocked} onClose={() => setHistory(undefined)}>
+      {history && <SubmissionHistory key={history} recordId={history} applicationId={descriptor.applicationId} pageId={descriptor.pageId} onInteractionLockChange={setHistoryLocked}/>}
     </ResourceDrawer>
     {submission && <SubmissionDialog applicationId={descriptor.applicationId} pageId={descriptor.pageId}
       expectedForm={descriptor} initialRecord={submission} initialValues={submission.values}
       onAccepted={() => void queries.invalidateQueries({queryKey: scopedQueryKey(scope, [baseUrl])})}
-      onClose={() => setSubmission(undefined)}/>}
+      onClose={() => {setSubmission(undefined); void queries.invalidateQueries({queryKey: scopedQueryKey(scope, [baseUrl])});}}/>}
   </>;
 }

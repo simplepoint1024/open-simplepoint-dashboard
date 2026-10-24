@@ -2,8 +2,11 @@ package org.simplepoint.security.oauth2.resourceserver.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.simplepoint.security.token.TokenRevocationService;
@@ -19,6 +22,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,15 +33,15 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 class ServiceRouterBoundaryTest {
   @Test
   void ordinaryLoginCannotFallThroughSharedTokenBoundary() throws Exception {
-    assertThat(invoke("shared-token", "configured-secret", null, "ROLE_USER")).isEqualTo(403);
-    assertThat(invoke("shared-token", "configured-secret", "wrong", "ROLE_USER")).isEqualTo(403);
+    assertThat(invoke("shared-token", "configured-secret", null, "ROLE_USER")).isEqualTo(401);
+    assertThat(invoke("shared-token", "configured-secret", "wrong", "ROLE_USER")).isEqualTo(401);
   }
 
   @Test
   void missingOrUnknownInternalConfigurationFailsClosedEvenForLoggedInUsers() throws Exception {
-    assertThat(invoke("shared-token", "", null, "ROLE_USER")).isEqualTo(403);
+    assertThat(invoke("shared-token", "", null, "ROLE_USER")).isEqualTo(401);
     assertThat(invoke("typo", "configured-secret", "configured-secret", "ROLE_USER"))
-        .isEqualTo(403);
+        .isEqualTo(401);
   }
 
   @Test
@@ -49,11 +53,29 @@ class ServiceRouterBoundaryTest {
   @Test
   void oauthModeRequiresServiceAuthorityAndDoesNotAcceptSharedTokenFallback() throws Exception {
     assertThat(invoke("oauth2", "configured-secret", "configured-secret", "ROLE_USER"))
+        .isEqualTo(401);
+    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke")).isEqualTo(401);
+    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke", "authorization_code"))
+        .isEqualTo(401);
+    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke", "client_credentials"))
+        .isEqualTo(401);
+    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke", "client_credentials", true))
+        .isEqualTo(204);
+    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke", "authorization_code", true))
         .isEqualTo(403);
-    assertThat(invoke("oauth2", "", null, "SCOPE_service-router.invoke")).isEqualTo(204);
   }
 
   private int invoke(String mode, String token, String supplied, String authority)
+      throws Exception {
+    return invoke(mode, token, supplied, authority, null);
+  }
+
+  private int invoke(String mode, String token, String supplied, String authority, String grant)
+      throws Exception {
+    return invoke(mode, token, supplied, authority, grant, false);
+  }
+
+  private int invoke(String mode, String token, String supplied, String authority, String grant, boolean bearer)
       throws Exception {
     try (var context = new AnnotationConfigWebApplicationContext()) {
       context.setServletContext(new MockServletContext());
@@ -71,10 +93,22 @@ class ServiceRouterBoundaryTest {
       if (supplied != null) {
         request.addHeader("X-SimplePoint-Service-Router-Token", supplied);
       }
-      if (authority != null) {
+      if (bearer) {
+        var jwt = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("verified-service")
+            .header("alg", "PS256").subject("service").claim("client_id", "service")
+            .claim("grant_type", grant).claim("scope", "service-router.invoke")
+            .claim("aud", List.of("simplepoint-api")).build();
+        when(context.getBean(JwtDecoder.class).decode("verified-service")).thenReturn(jwt);
+        request.addHeader("Authorization", "Bearer verified-service");
+      } else if (authority != null) {
+        Object principal =
+            grant == null
+                ? "caller"
+                : new DefaultOAuth2AuthenticatedPrincipal(
+                    "caller", Map.of("client_id", "service", "grant_type", grant), List.of());
         var authentication =
             UsernamePasswordAuthenticationToken.authenticated(
-                "caller",
+                principal,
                 "unused",
                 Collections.singletonList(new SimpleGrantedAuthority(authority)));
         request
@@ -102,11 +136,14 @@ class ServiceRouterBoundaryTest {
 
     @Bean
     SecurityFilterChain chain(HttpSecurity http, Environment environment) throws Exception {
+      var providers = new org.springframework.beans.factory.support.DefaultListableBeanFactory();
+      providers.registerSingleton("resolver", mock(AuthorizationContextResolver.class));
       return new ResourceServerAutoConfiguration()
           .securityWebFilterChain(
               http,
               claims -> Collections.emptyList(),
-              mock(AuthorizationContextResolver.class),
+              providers.getBeanProvider(AuthorizationContextResolver.class),
+              providers.getBeanProvider(org.simplepoint.security.oauth2.resourceserver.composition.ModuleAuthorizationContexts.class),
               mock(TokenRevocationService.class),
               environment);
     }

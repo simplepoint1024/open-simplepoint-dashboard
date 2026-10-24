@@ -1,0 +1,61 @@
+{
+  "status": "IMPLEMENTED_WITH_ADAPTER_AND_PERSISTENCE_TESTS_NOT_FINAL_ACCEPTANCE",
+  "at": "2026-10-17T19:19:17.390172+00:00",
+  "deployed": false,
+  "currentDeployedAppVersion": "20261018-publication-recovery2",
+  "changes": [
+    "Use FormFieldDefinition.persistent for formula-backed record, list, query and permission fields; exclude legacy computed placeholders",
+    "Mark formula permission descriptors read-only while retaining stable identities and ordinary query operators",
+    "Share FormWorkflowFields across workflow catalog, binding validation and submission mapping; exclude attachments, transient fields, legacy placeholders and unsupported JSON variables"
+  ],
+  "checks": [
+    "Exact decimal result projection, stable ID to storage mapping, server-side pagination/filter/sort",
+    "Derived hidden/masked source restrictions across runtime and query metadata; direct masked output cannot be queried",
+    "Formula expressions and physical storage names absent from browser runtime metadata",
+    "Computed values cannot be supplied through ordinary create payloads",
+    "Detail reads include stored calculation values; committed submission snapshot is not replaced by newer mutable data",
+    "Readable calculation maps to workflow variable; sensitive source and caller variable override rejected",
+    "Real H2 workflow catalog includes formula fields, preserves immutable prior versions and tenant boundary"
+  ],
+  "tests": {
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 271,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "checkstyleMain": "passed",
+      "testResultSha256": "6199e43c32432f4d99ba3f175dcce209fc69b9fe7884f401e77841d9c957894b",
+      "checkstyleSha256": "11686213707a59661bd832119e637f357e948f8cd96264ab8f836790e8c8534a"
+    },
+    "simplepoint-service-app": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "checkstyleMain": "passed",
+      "testResultSha256": "072e8b2a6242d164483a2d18d49d457eeec4d4e2cc5cabad7f277b7a6a27a942",
+      "checkstyleSha256": "2cc9c69016312bf36cc39dc9a40b09c3f6b4b4c3ce147271dae47d638e8a25c4"
+    }
+  },
+  "commands": [
+    "JAVA_HOME=... PATH=... python3 scripts/verification/run-dna-databases.py :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:test :simplepoint-services:simplepoint-service-app:test :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:checkstyleMain :simplepoint-services:simplepoint-service-app:checkstyleMain -Psimplepoint.frontend.skip=true --continue --console=plain",
+    "After correcting the catalog fixture to create a new immutable version and fixing import order: ./gradlew :simplepoint-services:simplepoint-service-app:test :simplepoint-services:simplepoint-service-app:checkstyleMain -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/ApplicationFormRecordServiceImpl.java": "7688ff88b92362ecbb8eb7050ccfbc73b212238cba2156787b2796eb0d95847d",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/ApplicationFormRecordSchemaServiceImpl.java": "06baeed09b0477cfe9a10ac7064942a2b7e9a68dbb33baeceabd4a8303bcc656",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormPermissionDescriptorService.java": "84f5c845fdcadb43815a8a58abbc67cc83ea8eb1b59362efd1efa9fc1129acb5",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWorkflowFields.java": "c72d8ec5b04e3f793edd52556cd96461a919ce799b343d6918ca035cd8bfb047",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormSubmissionMapping.java": "36b0b7fc2bab6205acaf33370d4f3c8e363e0e535bbb7ae6b57e49703da4c40e",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/ApplicationFormWorkflowPortImpl.java": "cde5d47945555aaa39e714e0ddb284cee354600ed3a582ec1b16aa6ecf2071ce",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationRuntimeProjectionTest.java": "92e1d297cd4f226904f73c0023ee1a588f6e43afe6766d95bc4f16de3986d01c",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalog.java": "40935e7c4d7c1dbf4d631116bc229a3b2d9f82199aa8751019baf38f7ed37ee7",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalogTest.java": "6a34a9a65e906b981253a4db62fc45d115cce5e92550895359677636e39ea048"
+  },
+  "limitations": [
+    "The runtime projection test uses DNA port doubles; it proves APP projection and authority contracts, not physical calculation or a live workflow branch.",
+    "No formula publication was enabled or deployed. Existing live office regressions do not validate these new calculation surfaces.",
+    "Write-time and submission preflight still lack a complete prospective calculation path; conditional requirements and aggregate constraints must be checked against the post-calculation aggregate in the authoritative transaction.",
+    "Designer/runtime formula editing and preview, interrupted publication/recovery, B1–B5 real forms and all 176 final acceptance items remain outstanding."
+  ]
+}

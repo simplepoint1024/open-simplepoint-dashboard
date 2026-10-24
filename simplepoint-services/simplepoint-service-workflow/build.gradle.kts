@@ -27,6 +27,8 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-http"))
+    implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
     implementation(project(":simplepoint-plugin:simplepoint-plugin-webmvc"))
@@ -45,7 +47,7 @@ dependencies {
     implementation(project(":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-implementation"))
 
     implementation(platform("org.flowable:flowable-bom:${rootProject.libs.versions.flowable.get()}"))
-    implementation("org.flowable:flowable-spring-boot-starter-process")
+    implementation("org.flowable:flowable-spring")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")

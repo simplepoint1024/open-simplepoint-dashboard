@@ -41,7 +41,7 @@ dependencies {
     implementation(project(":simplepoint-security:simplepoint-security-servlet"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
     implementation(project(":simplepoint-cache:simplepoint-cache-redis"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-http"))
 
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))

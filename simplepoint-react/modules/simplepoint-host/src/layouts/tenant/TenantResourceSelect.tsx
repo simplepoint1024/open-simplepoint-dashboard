@@ -1,4 +1,6 @@
 import {useMemo} from 'react';
+import {useI18n} from '@simplepoint/shared/hooks/useI18n';
+import {resolveLocalizedText, type LocalizedText} from '@simplepoint/shared/i18n/localizedText';
 import type {WidgetProps} from '@rjsf/utils';
 import EntitySelect, {type EntitySelectSource} from '@simplepoint/components/EntitySelect';
 import {get} from '@simplepoint/shared/api/methods';
@@ -7,14 +9,16 @@ import type {ResourceType, TenantResource} from './resourceForms';
 const endpoint = '/common/tenants/current-resources/picker';
 /** Uses the bounded platform selection behavior and the server's current workspace eligibility. */
 export default function TenantResourceSelect({id, value, disabled, readonly, required, onChange, options}: WidgetProps) {
+  const {locale, t} = useI18n();
   const tenantId = String(options.tenantId), kind = String(options.kind), childType = options.childType as ResourceType;
   const excludedId = typeof options.excludedId === 'string' ? options.excludedId : undefined;
   const source = useMemo<EntitySelectSource>(() => {
     const params = {kind, childType, ...(excludedId ? {excludedId} : {})};
     const option = (row: Record<string, unknown>) => typeof row.id === 'string' && row.id.trim() && row.id !== '***'
       && typeof row.name === 'string' && row.name.trim() && row.name !== '***' && typeof row.code === 'string' && row.code !== '***'
-      ? {value: row.id, label: `${row.name ?? ''} · ${row.code ?? ''}`} : undefined;
-    return {key: JSON.stringify(['tenant-resource-picker.v1', tenantId, kind, childType, excludedId]),
+      ? {value: row.id, label: `${resolveLocalizedText(typeof row.nameLocalization === 'object' ? row.nameLocalization as LocalizedText : undefined, locale,
+        typeof row.title === 'string' ? t(row.title.replace(/^i18n:/, ''), '') : undefined, 'TENANT', row.name).text} · ${row.code}`} : undefined;
+    return {key: JSON.stringify(['tenant-resource-picker.v1', tenantId, kind, childType, excludedId, locale]),
       searchParams: (keyword, page, size) => ({...params, keyword, page, size}), option,
       resolve: async (ids, signal) => {
         const resolved = [];
@@ -26,7 +30,7 @@ export default function TenantResourceSelect({id, value, disabled, readonly, req
         return resolved;
       },
     };
-  }, [tenantId, kind, childType, excludedId]);
+  }, [tenantId, kind, childType, excludedId, locale, t]);
   return <EntitySelect id={id} endpoint={endpoint} source={source} multiple={false} value={typeof value === 'string' ? value : undefined}
     disabled={disabled || readonly} allowClear={!required} onChange={next => onChange(next)}/>;
 }

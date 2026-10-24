@@ -1,3 +1,4 @@
+import {remapCalculation} from '../../FormDesigner/calculationModel.ts';
 import type {FormComponentDefinition as Node} from '../../FormRuntime/contracts.ts';
 import type {DesignDocument, DesignDetail} from '../../FormDesigner/contracts.ts';
 
@@ -16,15 +17,18 @@ export function initializeDetail(node: Node, identity: () => string, document: D
   document.details = [...(document.details ?? []), detail];
   return {...node, properties: {...node.properties, detailId: {kind: 'STRING', value: detail.detailId}}};
 }
-export function cloneDetail(node: Node, identity: () => string, document: DesignDocument, source: DesignDocument) {
+export function cloneDetail(node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string> = new Map()) {
   const detail = source.details?.find(item => item.detailId === detailIdentity(node));
   if (!detail) throw new Error('Missing detail definition');
   const next = structuredClone(detail), fields = new Map<string, string>();
   next.detailId = identity(); next.storageCode = storageCode(document);
   next.fields.forEach(field => {const id = identity(); fields.set(field.fieldId, id); field.fieldId = id;});
+  const references = new Map([...fields, ...[...parentFields].map(([from, to]) => [`parent.${from}`, `parent.${to}`] as const)]);
+  next.fields = next.fields.map(field => remapCalculation(field, references));
   next.indexes.forEach(index => {index.indexId = identity(); index.fieldIds = index.fieldIds.map(id => fields.get(id)!);});
   document.details = [...(document.details ?? []), next];
   node.properties.detailId = {kind: 'STRING', value: next.detailId};
+  return new Map([...fields].map(([from, to]) => [`${detail.detailId}.${from}`, `${next.detailId}.${to}`]));
 }
 export function validateDetail(node: Node, document: DesignDocument) {
   const details = document.details ?? [];

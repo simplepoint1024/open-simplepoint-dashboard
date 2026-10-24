@@ -5,12 +5,10 @@ import static org.simplepoint.plugin.dna.federation.service.support.FederationSe
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.requireValue;
 import static org.simplepoint.plugin.dna.federation.service.support.FederationServiceSupport.trimToNull;
 
-import jakarta.persistence.EntityManager;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -25,8 +23,8 @@ import org.simplepoint.plugin.dna.federation.api.repository.FederationJdbcConnec
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcConnectionUserService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserDataSourceItemVo;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcUserOptionVo;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
-import org.simplepoint.security.entity.User;
+import org.simplepoint.plugin.rbac.core.api.pojo.vo.UserDirectoryEntry;
+import org.simplepoint.plugin.rbac.core.api.service.UserDirectory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -34,21 +32,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * JDBC connection-user maintenance service implementation.
- */
+/** JDBC connection-user maintenance service implementation. */
 @Service
 public class FederationJdbcConnectionUserServiceImpl
-    extends BaseServiceImpl<FederationJdbcConnectionUserRepository, FederationJdbcConnectionUser, String>
+    extends BaseServiceImpl<
+        FederationJdbcConnectionUserRepository, FederationJdbcConnectionUser, String>
     implements FederationJdbcConnectionUserService {
 
   private final FederationJdbcConnectionUserRepository repository;
 
   private final JdbcDataSourceDefinitionService dataSourceService;
 
-  private final UsersService usersService;
-
-  private final EntityManager entityManager;
+  private final UserDirectory userDirectory;
 
   /**
    * Creates a JDBC connection-user service implementation.
@@ -56,27 +51,22 @@ public class FederationJdbcConnectionUserServiceImpl
    * @param repository repository
    * @param detailsProviderService details provider
    * @param dataSourceService datasource service
-   * @param usersService users service
+   * @param userDirectory bounded account directory
    */
   public FederationJdbcConnectionUserServiceImpl(
       final FederationJdbcConnectionUserRepository repository,
       final DetailsProviderService detailsProviderService,
       final JdbcDataSourceDefinitionService dataSourceService,
-      final UsersService usersService,
-      final EntityManager entityManager
-  ) {
+      final UserDirectory userDirectory) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.dataSourceService = dataSourceService;
-    this.usersService = usersService;
-    this.entityManager = entityManager;
+    this.userDirectory = userDirectory;
   }
 
   @Override
   public <S extends FederationJdbcConnectionUser> Page<S> limit(
-      final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      final Map<String, String> attributes, final Pageable pageable) {
     Map<String, String> normalized = new LinkedHashMap<>();
     if (attributes != null) {
       normalized.putAll(attributes);
@@ -91,22 +81,22 @@ public class FederationJdbcConnectionUserServiceImpl
   }
 
   @Override
-  public Optional<FederationJdbcConnectionUser> findEnabledGrant(final String catalogId, final String userId) {
-    return repository.findByCatalogIdAndUserIdAndDeletedAtIsNull(
-            requireValue(catalogId, "数据源ID不能为空"),
-            requireValue(userId, "用户ID不能为空")
-        )
+  public Optional<FederationJdbcConnectionUser> findEnabledGrant(
+      final String catalogId, final String userId) {
+    return repository
+        .findByCatalogIdAndUserIdAndDeletedAtIsNull(
+            requireValue(catalogId, "数据源ID不能为空"), requireValue(userId, "用户ID不能为空"))
         .filter(grant -> Boolean.TRUE.equals(grant.getEnabled()));
   }
 
   @Override
   public Page<FederationJdbcUserDataSourceItemVo> dataSourceItems(
-      final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      final Map<String, String> attributes, final Pageable pageable) {
     var filters = new LinkedHashMap<String, String>();
-    if (attributes != null) filters.putAll(attributes);
-    String userId = trimToNull(filters.remove("userId"));
+    if (attributes != null) {
+      filters.putAll(attributes);
+    }
+    final String userId = trimToNull(filters.remove("userId"));
     filters.remove("selected");
     String keyword = trimToNull(filters.remove("keyword"));
     if (keyword != null) {
@@ -114,58 +104,82 @@ public class FederationJdbcConnectionUserServiceImpl
       // remain independent AND predicates. Values are JSON literals, not interpolated JPQL.
       var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
       var terms = mapper.createArrayNode();
-      List.of("code", "name", "databaseProductName").forEach(field ->
-          terms.add(mapper.createObjectNode().put("op", "like").put("field", field).put("value", keyword)));
+      List.of("code", "name", "databaseProductName")
+          .forEach(
+              field ->
+                  terms.add(
+                      mapper
+                          .createObjectNode()
+                          .put("op", "like")
+                          .put("field", field)
+                          .put("value", keyword)));
       var where = mapper.createObjectNode().put("op", "or").set("children", terms);
       if (filters.containsKey(org.simplepoint.core.query.QueryDocument.PARAMETER)) {
         String existing = filters.get(org.simplepoint.core.query.QueryDocument.PARAMETER);
         org.simplepoint.core.query.QueryDocument.parse(existing);
         try {
-          where = mapper.createObjectNode().put("op", "and").set("children",
-              mapper.createArrayNode().add(where).add(mapper.readTree(existing).get("where")));
+          where =
+              mapper
+                  .createObjectNode()
+                  .put("op", "and")
+                  .set(
+                      "children",
+                      mapper
+                          .createArrayNode()
+                          .add(where)
+                          .add(mapper.readTree(existing).get("where")));
         } catch (com.fasterxml.jackson.core.JsonProcessingException error) {
           throw new org.simplepoint.core.query.InvalidQueryException("无效的结构化查询");
         }
       }
-      filters.put(org.simplepoint.core.query.QueryDocument.PARAMETER,
+      filters.put(
+          org.simplepoint.core.query.QueryDocument.PARAMETER,
           mapper.valueToTree(Map.of("version", 1, "where", where)).toString());
     }
     Pageable bounded = pageable == null || pageable.isUnpaged() ? PageRequest.of(0, 20) : pageable;
-    org.simplepoint.core.query.ProjectionQueries.validate(FederationJdbcUserDataSourceItemVo.class,
-        filters, bounded);
-    return dataSourceService.assignmentCandidates(filters, userId, bounded)
+    org.simplepoint.core.query.ProjectionQueries.validate(
+        FederationJdbcUserDataSourceItemVo.class, filters, bounded);
+    return dataSourceService
+        .assignmentCandidates(filters, userId, bounded)
         .map(FederationJdbcConnectionUserServiceImpl::toDataSourceItem);
   }
 
   @Override
   public Object dataSourceItemsSchema() {
-    return getTableSchemaProvider().schema(FederationJdbcUserDataSourceItemVo.class, getAuthorizationContext());
+    return getTableSchemaProvider()
+        .schema(FederationJdbcUserDataSourceItemVo.class, getAuthorizationContext());
   }
 
   @Override
   public Page<FederationJdbcConnectionUser> assignedDataSources(
       String userId, Map<String, String> attributes, Pageable pageable) {
-    var user = requireActiveUser(userId);
+    final var user = requireActiveUser(userId);
     var filters = new LinkedHashMap<String, String>();
-    if (attributes != null) filters.putAll(attributes);
+    if (attributes != null) {
+      filters.putAll(attributes);
+    }
     filters.remove("userId");
     filters.remove("selected");
     Pageable bounded = pageable == null || pageable.isUnpaged() ? PageRequest.of(0, 20) : pageable;
-    return limitScoped(filters, Map.of("userId", "equals:" + user.getId(), "enabled", "equals:true"), bounded);
+    return limitScoped(
+        filters, Map.of("userId", "equals:" + user.id(), "enabled", "equals:true"), bounded);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public FederationJdbcConnectionUser updateOperationPermissions(String grantId, Set<String> permissions) {
-    if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(getAuthorizationContext(),
-        FederationJdbcConnectionUser.class, "operationPermissions")) {
+  public FederationJdbcConnectionUser updateOperationPermissions(
+      String grantId, Set<String> permissions) {
+    if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(
+        getAuthorizationContext(), FederationJdbcConnectionUser.class, "operationPermissions")) {
       throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许修改操作权限");
     }
     if (permissions == null || permissions.size() > FederationJdbcOperation.values().length) {
       throw new IllegalArgumentException("JDBC 操作权限集合无效");
     }
-    var current = repository.findByIdAndDeletedAtIsNull(requireValue(grantId, "授权ID不能为空"))
-        .orElseThrow(() -> new IllegalArgumentException("授权记录不存在"));
+    var current =
+        repository
+            .findByIdAndDeletedAtIsNull(requireValue(grantId, "授权ID不能为空"))
+            .orElseThrow(() -> new IllegalArgumentException("授权记录不存在"));
     assertAccessible(current);
     var normalized = resolveOperationPermissions(permissions, current);
     var changed = new FederationJdbcConnectionUser();
@@ -173,10 +187,11 @@ public class FederationJdbcConnectionUserServiceImpl
     changed.setOperationPermissions(normalized);
     changed.setUpdatedAt(java.time.Instant.now());
     applyModificationAuditContext(changed);
-    getModifyDataAuditingServices().forEach(auditing ->
-        auditing.modify(current, changed, FederationJdbcConnectionUser.class));
-    if (repository.updateOperationPermissions(current.getId(), normalized,
-        changed.getUpdatedAt(), changed.getUpdatedBy()) != 1) {
+    getModifyDataAuditingServices()
+        .forEach(auditing -> auditing.modify(current, changed, FederationJdbcConnectionUser.class));
+    if (repository.updateOperationPermissions(
+            current.getId(), normalized, changed.getUpdatedAt(), changed.getUpdatedBy())
+        != 1) {
       throw new IllegalArgumentException("授权记录已删除，请刷新后重试");
     }
     // The bulk update clears the persistence context. The detached snapshot contains only the
@@ -185,33 +200,34 @@ public class FederationJdbcConnectionUserServiceImpl
   }
 
   @Override
-  public Page<FederationJdbcUserOptionVo> searchUserOptions(final String keyword, final Pageable pageable) {
-    Pageable bounded = pageable == null || pageable.isUnpaged()
-        ? PageRequest.of(0, 20)
-        : PageRequest.of(Math.min(pageable.getPageNumber(), Integer.MAX_VALUE / Math.min(pageable.getPageSize(), 50)),
-            Math.min(pageable.getPageSize(), 50));
+  public Page<FederationJdbcUserOptionVo> searchUserOptions(
+      final String keyword, final Pageable pageable) {
+    Pageable bounded =
+        pageable == null || pageable.isUnpaged()
+            ? PageRequest.of(0, 20)
+            : PageRequest.of(
+                Math.min(
+                    pageable.getPageNumber(),
+                    Integer.MAX_VALUE / Math.min(pageable.getPageSize(), 50)),
+                Math.min(pageable.getPageSize(), 50));
     String search = trimToNull(keyword);
-    if (search == null || search.length() < 3) {
+    if (search == null || search.codePointCount(0, search.length()) < 3) {
       return Page.empty(bounded);
     }
-    String pattern = search.toLowerCase(Locale.ROOT)
-        .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
-    String condition = "u.deletedAt is null and u.enabled = true and "
-        + "(lower(u.email) like :pattern escape '!' or u.phoneNumber like :pattern escape '!')";
-    var query = entityManager.createQuery("select new " + FederationJdbcUserOptionVo.class.getName()
-        + "(u.id, " + org.simplepoint.security.identity.UserDisplayName.HQL + ", u.email, u.phoneNumber) "
-        + "from User u where " + condition
-        + " order by " + org.simplepoint.security.identity.UserDisplayName.HQL + ", u.id",
-        FederationJdbcUserOptionVo.class);
-    var count = entityManager.createQuery("select count(u) from User u where " + condition, Long.class);
-    query.setParameter("pattern", pattern);
-    count.setParameter("pattern", pattern);
-    return new PageImpl<>(query.setFirstResult((int) bounded.getOffset())
-        .setMaxResults(bounded.getPageSize()).getResultList(), bounded, count.getSingleResult());
+    var result = userDirectory.search(search, bounded.getPageNumber(), bounded.getPageSize());
+    var rows =
+        result.content().stream()
+            .map(
+                user ->
+                    new FederationJdbcUserOptionVo(
+                        user.id(), user.name(), user.email(), user.phoneNumber()))
+            .toList();
+    return new PageImpl<>(rows, bounded, result.totalElements());
   }
 
   @Override
-  public Collection<FederationJdbcUserDataSourceItemVo> selectedDataSourceItems(final Collection<String> dataSourceIds) {
+  public Collection<FederationJdbcUserDataSourceItemVo> selectedDataSourceItems(
+      final Collection<String> dataSourceIds) {
     if (dataSourceIds == null || dataSourceIds.isEmpty()) {
       return List.of();
     }
@@ -225,7 +241,6 @@ public class FederationJdbcConnectionUserServiceImpl
 
   @Override
   public Collection<String> authorized(final String userId) {
-    requireActiveUser(userId);
     return enabledGrants(userId).stream()
         .map(FederationJdbcConnectionUser::getCatalogId)
         .filter(value -> value != null && !value.isBlank())
@@ -242,15 +257,17 @@ public class FederationJdbcConnectionUserServiceImpl
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<FederationJdbcConnectionUser> authorize(final FederationJdbcUserDataSourceAssignDto dto) {
-    User user = requireActiveUser(dto == null ? null : dto.getUserId());
+  public Collection<FederationJdbcConnectionUser> authorize(
+      final FederationJdbcUserDataSourceAssignDto dto) {
+    UserDirectoryEntry user = requireActiveUser(dto == null ? null : dto.getUserId());
     Set<String> dataSourceIds = normalizeDataSourceIds(dto == null ? null : dto.getDataSourceIds());
     if (dataSourceIds.isEmpty()) {
       return List.of();
     }
     List<FederationJdbcConnectionUser> grants = new java.util.ArrayList<>(dataSourceIds.size());
     for (String dataSourceId : dataSourceIds) {
-      Optional<FederationJdbcConnectionUser> existing = repository.findByCatalogIdAndUserIdAndDeletedAtIsNull(dataSourceId, user.getId());
+      Optional<FederationJdbcConnectionUser> existing =
+          repository.findByCatalogIdAndUserIdAndDeletedAtIsNull(dataSourceId, user.id());
       if (existing.isPresent()) {
         FederationJdbcConnectionUser current = existing.get();
         assertAccessible(current);
@@ -261,7 +278,7 @@ public class FederationJdbcConnectionUserServiceImpl
         FederationJdbcConnectionUser patch = new FederationJdbcConnectionUser();
         patch.setId(current.getId());
         patch.setCatalogId(dataSourceId);
-        patch.setUserId(user.getId());
+        patch.setUserId(user.id());
         patch.setEnabled(true);
         patch.setOperationPermissions(current.getOperationPermissions());
         patch.setDescription(current.getDescription());
@@ -270,7 +287,7 @@ public class FederationJdbcConnectionUserServiceImpl
       }
       FederationJdbcConnectionUser grant = new FederationJdbcConnectionUser();
       grant.setCatalogId(dataSourceId);
-      grant.setUserId(user.getId());
+      grant.setUserId(user.id());
       grant.setEnabled(true);
       grant.setOperationPermissions(FederationJdbcOperation.readOnlyDefaults());
       grants.add(create(grant));
@@ -281,15 +298,18 @@ public class FederationJdbcConnectionUserServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(final FederationJdbcUserDataSourceAssignDto dto) {
-    User user = requireActiveUser(dto == null ? null : dto.getUserId());
+    UserDirectoryEntry user = requireActiveUser(dto == null ? null : dto.getUserId());
     Set<String> dataSourceIds = normalizeDataSourceIds(dto == null ? null : dto.getDataSourceIds());
     if (dataSourceIds.isEmpty()) {
       return;
     }
-    List<String> grantIds = repository.findAllByUserIdAndCatalogIdInAndDeletedAtIsNull(user.getId(), dataSourceIds).stream()
-        .map(FederationJdbcConnectionUser::getId)
-        .filter(value -> value != null && !value.isBlank())
-        .toList();
+    List<String> grantIds =
+        repository
+            .findAllByUserIdAndCatalogIdInAndDeletedAtIsNull(user.id(), dataSourceIds)
+            .stream()
+            .map(FederationJdbcConnectionUser::getId)
+            .filter(value -> value != null && !value.isBlank())
+            .toList();
     if (!grantIds.isEmpty()) {
       super.removeByIds(grantIds);
     }
@@ -305,9 +325,12 @@ public class FederationJdbcConnectionUserServiceImpl
   }
 
   @Override
-  public <S extends FederationJdbcConnectionUser> FederationJdbcConnectionUser modifyById(final S entity) {
-    FederationJdbcConnectionUser current = repository.findByIdAndDeletedAtIsNull(requireEntityId(entity))
-        .orElseThrow(() -> new IllegalArgumentException("JDBC 连接用户不存在: " + entity.getId()));
+  public <S extends FederationJdbcConnectionUser> FederationJdbcConnectionUser modifyById(
+      final S entity) {
+    FederationJdbcConnectionUser current =
+        repository
+            .findByIdAndDeletedAtIsNull(requireEntityId(entity))
+            .orElseThrow(() -> new IllegalArgumentException("JDBC 连接用户不存在: " + entity.getId()));
     normalizeAndValidate(entity, current.getId(), current);
     if (entity.getEnabled() == null) {
       entity.setEnabled(current.getEnabled());
@@ -318,46 +341,50 @@ public class FederationJdbcConnectionUserServiceImpl
   private void normalizeAndValidate(
       final FederationJdbcConnectionUser entity,
       final String currentId,
-      final FederationJdbcConnectionUser current
-  ) {
+      final FederationJdbcConnectionUser current) {
     if (entity == null) {
       throw new IllegalArgumentException("JDBC 连接用户不能为空");
     }
-    JdbcDataSourceDefinition dataSource = dataSourceService.findActiveById(requireValue(
-            entity.getCatalogId(),
-            "数据源ID不能为空"
-        ))
-        .filter(item -> Boolean.TRUE.equals(item.getEnabled()))
-        .orElseThrow(() -> new IllegalArgumentException("数据源不存在或未启用: " + entity.getCatalogId()));
-    User user = findUserById(requireValue(entity.getUserId(), "系统用户ID不能为空"))
-        .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + entity.getUserId()));
-    if (!Boolean.TRUE.equals(user.getEnabled())) {
+    JdbcDataSourceDefinition dataSource =
+        dataSourceService
+            .findActiveById(requireValue(entity.getCatalogId(), "数据源ID不能为空"))
+            .filter(item -> Boolean.TRUE.equals(item.getEnabled()))
+            .orElseThrow(
+                () -> new IllegalArgumentException("数据源不存在或未启用: " + entity.getCatalogId()));
+    UserDirectoryEntry user =
+        findUserById(requireValue(entity.getUserId(), "系统用户ID不能为空"))
+            .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + entity.getUserId()));
+    if (!user.enabled()) {
       throw new IllegalArgumentException("系统用户已禁用: " + entity.getUserId());
     }
-    repository.findByCatalogIdAndUserIdAndDeletedAtIsNull(dataSource.getId(), user.getId())
+    repository
+        .findByCatalogIdAndUserIdAndDeletedAtIsNull(dataSource.getId(), user.id())
         .filter(existing -> currentId == null || !existing.getId().equals(currentId))
-        .ifPresent(existing -> {
-          throw new IllegalArgumentException("该系统用户已配置当前数据源的 JDBC 连接权限");
-        });
+        .ifPresent(
+            existing -> {
+              throw new IllegalArgumentException("该系统用户已配置当前数据源的 JDBC 连接权限");
+            });
 
     entity.setCatalogId(dataSource.getId());
     entity.setCatalogName(dataSource.getName());
     entity.setCatalogCode(dataSource.getCode());
-    entity.setUserId(user.getId());
+    entity.setUserId(user.id());
     entity.setUserDisplayName(resolveUserDisplayName(user));
-    entity.setUserEmail(trimToNull(user.getEmail()));
-    entity.setUserPhoneNumber(trimToNull(user.getPhoneNumber()));
-    entity.setOperationPermissions(resolveOperationPermissions(entity.getOperationPermissions(), current));
+    entity.setUserEmail(trimToNull(user.email()));
+    entity.setUserPhoneNumber(trimToNull(user.phoneNumber()));
+    entity.setOperationPermissions(
+        resolveOperationPermissions(entity.getOperationPermissions(), current));
     entity.setDescription(trimToNull(entity.getDescription()));
   }
 
   private static Set<String> resolveOperationPermissions(
-      final Set<String> configuredValues,
-      final FederationJdbcConnectionUser current
-  ) {
+      final Set<String> configuredValues, final FederationJdbcConnectionUser current) {
     Set<String> values = configuredValues;
     if (values == null) {
-      values = current == null ? FederationJdbcOperation.readOnlyDefaults() : current.getOperationPermissions();
+      values =
+          current == null
+              ? FederationJdbcOperation.readOnlyDefaults()
+              : current.getOperationPermissions();
     }
     Set<String> normalized = FederationJdbcOperation.normalizeCodes(values);
     if (normalized.isEmpty()) {
@@ -366,53 +393,29 @@ public class FederationJdbcConnectionUserServiceImpl
     return normalized;
   }
 
-  private static String resolveUserDisplayName(final User user) {
-    if (user == null) {
-      return "";
+  private static String resolveUserDisplayName(final UserDirectoryEntry user) {
+    for (String value : new String[] {user.name(), user.email(), user.phoneNumber(), user.id()}) {
+      String display = trimToNull(value);
+      if (display != null) {
+        return display;
+      }
     }
-    String nickname = trimToNull(user.getNickname());
-    if (nickname != null) {
-      return nickname;
-    }
-    String name = trimToNull(user.getName());
-    if (name != null) {
-      return name;
-    }
-    String givenName = trimToNull(user.getGivenName());
-    String familyName = trimToNull(user.getFamilyName());
-    String combinedName = trimToNull(
-        (givenName == null ? "" : givenName) + (familyName == null ? "" : " " + familyName)
-    );
-    if (combinedName != null) {
-      return combinedName;
-    }
-    String email = trimToNull(user.getEmail());
-    if (email != null) {
-      return email;
-    }
-    String phoneNumber = trimToNull(user.getPhoneNumber());
-    if (phoneNumber != null) {
-      return phoneNumber;
-    }
-    return requireValue(user.getId(), "系统用户ID不能为空");
+    throw new IllegalArgumentException("系统用户缺少显示标识");
   }
 
-  private User requireActiveUser(final String userId) {
-    User user = findUserById(requireValue(userId, "系统用户ID不能为空"))
-        .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + userId));
-    if (!Boolean.TRUE.equals(user.getEnabled())) {
+  private UserDirectoryEntry requireActiveUser(final String userId) {
+    UserDirectoryEntry user =
+        findUserById(requireValue(userId, "系统用户ID不能为空"))
+            .orElseThrow(() -> new IllegalArgumentException("系统用户不存在: " + userId));
+    if (!user.enabled()) {
       throw new IllegalArgumentException("系统用户已禁用: " + userId);
     }
     return user;
   }
 
-  private Optional<User> findUserById(final String userId) {
+  private Optional<UserDirectoryEntry> findUserById(final String userId) {
     String normalizedUserId = requireValue(userId, "系统用户ID不能为空");
-    Optional<User> user = usersService.findByIdForAuthorization(normalizedUserId);
-    if (user != null && user.isPresent()) {
-      return user;
-    }
-    user = usersService.findById(normalizedUserId);
+    Optional<UserDirectoryEntry> user = userDirectory.findById(normalizedUserId);
     return user == null ? Optional.empty() : user;
   }
 
@@ -420,8 +423,9 @@ public class FederationJdbcConnectionUserServiceImpl
     if (dataSourceIds == null || dataSourceIds.isEmpty()) {
       return Set.of();
     }
-    if (dataSourceIds.size() > 100 || dataSourceIds.stream()
-        .anyMatch(value -> value == null || value.isBlank() || value.trim().length() > 64)) {
+    if (dataSourceIds.size() > 100
+        || dataSourceIds.stream()
+            .anyMatch(value -> value == null || value.isBlank() || value.trim().length() > 64)) {
       throw new IllegalArgumentException("每次最多处理100个有效数据源ID");
     }
     return dataSourceIds.stream()
@@ -430,12 +434,12 @@ public class FederationJdbcConnectionUserServiceImpl
         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
   }
 
-  private static FederationJdbcUserDataSourceItemVo toDataSourceItem(final JdbcDataSourceDefinition dataSource) {
+  private static FederationJdbcUserDataSourceItemVo toDataSourceItem(
+      final JdbcDataSourceDefinition dataSource) {
     return new FederationJdbcUserDataSourceItemVo(
         dataSource == null ? null : dataSource.getId(),
         dataSource == null ? null : dataSource.getCode(),
         dataSource == null ? null : dataSource.getName(),
-        dataSource == null ? null : dataSource.getDatabaseProductName()
-    );
+        dataSource == null ? null : dataSource.getDatabaseProductName());
   }
 }

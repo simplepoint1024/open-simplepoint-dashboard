@@ -1,0 +1,64 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-19T01:47:06.178261+00:00",
+  "changes": [
+    "历史页面文本和选项约束按稳定字段身份合并到计算后校验；复用有界 RE2/Unicode/精确选项实现",
+    "旧页面采用当前治理的计算模式和公式，原不可变文档不变",
+    "PostgreSQL/MySQL 主从及多语句事务中的历史规则失败完整回滚，无新增回执/快照"
+  ],
+  "quality": {
+    "simplepoint-plugin-dna-runtime-api": {
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "0c4d1728172226009b36f85ff588aad2edb69806857a62d075e2fe834d636b3e",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-plugin-dna-runtime-implementation": {
+      "tests": 185,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "d96172b206f13fd20b1bb823cf3b318b1ab22fb403b5978cc91161e31fb3c9a2",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 282,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "08b52f1c4e521d6dbb2ee5957fb7fd96bf4e7250cf61746eb05a98236254ef77",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-service-app": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "cc6c6c4633286e931bfdfb75aec8716dd5e8e35481663f0423cd24dfb50fb58c"
+    }
+  },
+  "totalTests": 565,
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/test/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationRuleTest.java": "ea5ec82790862fcc9f8682c050b359ad4fb3d8a29ae5ab72017dc90c79441e7c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationRule.java": "6da6f0ba554e2b6d8040804cb9fcd9126dc12ccedd15225d3321c5c044f0bfac",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationDefinition.java": "631be70092b3bc8bb56fb97f97688a183ce84b83d0b7e31b3b17f1dc0e703fca",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/CalculatedTransactionDatabaseAssertions.java": "fafd456d40720849ae80938e6f1aad1e7a726d93db242ec59294e7162fdd33e1",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordAggregateValidationTest.java": "dac209bf332579b2f13be34a2cefc40205940bad80262613587ac32d0bbe6e22",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java": "8c0aafb66328642fef585d0311b0e6243dec8fb2633e548733e8d541e942c06a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationConstraints.java": "cf1b815882a1a3077d873015b35c8a369b6e32b8df6b833db421182f77e44854",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordAggregateValidation.java": "60e3ad8d3bb350fe2585dadab90eaea1a1b11b5acc86979a610018c51a87322c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormWritePolicyProjectionTest.java": "5cb407cecfb0f1ee5ed62be4ac236f045534883cf8c79775cda4463a20c79f0b",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationValidationProjectionTest.java": "03c26ed3408f42e345b3481e7d50f57890839ea1968192c8e410af8550f854f2",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationValidationProjection.java": "d30df26d84a5e88ee3c1bc2de62389fd417541ddfdb70b529c97c1cba140c0ed",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationFieldConstraints.java": "c5a9423effa05120cd3ebfbef97ef7201f439cab92d205c2998aea31b89843cb",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWritePolicyProjection.java": "1e3e41c738535fc9425977fa11100d35b28941a30b480bce695eceb78affeecc",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjection.java": "eeca047c3e01c447ca762d5f7abe67e2abd7c219055fcc033626731d11611a8d"
+  },
+  "limitations": [
+    "尚未部署；现役 APP/DNA 仍是 aggregate-validation1/2",
+    "合法状态迁移、可信运行时试算/流程预检和设计器接入仍待完成",
+    "公式发布保护保留；真实公式发布/恢复和 176 项最终验收未完成"
+  ]
+}

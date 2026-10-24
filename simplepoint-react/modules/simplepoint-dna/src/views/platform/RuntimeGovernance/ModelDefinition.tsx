@@ -18,7 +18,16 @@ export default function ModelDefinition({source}: {source?: string}) {
   if (!schema) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('dna.runtime.definition.empty')}/>;
   const label = (key: string) => t('dna.runtime.definition.' + key);
   const yesNo = (value: boolean) => label(value ? 'yes' : 'no');
-  const names = new Map(schema.fields.map(field => [field.code, field.displayName]));
+  // Localize platform-owned identities at presentation time; immutable schema names stay intact.
+  const fieldName = (field?: ModelField) => {
+    if (!field) return '—';
+    if (schema.owner?.parentFieldId === 'owned_parent') {
+      if (field.fieldId === 'owned_parent') return label('system.parentRecord');
+      if (field.fieldId === 'owned_order') return label('system.rowOrder');
+    }
+    return field.displayName;
+  };
+  const names = new Map(schema.fields.map(field => [field.code, fieldName(field)]));
   const defaults = (value: ModelField['defaultValue']) => {
     if (!value) return '—';
     if (value.kind === 'NULL') return 'NULL';
@@ -32,7 +41,8 @@ export default function ModelDefinition({source}: {source?: string}) {
         <DataTable<ModelField> rowKey="fieldId" storageKey="dna.runtime.definition.fields" cards={false}
           defaultOrder="provided" pagination={false} scroll={{x: 1060, y: 360}}
           dataSource={schema.fields} columns={[
-            {title: label('name'), dataIndex: 'displayName', width: 160, fixed: 'left'},
+            {title: label('name'), dataIndex: 'displayName', width: 160, fixed: 'left',
+              render: (_: unknown, field: ModelField) => fieldName(field)},
             {title: label('code'), dataIndex: 'code', width: 180},
             {title: label('type'), dataIndex: 'type', width: 140,
               render: (value: string) => t('dna.runtime.definition.type.' + value, value)},
@@ -55,7 +65,7 @@ export default function ModelDefinition({source}: {source?: string}) {
       ...(schema.owner ? [{key: 'owner', icon: <ApartmentOutlined/>, label: label('owner'), children:
         <Descriptions size="small" column={1} items={[
           {key: 'model', label: label('parentModel'), children: schema.owner.parentModelId},
-          {key: 'field', label: label('parentField'), children: schema.fields.find(field => field.fieldId === schema.owner?.parentFieldId)?.displayName},
+          {key: 'field', label: label('parentField'), children: fieldName(schema.fields.find(field => field.fieldId === schema.owner?.parentFieldId))},
         ]}/>,
       }] : []),
     ]}/>

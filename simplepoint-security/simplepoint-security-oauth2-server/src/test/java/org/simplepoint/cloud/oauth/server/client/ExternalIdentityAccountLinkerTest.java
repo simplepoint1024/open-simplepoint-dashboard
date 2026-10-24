@@ -14,144 +14,127 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.simplepoint.plugin.oidc.api.entity.ExternalIdentityLink;
+import org.simplepoint.plugin.oidc.api.error.ExternalIdentityBindingException;
+import org.simplepoint.plugin.oidc.api.error.ExternalIdentityBindingException.Reason;
+import org.simplepoint.plugin.oidc.api.model.ExternalIdentityBinding;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityMatchStrategy;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityProviderPreset;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityProviderProtocol;
 import org.simplepoint.plugin.oidc.api.model.ResolvedExternalIdentityProvider;
-import org.simplepoint.plugin.oidc.api.repository.ExternalIdentityLinkRepository;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.oidc.api.service.ExternalIdentityAccountService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 @ExtendWith(MockitoExtension.class)
 class ExternalIdentityAccountLinkerTest {
-
-  @Mock
-  private ExternalIdentityLinkRepository linkRepository;
-
-  @Mock
-  private UsersService usersService;
-
+  @Mock private ExternalIdentityAccountService accounts;
+  @Mock private UserManagementService usersService;
   private ExternalIdentityAccountLinker linker;
+  private final ExternalIdentityBinding binding =
+      new ExternalIdentityBinding("binding", "provider-1", "subject-1", "user-1");
 
   @BeforeEach
   void setUp() {
-    linker = new ExternalIdentityAccountLinker(linkRepository, usersService);
+    linker = new ExternalIdentityAccountLinker(accounts, usersService);
   }
 
   @Test
   void reusesDurableSubjectBindingWithoutEmailRematch() {
-    ExternalIdentityLink link = new ExternalIdentityLink();
-    link.setProviderId("provider-1");
-    link.setExternalSubject("subject-1");
-    link.setUserId("user-1");
-    User user = usableUser("user-1", "member@example.com");
-    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
-        .thenReturn(Optional.of(link));
+    var user = usableUser("user-1", "member@example.com");
+    when(accounts.find("provider-1", "subject-1")).thenReturn(Optional.of(binding));
     when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
-    when(linkRepository.save(link)).thenReturn(link);
-
-    User result = linker.link(provider(true), Map.of(
-        "sub", "subject-1",
-        "email", "changed@example.com",
-        "email_verified", true
-    ));
-
-    assertThat(result).isSameAs(user);
-    assertThat(link.getLastLoginAt()).isNotNull();
+    assertThat(linker.link(provider(true), attributes(true))).isSameAs(user);
+    verify(accounts).recordLogin(binding);
     verify(usersService, never()).loadUserByUsername(any());
   }
 
   @Test
-  void createsBindingOnlyForVerifiedExistingLocalEmail() {
-    User user = usableUser("user-1", "member@example.com");
-    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
-        .thenReturn(Optional.empty());
+  void createsBindingOnlyForVerifiedExistingLocalEmailAndRechecksAccount() {
+    var user = usableUser("user-1", "member@example.com");
     when(usersService.loadUserByUsername("member@example.com")).thenReturn(user);
-    when(linkRepository.save(any(ExternalIdentityLink.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    User result = linker.link(provider(true), Map.of(
-        "sub", "subject-1",
-        "email", "member@example.com",
-        "email_verified", true
-    ));
-
-    ArgumentCaptor<ExternalIdentityLink> captor =
-        ArgumentCaptor.forClass(ExternalIdentityLink.class);
-    verify(linkRepository).save(captor.capture());
-    assertThat(result).isSameAs(user);
-    assertThat(captor.getValue().getProviderId()).isEqualTo("provider-1");
-    assertThat(captor.getValue().getExternalSubject()).isEqualTo("subject-1");
-    assertThat(captor.getValue().getUserId()).isEqualTo("user-1");
-    assertThat(captor.getValue().getEmailAtLink()).isEqualTo("member@example.com");
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
+    when(accounts.bind("provider-1", "subject-1", "member@example.com", "user-1"))
+        .thenReturn(binding);
+    assertThat(linker.link(provider(true), attributes(true))).isSameAs(user);
+    verify(accounts).recordLogin(binding);
   }
 
   @Test
   void rejectsUnverifiedEmailBeforeLookingUpLocalAccount() {
-    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
-        .thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> linker.link(provider(true), Map.of(
-        "sub", "subject-1",
-        "email", "member@example.com",
-        "email_verified", false
-    ))).isInstanceOf(OAuth2AuthenticationException.class)
+    assertThatThrownBy(() -> linker.link(provider(true), attributes(false)))
+        .isInstanceOf(OAuth2AuthenticationException.class)
         .hasMessageContaining("尚未");
-
     verify(usersService, never()).loadUserByUsername(any());
-    verify(linkRepository, never()).save(any());
+    verify(accounts, never()).bind(any(), any(), any(), any());
   }
 
   @Test
-  void explicitlyBindsExternalSubjectAfterLocalAccountAuthentication() {
-    User user = usableUser("user-1", "member@example.com");
-    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
-        .thenReturn(Optional.empty());
-    when(linkRepository.findActiveByProviderAndUserId("provider-1", "user-1"))
-        .thenReturn(Optional.empty());
+  void explicitlyBindsAfterLocalAuthentication() {
+    var user = usableUser("user-1", "member@example.com");
     when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
-    when(linkRepository.save(any(ExternalIdentityLink.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    User result = linker.linkToUser(
-        provider(true), "subject-1", "private@example.com", "user-1"
-    );
-
-    ArgumentCaptor<ExternalIdentityLink> captor =
-        ArgumentCaptor.forClass(ExternalIdentityLink.class);
-    verify(linkRepository).save(captor.capture());
-    assertThat(result).isSameAs(user);
-    assertThat(captor.getValue().getExternalSubject()).isEqualTo("subject-1");
-    assertThat(captor.getValue().getUserId()).isEqualTo("user-1");
+    when(accounts.bind("provider-1", "subject-1", "private@example.com", "user-1"))
+        .thenReturn(binding);
+    assertThat(linker.linkToUser(provider(true), "subject-1", "private@example.com", "user-1"))
+        .isSameAs(user);
+    verify(accounts).recordLogin(binding);
   }
 
   @Test
-  void refusesToMoveAnExternalSubjectBetweenLocalAccounts() {
-    ExternalIdentityLink existing = new ExternalIdentityLink();
-    existing.setProviderId("provider-1");
-    existing.setExternalSubject("subject-1");
-    existing.setUserId("other-user");
-    User user = usableUser("user-1", "member@example.com");
-    when(linkRepository.findActiveByProviderAndSubject("provider-1", "subject-1"))
-        .thenReturn(Optional.of(existing));
+  void conflictsNeverSwitchTheAuthenticatedTargetAccount() {
+    var user = usableUser("user-1", "member@example.com");
     when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
-
-    assertThatThrownBy(() -> linker.linkToUser(
-        provider(true), "subject-1", "member@example.com", "user-1"
-    )).isInstanceOf(OAuth2AuthenticationException.class)
+    when(accounts.bind("provider-1", "subject-1", "member@example.com", "user-1"))
+        .thenThrow(new ExternalIdentityBindingException(Reason.SUBJECT_IN_USE));
+    assertThatThrownBy(
+            () -> linker.linkToUser(provider(true), "subject-1", "member@example.com", "user-1"))
+        .isInstanceOf(OAuth2AuthenticationException.class)
         .hasMessageContaining("其他平台账号");
-
-    verify(linkRepository, never()).save(any());
+    verify(accounts, never()).recordLogin(any());
   }
 
-  private ResolvedExternalIdentityProvider provider(
-      final boolean requireVerifiedEmail
-  ) {
+  @Test
+  void disabledBoundAccountCannotUpdateLoginMetadata() {
+    var user = usableUser("user-1", "member@example.com");
+    user.setEnabled(false);
+    when(accounts.find("provider-1", "subject-1")).thenReturn(Optional.of(binding));
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
+    assertThatThrownBy(() -> linker.link(provider(true), attributes(true)))
+        .isInstanceOf(OAuth2AuthenticationException.class);
+    verify(accounts, never()).recordLogin(any());
+  }
+
+  @Test
+  void deletedAccountCannotBeLinkedFromAnOldSession() {
+    var user = usableUser("user-1", "member@example.com");
+    user.setDeletedAt(Instant.now());
+    when(usersService.findByIdForAuthorization("user-1")).thenReturn(Optional.of(user));
+    assertThatThrownBy(() -> linker.linkToUser(provider(true), "subject-1", null, "user-1"))
+        .isInstanceOf(OAuth2AuthenticationException.class);
+    verify(accounts, never()).bind(any(), any(), any(), any());
+  }
+
+  @Test
+  void accountDisabledDuringBindingCannotCompleteLogin() {
+    var user = usableUser("user-1", "member@example.com");
+    var disabled = usableUser("user-1", "member@example.com");
+    disabled.setEnabled(false);
+    when(usersService.findByIdForAuthorization("user-1"))
+        .thenReturn(Optional.of(user))
+        .thenReturn(Optional.of(disabled));
+    when(accounts.bind("provider-1", "subject-1", null, "user-1")).thenReturn(binding);
+    assertThatThrownBy(() -> linker.linkToUser(provider(true), "subject-1", null, "user-1"))
+        .isInstanceOf(OAuth2AuthenticationException.class);
+    verify(accounts, never()).recordLogin(any());
+  }
+
+  private Map<String, Object> attributes(boolean verified) {
+    return Map.of("sub", "subject-1", "email", "member@example.com", "email_verified", verified);
+  }
+
+  private ResolvedExternalIdentityProvider provider(final boolean requireVerifiedEmail) {
     return new ResolvedExternalIdentityProvider(
         "provider-1",
         "example",
@@ -174,8 +157,7 @@ class ExternalIdentityAccountLinkerTest {
         ExternalIdentityMatchStrategy.VERIFIED_EMAIL,
         requireVerifiedEmail,
         false,
-        Instant.parse("2026-01-01T00:00:00Z")
-    );
+        Instant.parse("2026-01-01T00:00:00Z"));
   }
 
   private User usableUser(final String id, final String email) {

@@ -18,6 +18,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import org.simplepoint.core.base.entity.impl.TenantBaseEntityImpl;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationRisk;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus;
 
@@ -54,7 +55,7 @@ import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus;
     @org.simplepoint.core.query.QueryField("errorCode"),
     @org.simplepoint.core.query.QueryField("startedAt"),
     @org.simplepoint.core.query.QueryField("finishedAt")
-}, maxPageSize = 100)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class SchemaMigrationEntity extends TenantBaseEntityImpl<String> {
 
   @Column(name = "physical_model_id", length = 36, nullable = false, updatable = false)

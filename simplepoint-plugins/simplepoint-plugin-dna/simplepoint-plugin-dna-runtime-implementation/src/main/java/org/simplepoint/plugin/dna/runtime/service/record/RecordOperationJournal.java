@@ -27,15 +27,24 @@ final class RecordOperationJournal {
 
   RecordSqlStatement insert(final RecordOperationIdentity operation, final List<RecordSqlStatement> statements) {
     Instant timestamp = statements.getFirst().updatedAt();
+    return insert(operation, timestamp, encode(statements));
+  }
+
+  private RecordSqlStatement insert(final RecordOperationIdentity operation, final Instant timestamp, final String json) {
     RecordSqlParameters parameters = new RecordSqlParameters();
     String placeholders = List.of(operation.id(), operation.tenantId(), 0L, operation.actorId(), Timestamp.from(timestamp),
         operation.actorId(), Timestamp.from(timestamp), operation.modelId(), operation.key(),
-        operation.fingerprint(), encode(statements)).stream().map(parameters::add)
+        operation.fingerprint(), json).stream().map(parameters::add)
         .collect(java.util.stream.Collectors.joining(", "));
     return new RecordSqlStatement("INSERT INTO " + TABLE
         + " (\"id\", \"tenant_id\", \"record_version\", \"created_by\", \"created_at\", \"updated_by\", \"updated_at\", "
         + "\"model_id\", \"operation_key\", \"request_fingerprint\", \"result_json\")"
         + " VALUES (" + placeholders + ")", parameters.values(), RecordMutationType.CREATE, operation.id(), 0, timestamp);
+  }
+
+  /** A durable negative receipt fences delayed/repeated commands after all earlier writers drain. */
+  RecordSqlStatement reject(final RecordOperationIdentity operation, final Instant timestamp) {
+    return insert(operation, timestamp, "{\"version\":1,\"outcome\":\"REJECTED\"}");
   }
 
   List<RecordCommandResult> read(final RecordOperationIdentity operation, final CalciteQueryResult query) {
@@ -54,6 +63,11 @@ final class RecordOperationJournal {
     }
     try {
       var entries = JSON.readTree(json);
+      if (entries.isObject() && entries.size() == 2 && entries.path("version").isIntegralNumber()
+          && entries.path("version").canConvertToInt() && entries.path("version").intValue() == 1
+          && entries.path("outcome").isTextual() && "REJECTED".equals(entries.path("outcome").asText())) {
+        throw rejected();
+      }
       if (!entries.isArray() || entries.isEmpty() || entries.size() > 100) {
         throw invalid(null);
       }
@@ -89,5 +103,10 @@ final class RecordOperationJournal {
   private static DnaRuntimeException invalid(final Throwable cause) {
     return new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED,
         "Record operation receipt is invalid", cause);
+  }
+
+  static DnaRuntimeException rejected() {
+    return new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_OPERATION_REJECTED,
+        "This operation was rejected by a data constraint; submit a corrected command with a new key");
   }
 }

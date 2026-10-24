@@ -1,4 +1,8 @@
 dependencies {
+    runtimeOnly(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-runtime-implementation"))
+
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
+
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-mcp-api"))
     implementation(project(":simplepoint-core"))

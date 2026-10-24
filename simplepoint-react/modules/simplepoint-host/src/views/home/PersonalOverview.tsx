@@ -10,17 +10,19 @@ import {usePageActive} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@/layouts/i18n/useI18n';
 
 /** Workflow cards reuse the personal inbox's server scope; messages retain one shared read state. */
-export function PersonalOverview() {
+export function PersonalOverview({availablePaths}: {availablePaths: ReadonlySet<string>}) {
   const {t, ensure, locale} = useI18n();
   const navigate = useNavigate();
   const active = usePageActive();
   const scope = useQueryScope();
+  const canReadMessages = availablePaths.has('/my/messages');
+  const canReadWorkflow = availablePaths.has('/my/items') || availablePaths.has('/my/todos');
   useEffect(() => {void ensure(['workflow']);}, [ensure, locale]);
   const messages = useData(['personal', 'overview'], ({signal}) => get<Overview>(`${personalApi}/overview`, undefined, {signal}), {
-    enabled: active, staleTime: 30_000, refetchInterval: active ? 60_000 : false, retry: 1,
+    enabled: active && canReadMessages, staleTime: 30_000, refetchInterval: active && canReadMessages ? 60_000 : false, retry: 1,
   });
   const workflow = useData(['workflow', 'overview'], ({signal}) => get<WorkflowOverview>('/workflow/overview', undefined, {signal}), {
-    enabled: active && !!scope[0], staleTime: 30_000, refetchInterval: active && scope[0] ? 60_000 : false, retry: 1,
+    enabled: active && !!scope[0] && canReadWorkflow, staleTime: 30_000, refetchInterval: active && scope[0] && canReadWorkflow ? 60_000 : false, retry: 1,
   });
   const tenantRequired = !scope[0] || workflow.data?.tenantWorkspace === false;
   const unavailable = (allowed?: boolean) => tenantRequired
@@ -37,7 +39,8 @@ export function PersonalOverview() {
     {key: 'messages', title: t('personal.messages', '我的消息'), count: messages.data?.unreadMessages,
       rows: messages.data?.messages.map(row => ({id: row.id, title: row.title, path: `/my/messages?id=${encodeURIComponent(row.id)}`})),
       unavailable: undefined, query: messages},
-  ];
+  ].filter(card => availablePaths.has(`/my/${card.key}`) && !card.unavailable);
+  if (!cards.length) return null;
   return <div className="sp-home-personal">
     {cards.map(card => <section className="sp-home-panel" key={card.key} aria-label={card.title}>
       <div className="sp-home-section-heading"><h2>{card.title} {!card.unavailable && !card.query.isError && card.count !== undefined && <Badge count={card.count} showZero />}</h2>

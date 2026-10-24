@@ -48,7 +48,7 @@ class WorkflowPostgresPlanTest extends WorkflowDirectoryFixture {
               .executeUpdate();
           em.createNativeQuery("ANALYZE").executeUpdate();
         });
-    var inbox = new WorkflowInboxQueries(em);
+    var inbox = new WorkflowInboxQueries(em, labelReader());
     assertThat(
             transaction
                 .execute(status -> inbox.query("pending", Map.of(), PageRequest.of(0, 20)))

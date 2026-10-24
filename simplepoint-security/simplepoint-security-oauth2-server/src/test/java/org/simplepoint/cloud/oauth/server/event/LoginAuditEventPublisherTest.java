@@ -11,7 +11,6 @@ package org.simplepoint.cloud.oauth.server.event;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +20,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.simplepoint.security.authentication.event.LoginAuthenticationFailureEvent;
+import org.simplepoint.security.authentication.event.LoginAuthenticationSuccessEvent;
 import org.simplepoint.security.entity.User;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -33,11 +34,9 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 @ExtendWith(MockitoExtension.class)
 class LoginAuditEventPublisherTest {
 
-  @Mock
-  private ApplicationEventPublisher applicationEventPublisher;
+  @Mock private ApplicationEventPublisher applicationEventPublisher;
 
-  @InjectMocks
-  private LoginAuditEventPublisher publisher;
+  @InjectMocks private LoginAuditEventPublisher publisher;
 
   private MockHttpServletRequest request;
 
@@ -204,7 +203,9 @@ class LoginAuditEventPublisherTest {
         ArgumentCaptor.forClass(LoginAuthenticationSuccessEvent.class);
     verify(applicationEventPublisher).publishEvent(captor.capture());
 
-    assertEquals("session-id-xyz", captor.getValue().sessionId());
+    org.assertj.core.api.Assertions.assertThat(captor.getValue().sessionId())
+        .matches("[a-f0-9]{64}")
+        .isNotEqualTo("session-id-xyz");
   }
 
   @Test
@@ -237,7 +238,7 @@ class LoginAuditEventPublisherTest {
     LoginAuthenticationFailureEvent event = captor.getValue();
     assertEquals("user-f1", event.userId());
     assertEquals("fail@example.com", event.username());
-    assertEquals("User not found", event.failureReason());
+    assertEquals("UsernameNotFoundException", event.failureReason());
     assertNotNull(event.loginAt());
   }
 
@@ -254,12 +255,13 @@ class LoginAuditEventPublisherTest {
     LoginAuthenticationFailureEvent event = captor.getValue();
     assertNull(event.userId());
     assertNull(event.authenticationType());
-    assertEquals("Bad credentials", event.failureReason());
+    assertEquals("UsernameNotFoundException", event.failureReason());
   }
 
   @Test
   void publishFailureWithNonUserPrincipalShouldPopulateUsernameFromAuthentication() {
-    Authentication authentication = new UsernamePasswordAuthenticationToken("user@domain.com", null);
+    Authentication authentication =
+        new UsernamePasswordAuthenticationToken("user@domain.com", null);
     AuthenticationException exception = new UsernameNotFoundException("Locked");
 
     publisher.publishFailure(request, authentication, exception);
@@ -289,7 +291,7 @@ class LoginAuditEventPublisherTest {
     assertNull(event.userId());
     assertEquals("john.doe", event.username());
     assertNull(event.authenticationType());
-    assertEquals("Account locked", event.failureReason());
+    assertEquals("UsernameNotFoundException", event.failureReason());
   }
 
   @Test
@@ -354,8 +356,7 @@ class LoginAuditEventPublisherTest {
       final String preferredUsername,
       final String name,
       final String nickname,
-      final String givenName
-  ) {
+      final String givenName) {
     User user = new User();
     user.setId(id);
     user.setEmail(email);

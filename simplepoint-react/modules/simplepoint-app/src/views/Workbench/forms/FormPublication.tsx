@@ -7,13 +7,16 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import useFormPublication from './useFormPublication';
 import PublicationInspection from './PublicationInspection';
+import PublicationProgress from './PublicationProgress';
+import PublicationSummary from './PublicationSummary';
+import type {DesignDocument} from '@simplepoint/components/FormDesigner/contracts';
 import type {DesignPage} from './designPage';
 
 const source: EntitySelectSource = {key: 'app-publication-pages-v1', searchParams: entitySearchParams,
   option: row => typeof row.id === 'string' && typeof row.name === 'string'
     ? {value: row.id, label: row.name, metadata: row} : undefined};
 
-type Props = {initialPage?: DesignPage; applicationId: string; formId: string; revision: number; checksum: string; open: boolean;
+type Props = {document: DesignDocument; initialPage?: DesignPage; applicationId: string; formId: string; revision: number; checksum: string; open: boolean;
   fields: readonly {fieldId: string; label: string}[];
   enabled: boolean; onClose: () => void; onViewData: (pageId: string) => void; onBusyChange: (busy: boolean) => void};
 
@@ -33,6 +36,7 @@ export default function FormPublication(props: Props) {
     finally {props.onBusyChange(false);}
   };
   return <Modal rootClassName="app-form-publication" open={props.open && selected}
+    width={760}
     title={t('app.publication.title', '发布表单')} destroyOnHidden={false}
     onCancel={close} closable={!publication.busy} maskClosable={!publication.busy}
     footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
@@ -53,11 +57,14 @@ export default function FormPublication(props: Props) {
         onChange={(_, option) => setPage(option)} placeholder={t('app.publication.selectPage', '请选择目标页面')}/>
       {replacement && !publication.active && <Alert type="warning" showIcon
         title={t('app.publication.replaceHint', '此页面已绑定其他表单，发布后将切换为当前表单。原表单的数据会保留。')}/>}
+      {!publication.active && <PublicationSummary base={`${base}/forms/${encodeURIComponent(props.formId)}`} document={props.document} revision={props.revision}
+        intent={captured} progress={publication.release?.progress} open={props.open}/>}
       {captured && <Typography.Text type="secondary">{t('app.publication.snapshot', '本次发布固定使用草稿修订 {revision}，重试不会改用后续编辑内容。', {revision: captured.revision})}</Typography.Text>}
       {publication.error && <Alert type="error" showIcon title={publication.error}
         description={publication.invalidFields.length > 0 ? <ul>{props.fields.filter(field => publication.invalidFields.includes(field.fieldId))
           .map(field => <li key={field.fieldId}>{field.label}</li>)}</ul> : undefined}/>}
       {publication.pending && <Alert type="info" showIcon title={t('app.publication.wait', '正在准备表单和数据，请稍候。可以关闭此窗口，稍后继续查看。')}/>}
+      <PublicationProgress progress={publication.release?.progress}/>
       <PublicationInspection inspection={publication.release?.inspection} onViewData={pageId => {close(); props.onViewData(pageId);}}/>
       {publication.cancelled && <Alert type="info" showIcon
         title={t('app.publication.cancelled', '本次发布已取消，现有页面保持不变。')}/>}

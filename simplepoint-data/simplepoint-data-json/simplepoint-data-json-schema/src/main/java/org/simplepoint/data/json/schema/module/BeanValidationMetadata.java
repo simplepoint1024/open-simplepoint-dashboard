@@ -14,7 +14,9 @@ import java.util.Arrays;
  */
 final class BeanValidationMetadata {
   // Character.isWhitespace, matching Jakarta NotBlank; JavaScript whitespace membership differs.
+  // These are serialized regex tokens, not Java character escapes.
   private static final String NON_BLANK =
+      // CHECKSTYLE.SUPPRESS: IllegalTokenText for +1 lines
       "[^\\u0009-\\u000d\\u001c-\\u0020\\u1680\\u2000-\\u2006\\u2008-\\u200a\\u2028-\\u2029\\u205f\\u3000]";
 
   private BeanValidationMetadata() {}
@@ -30,7 +32,9 @@ final class BeanValidationMetadata {
           && defaultGroup(
               (Class<?>[])
                   org.springframework.core.annotation.AnnotationUtils.getValue(
-                      annotation, "groups"))) return true;
+                      annotation, "groups"))) {
+        return true;
+      }
     }
     return false;
   }
@@ -62,22 +66,26 @@ final class BeanValidationMetadata {
         field.getAnnotationConsideringFieldAndGetterIfSupported(
             jakarta.validation.constraints.DecimalMax.class);
     if (field.getType().getErasedType() != BigDecimal.class) {
-      if (min != null && defaultGroup(min.groups()))
+      if (min != null && defaultGroup(min.groups())) {
         tighten(attributes, "minimum", BigDecimal.valueOf(min.value()), true);
-      if (max != null && defaultGroup(max.groups()))
+      }
+      if (max != null && defaultGroup(max.groups())) {
         tighten(attributes, "maximum", BigDecimal.valueOf(max.value()), false);
-      if (decimalMin != null && defaultGroup(decimalMin.groups()))
+      }
+      if (decimalMin != null && defaultGroup(decimalMin.groups())) {
         tighten(
             attributes,
             decimalMin.inclusive() ? "minimum" : "exclusiveMinimum",
             new BigDecimal(decimalMin.value()),
             true);
-      if (decimalMax != null && defaultGroup(decimalMax.groups()))
+      }
+      if (decimalMax != null && defaultGroup(decimalMax.groups())) {
         tighten(
             attributes,
             decimalMax.inclusive() ? "maximum" : "exclusiveMaximum",
             new BigDecimal(decimalMax.value()),
             false);
+      }
     }
     var notBlank = field.getAnnotationConsideringFieldAndGetterIfSupported(NotBlank.class);
     if (notBlank != null && defaultGroup(notBlank.groups())) {
@@ -120,11 +128,15 @@ final class BeanValidationMetadata {
                 jakarta.validation.constraints.NegativeOrZero.class);
     for (var type : constraints) {
       var annotation = field.getAnnotationConsideringFieldAndGetterIfSupported(type);
-      if (annotation == null) continue;
+      if (annotation == null) {
+        continue;
+      }
       var groups =
           (Class<?>[])
               org.springframework.core.annotation.AnnotationUtils.getValue(annotation, "groups");
-      if (groups != null && !defaultGroup(groups)) continue;
+      if (groups != null && !defaultGroup(groups)) {
+        continue;
+      }
       String text =
           (String)
               org.springframework.core.annotation.AnnotationUtils.getValue(annotation, "message");
@@ -159,7 +171,9 @@ final class BeanValidationMetadata {
                         : "maximum");
             default -> java.util.List.of("format");
           };
-      if (text != null) keywords.forEach(keyword -> message(attributes, keyword, text));
+      if (text != null) {
+        keywords.forEach(keyword -> message(attributes, keyword, text));
+      }
     }
   }
 
@@ -170,7 +184,9 @@ final class BeanValidationMetadata {
         || !existing.isNumber()
         || (minimum
             ? bound.compareTo(existing.decimalValue()) > 0
-            : bound.compareTo(existing.decimalValue()) < 0)) attributes.put(keyword, bound);
+            : bound.compareTo(existing.decimalValue()) < 0)) {
+      attributes.put(keyword, bound);
+    }
   }
 
   private static boolean portable(Pattern pattern) {
@@ -186,7 +202,8 @@ final class BeanValidationMetadata {
   }
 
   private static void message(ObjectNode attributes, String keyword, String message) {
-    if (message.startsWith("i18n:") && message.length() <= 205)
+    if (message.startsWith("i18n:") && message.length() <= 205) {
       attributes.withObject("/x-validation-messages").put(keyword, message.substring(5));
+    }
   }
 }

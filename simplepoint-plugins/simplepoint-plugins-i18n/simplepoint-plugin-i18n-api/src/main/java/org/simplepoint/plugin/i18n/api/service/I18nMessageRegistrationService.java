@@ -2,14 +2,14 @@ package org.simplepoint.plugin.i18n.api.service;
 
 import java.util.Collection;
 import java.util.Set;
-import org.simplepoint.core.entity.Message;
-import org.simplepoint.plugin.i18n.api.entity.Namespace;
+import org.simplepoint.plugin.i18n.api.model.MessageDeclaration;
+import org.simplepoint.plugin.i18n.api.model.NamespaceDeclaration;
 import org.simplepoint.remoting.RemoteContract;
 
 /**
  * Registers module-owned i18n namespaces and messages.
  */
-@RemoteContract(name = "i18n.message-registration")
+@RemoteContract(name = "i18n.message-registration", version = "2")
 public interface I18nMessageRegistrationService {
 
   /**
@@ -33,5 +33,5 @@ public interface I18nMessageRegistrationService {
    * @param namespaces namespaces to create
    * @param messages messages to create
    */
-  void register(Set<Namespace> namespaces, Set<Message> messages);
+  void register(Set<NamespaceDeclaration> namespaces, Set<MessageDeclaration> messages);
 }

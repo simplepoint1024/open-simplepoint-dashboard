@@ -1,13 +1,7 @@
-import {forwardRef, lazy, memo, Suspense, type ComponentProps} from 'react';
-import {Spin} from 'antd';
-import type PlatformForm from './index';
-import type {SFormHandle} from './index';
+import {memo} from 'react';
+import {asyncComponent} from '../AsyncComponent';
 
-const Form = lazy(() => import('./index'));
-
-/** The same platform form, with a local loading boundary so list routes do not eagerly load RJSF. */
-const LazySForm = forwardRef<SFormHandle, ComponentProps<typeof PlatformForm>>(function LazySForm(props, ref) {
-  return <Suspense fallback={<Spin size="small"/>}><Form {...props} ref={ref}/></Suspense>;
-});
+/** Keep the platform form lazy, preserving refs and allowing failed code downloads to be retried locally. */
+const LazySForm = asyncComponent(() => import('./index'));
 
 export default memo(LazySForm);

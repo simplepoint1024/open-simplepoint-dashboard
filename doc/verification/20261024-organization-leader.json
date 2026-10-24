@@ -1,0 +1,158 @@
+{
+  "verifiedAt": "2026-10-24T12:23:38.374528+00:00",
+  "feature": "组织详情、人员上下分区与组织负责人关联",
+  "behavior": [
+    "左侧选中组织，右上显示授权范围内的组织信息，右下显示本级及下级人员列表。",
+    "负责人为当前租户有效人员的可选单选关联；复用标准组织新增/编辑抽屉和 UserSelect，支持清空。",
+    "关联负责人不迁移成员、不授予权限；不可用人员不新增关联，失效关联保留 ID 并隐藏名称。",
+    "隐藏或脱敏负责人字段时不返回关联名称；跨租户、无操作权限、不可见组织均由后端拦截。",
+    "旧请求未提交 leaderId 时保留关联，明确 null 时清空；切换节点和授权范围后隔离读取。"
+  ],
+  "migration": {
+    "module": "identity",
+    "version": 20,
+    "file": "META-INF/simplepoint/modules/identity/db/postgresql/V20__organization_leader.sql",
+    "change": "simpoint_saas_organizations.leader_id VARCHAR(36) NULL",
+    "backupVerified": true,
+    "rehearsal": {
+      "leaderColumns": 1,
+      "migrationAndRepeatVerified": true
+    },
+    "productionSchemaVerified": true
+  },
+  "automatedChecks": {
+    "backendCommand": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew --max-workers=2 test -Psimplepoint.frontend.skip=true",
+    "backend": "passed",
+    "recordedJUnitResults": {
+      "tests": 5110,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 142,
+      "suites": 777
+    },
+    "frontendTypecheck": "passed (all 8 workspaces)",
+    "i18n": "passed",
+    "strictPlatformUiAudit": "passed",
+    "distributions": "All 10 service installDist tasks and platform installer passed with frontend packaging enabled"
+  },
+  "deployedImages": [
+    {
+      "service": "standalone",
+      "image": "simplepoint-standalone:20261024-organization-leader-r1",
+      "imageId": "sha256:9ba5796c584f753c701f3b6f4b98cf92ac942e620ee6925f825f6e3900657304"
+    },
+    {
+      "service": "common",
+      "image": "simplepoint203/common:20261024-organization-leader-r1",
+      "imageId": "sha256:d57256eaa8f13c42d1db9016745fd226c1df2b85f2d0691d73c7c4052704fd18"
+    },
+    {
+      "service": "authorization",
+      "image": "simplepoint203/authorization:20261024-organization-leader-r1",
+      "imageId": "sha256:96aa76223ca9f438d59942c4b7a4eec2b473b04847303a7adfb7b7b5b2a72c3a"
+    },
+    {
+      "service": "host",
+      "image": "simplepoint203/host:20261024-app-navigation-r2",
+      "imageId": "sha256:325df8362656c89b5374c81093e08ec4653e3d9a389b9846e953f4de342f71c9"
+    },
+    {
+      "service": "app",
+      "image": "simplepoint203/app:20261024-organization-leader-r1",
+      "imageId": "sha256:38d9d58920de58cbc8fc625e58c6f1fd8b91735011baff14d39552b97fa3aa64"
+    },
+    {
+      "service": "dna",
+      "image": "simplepoint203/dna:20261024-organization-leader-r1",
+      "imageId": "sha256:fc6efd87c53e777e820d8756fec438f7f0574e535355d58f15d37cf2ee740b29"
+    },
+    {
+      "service": "workflow",
+      "image": "simplepoint203/workflow:20261024-organization-leader-r1",
+      "imageId": "sha256:09ae47c9ad2ec2d0d3831669e7264a51b96a23c5f728f59b2799477955c1864a"
+    },
+    {
+      "service": "ai",
+      "image": "simplepoint203/ai:20261024-app-navigation-r2",
+      "imageId": "sha256:d37abfbdc39bad686338a7dbab05e0c2b95ab29379c67f9d016b1c9402580b73"
+    },
+    {
+      "service": "auditing",
+      "image": "simplepoint203/auditing:20261024-app-navigation-r2",
+      "imageId": "sha256:5adf945313abc41c02329c61163c6f6d43bee26ad2091527cb322ca94e3dd9bc"
+    },
+    {
+      "service": "mcp-gateway",
+      "image": "simplepoint203/mcp-gateway:20261024-app-navigation-r2",
+      "imageId": "sha256:a8cb6da0f44ee9ee0ee39232aa47c2707783ea436a0478f2988fbdbaf79e2ef4"
+    }
+  ],
+  "health": {
+    "healthyServices": 10,
+    "imageIdsMatchDistribution": true
+  },
+  "api": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T12:18:49.211Z",
+      "checks": [
+        "Server schema declares shared UserSelect; details return the saved current-tenant leader and display name",
+        "Legacy omitted field preserves leader; explicit null clears it; valid reassignment persists",
+        "Invalid leader write is atomic and localized; foreign workspace and ordinary employee cannot change the organization",
+        "Linking a leader does not transfer that member into the organization"
+      ]
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T12:19:24.495Z",
+      "checks": [
+        "Server schema declares shared UserSelect; details return the saved current-tenant leader and display name",
+        "Legacy omitted field preserves leader; explicit null clears it; valid reassignment persists",
+        "Invalid leader write is atomic and localized; foreign workspace and ordinary employee cannot change the organization",
+        "Linking a leader does not transfer that member into the organization"
+      ]
+    }
+  ],
+  "browser": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T12:21:57.647Z",
+      "checks": [
+        "Clicking the left row displays authorized organization information above a full-height empty personnel table",
+        "Existing test group information and personnel load without schema or member failures",
+        "Standard edit drawer hydrates the leader; clearing persists null and immediately refreshes the information panel; member writes are locked during editing",
+        "Shared tenant user selector searches and selects an active member; reassignment saves and refreshes its display name",
+        "Saved URL reload preserves the association; desktop panels and narrow stacked panels remain bounded with internal scrolling"
+      ],
+      "consoleErrors": [],
+      "httpErrors": []
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T12:22:26.072Z",
+      "checks": [
+        "Clicking the left row displays authorized organization information above a full-height empty personnel table",
+        "Existing test group information and personnel load without schema or member failures",
+        "Standard edit drawer hydrates the leader; clearing persists null and immediately refreshes the information panel; member writes are locked during editing",
+        "Shared tenant user selector searches and selects an active member; reassignment saves and refreshes its display name",
+        "Saved URL reload preserves the association; desktop panels and narrow stacked panels remain bounded with internal scrolling"
+      ],
+      "consoleErrors": [],
+      "httpErrors": []
+    }
+  ],
+  "frontendAssets": {
+    "bothOrigins": "All 6 remote federation manifests, entries and their declared assets verified against packaged output; all 350 host JS/CSS files per origin matched SHA-256.",
+    "upgradeWindow": "First microservice resource sweep encountered transient 503/500 responses during replacement; after startup the complete sweep passed, followed by browser scenarios without HTTP or console errors."
+  },
+  "cleanup": {
+    "at": "2026-10-24T12:22:55.678Z",
+    "temporaryOrganizationRemoved": true,
+    "verifiedBothOrigins": true,
+    "existingOrganizationsAndMembershipsUnchanged": true
+  },
+  "scopeNotes": [
+    "未给现有组织擅自指定负责人；管理员可在编辑组织时按实际业务选择。",
+    "本次没有新增组织负责人对应的审批路由或额外授权规则。"
+  ]
+}

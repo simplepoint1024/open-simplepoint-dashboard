@@ -1,3 +1,5 @@
+import {renamedFieldScenes} from './localization.ts';
+import {remapCalculation} from './calculationModel.ts';
 import {platformComponentBehaviors} from '../FormComponents/modelRegistry.ts';
 import type {FormComponentDefinition as Node, FormSceneDefinition as Scene, FormFieldType} from '../FormRuntime/contracts.ts';
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
@@ -9,7 +11,8 @@ export type DesignHistory = {past: DesignDocument[]; present: DesignDocument; fu
 export type Identity = () => string;
 export class DesignError extends Error {
   readonly code: 'parent' | 'field' | 'cycle' | 'limit' | 'referenced' | 'unsupported';
-  constructor(code: DesignError['code']) {super(code); this.code = code;}
+  readonly componentId?: string;
+  constructor(code: DesignError['code'], componentId?: string) {super(code); this.code = code; this.componentId = componentId;}
 }
 const identity: Identity = () => crypto.randomUUID();
 const descriptor = (node: Node, components: readonly ComponentDescriptor[]) => {
@@ -51,25 +54,30 @@ export function validateStructure(document: DesignDocument, components: readonly
     const usedFields = new Set<string>(), targets: string[] = [];
     if (!descriptor(scene.root, components).container) throw new DesignError('parent');
     const visit = (item: Node, depth: number, parent?: Node) => {
-      if (ids.has(item.componentId) || depth > 12 || ids.size >= 1000) throw new DesignError('limit');
-      ids.add(item.componentId);
-      const registered = descriptor(item, components);
-      try {platformComponentBehaviors.get(item)?.validate?.(item, document);} catch {throw new DesignError('parent');}
-      if (parent) requireParent(document, parent.componentId, item, components);
-      if (!registered.container && item.children.length) throw new DesignError('parent');
-      if (registered.fieldRequired) {
-        const field = document.fields.find(field => field.fieldId === item.fieldId);
-        if (!field || !fieldIds.has(field.fieldId) || usedFields.has(field.fieldId)
-          || !registered.supportedFieldTypes.includes(field.type)) throw new DesignError('field');
-        usedFields.add(field.fieldId);
+      try {
+        if (ids.has(item.componentId) || depth > 12 || ids.size >= 1000) throw new DesignError('limit');
+        ids.add(item.componentId);
+        const registered = descriptor(item, components);
+        try {platformComponentBehaviors.get(item)?.validate?.(item, document);} catch {throw new DesignError('parent');}
+        if (parent) requireParent(document, parent.componentId, item, components);
+        if (!registered.container && item.children.length) throw new DesignError('parent');
+        if (registered.fieldRequired) {
+          const field = document.fields.find(field => field.fieldId === item.fieldId);
+          if (!field || !fieldIds.has(field.fieldId) || usedFields.has(field.fieldId)
+            || !registered.supportedFieldTypes.includes(field.type)) throw new DesignError('field');
+          usedFields.add(field.fieldId);
+        }
+        if (item.componentType === 'action.open-dialog' || item.componentType === 'action.open-drawer') {
+          const target = document.scenes.find(candidate => candidate.sceneId === item.targetSceneId);
+          if (!target || target.type !== (item.componentType === 'action.open-dialog' ? 'DIALOG' : 'DRAWER'))
+            throw new DesignError('referenced');
+          targets.push(target.sceneId);
+        }
+        item.children.forEach(child => visit(child, depth + 1, item));
+      } catch (error) {
+        if (error instanceof DesignError && !error.componentId) throw new DesignError(error.code, item.componentId);
+        throw error;
       }
-      if (item.componentType === 'action.open-dialog' || item.componentType === 'action.open-drawer') {
-        const target = document.scenes.find(candidate => candidate.sceneId === item.targetSceneId);
-        if (!target || target.type !== (item.componentType === 'action.open-dialog' ? 'DIALOG' : 'DRAWER'))
-          throw new DesignError('referenced');
-        targets.push(target.sceneId);
-      }
-      item.children.forEach(child => visit(child, depth + 1, item));
     };
     visit(scene.root, 1); graph.set(scene.sceneId, targets);
   }
@@ -189,11 +197,15 @@ export function pasteComponent(document: DesignDocument, parentId: string, clipb
     const storageCode = field.storageCode ? code('field', next.fields.map(field => field.storageCode)) : field.storageCode;
     next.fields.unshift({...field, fieldId, storageCode});
   }
+  const references = new Map(fields);
   walk(copied.node, item => {
     const newId = id(); nodes.set(item.componentId, newId); item.componentId = newId;
     if (item.fieldId) item.fieldId = fields.get(item.fieldId)!;
-    platformComponentBehaviors.get(item)?.clone?.(item, id, next, {...document, details: copied.details});
+    const extra = platformComponentBehaviors.get(item)?.clone?.(item, id, next, {...document, details: copied.details}, fields);
+    extra?.forEach((to, from) => references.set(from, to));
   });
+  const copiedIds = new Set(fields.values());
+  next.fields = next.fields.map(field => copiedIds.has(field.fieldId) ? remapCalculation(field, references) : field);
   const conditionFields = (condition: DesignDocument['rules'][number]['condition']) => {
     if (condition.fieldId) condition.fieldId = fields.get(condition.fieldId) ?? condition.fieldId;
     condition.children.forEach(conditionFields);
@@ -208,7 +220,9 @@ export function pasteComponent(document: DesignDocument, parentId: string, clipb
 export function changeNode(document: DesignDocument, componentId: string, update: (node: Node, field?: DesignField, scene?: Scene) => void) {
   const next = structuredClone(document), selected = locate(next, componentId);
   if (!selected) throw new DesignError('parent');
+  const previousField = document.fields.find(field => field.fieldId === selected.node.fieldId);
   update(selected.node, next.fields.find(field => field.fieldId === selected.node.fieldId), selected.parent ? undefined : selected.scene);
+  next.scenes = renamedFieldScenes(next, previousField, next.fields.find(field => field.fieldId === selected.node.fieldId));
   return next;
 }
 export function recordHistory(history: DesignHistory, next: DesignDocument): DesignHistory {

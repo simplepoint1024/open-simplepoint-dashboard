@@ -147,7 +147,8 @@ class RecordTemporalDatabaseTest {
     when(resolver.resolve(ACTOR, "model-time", SCHEMA)).thenReturn(model);
     when(permissions.authorize(ACTOR, model)).thenReturn(access);
     var queries = new RecordQueryServiceImpl(requests, resolver, permissions, compiler, backend, mock(RecordAuditSupport.class),
-        new RecordAdmissionController(new DnaRuntimeExecutionProperties()), mock(RecordExecutionObserver.class));
+        new RecordAdmissionController(new DnaRuntimeExecutionProperties()), mock(RecordExecutionObserver.class),
+        RecordCalculationTestSupport.access(resolver, permissions, compiler));
     Map<String, Object> input = Map.of("due_date", "2024-02-29", "due_time", "23:59:59.123456",
         "occurred_at", "2026-10-14T09:02:03.123456+08:00");
     var created = compiler.mutation(model, access, new RecordCreateMutation("create", input), Instant.parse("2026-10-14T00:00:00.654321Z"));

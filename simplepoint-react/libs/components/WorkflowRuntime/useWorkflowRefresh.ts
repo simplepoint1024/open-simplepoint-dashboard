@@ -15,6 +15,7 @@ export function useWorkflowRefresh() {
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'progress'])}),
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'node-history'])}),
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'actions'])}),
+      client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'inbox-entry'])}),
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'overview'])}),
     ]);
   }, [client, scope]);

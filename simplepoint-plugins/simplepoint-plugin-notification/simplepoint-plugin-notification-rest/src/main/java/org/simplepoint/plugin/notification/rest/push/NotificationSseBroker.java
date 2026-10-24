@@ -10,6 +10,7 @@ import org.simplepoint.plugin.notification.api.model.NotificationAudienceType;
 import org.simplepoint.plugin.notification.api.vo.NotificationModels.AudienceContext;
 import org.simplepoint.plugin.notification.api.vo.NotificationModels.NotificationChangedEvent;
 import org.simplepoint.plugin.notification.api.vo.NotificationModels.PushEvent;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -17,17 +18,19 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * In-process SSE fan-out broker.
  *
- * <p>The durable database inbox remains the source of truth. Push events only prompt clients
- * to reconcile, so reconnects and duplicate events are safe.</p>
+ * <p>The durable database inbox remains the source of truth. Push events only prompt clients to
+ * reconcile, so reconnects and duplicate events are safe.
  */
 @Component
-public class NotificationSseBroker {
+public class NotificationSseBroker implements DisposableBean {
 
   private static final long CONNECTION_TIMEOUT_MILLIS = 30L * 60L * 1000L;
 
   private static final int MAX_CONNECTIONS_PER_USER = 5;
 
   private final Map<String, Client> clients = new ConcurrentHashMap<>();
+
+  private boolean closed;
 
   /**
    * Opens one authenticated audience-aware SSE connection.
@@ -36,16 +39,20 @@ public class NotificationSseBroker {
    * @return connected emitter
    */
   public synchronized SseEmitter connect(final AudienceContext audience) {
+    if (closed) {
+      throw new IllegalStateException("Notification stream broker is closed");
+    }
     while (connectionCount(audience.userId()) >= MAX_CONNECTIONS_PER_USER) {
       clients.entrySet().stream()
           .filter(entry -> entry.getValue().audience().userId().equals(audience.userId()))
           .min(Comparator.comparing(entry -> entry.getValue().connectedAt()))
-          .ifPresent(entry -> {
-            Client removed = clients.remove(entry.getKey());
-            if (removed != null) {
-              removed.emitter().complete();
-            }
-          });
+          .ifPresent(
+              entry -> {
+                Client removed = clients.remove(entry.getKey());
+                if (removed != null) {
+                  removed.emitter().complete();
+                }
+              });
     }
     String clientId = UUID.randomUUID().toString();
     SseEmitter emitter = new SseEmitter(CONNECTION_TIMEOUT_MILLIS);
@@ -59,30 +66,32 @@ public class NotificationSseBroker {
 
   /** Delivers a committed notification state change to matching local connections. */
   public void broadcast(final NotificationChangedEvent event) {
-    PushEvent payload = new PushEvent(
-        event.type(),
-        event.notificationId(),
-        event.occurredAt()
-    );
-    clients.forEach((clientId, client) -> {
-      if (matches(client.audience(), event)) {
-        send(clientId, "notification", payload);
-      }
-    });
+    PushEvent payload = new PushEvent(event.type(), event.notificationId(), event.occurredAt());
+    clients.forEach(
+        (clientId, client) -> {
+          if (matches(client.audience(), event)) {
+            send(clientId, "notification", payload);
+          }
+        });
   }
 
   /** Keeps reverse proxies and browsers from treating idle notification streams as dead. */
   @Scheduled(fixedDelay = 25_000L)
   public void heartbeat() {
-    clients.keySet().forEach(clientId ->
-        send(clientId, "heartbeat", Map.of("at", Instant.now()))
-    );
+    clients.keySet().forEach(clientId -> send(clientId, "heartbeat", Map.of("at", Instant.now())));
+  }
+
+  /** Ends active browser streams when the owning HTTP context stops. */
+  @Override
+  public synchronized void destroy() {
+    closed = true;
+    var connected = java.util.List.copyOf(clients.values());
+    clients.clear();
+    connected.forEach(client -> client.emitter().complete());
   }
 
   private static boolean matches(
-      final AudienceContext audience,
-      final NotificationChangedEvent event
-  ) {
+      final AudienceContext audience, final NotificationChangedEvent event) {
     NotificationAudienceType audienceType = event.audienceType();
     if (audienceType == NotificationAudienceType.ALL) {
       return true;
@@ -100,11 +109,7 @@ public class NotificationSseBroker {
         && event.audienceId().equals(audience.userId());
   }
 
-  private void send(
-      final String clientId,
-      final String eventName,
-      final Object data
-  ) {
+  private void send(final String clientId, final String eventName, final Object data) {
     Client client = clients.get(clientId);
     if (client == null) {
       return;
@@ -123,10 +128,5 @@ public class NotificationSseBroker {
         .count();
   }
 
-  private record Client(
-      AudienceContext audience,
-      SseEmitter emitter,
-      Instant connectedAt
-  ) {
-  }
+  private record Client(AudienceContext audience, SseEmitter emitter, Instant connectedAt) {}
 }

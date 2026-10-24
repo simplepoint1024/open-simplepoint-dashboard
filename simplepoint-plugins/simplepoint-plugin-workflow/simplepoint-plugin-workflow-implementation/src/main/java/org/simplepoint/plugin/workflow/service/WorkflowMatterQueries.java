@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.query.InvalidQueryException;
-import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.constants.WorkflowResourceCodes;
 import org.simplepoint.plugin.workflow.api.model.WorkflowMatter;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
 import org.simplepoint.plugin.workflow.api.model.WorkflowStartOption;
+import org.simplepoint.plugin.workflow.directory.WorkflowMemberLabelReader;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceWatcherEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowMatterReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowStartableReadModel;
@@ -19,16 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Starter/copied matters and the separately authorized manager view share one query contract. */
 @Service
-@Transactional(readOnly = true)
 public class WorkflowMatterQueries {
   private final EntityManager em;
+  private final WorkflowMemberLabelReader labels;
 
   /** Creates the tenant- and actor-scoped matter adapter. */
-  public WorkflowMatterQueries(EntityManager em) {
+  public WorkflowMatterQueries(EntityManager em, WorkflowMemberLabelReader labels) {
     this.em = em;
+    this.labels = labels;
   }
 
   /** Starting work does not require access to the workflow designer/drafts. */
+  @Transactional(readOnly = true)
   public PageResult<WorkflowStartOption> startable(Map<String, String> filters, Pageable page) {
     WorkflowAccess.requireAuthority(WorkflowResourceCodes.INSTANCES_START);
     final String tenant = WorkflowAccess.tenantId();
@@ -46,6 +48,7 @@ public class WorkflowMatterQueries {
   }
 
   /** Selected-value hydration is bounded and shares the exact published/tenant boundary. */
+  @Transactional(readOnly = true)
   public List<WorkflowStartOption> startableOptions(List<String> ids) {
     WorkflowAccess.requireAuthority(WorkflowResourceCodes.INSTANCES_START);
     final String tenant = WorkflowAccess.tenantId();
@@ -97,72 +100,36 @@ public class WorkflowMatterQueries {
     requireView(view);
     String tenant = WorkflowAccess.tenantId();
     String user = WorkflowAccess.userId();
-    return WorkflowReadPages.query(
-        em,
-        WorkflowMatterReadModel.class,
-        WorkflowMatter.class,
-        filters,
-        page,
-        "startedAt",
-        Set.of("title", "definitionName", "businessKey", "starterName"),
-        (cb, query, root) -> {
-          var scope = cb.equal(root.get("tenantId"), tenant);
-          if (view.equals("started")) {
-            return cb.and(scope, cb.equal(root.get("starterId"), user));
-          }
-          if (view.equals("copied")) {
-            var watcher = query.subquery(Integer.class);
-            var link = watcher.from(WorkflowInstanceWatcherEntity.class);
-            watcher
-                .select(cb.literal(1))
-                .where(
-                    cb.equal(link.get("processInstanceId"), root.get("id")),
-                    cb.equal(link.get("tenantId"), tenant),
-                    cb.equal(link.get("userId"), user));
-            return cb.and(scope, cb.exists(watcher));
-          }
-          return scope;
-        },
-        this::item);
-  }
-
-  /**
-   * Already authorized instance details can reuse this projection, never a client-supplied tenant.
-   */
-  WorkflowMatter findVisibleProjection(String id) {
-    var row = em.find(WorkflowMatterReadModel.class, id);
-    if (row == null || !WorkflowAccess.tenantId().equals(row.getTenantId())) {
-      throw new WorkflowException(WorkflowException.Code.NOT_FOUND, "流程事项不存在");
-    }
-    return item(row);
-  }
-
-  private WorkflowMatter item(WorkflowMatterReadModel row) {
-    boolean running = "RUNNING".equals(row.getStatus());
-    boolean own = WorkflowAccess.userId().equals(row.getStarterId());
-    return new WorkflowMatter(
-        row.getId(),
-        row.getDefinitionId(),
-        row.getTitle(),
-        row.getDefinitionName(),
-        row.getDefinitionVersion(),
-        row.getBusinessKey(),
-        row.getStarterName(),
-        row.getStatus(),
-        row.getStartedAt(),
-        row.getEndedAt(),
-        running && own && WorkflowAccess.canViewPersonalMatters(),
-        running
-            && WorkflowAccess.allowed(WorkflowResourceCodes.INSTANCES_CANCEL)
-            && (own || WorkflowAccess.allowed(WorkflowResourceCodes.INSTANCES_VIEW)),
-        own
-            && row.isResubmissionVersionAvailable()
-            && row.getNextInstanceId() == null
-            && Set.of("REJECTED", "WITHDRAWN", "CANCELED").contains(row.getStatus())
-            && WorkflowAccess.canViewPersonalMatters()
-            && WorkflowAccess.allowed(WorkflowResourceCodes.INSTANCES_START),
-        row.getPreviousInstanceId(),
-        row.getNextInstanceId());
+    return labels.read(
+        tenant,
+        () ->
+            WorkflowReadPages.query(
+                em,
+                WorkflowMatterReadModel.class,
+                WorkflowMatter.class,
+                filters,
+                page,
+                "startedAt",
+                Set.of("title", "definitionName", "businessKey", "starterName"),
+                (cb, query, root) -> {
+                  var scope = cb.equal(root.get("tenantId"), tenant);
+                  if (view.equals("started")) {
+                    return cb.and(scope, cb.equal(root.get("starterId"), user));
+                  }
+                  if (view.equals("copied")) {
+                    var watcher = query.subquery(Integer.class);
+                    var link = watcher.from(WorkflowInstanceWatcherEntity.class);
+                    watcher
+                        .select(cb.literal(1))
+                        .where(
+                            cb.equal(link.get("processInstanceId"), root.get("id")),
+                            cb.equal(link.get("tenantId"), tenant),
+                            cb.equal(link.get("userId"), user));
+                    return cb.and(scope, cb.exists(watcher));
+                  }
+                  return scope;
+                },
+                row -> WorkflowMatterProjection.item(row, row.getStarterName())));
   }
 
   /** Returns the selected view's authorized query fields. */

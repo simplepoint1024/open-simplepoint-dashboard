@@ -12,7 +12,7 @@ import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordView;
 
 /** Authorized read plans executed after the mutations, on the same physical transaction. */
-record RecordSnapshotPlan(String parentId, long parentVersion, List<Part> parts) {
+record RecordSnapshotPlan(String parentId, long parentVersion, List<Part> parts, RecordSnapshotValidation validation) {
   record Part(
       RuntimeRecordModel model,
       RecordAccessContext access,
@@ -43,6 +43,7 @@ record RecordSnapshotPlan(String parentId, long parentVersion, List<Part> parts)
         details.put(part.model().physicalModelId(), new ArrayList<>(rows));
       }
     }
+    validation.validate(values);
     return new OwnedRecordView(new RecordView(parentId, parentVersion, values), details);
   }
 }

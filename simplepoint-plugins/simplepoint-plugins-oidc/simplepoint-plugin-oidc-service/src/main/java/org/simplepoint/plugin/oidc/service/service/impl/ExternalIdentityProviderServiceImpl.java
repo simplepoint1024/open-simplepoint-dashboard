@@ -39,15 +39,10 @@ import org.springframework.transaction.annotation.Transactional;
 /** Default service for encrypted, database-managed external identity providers. */
 @Service
 public class ExternalIdentityProviderServiceImpl
-    extends BaseServiceImpl<
-        ExternalIdentityProviderRepository,
-        ExternalIdentityProvider,
-        String
-    >
+    extends BaseServiceImpl<ExternalIdentityProviderRepository, ExternalIdentityProvider, String>
     implements ExternalIdentityProviderService {
 
-  private static final Pattern REGISTRATION_ID =
-      Pattern.compile("[a-z0-9][a-z0-9._-]{1,63}");
+  private static final Pattern REGISTRATION_ID = Pattern.compile("[a-z0-9][a-z0-9._-]{1,63}");
 
   private final ExternalIdentityProviderRepository repository;
 
@@ -59,17 +54,14 @@ public class ExternalIdentityProviderServiceImpl
 
   private final Environment environment;
 
-  /**
-   * Creates the provider service.
-   */
+  /** Creates the provider service. */
   public ExternalIdentityProviderServiceImpl(
       final ExternalIdentityProviderRepository repository,
       final DetailsProviderService detailsProviderService,
       final ExternalIdentityLinkRepository linkRepository,
       final ExternalIdentityProviderCredentialCipher credentialCipher,
       final ExternalIdentityClientRegistrationFactory registrationFactory,
-      final Environment environment
-  ) {
+      final Environment environment) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.linkRepository = linkRepository;
@@ -85,9 +77,7 @@ public class ExternalIdentityProviderServiceImpl
 
   @Override
   public <S extends ExternalIdentityProvider> Page<S> limit(
-      final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      final Map<String, String> attributes, final Pageable pageable) {
     Map<String, String> normalized = new LinkedHashMap<>();
     if (attributes != null) {
       normalized.putAll(attributes);
@@ -118,14 +108,14 @@ public class ExternalIdentityProviderServiceImpl
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public <S extends ExternalIdentityProvider> ExternalIdentityProvider modifyById(
-      final S entity
-  ) {
+  public <S extends ExternalIdentityProvider> ExternalIdentityProvider modifyById(final S entity) {
     if (entity == null || trimToNull(entity.getId()) == null) {
       throw new IllegalArgumentException("外部身份提供商 ID 不能为空");
     }
-    ExternalIdentityProvider current = repository.findActiveById(entity.getId())
-        .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在"));
+    ExternalIdentityProvider current =
+        repository
+            .findActiveByIdForUpdate(entity.getId())
+            .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在"));
     requireSecretWrite(entity);
     restoreProtectedFields(current, entity);
     entity.setRegistrationId(current.getRegistrationId());
@@ -157,12 +147,17 @@ public class ExternalIdentityProviderServiceImpl
   }
 
   private static void restoreProtectedFields(
-      final ExternalIdentityProvider current,
-      final ExternalIdentityProvider candidate
-  ) {
-    BeanUtil.copyProperties(current, candidate, CopyOptions.create()
-        .setIgnoreNullValue(false)
-        .setFieldNameEditor(name -> FieldPermissionPolicy.writable(ExternalIdentityProvider.class, name) ? null : name));
+      final ExternalIdentityProvider current, final ExternalIdentityProvider candidate) {
+    BeanUtil.copyProperties(
+        current,
+        candidate,
+        CopyOptions.create()
+            .setIgnoreNullValue(false)
+            .setFieldNameEditor(
+                name ->
+                    FieldPermissionPolicy.writable(ExternalIdentityProvider.class, name)
+                        ? null
+                        : name));
   }
 
   @Override
@@ -171,13 +166,13 @@ public class ExternalIdentityProviderServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    for (String id : ids) {
-      ExternalIdentityProvider provider = repository.findActiveById(id)
-          .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在: " + id));
+    for (String id : ids.stream().distinct().sorted().toList()) {
+      ExternalIdentityProvider provider =
+          repository
+              .findActiveByIdForUpdate(id)
+              .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在: " + id));
       if (linkRepository.existsActiveByProviderId(provider.getId())) {
-        throw new IllegalStateException(
-            "该身份提供商已有账号绑定，请先停用而不是删除: " + provider.getDisplayName()
-        );
+        throw new IllegalStateException("该身份提供商已有账号绑定，请先停用而不是删除: " + provider.getDisplayName());
       }
     }
     super.removeByIds(ids);
@@ -186,29 +181,32 @@ public class ExternalIdentityProviderServiceImpl
   @Override
   public List<ExternalIdentityProviderView> enabledProviders() {
     return repository.findAllActiveEnabled().stream()
-        .map(provider -> new ExternalIdentityProviderView(
-            provider.getRegistrationId(),
-            provider.getDisplayName(),
-            provider.getPreset(),
-            provider.getSortOrder()
-        ))
+        .map(
+            provider ->
+                new ExternalIdentityProviderView(
+                    provider.getRegistrationId(),
+                    provider.getDisplayName(),
+                    provider.getPreset(),
+                    provider.getSortOrder()))
         .toList();
   }
 
   @Override
   public ResolvedExternalIdentityProvider resolve(final String registrationId) {
-    ExternalIdentityProvider provider = repository.findActiveByRegistrationId(registrationId)
-        .filter(item -> Boolean.TRUE.equals(item.getEnabled()))
-        .orElseThrow(() -> new NoSuchElementException(
-            "外部身份提供商未启用或不存在: " + registrationId
-        ));
+    ExternalIdentityProvider provider =
+        repository
+            .findActiveByRegistrationId(registrationId)
+            .filter(item -> Boolean.TRUE.equals(item.getEnabled()))
+            .orElseThrow(() -> new NoSuchElementException("外部身份提供商未启用或不存在: " + registrationId));
     return toResolved(provider);
   }
 
   @Override
   public ExternalIdentityProviderConnectionTestResult testConnection(final String id) {
-    ExternalIdentityProvider provider = repository.findActiveById(id)
-        .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在: " + id));
+    ExternalIdentityProvider provider =
+        repository
+            .findActiveById(id)
+            .orElseThrow(() -> new NoSuchElementException("外部身份提供商不存在: " + id));
     ClientRegistration registration = registrationFactory.build(toResolved(provider));
     ClientRegistration.ProviderDetails details = registration.getProviderDetails();
     return new ExternalIdentityProviderConnectionTestResult(
@@ -220,8 +218,7 @@ public class ExternalIdentityProviderServiceImpl
         details.getTokenUri(),
         details.getUserInfoEndpoint().getUri(),
         details.getJwkSetUri(),
-        callbackUri(provider.getRegistrationId())
-    );
+        callbackUri(provider.getRegistrationId()));
   }
 
   private String callbackUri(final String registrationId) {
@@ -236,9 +233,7 @@ public class ExternalIdentityProviderServiceImpl
     return baseUrl.replaceAll("/+$", "") + "/login/oauth2/code/" + registrationId;
   }
 
-  private ResolvedExternalIdentityProvider toResolved(
-      final ExternalIdentityProvider provider
-  ) {
+  private ResolvedExternalIdentityProvider toResolved(final ExternalIdentityProvider provider) {
     return new ResolvedExternalIdentityProvider(
         provider.getId(),
         provider.getRegistrationId(),
@@ -261,47 +256,41 @@ public class ExternalIdentityProviderServiceImpl
         provider.getMatchStrategy(),
         Boolean.TRUE.equals(provider.getRequireVerifiedEmail()),
         Boolean.TRUE.equals(provider.getAllowPrivateNetwork()),
-        provider.getUpdatedAt()
-    );
+        provider.getUpdatedAt());
   }
 
   private void normalizeAndValidate(
-      final ExternalIdentityProvider provider,
-      final String currentId,
-      final boolean creating
-  ) {
+      final ExternalIdentityProvider provider, final String currentId, final boolean creating) {
     if (provider == null) {
       throw new IllegalArgumentException("外部身份提供商配置不能为空");
     }
     provider.setRegistrationId(
-        require(provider.getRegistrationId(), "注册标识不能为空").toLowerCase(Locale.ROOT)
-    );
+        require(provider.getRegistrationId(), "注册标识不能为空").toLowerCase(Locale.ROOT));
     if (!REGISTRATION_ID.matcher(provider.getRegistrationId()).matches()) {
-      throw new IllegalArgumentException(
-          "注册标识只能包含小写字母、数字、点、下划线和短横线"
-      );
+      throw new IllegalArgumentException("注册标识只能包含小写字母、数字、点、下划线和短横线");
     }
-    repository.findActiveByRegistrationId(provider.getRegistrationId())
+    repository
+        .findActiveByRegistrationId(provider.getRegistrationId())
         .filter(existing -> !Objects.equals(existing.getId(), currentId))
-        .ifPresent(existing -> {
-          throw new IllegalArgumentException(
-              "注册标识已存在: " + provider.getRegistrationId()
-          );
-        });
+        .ifPresent(
+            existing -> {
+              throw new IllegalArgumentException("注册标识已存在: " + provider.getRegistrationId());
+            });
     provider.setDisplayName(require(provider.getDisplayName(), "显示名称不能为空"));
     provider.setPreset(
-        provider.getPreset() == null ? ExternalIdentityProviderPreset.CUSTOM : provider.getPreset()
-    );
+        provider.getPreset() == null
+            ? ExternalIdentityProviderPreset.CUSTOM
+            : provider.getPreset());
     if (provider.getProtocol() == null) {
       throw new IllegalArgumentException("协议类型不能为空");
     }
     provider.setClientId(require(provider.getClientId(), "Client ID 不能为空"));
-    provider.setClientAuthenticationMethod(defaultString(
-        provider.getClientAuthenticationMethod(),
-        ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue()
-    ));
-    boolean publicClient = ClientAuthenticationMethod.NONE.getValue()
-        .equals(provider.getClientAuthenticationMethod());
+    provider.setClientAuthenticationMethod(
+        defaultString(
+            provider.getClientAuthenticationMethod(),
+            ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue()));
+    boolean publicClient =
+        ClientAuthenticationMethod.NONE.getValue().equals(provider.getClientAuthenticationMethod());
     if (creating && !publicClient && trimToNull(provider.getClientSecret()) == null) {
       throw new IllegalArgumentException("Client Secret 不能为空");
     }
@@ -309,44 +298,36 @@ public class ExternalIdentityProviderServiceImpl
     if (provider.getScopes().isBlank()) {
       throw new IllegalArgumentException("授权范围不能为空");
     }
-    provider.setUserNameAttribute(defaultString(
-        provider.getUserNameAttribute(),
-        provider.getProtocol() == ExternalIdentityProviderProtocol.OIDC ? "sub" : "id"
-    ));
-    provider.setSubjectClaim(defaultString(
-        provider.getSubjectClaim(),
-        provider.getUserNameAttribute()
-    ));
+    provider.setUserNameAttribute(
+        defaultString(
+            provider.getUserNameAttribute(),
+            provider.getProtocol() == ExternalIdentityProviderProtocol.OIDC ? "sub" : "id"));
+    provider.setSubjectClaim(
+        defaultString(provider.getSubjectClaim(), provider.getUserNameAttribute()));
     provider.setEmailClaim(defaultString(provider.getEmailClaim(), "email"));
     provider.setEmailVerifiedClaim(trimToNull(provider.getEmailVerifiedClaim()));
     provider.setMatchStrategy(
         provider.getMatchStrategy() == null
             ? ExternalIdentityMatchStrategy.VERIFIED_EMAIL
-            : provider.getMatchStrategy()
-    );
+            : provider.getMatchStrategy());
     provider.setRequireVerifiedEmail(
         provider.getRequireVerifiedEmail() == null
             ? Boolean.TRUE
-            : provider.getRequireVerifiedEmail()
-    );
+            : provider.getRequireVerifiedEmail());
     provider.setAllowPrivateNetwork(
         provider.getAllowPrivateNetwork() == null
             ? Boolean.FALSE
-            : provider.getAllowPrivateNetwork()
-    );
+            : provider.getAllowPrivateNetwork());
     provider.setSortOrder(provider.getSortOrder() == null ? 100 : provider.getSortOrder());
     provider.setEnabled(provider.getEnabled() == null ? Boolean.TRUE : provider.getEnabled());
     provider.setDescription(trimToNull(provider.getDescription()));
 
     boolean allowPrivate = Boolean.TRUE.equals(provider.getAllowPrivateNetwork());
     provider.setIssuerUri(normalizeUrl(provider.getIssuerUri(), "Issuer URI", allowPrivate));
-    provider.setAuthorizationUri(normalizeUrl(
-        provider.getAuthorizationUri(), "Authorization URI", allowPrivate
-    ));
+    provider.setAuthorizationUri(
+        normalizeUrl(provider.getAuthorizationUri(), "Authorization URI", allowPrivate));
     provider.setTokenUri(normalizeUrl(provider.getTokenUri(), "Token URI", allowPrivate));
-    provider.setUserInfoUri(normalizeUrl(
-        provider.getUserInfoUri(), "UserInfo URI", allowPrivate
-    ));
+    provider.setUserInfoUri(normalizeUrl(provider.getUserInfoUri(), "UserInfo URI", allowPrivate));
     provider.setJwkSetUri(normalizeUrl(provider.getJwkSetUri(), "JWK Set URI", allowPrivate));
 
     if (provider.getProtocol() == ExternalIdentityProviderProtocol.OIDC
@@ -355,54 +336,75 @@ public class ExternalIdentityProviderServiceImpl
     }
     if (provider.getProtocol() == ExternalIdentityProviderProtocol.OAUTH2
         && (provider.getAuthorizationUri() == null
-        || provider.getTokenUri() == null
-        || provider.getUserInfoUri() == null)) {
-      throw new IllegalArgumentException(
-          "OAuth2 身份提供商必须配置 Authorization、Token 和 UserInfo URI"
-      );
+            || provider.getTokenUri() == null
+            || provider.getUserInfoUri() == null)) {
+      throw new IllegalArgumentException("OAuth2 身份提供商必须配置 Authorization、Token 和 UserInfo URI");
     }
   }
 
-  private void applyPreset(
-      final ExternalIdentityProvider provider,
-      final boolean force
-  ) {
-    if (provider == null || provider.getPreset() == null
+  private void applyPreset(final ExternalIdentityProvider provider, final boolean force) {
+    if (provider == null
+        || provider.getPreset() == null
         || provider.getPreset() == ExternalIdentityProviderPreset.CUSTOM) {
       return;
     }
     switch (provider.getPreset()) {
-      case GOOGLE -> applyOidcPreset(
-          provider, force, "Google", "https://accounts.google.com",
-          "openid,profile,email", ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue()
-      );
-      case APPLE -> applyOidcPreset(
-          provider, force, "Apple", "https://appleid.apple.com",
-          "openid,name,email", ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue()
-      );
-      case MICROSOFT -> applyOidcPreset(
-          provider, force, "Microsoft",
-          "https://login.microsoftonline.com/common/v2.0",
-          "openid,profile,email", ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue()
-      );
+      case GOOGLE ->
+          applyOidcPreset(
+              provider,
+              force,
+              "Google",
+              "https://accounts.google.com",
+              "openid,profile,email",
+              ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue());
+      case APPLE ->
+          applyOidcPreset(
+              provider,
+              force,
+              "Apple",
+              "https://appleid.apple.com",
+              "openid,name,email",
+              ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue());
+      case MICROSOFT ->
+          applyOidcPreset(
+              provider,
+              force,
+              "Microsoft",
+              "https://login.microsoftonline.com/common/v2.0",
+              "openid,profile,email",
+              ClientAuthenticationMethod.CLIENT_SECRET_POST.getValue());
       case GITHUB -> {
         setIfBlank(provider::setDisplayName, provider.getDisplayName(), "GitHub", false);
         provider.setProtocol(ExternalIdentityProviderProtocol.OAUTH2);
-        setIfBlank(provider::setAuthorizationUri, provider.getAuthorizationUri(),
-            "https://github.com/login/oauth/authorize", force);
-        setIfBlank(provider::setTokenUri, provider.getTokenUri(),
-            "https://github.com/login/oauth/access_token", force);
-        setIfBlank(provider::setUserInfoUri, provider.getUserInfoUri(),
-            "https://api.github.com/user", force);
+        setIfBlank(
+            provider::setAuthorizationUri,
+            provider.getAuthorizationUri(),
+            "https://github.com/login/oauth/authorize",
+            force);
+        setIfBlank(
+            provider::setTokenUri,
+            provider.getTokenUri(),
+            "https://github.com/login/oauth/access_token",
+            force);
+        setIfBlank(
+            provider::setUserInfoUri,
+            provider.getUserInfoUri(),
+            "https://api.github.com/user",
+            force);
         setIfBlank(provider::setScopes, provider.getScopes(), "read:user,user:email", force);
-        setIfBlank(provider::setClientAuthenticationMethod,
+        setIfBlank(
+            provider::setClientAuthenticationMethod,
             provider.getClientAuthenticationMethod(),
-            ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue(), force);
+            ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue(),
+            force);
         setIfBlank(provider::setUserNameAttribute, provider.getUserNameAttribute(), "id", force);
         setIfBlank(provider::setSubjectClaim, provider.getSubjectClaim(), "id", force);
         setIfBlank(provider::setEmailClaim, provider.getEmailClaim(), "email", force);
-        setIfBlank(provider::setEmailVerifiedClaim,
-            provider.getEmailVerifiedClaim(), "email_verified", force);
+        setIfBlank(
+            provider::setEmailVerifiedClaim,
+            provider.getEmailVerifiedClaim(),
+            "email_verified",
+            force);
         provider.setRequireVerifiedEmail(true);
       }
       default -> {
@@ -417,20 +419,21 @@ public class ExternalIdentityProviderServiceImpl
       final String displayName,
       final String issuerUri,
       final String scopes,
-      final String authenticationMethod
-  ) {
+      final String authenticationMethod) {
     setIfBlank(provider::setDisplayName, provider.getDisplayName(), displayName, false);
     provider.setProtocol(ExternalIdentityProviderProtocol.OIDC);
     setIfBlank(provider::setIssuerUri, provider.getIssuerUri(), issuerUri, force);
     setIfBlank(provider::setScopes, provider.getScopes(), scopes, force);
-    setIfBlank(provider::setClientAuthenticationMethod,
-        provider.getClientAuthenticationMethod(), authenticationMethod, force);
-    setIfBlank(provider::setUserNameAttribute,
-        provider.getUserNameAttribute(), "sub", force);
+    setIfBlank(
+        provider::setClientAuthenticationMethod,
+        provider.getClientAuthenticationMethod(),
+        authenticationMethod,
+        force);
+    setIfBlank(provider::setUserNameAttribute, provider.getUserNameAttribute(), "sub", force);
     setIfBlank(provider::setSubjectClaim, provider.getSubjectClaim(), "sub", force);
     setIfBlank(provider::setEmailClaim, provider.getEmailClaim(), "email", force);
-    setIfBlank(provider::setEmailVerifiedClaim,
-        provider.getEmailVerifiedClaim(), "email_verified", force);
+    setIfBlank(
+        provider::setEmailVerifiedClaim, provider.getEmailVerifiedClaim(), "email_verified", force);
     provider.setRequireVerifiedEmail(true);
   }
 
@@ -438,25 +441,16 @@ public class ExternalIdentityProviderServiceImpl
       final java.util.function.Consumer<String> setter,
       final String current,
       final String defaultValue,
-      final boolean force
-  ) {
+      final boolean force) {
     if (force || trimToNull(current) == null) {
       setter.accept(defaultValue);
     }
   }
 
   private static String normalizeUrl(
-      final String value,
-      final String label,
-      final boolean allowPrivate
-  ) {
+      final String value, final String label, final boolean allowPrivate) {
     String normalized = trimToNull(value);
-    ExternalIdentityProviderUrlValidator.validate(
-        normalized,
-        label,
-        allowPrivate,
-        false
-    );
+    ExternalIdentityProviderUrlValidator.validate(normalized, label, allowPrivate, false);
     return normalized;
   }
 
@@ -501,8 +495,6 @@ public class ExternalIdentityProviderServiceImpl
 
   private void decorate(final ExternalIdentityProvider provider) {
     provider.setClientSecret(null);
-    provider.setClientSecretConfigured(
-        trimToNull(provider.getClientSecretCiphertext()) != null
-    );
+    provider.setClientSecretConfigured(trimToNull(provider.getClientSecretCiphertext()) != null);
   }
 }

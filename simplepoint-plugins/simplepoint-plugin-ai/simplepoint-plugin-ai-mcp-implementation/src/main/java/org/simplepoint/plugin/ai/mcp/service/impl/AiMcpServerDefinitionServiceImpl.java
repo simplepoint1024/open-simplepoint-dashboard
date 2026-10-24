@@ -27,6 +27,7 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.service.security.AiCredentialCipher;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
@@ -91,6 +92,7 @@ import org.simplepoint.plugin.ai.mcp.service.support.AiMcpSnapshotStore;
 import org.simplepoint.plugin.ai.runtime.api.model.RuntimeMcpEndpoint;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimeMcpEndpointService;
 import org.simplepoint.plugin.ai.runtime.api.service.AiRuntimePoolService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -162,6 +164,7 @@ public class AiMcpServerDefinitionServiceImpl
       final AiMcpPublicationRepository publicationRepository,
       final AiScopeAccessPolicy scopeAccessPolicy,
       final AiCredentialCipher credentialCipher,
+      @Qualifier("httpMcpGatewayOperations")
       final McpGatewayOperations gatewayOperations,
       final AiMcpSnapshotStore snapshotStore,
       final AiMcpInvocationLedger invocationLedger,
@@ -198,7 +201,7 @@ public class AiMcpServerDefinitionServiceImpl
   public Page<McpCatalogRegistration> findCatalog(final String query, final Pageable pageable) {
     if (pageable == null
         || pageable.isUnpaged()
-        || pageable.getPageSize() > 100
+        || pageable.getPageSize() > TablePagination.MAX_PAGE_SIZE
         || pageable.getOffset() > Integer.MAX_VALUE
         || pageable.getSort().isSorted()) {
       throw new IllegalArgumentException(

@@ -312,7 +312,7 @@
     },
     {
       "file": "modules/simplepoint-host/src/components/TitleSync.tsx",
-      "expression": "keyOrText",
+      "expression": "current.title",
       "expectedOccurrences": 1,
       "mode": "runtime",
       "reason": "Page title keys are authored by backend route and menu configuration."
@@ -739,6 +739,27 @@
         "dna.runtime.definition.type.BINARY"
       ],
       "reason": "Read-only DNA model fields and logical types use the versioned schema contract."
+    },
+    {
+      "file": "libs/components/SForm/fields/LocalizedTextField.tsx",
+      "expression": "key",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Inherited field text uses an explicit source key from authorized schema context and an empty fallback; user translations are literal values."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/tenant/resourceAvailability.tsx",
+      "expression": "row.title.replace(/^i18n:/, '')",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Authorized resource title keys resolve inherited platform values; tenant overrides remain record-scoped literals."
+    },
+    {
+      "file": "modules/simplepoint-host/src/layouts/tenant/TenantResourceSelect.tsx",
+      "expression": "row.title.replace(/^i18n:/, '')",
+      "expectedOccurrences": 1,
+      "mode": "runtime",
+      "reason": "Authorized tenant picker resolves inherited platform names while preserving tenant translation literals."
     }
   ]
 }

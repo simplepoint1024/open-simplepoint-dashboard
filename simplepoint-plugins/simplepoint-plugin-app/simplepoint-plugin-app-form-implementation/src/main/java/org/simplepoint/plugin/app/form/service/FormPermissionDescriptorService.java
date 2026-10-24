@@ -44,12 +44,17 @@ public class FormPermissionDescriptorService {
     models.add(model(work.physicalModelId(), document.fields(), ""));
     for (var detail : document.details()) {
       var binding = bindings.stream().filter(item -> item.detailId().equals(detail.detailId())).findFirst().orElseThrow();
-      models.add(model(binding.physicalModelId(), detail.fields(), detail.label() + " / "));
+      models.add(model(binding.physicalModelId(), detail.fields(), detail.label() + " / ", detail.labelLocalization()));
     }
     return new PermissionPageDescriptor(models);
   }
 
   static PermissionModelDescriptor model(String model, List<FormFieldDefinition> fields, String prefix) {
+    return model(model, fields, prefix, null);
+  }
+
+  private static PermissionModelDescriptor model(String model, List<FormFieldDefinition> fields, String prefix,
+      org.simplepoint.api.locale.LocalizedText prefixLocalization) {
     Map<String, PermissionModelDescriptor.Field> properties = new LinkedHashMap<>();
     for (var base : RecordSystemField.values()) {
       boolean temporal = base.type() == org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType.DATETIME;
@@ -58,7 +63,7 @@ public class FormPermissionDescriptorService {
           temporal ? COMPARABLE : EQUALITY, List.of(), true));
     }
     for (var field : fields) {
-      if (field.storageMode() == FormStorageMode.TRANSIENT || field.storageMode() == FormStorageMode.COMPUTED) {
+      if (!field.persistent()) {
         continue;
       }
       String type = switch (field.type()) {
@@ -78,9 +83,25 @@ public class FormPermissionDescriptorService {
         default -> COMPARABLE;
       };
       properties.put(RecordPermissionModel.field(field.fieldId()),
-          new PermissionModelDescriptor.Field(type, prefix + field.label(), operators, List.of()));
+          new PermissionModelDescriptor.Field(type, prefix + field.label(), operators, List.of(), field.storageMode() == FormStorageMode.COMPUTED, localizedTitle(prefix, prefixLocalization, field)));
     }
     return new PermissionModelDescriptor(RecordPermissionModel.key(model), true, true,
         "created_by", "created_org_dept_id", properties);
   }
+  private static org.simplepoint.api.locale.LocalizedText localizedTitle(String prefix,
+      org.simplepoint.api.locale.LocalizedText parent, FormFieldDefinition field) {
+    var value = field.labelLocalization();
+    if (value == null && parent == null) return null;
+    var languages = new java.util.TreeSet<String>();
+    if (value != null) languages.addAll(value.translations().keySet());
+    if (parent != null) languages.addAll(parent.translations().keySet());
+    var translations = new LinkedHashMap<String, String>();
+    for (var language : languages) {
+      String parentLabel = org.simplepoint.api.locale.LocalizedTexts.override(parent, language);
+      String fieldLabel = org.simplepoint.api.locale.LocalizedTexts.override(value, language);
+      translations.put(language, (parentLabel == null ? prefix : parentLabel + " / ") + (fieldLabel == null ? field.label() : fieldLabel));
+    }
+    return new org.simplepoint.api.locale.LocalizedText(prefix + field.label(), value == null ? parent.defaultLocale() : value.defaultLocale(), translations);
+  }
+
 }

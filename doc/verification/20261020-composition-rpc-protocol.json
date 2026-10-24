@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-20",
+  "phase": "S2 protocol and recovery subset; full composition incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-service-router:simplepoint-service-router-core:check :simplepoint-remoting:simplepoint-remoting-core:check :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-platform:simplepoint-platform-composition-verification:check verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "reports": [
+    {
+      "module": "simplepoint-remoting/simplepoint-remoting-core",
+      "tests": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "checkstyleViolations": {
+        "main.xml": 0,
+        "test.xml": 0
+      }
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "tests": {
+        "tests": 58,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "checkstyleViolations": {
+        "main.xml": 0,
+        "test.xml": 0
+      }
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "checkstyleViolations": {
+        "main.xml": 0,
+        "test.xml": 0
+      }
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "checkstyleViolations": {
+        "test.xml": 0
+      }
+    }
+  ],
+  "moduleBoundaries": "passed",
+  "coverage": [
+    "Explicit idempotency required for transport recovery; ambiguous default writes execute only once in failure fixtures",
+    "Provider/authentication/protocol/local failures do not trigger generic fallback",
+    "Retry attempts retain one trace ID; trace ID is not durable idempotency",
+    "MVC HTTP request/response pipeline with RestClient; exact untyped BigDecimal/BigInteger, inherited generic DTO arguments/results, Optional, null, dates/times, Unicode",
+    "WebFlux HTTP pipeline preserves precise decimal payloads",
+    "Malformed/trailing JSON rejected before provider invocation; unexpected provider exception details hidden",
+    "Existing OAuth 401 credential refresh regression; real module artifact composition verification"
+  ],
+  "limitations": [
+    "MVC/WebFlux use in-process HTTP test infrastructure, not deployed services or real network sockets",
+    "Lost-response commit fixture uses a counter, not a database or actual process failure",
+    "Local identity/user context and transaction isolation remain incomplete",
+    "Legacy entity/framework remote APIs still require DTO separation",
+    "No standalone host, event/storage ownership migration, deployment or complete business acceptance in this evidence"
+  ],
+  "sha256": {
+    "simplepoint-remoting/simplepoint-remoting-core/src/main/java/org/simplepoint/remoting/RemoteOperation.java": "330a5b1d526e963e42f53caeada88a5dfac33ecfc978808f33bbc4b7fdc34aa2",
+    "simplepoint-service-router/simplepoint-service-router-core/build.gradle.kts": "5d38560f23231a02e16f7d0e65d3acf5d5db591ac26cd5f5adb0c525aa57411e",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRuntimeConfiguration.java": "0d067a6a97ad8e1cceeaa3a21e9f0fe1b0d023509cd4ad2ea1d1a00e3ab55354",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/RemoteServiceFailureException.java": "a66c0cfcadd06bf3d918bf1eb4dfba4562345d2d6dedf9756b078e413b08685c",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceRouterJsonCodec.java": "97236e53c450eb5fb8c5a4dd18897227bba8048ba6b5fd7ffc4c96d6e7586144",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcher.java": "85cf262c44edacc2e109efa7749e95bb8d57ad564e7801c3f3fe204009ea614d",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RestClientRemoteInvoker.java": "596875d43b045e9ac706bd26a5bfe7b137eb10d9701f23a8cebb2aa5b6ce06de",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java": "3e79ddfc0dff3698db2b3686fc8c28c13d84a9cbe859a4760f8ea467f9c6958c",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/web/ServiceRouterController.java": "b57ff6dc7a0c32d31fd29a7fec2cf6063da88655746cd2be57cb2885945a75d5",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/RoutedService.java": "e1ca4a6d2b591d61ae1d0cf85bbdf723757e26608268e86bc2850a018a64f9d9",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/ServiceRouterWireTest.java": "b4a58bdef9d14530bc73ab94068aadf75f39ae84693e48953864b99ae44b5d0b",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/RemoteRecoveryPolicyTest.java": "2707fe621c6ba7eef7791c72ae8d216a7b2e117c9d0a016e2b449f66d33e0664"
+  }
+}

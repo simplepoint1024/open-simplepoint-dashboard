@@ -78,7 +78,7 @@ function MetadataSession({source, permissions, onLock}: {source: JdbcSourceOptio
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [node, setNode] = useState<MetadataTreeNode | null>(null);
   const [tab, setTab] = useState('structure');
-  const [previewPage, setPreviewPage] = useState({number: 0, size: 20});
+  const [previewPage, setPreviewPage] = useState({number: 0, size: 50});
   const [dialog, setDialog] = useState<DialogTarget>();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
@@ -300,8 +300,8 @@ function MetadataSession({source, permissions, onLock}: {source: JdbcSourceOptio
                   columns={preview.data?.columns?.map(name => ({key: name, dataIndex: [name], title: name, width: 180, ellipsis: true,
                     render: value => value == null ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value)})) ?? []}
                   pagination={{current: previewPage.number + 1, pageSize: previewPage.size, total: preview.data?.totalElements ?? 0,
-                    showSizeChanger: true, pageSizeOptions: [10, 20, 50]}}
-                  onChange={page => setPreviewPage({number: page.pageSize !== previewPage.size ? 0 : (page.current ?? 1) - 1, size: page.pageSize ?? 20})}
+                    showSizeChanger: true, pageSizeOptions: [50, 100, 200, 500]}}
+                  onChange={page => setPreviewPage({number: page.pageSize !== previewPage.size ? 0 : (page.current ?? 1) - 1, size: page.pageSize ?? 50})}
                   size="small" scroll={{x: 'max-content'}}/>
               </>}] : [])]}/>}
           </>}

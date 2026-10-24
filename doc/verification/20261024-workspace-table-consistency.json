@@ -1,0 +1,365 @@
+{
+  "verifiedAt": "2026-10-24T08:32:37.181038+00:00",
+  "backend": {
+    "tests": 3311,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 61
+  },
+  "frontendTests": 70,
+  "uiAudit": {
+    "sourceFiles": 165,
+    "reviewedNativeControls": 39,
+    "unreviewed": 0
+  },
+  "images": [
+    {
+      "service": "standalone",
+      "imageId": "sha256:35e8ae9e5109b6a0728ae056524d5378be75ede657cd34987699327220313f2a"
+    },
+    {
+      "service": "common",
+      "imageId": "sha256:9553188b1e31331fd8d1533d80e1b8cd828d43a5347d50fb0dc0f345db370504"
+    },
+    {
+      "service": "authorization",
+      "imageId": "sha256:55b8aa6c5e821d08e5da56362d21763ce1d90829dabb422d49ef846734de0fc0"
+    },
+    {
+      "service": "host",
+      "imageId": "sha256:1f1f7af63a1c01be06ffc32da4c179a4f8c6334ec0e80e5bda8bc066a70c6961"
+    },
+    {
+      "service": "app",
+      "imageId": "sha256:61eeaf40464ad2874cbf2d4444eae6ecc6efcaa7c546e253a4043dd3d6fefec2"
+    },
+    {
+      "service": "dna",
+      "imageId": "sha256:ada61f13f9b76ddc76e9ed2580a42dc9ca59697a21d23536b4132144e6c3127a"
+    },
+    {
+      "service": "workflow",
+      "imageId": "sha256:e4de41258ee6a864c18d98374a221d32ea7c119ea5a47eb5cab4d88cc5e72381"
+    },
+    {
+      "service": "ai",
+      "imageId": "sha256:420c2c5719b77dd4c3c0c8ccb985039e5e3a313f4e34287c954c2617a5bd385a"
+    },
+    {
+      "service": "auditing",
+      "imageId": "sha256:3264f748fdfea550acf58cca8e8e8b1f2d4164e74c4550bbb6eb6b5f414e6e75"
+    },
+    {
+      "service": "mcp-gateway",
+      "imageId": "sha256:aa19dcd0d10f144c8a6759a8cee2e20fdd6e437cba6d9fc73091443e5b428b74"
+    }
+  ],
+  "environments": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "api": [
+        "Owner independently receives settings, resources and packages menus",
+        "/common/tenants/current-resources exposes and accepts all four sizes without truncating the requested page",
+        "/common/tenants/current-packages exposes and accepts all four sizes without truncating the requested page",
+        "/app/applications exposes and accepts all four sizes without truncating the requested page",
+        "/workflow/definitions exposes and accepts all four sizes without truncating the requested page",
+        "Platform accounts and security audit both expose and accept all four page sizes",
+        "Platform menu omits tenant-only capabilities; direct runtime/app API calls remain denied",
+        "Ordinary member cannot use resource/package owner menus or APIs"
+      ],
+      "ui": [
+        "Workspace settings sidebar, profile save/restore, branding and owner sections",
+        "Legacy resource bookmark migrates without redirecting background tabs",
+        "Shared pagination selector offers exactly 50/100/200/500 and accepts 500",
+        "Independent resource/package lists retain height when populated or empty; only row body scrolls",
+        "Package resource detail uses bounded DataTable; card/list toggle restores table page size",
+        "Single-layer workspace search, keyboard navigation, scope switch and reload persistence"
+      ],
+      "tableMeasurements": [
+        {
+          "label": "resources populated",
+          "root": 850,
+          "body": 718,
+          "bodyBottom": 925,
+          "pagerTop": 935,
+          "pagerBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 703,
+          "clientHeight": 703,
+          "overflow": "scroll",
+          "rows": 9,
+          "window": 1000
+        },
+        {
+          "label": "resources empty",
+          "root": 850,
+          "body": 755,
+          "bodyBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 740,
+          "clientHeight": 740,
+          "overflow": "auto",
+          "rows": 0,
+          "window": 1000
+        },
+        {
+          "label": "packages",
+          "root": 850,
+          "body": 718,
+          "bodyBottom": 925,
+          "pagerTop": 935,
+          "pagerBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 703,
+          "clientHeight": 703,
+          "overflow": "scroll",
+          "rows": 2,
+          "window": 1000
+        },
+        {
+          "label": "package resource drawer",
+          "root": 335,
+          "body": 209.5,
+          "bodyBottom": 938,
+          "pagerTop": 948,
+          "pagerBottom": 976,
+          "rootBottom": 976,
+          "scrollHeight": 1296,
+          "clientHeight": 195,
+          "overflow": "scroll",
+          "rows": 27,
+          "window": 1000
+        }
+      ],
+      "platformMeasurements": [
+        {
+          "label": "desktop",
+          "body": 662,
+          "scrollHeight": 662,
+          "rootBottom": 963,
+          "pagerBottom": 963,
+          "viewport": 1000,
+          "rows": 13
+        },
+        {
+          "label": "resized",
+          "body": 407,
+          "scrollHeight": 613,
+          "rootBottom": 723,
+          "pagerBottom": 723,
+          "viewport": 760,
+          "rows": 13
+        },
+        {
+          "label": "fullscreen",
+          "body": 596,
+          "scrollHeight": 613,
+          "rootBottom": 760,
+          "pagerBottom": 744,
+          "viewport": 760,
+          "rows": 13
+        }
+      ],
+      "sqlMeasurements": [
+        {
+          "empty": true,
+          "body": 226,
+          "budget": 226,
+          "rows": 0,
+          "scrollHeight": 240,
+          "clientHeight": 211
+        },
+        {
+          "empty": false,
+          "body": 226,
+          "budget": 226,
+          "rows": 1,
+          "scrollHeight": 226,
+          "clientHeight": 226
+        }
+      ],
+      "assets": {
+        "host": 348,
+        "remotes": [
+          {
+            "module": "common",
+            "count": 107
+          },
+          {
+            "module": "audit",
+            "count": 47
+          },
+          {
+            "module": "dna",
+            "count": 77
+          },
+          {
+            "module": "ai",
+            "count": 51
+          },
+          {
+            "module": "app",
+            "count": 56
+          },
+          {
+            "module": "workflow",
+            "count": 59
+          }
+        ]
+      }
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "api": [
+        "Owner independently receives settings, resources and packages menus",
+        "/common/tenants/current-resources exposes and accepts all four sizes without truncating the requested page",
+        "/common/tenants/current-packages exposes and accepts all four sizes without truncating the requested page",
+        "/app/applications exposes and accepts all four sizes without truncating the requested page",
+        "/workflow/definitions exposes and accepts all four sizes without truncating the requested page",
+        "Platform accounts and security audit both expose and accept all four page sizes",
+        "Platform menu omits tenant-only capabilities; direct runtime/app API calls remain denied",
+        "Ordinary member cannot use resource/package owner menus or APIs"
+      ],
+      "ui": [
+        "Workspace settings sidebar, profile save/restore, branding and owner sections",
+        "Legacy resource bookmark migrates without redirecting background tabs",
+        "Shared pagination selector offers exactly 50/100/200/500 and accepts 500",
+        "Independent resource/package lists retain height when populated or empty; only row body scrolls",
+        "Package resource detail uses bounded DataTable; card/list toggle restores table page size",
+        "Single-layer workspace search, keyboard navigation, scope switch and reload persistence"
+      ],
+      "tableMeasurements": [
+        {
+          "label": "resources populated",
+          "root": 850,
+          "body": 718,
+          "bodyBottom": 925,
+          "pagerTop": 935,
+          "pagerBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 703,
+          "clientHeight": 703,
+          "overflow": "scroll",
+          "rows": 9,
+          "window": 1000
+        },
+        {
+          "label": "resources empty",
+          "root": 850,
+          "body": 755,
+          "bodyBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 740,
+          "clientHeight": 740,
+          "overflow": "auto",
+          "rows": 0,
+          "window": 1000
+        },
+        {
+          "label": "packages",
+          "root": 850,
+          "body": 718,
+          "bodyBottom": 925,
+          "pagerTop": 935,
+          "pagerBottom": 963,
+          "rootBottom": 963,
+          "scrollHeight": 703,
+          "clientHeight": 703,
+          "overflow": "scroll",
+          "rows": 2,
+          "window": 1000
+        },
+        {
+          "label": "package resource drawer",
+          "root": 335,
+          "body": 209.5,
+          "bodyBottom": 938,
+          "pagerTop": 948,
+          "pagerBottom": 976,
+          "rootBottom": 976,
+          "scrollHeight": 1296,
+          "clientHeight": 195,
+          "overflow": "scroll",
+          "rows": 27,
+          "window": 1000
+        }
+      ],
+      "platformMeasurements": [
+        {
+          "label": "desktop",
+          "body": 662,
+          "scrollHeight": 662,
+          "rootBottom": 963,
+          "pagerBottom": 963,
+          "viewport": 1000,
+          "rows": 13
+        },
+        {
+          "label": "resized",
+          "body": 407,
+          "scrollHeight": 613,
+          "rootBottom": 723,
+          "pagerBottom": 723,
+          "viewport": 760,
+          "rows": 13
+        },
+        {
+          "label": "fullscreen",
+          "body": 596,
+          "scrollHeight": 613,
+          "rootBottom": 760,
+          "pagerBottom": 744,
+          "viewport": 760,
+          "rows": 13
+        }
+      ],
+      "sqlMeasurements": [
+        {
+          "empty": true,
+          "body": 226,
+          "budget": 226,
+          "rows": 0,
+          "scrollHeight": 240,
+          "clientHeight": 211
+        },
+        {
+          "empty": false,
+          "body": 226,
+          "budget": 226,
+          "rows": 1,
+          "scrollHeight": 226,
+          "clientHeight": 226
+        }
+      ],
+      "assets": {
+        "host": 348,
+        "remotes": [
+          {
+            "module": "common",
+            "count": 107
+          },
+          {
+            "module": "audit",
+            "count": 47
+          },
+          {
+            "module": "dna",
+            "count": 77
+          },
+          {
+            "module": "ai",
+            "count": 51
+          },
+          {
+            "module": "app",
+            "count": 56
+          },
+          {
+            "module": "workflow",
+            "count": 59
+          }
+        ]
+      }
+    }
+  ]
+}

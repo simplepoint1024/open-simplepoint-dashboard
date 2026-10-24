@@ -48,7 +48,9 @@ export default function FormAttachmentsWidget({id, value, onChange, disabled, re
     } catch (error) {report(error);}
   };
   return <Space orientation="vertical" size={8} style={{width: '100%'}}>
-    <input ref={input} id={id} type="file" multiple hidden onChange={event => void upload(event.target.files)}/>
+    <input ref={input} id={id} type="file" multiple hidden
+      disabled={disabled || readonly || busy || invalid || files.length >= 10}
+      onChange={event => void upload(event.target.files)}/>
     {!readonly && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{
       key: 'upload', sort: 0, text: '上传附件', icon: 'UploadOutlined', loading: busy,
       disabled: disabled || busy || invalid || files.length >= 10, argumentMinSize: 0, argumentMaxSize: 0,

@@ -1,0 +1,708 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T07:47:06.994606+00:00",
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-19T07:24:47.940Z",
+    "version": "20261019-calculation-integration12",
+    "sourceDigest": "9c9bd3336ca8b5c56ff219a65b41f46ed278bb1bee737800f98c85f6e10397b5",
+    "services": [
+      {
+        "service": "dna",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 296,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 262,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261019-calculation-integration12",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  },
+  "quality": {
+    "passed": true,
+    "scope": "targeted rejection persistence, recovered submissions, public errors, independent editor, complete frontend type/i18n/UI and seven distributions",
+    "tests": {
+      "simplepoint-plugin-dna-runtime-implementation": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simplepoint-plugin-app-form-implementation": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simplepoint-service-app": {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simplepoint-service-dna": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "postgresqlAndMysql": "real isolated databases; both passed, no skips; owned containers removed",
+    "checkstyleMain": "DNA runtime / APP forms / APP service passed",
+    "logs": {
+      "/tmp/sp-calculation-rejection-final-tests.log": "db829673ab3f46fd194f814e411821e59a8b48b42b5b6bf661fd95bcbdd41b24",
+      "/tmp/sp-calculation-integration12-distribution.log": "22a9fca27668aa4b159355846d2413b792699bc95325f4aa288595ea65a9f1dc",
+      "/tmp/sp-calculation-final-types.log": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08",
+      "/tmp/sp-calculation-final-ui.log": "c1e4cc0384a4fa93ad79f64ddcef4d5a50870d6e70fd165319199ff7dc96ca20",
+      "/tmp/sp-calculation-final-i18n.log": "a12a20a0715beadc6d68740adbbad81c24eecfca5ecbd574bf627888132dd922",
+      "/tmp/sp-calculation-integration12-bundles.log": "300b2375ee15d85c0caf199f2e69bcd07039b640067709e1b2db653361035af1",
+      "/tmp/sp-calculation-editor-history-browser.log": "32a10b10298fb75a3243d953a96c0558a13cd2b2cdb59c91746c8109372cb79c",
+      "/tmp/sp-calculation-editor-history-tests.log": "0285edbf56c29bb98d4bce8734c926fb993ec73b75fea12646b33d0077479acd"
+    }
+  },
+  "checks": {
+    "independentAndHostedEditor": {
+      "passed": true,
+      "standalone": "Real standalone Chrome drag, keyboard insertion/reorder, expression reverse parsing, undo/redo, invalid Unicode/decimal drafts, read-only and external controlled-state replacement passed; four pure history/move tests passed.",
+      "hosted": {
+        "startedAt": "2026-10-19T07:25:48.055Z",
+        "originalExpression": "[quantity]*[rate]+1",
+        "originalStorageCode": "total",
+        "hostedUndoRedo": {
+          "invalidDraftPreserved": true,
+          "validExpressionRestored": true
+        },
+        "savedRevision": 16,
+        "passed": true,
+        "restoredRevision": 17,
+        "preview": {
+          "total": "14",
+          "normalized_total": "24"
+        },
+        "finishedAt": "2026-10-19T07:25:53.373Z"
+      },
+      "invalidPublicationSource": "Unknown-function apply rejected in the actual modal; invalid/cyclic publication source rejected with unchanged server draft in bounded API milestone.",
+      "reproduction": [
+        "simplepoint-react/scripts/smoke-calculation-editor.mjs",
+        "scripts/business/calculation-acceptance/browser-designer.mjs"
+      ]
+    },
+    "auditLabelsAndRetainedOwners": {
+      "passed": true,
+      "roles": {
+        "employeeAudit": {
+          "actor": "employee",
+          "startedAt": "2026-10-19T07:24:56.277Z",
+          "pages": [
+            {
+              "route": "#/app/runtime/a13a2685-8fa9-40de-8620-5113b7ecb44f/ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+              "recordId": "ad5cd65c-f1b6-5874-973f-2f317fcf45ae",
+              "labels": [
+                {
+                  "key": "tenantId",
+                  "id": "27063092-5412-49b6-96e2-f6fa89bf82ac",
+                  "label": "SimplePoint 示例组织"
+                },
+                {
+                  "key": "createOrgDeptId",
+                  "id": "a3aba1f2-0685-45cd-a679-9a948aa617cd",
+                  "label": "平台部"
+                },
+                {
+                  "key": "createdBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                },
+                {
+                  "key": "updatedBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                }
+              ],
+              "layouts": [
+                {
+                  "viewport": 1440,
+                  "width": 1100,
+                  "scroll": 1100
+                },
+                {
+                  "viewport": 768,
+                  "width": 882,
+                  "scroll": 882
+                },
+                {
+                  "viewport": 390,
+                  "width": 742,
+                  "scroll": 742
+                }
+              ]
+            },
+            {
+              "route": "#/app/runtime/a13a2685-8fa9-40de-8620-5113b7ecb44f/672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+              "recordId": "e9abb279-ec6a-597c-9202-77eaaed081ce",
+              "labels": [
+                {
+                  "key": "tenantId",
+                  "id": "27063092-5412-49b6-96e2-f6fa89bf82ac",
+                  "label": "SimplePoint 示例组织"
+                },
+                {
+                  "key": "createOrgDeptId",
+                  "id": "a3aba1f2-0685-45cd-a679-9a948aa617cd",
+                  "label": "平台部"
+                },
+                {
+                  "key": "createdBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                },
+                {
+                  "key": "updatedBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                }
+              ],
+              "layouts": [
+                {
+                  "viewport": 1440,
+                  "width": 1085,
+                  "scroll": 1085
+                },
+                {
+                  "viewport": 768,
+                  "width": 1070,
+                  "scroll": 1070
+                },
+                {
+                  "viewport": 390,
+                  "width": 1016,
+                  "scroll": 1016
+                }
+              ]
+            }
+          ],
+          "directoryReads": [],
+          "passed": true,
+          "completedAt": "2026-10-19T07:25:14.705Z"
+        },
+        "managerAudit": {
+          "actor": "manager",
+          "startedAt": "2026-10-19T07:25:22.642Z",
+          "pages": [
+            {
+              "route": "#/app/runtime/a13a2685-8fa9-40de-8620-5113b7ecb44f/ab5318ce-fa08-46b5-b19c-c22b2e3d1f1f",
+              "recordId": "ad5cd65c-f1b6-5874-973f-2f317fcf45ae",
+              "labels": [
+                {
+                  "key": "tenantId",
+                  "id": "27063092-5412-49b6-96e2-f6fa89bf82ac",
+                  "label": "SimplePoint 示例组织"
+                },
+                {
+                  "key": "createOrgDeptId",
+                  "id": "a3aba1f2-0685-45cd-a679-9a948aa617cd",
+                  "label": "平台部"
+                },
+                {
+                  "key": "createdBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                },
+                {
+                  "key": "updatedBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                }
+              ],
+              "layouts": [
+                {
+                  "viewport": 1440,
+                  "width": 1100,
+                  "scroll": 1100
+                },
+                {
+                  "viewport": 768,
+                  "width": 1057,
+                  "scroll": 1057
+                },
+                {
+                  "viewport": 390,
+                  "width": 944,
+                  "scroll": 944
+                }
+              ]
+            },
+            {
+              "route": "#/app/runtime/a13a2685-8fa9-40de-8620-5113b7ecb44f/672e28f9-ea1a-4ca4-9244-e468cbc35f4a",
+              "recordId": "e9abb279-ec6a-597c-9202-77eaaed081ce",
+              "labels": [
+                {
+                  "key": "tenantId",
+                  "id": "27063092-5412-49b6-96e2-f6fa89bf82ac",
+                  "label": "SimplePoint 示例组织"
+                },
+                {
+                  "key": "createOrgDeptId",
+                  "id": "a3aba1f2-0685-45cd-a679-9a948aa617cd",
+                  "label": "平台部"
+                },
+                {
+                  "key": "createdBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                },
+                {
+                  "key": "updatedBy",
+                  "id": "5acfe791-1ff2-4a7b-b74d-30bd275cce30",
+                  "label": "办公测试·员工"
+                }
+              ],
+              "layouts": [
+                {
+                  "viewport": 1440,
+                  "width": 1085,
+                  "scroll": 1085
+                },
+                {
+                  "viewport": 768,
+                  "width": 1042,
+                  "scroll": 1042
+                },
+                {
+                  "viewport": 390,
+                  "width": 928,
+                  "scroll": 928
+                }
+              ]
+            }
+          ],
+          "directoryReads": [],
+          "passed": true,
+          "completedAt": "2026-10-19T07:25:31.214Z"
+        }
+      },
+      "serverIdentityBoundary": "doc/verification/20261017-audit-identity-deployment.json",
+      "reproduction": "scripts/business/calculation-acceptance/browser-audit-retention.mjs"
+    },
+    "durableRejection": {
+      "passed": true,
+      "terminalStatus": "FAILED",
+      "terminalStep": "TERMINAL",
+      "errorCode": "RECORD_OPERATION_REJECTED",
+      "sameIntentReplay": true,
+      "changedIntentStatus": 409,
+      "noSnapshotStatus": 404,
+      "priorRecordUnchanged": true,
+      "realDatabases": "PostgreSQL and MySQL both exercised whole-command rollback, concurrent rejection, commit-ack loss, late replay after conflicting row removal, and a new intent.",
+      "reproduction": "scripts/business/calculation-acceptance/submission-rejection.mjs"
+    },
+    "computedIndex": {
+      "passed": true,
+      "version": 8,
+      "indexes": [
+        {
+          "code": "calculated_total_index",
+          "fieldCodes": [
+            "total"
+          ],
+          "unique": false
+        }
+      ],
+      "physicalDriftSteps": [],
+      "filteredTotal": 60,
+      "unchangedAggregates": 65,
+      "pageSize": 7,
+      "reproduction": "scripts/business/calculation-acceptance/computed-index.mjs"
+    },
+    "publicationMaintenance": {
+      "passed": true,
+      "checks": [
+        {
+          "name": "detail-read",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        },
+        {
+          "name": "query-count",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        },
+        {
+          "name": "update",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        },
+        {
+          "name": "create",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        },
+        {
+          "name": "preview",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        },
+        {
+          "name": "delete",
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS",
+          "messageKey": "app.error.PUBLICATION_IN_PROGRESS"
+        }
+      ],
+      "aggregatesRestored": 65,
+      "runtimeVersionUnchanged": true,
+      "draftRestored": true,
+      "cancelReplay": "CANCELLED",
+      "reproduction": "scripts/business/calculation-acceptance/maintenance-access.mjs"
+    },
+    "boundedAggregateAndConcurrentEdits": {
+      "passed": true,
+      "maximumDetailRows": 40,
+      "concurrentRoles": [
+        "employee",
+        "manager"
+      ],
+      "concurrency": 4,
+      "operations": 24,
+      "trustedPreviews": 12,
+      "latencyMs": {
+        "min": 242,
+        "median": 391,
+        "p95": 585,
+        "max": 587
+      },
+      "latencyInterpretation": "Observations for this fixed sample and environment; no SLA or unbounded-load claim.",
+      "oversizedStatus": 400,
+      "editVersusDelete": [
+        200,
+        409
+      ],
+      "oneVersionAdvance": true,
+      "browser": {
+        "actor": "employee",
+        "startedAt": "2026-10-19T07:34:23.578Z",
+        "layouts": [
+          {
+            "viewport": 1440,
+            "drawerWidth": 1085,
+            "drawerScroll": 1085,
+            "tableWidth": 1021,
+            "tableScroll": 2500,
+            "height": 305,
+            "scrollHeight": 2652,
+            "left": 1479,
+            "top": 2347
+          },
+          {
+            "viewport": 768,
+            "drawerWidth": 833,
+            "drawerScroll": 833,
+            "tableWidth": 769,
+            "tableScroll": 2500,
+            "height": 305,
+            "scrollHeight": 2652,
+            "left": 1731,
+            "top": 2347
+          },
+          {
+            "viewport": 390,
+            "drawerWidth": 754,
+            "drawerScroll": 754,
+            "tableWidth": 690,
+            "tableScroll": 2500,
+            "height": 305,
+            "scrollHeight": 2652,
+            "left": 1810,
+            "top": 2347
+          }
+        ],
+        "preview": {
+          "inputChanges": 21,
+          "sentRequests": 1,
+          "expected": "656.80"
+        },
+        "passed": true,
+        "completedAt": "2026-10-19T07:34:30.708Z"
+      },
+      "reproduction": [
+        "scripts/business/calculation-acceptance/aggregate-load.mjs",
+        "scripts/business/calculation-acceptance/browser-load.mjs"
+      ]
+    },
+    "workflowModeling": {
+      "passed": true,
+      "actualMenuEntries": {
+        "replace-with-collapsed-subprocess": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "review · bpmn:SubProcess",
+          "entries": [
+            "toggle-parallel-mi",
+            "toggle-sequential-mi",
+            "toggle-loop",
+            "replace-with-collapsed-subprocess",
+            "replace-with-expanded-subprocess"
+          ]
+        },
+        "replace-with-user-task": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "review · bpmn:UserTask",
+          "entries": [
+            "toggle-parallel-mi",
+            "toggle-sequential-mi",
+            "toggle-loop",
+            "replace-with-user-task",
+            "replace-with-expanded-subprocess"
+          ]
+        },
+        "replace-with-expanded-subprocess": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "review · bpmn:SubProcess",
+          "entries": [
+            "toggle-parallel-mi",
+            "toggle-sequential-mi",
+            "toggle-loop",
+            "replace-with-collapsed-subprocess",
+            "replace-with-expanded-subprocess"
+          ]
+        },
+        "replace-with-data-store-reference": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "document_ref · bpmn:DataStoreReference",
+          "entries": [
+            "toggle-is-collection",
+            "replace-with-data-store-reference"
+          ]
+        },
+        "replace-with-data-object-reference": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "document_ref · bpmn:DataObjectReference",
+          "entries": [
+            "replace-with-data-object-reference"
+          ]
+        },
+        "replace-with-none-end": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "start · bpmn:EndEvent",
+          "entries": [
+            "replace-with-none-end"
+          ]
+        },
+        "replace-with-none-start": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "end · bpmn:StartEvent",
+          "entries": [
+            "replace-with-none-start"
+          ]
+        },
+        "replace-with-conditional-flow": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "finish · bpmn:SequenceFlow",
+          "entries": [
+            "replace-with-default-flow",
+            "replace-with-conditional-flow"
+          ]
+        },
+        "replace-with-sequence-flow": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "finish · bpmn:SequenceFlow",
+          "entries": [
+            "replace-with-sequence-flow",
+            "replace-with-default-flow"
+          ]
+        },
+        "replace-with-default-flow": {
+          "passed": true,
+          "definitionId": "dcdefce3-9e5c-4b8e-ad84-4c08b323e0ca",
+          "description": "finish · bpmn:SequenceFlow",
+          "entries": [
+            "replace-with-default-flow",
+            "replace-with-conditional-flow"
+          ]
+        },
+        "replace-with-exclusive-gateway": {
+          "passed": true,
+          "definitionId": "5679e931-dc47-4e71-8860-db1d596ae163",
+          "description": "split · bpmn:ExclusiveGateway",
+          "entries": [
+            "replace-with-exclusive-gateway",
+            "replace-with-parallel-gateway"
+          ]
+        },
+        "replace-with-parallel-gateway": {
+          "passed": true,
+          "definitionId": "5679e931-dc47-4e71-8860-db1d596ae163",
+          "description": "split · bpmn:ParallelGateway",
+          "entries": [
+            "replace-with-parallel-gateway",
+            "replace-with-inclusive-gateway"
+          ]
+        },
+        "replace-with-inclusive-gateway": {
+          "passed": true,
+          "definitionId": "5679e931-dc47-4e71-8860-db1d596ae163",
+          "description": "split · bpmn:InclusiveGateway",
+          "entries": [
+            "replace-with-exclusive-gateway",
+            "replace-with-inclusive-gateway"
+          ]
+        }
+      },
+      "liveDefinitionsUnchanged": true,
+      "compatibilityEntries": {
+        "replace-with-none-start-event": "Legacy alias: supplied callback survives platform filtering. Current installed BPMN catalog uses replace-with-none-start; no nonexistent UI click claimed.",
+        "replace-with-none-end-event": "Legacy alias: supplied callback survives platform filtering. Current installed BPMN catalog uses replace-with-none-end; no nonexistent UI click claimed.",
+        "replace-with-subprocess": "Installed legacy diagram repair entry targets ordinary bpmn:SubProcess; platform preserves the callback and excludes executable task variants. Unsupported legacy source kinds are not creatable as new platform processes."
+      },
+      "compatibilityTests": {
+        "passed": 8,
+        "logSha256": "76fde3774b8086d408795421637c943c48c8d047bcc625d60fe25476ec3b633b"
+      },
+      "publishedExecution": "Seven advanced scenarios plus nine business routes and all 16 immutable diagrams passed; see version/UI and workflow/schema milestones.",
+      "reproduction": [
+        "scripts/business/calculation-acceptance/browser-workflow-modeling.mjs",
+        "simplepoint-react/libs/components/WorkflowDesigner/platformModeling.test.mjs"
+      ]
+    },
+    "workflowLifecycle": {
+      "passed": true,
+      "cases": {
+        "reject": {
+          "passed": true,
+          "oldInstanceId": "ad6039c9-cb76-11f1-bd32-166ff1d6ba7b",
+          "nextInstanceId": "e0daefd9-cb76-11f1-bd32-166ff1d6ba7b",
+          "oldStatus": "REJECTED",
+          "newStatus": "COMPLETED"
+        },
+        "withdraw": {
+          "passed": true,
+          "oldInstanceId": "ef892d4d-cb76-11f1-bd32-166ff1d6ba7b",
+          "nextInstanceId": "fe984f69-cb76-11f1-bd32-166ff1d6ba7b",
+          "oldStatus": "WITHDRAWN",
+          "newStatus": "COMPLETED"
+        },
+        "cancel": {
+          "passed": true,
+          "oldInstanceId": "0d53d34d-cb77-11f1-bd32-166ff1d6ba7b",
+          "nextInstanceId": "1c620b09-cb77-11f1-bd32-166ff1d6ba7b",
+          "oldStatus": "CANCELED",
+          "newStatus": "COMPLETED"
+        }
+      },
+      "actions": "approve, reject, withdraw, cancel, claim, revise/resubmit, copied-user access, same-intent replay and forbidden actor checks passed.",
+      "transfer": "The current public controller has no transfer/delegate operation. This report does not claim transfer support; WF-02 covers actual published actions.",
+      "reproduction": "scripts/business/calculation-acceptance/workflow-lifecycle.mjs"
+    }
+  },
+  "privateArtifacts": {
+    "rejection": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/submission-rejection.json",
+      "sha256": "08d0bd1ab7488a667e43f9b169f40e6ba9eb5478735ce6049bb0e970fb3833bd"
+    },
+    "editor": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/browser-designer.json",
+      "sha256": "95e50de028f04b45f0146c4f86c00619628f2038c1bff4bc6457dc88d8edee19"
+    },
+    "employeeAudit": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/browser-audit-employee.json",
+      "sha256": "626d0b6946a797ee70b4ddf1f2a17a43968d9b5f0cb11e34b3fc1c9d12cac122"
+    },
+    "managerAudit": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/browser-audit-manager.json",
+      "sha256": "162b1893b858d0383f766fd37b5e3f90354a608b0d1ba2b072f11c7d4b69691f"
+    },
+    "modeling": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration11/browser-workflow-modeling.json",
+      "sha256": "c52212d865b02866c2d74c799231a8cfdd457eb14437ce183171911246c6bdb5"
+    },
+    "computedIndex": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/computed-index.json",
+      "sha256": "1a769758f9173698c4c5ecdda54dee41c19a7cb3f7eeb10b9a227db605cbdc60"
+    },
+    "maintenance": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/maintenance-access.json",
+      "sha256": "a3671f8a76fd056fa3d66d6a1bc7cb2e4bd87d5f0578cfbf781999608aaec604"
+    },
+    "load": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/aggregate-load.json",
+      "sha256": "8ab27cb0260b98d97ec3f26676df6f63d1fedfdf8225ceffbdf0607ec0f11f5b"
+    },
+    "loadBrowser": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration12/browser-load.json",
+      "sha256": "ae50beef618c74c36d34f3579d8efa562e0505f7d083e51091d1dbdd8cae8a96"
+    },
+    "lifecycle": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration5/workflow-lifecycle.json",
+      "sha256": "347e687ad6ba75b93458f22c090ac75a404d1a4dd0f1f305b5fc9271e023323b"
+    }
+  },
+  "remaining": [
+    "Cross-workspace denial incorrectly became generic 500: typed security RPC fix tested, awaiting integration13 deployment.",
+    "Revoked retained record drawer showed cached detail after list/schema 403: shared controller and page-owner fix implemented, awaiting integration13 real regression.",
+    "Remaining final direct/API/policy and distribution gates are not yet marked complete."
+  ]
+}

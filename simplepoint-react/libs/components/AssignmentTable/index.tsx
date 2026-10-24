@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import {useEffect, useLayoutEffect, useMemo, useState} from 'react';
 import type {Key} from 'react';
 import {Alert, Typography} from 'antd';
@@ -112,7 +113,7 @@ function AssignmentPanel<T extends object>({endpoint: availableEndpoint, assigne
   const schemaLoading = schemaQuery.isFetching && !schema;
   const invalidSchema = !!schemaQuery.data && !schema;
   const [query, setQuery] = useState<TableQueryState>({filters: {}});
-  const [pagination, setPagination] = useState({page: 0, size: 20});
+  const [pagination, setPagination] = useState({page: 0, size: DEFAULT_TABLE_PAGE_SIZE});
   const [keys, setKeys] = useState<Key[]>([]);
   const inputKey = JSON.stringify(queryKey ?? []);
   const result = usePage<T>([endpoint, parent, selected, query, pagination, revision, inputKey], async ({signal}) =>

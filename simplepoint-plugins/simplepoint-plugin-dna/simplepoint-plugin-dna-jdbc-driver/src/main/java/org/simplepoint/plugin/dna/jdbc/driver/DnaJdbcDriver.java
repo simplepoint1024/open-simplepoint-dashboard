@@ -9,9 +9,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-/**
- * Standalone read-only JDBC driver for the DNA federation gateway.
- */
+/** Standalone read-only JDBC driver for the DNA federation gateway. */
 public final class DnaJdbcDriver implements Driver {
 
   private static final String DRIVER_NAME = "SimplePoint DNA JDBC Driver";
@@ -33,7 +31,8 @@ public final class DnaJdbcDriver implements Driver {
     if (!acceptsURL(url)) {
       return null;
     }
-    DnaJdbcModels.ConnectionConfig config = DnaJdbcUrlParser.parse(url, info == null ? new Properties() : info);
+    DnaJdbcModels.ConnectionConfig config =
+        DnaJdbcUrlParser.parse(url, info == null ? new Properties() : info);
     return DnaJdbcConnection.open(config);
   }
 
@@ -45,12 +44,13 @@ public final class DnaJdbcDriver implements Driver {
   @Override
   public DriverPropertyInfo[] getPropertyInfo(final String url, final Properties info) {
     return new DriverPropertyInfo[] {
-        property("user", true, "系统用户邮箱或手机号"),
-        property("password", true, "系统用户密码"),
-        property("catalogCode", false, "可选默认数据源目录编码"),
-        property("tenantId", false, "可选租户 ID"),
-        property("contextId", false, "可选权限上下文 ID"),
-        property("schema", false, "可选默认 Schema")
+      property("user", true, "系统用户邮箱或手机号"),
+      property("password", true, "系统用户密码"),
+      property("oneTimeCode", false, "已配置 MFA 的一次性验证码"),
+      property("catalogCode", false, "可选默认数据源目录编码"),
+      property("tenantId", false, "可选租户 ID"),
+      property("contextId", false, "可选权限上下文 ID"),
+      property("schema", false, "可选默认 Schema")
     };
   }
 
@@ -83,10 +83,7 @@ public final class DnaJdbcDriver implements Driver {
   }
 
   private static DriverPropertyInfo property(
-      final String name,
-      final boolean required,
-      final String description
-  ) {
+      final String name, final boolean required, final String description) {
     DriverPropertyInfo info = new DriverPropertyInfo(name, null);
     info.required = required;
     info.description = description;

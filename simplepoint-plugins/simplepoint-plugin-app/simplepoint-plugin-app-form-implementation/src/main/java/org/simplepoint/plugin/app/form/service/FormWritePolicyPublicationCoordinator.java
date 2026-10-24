@@ -5,6 +5,7 @@ import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.entity.FormWritePolicyPublicationStatus;
 import org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateService.BindingWork;
 import org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationStateService.PreparedPolicy;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.service.DnaFormRuntimeService;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,11 @@ public class FormWritePolicyPublicationCoordinator {
     return prepared == null ? null : reconcile(work, prepared);
   }
 
+  /** Releases an acknowledged batch after its response has been persisted, never after an unknown outcome. */
+  public void releaseBatch(final BindingWork work) {
+    state.releaseBatch(work);
+  }
+
   private PreparedPolicy reconcile(final BindingWork work, final PreparedPolicy prepared) {
     if (prepared.status() == FormWritePolicyPublicationStatus.CANCELLING) {
       return cancelTarget(work);
@@ -47,6 +53,11 @@ public class FormWritePolicyPublicationCoordinator {
     try {
       return state.recordResult(work, dna.publishRecordWritePolicy(contexts.current(), prepared.command()));
     } catch (DnaRuntimeException failure) {
+      if (failure.errorCode() == DnaRuntimeErrorCode.RECORD_COMMAND_INVALID) {
+        state.recordDataFailure(work);
+        throw new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT,
+            "Existing data cannot satisfy the frozen calculation definition; cancel and repair before publishing again", failure);
+      }
       // A transport/target failure never releases the durable intent or allocates another version.
       throw new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_FAILED,
           "Form policy publication must be resumed using its original intent", failure);

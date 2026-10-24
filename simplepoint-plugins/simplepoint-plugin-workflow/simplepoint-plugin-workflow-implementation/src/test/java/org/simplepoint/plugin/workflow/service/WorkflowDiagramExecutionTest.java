@@ -20,6 +20,29 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowModels.UpdateDraftComma
  * runtime.
  */
 class WorkflowDiagramExecutionTest extends WorkflowDirectoryFixture {
+  @Test
+  void invalidSchemaElementOrderReturnsDomainValidationWithoutPublishingANewVersion() {
+    String original = BpmnDiagramPolicyTest.xml("", "").trim();
+    String definition = transaction.execute(status -> {
+      var draft = service.createDefinition(new CreateDefinitionCommand("diagramReview", "图形顺序验证", null, null));
+      service.updateDraft(draft.definition().id(), new UpdateDraftCommand(1, "图形顺序验证", null, null, original, null));
+      service.publish(draft.definition().id(), new PublishDefinitionCommand(2, null));
+      return draft.definition().id();
+    });
+    String invalidOrder = original.replace("<bpmn:endEvent", """
+        <bpmn:laneSet id="late_lanes"><bpmn:lane id="late_lane" name="Invalid order">
+          <bpmn:flowNodeRef>review</bpmn:flowNodeRef>
+        </bpmn:lane></bpmn:laneSet><bpmn:endEvent
+        """);
+    transaction.executeWithoutResult(status -> service.updateDraft(definition,
+        new UpdateDraftCommand(2, "图形顺序验证", null, null, invalidOrder, null)));
+    assertThatThrownBy(() -> transaction.execute(status -> service.publish(definition, new PublishDefinitionCommand(3, null))))
+        .isInstanceOfSatisfying(org.simplepoint.plugin.workflow.api.WorkflowException.class,
+            error -> assertThat(error.getCode()).isEqualTo(org.simplepoint.plugin.workflow.api.WorkflowException.Code.VALIDATION));
+    transaction.executeWithoutResult(status -> assertThat(service.version(definition, 1).bpmnXml()).isEqualTo(original));
+    assertThat(engine.getRepositoryService().createProcessDefinitionQuery().processDefinitionKey("diagramReview").count()).isEqualTo(1);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"", "name=\"document\"", "name=\"initiator\""})
   void poolLanesAndDescriptiveArtifactsPublishAndRunThroughThePersonalInbox(String dataName) {

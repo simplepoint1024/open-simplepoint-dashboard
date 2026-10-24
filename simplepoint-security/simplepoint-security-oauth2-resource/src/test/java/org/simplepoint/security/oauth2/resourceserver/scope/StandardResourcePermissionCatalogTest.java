@@ -1,7 +1,9 @@
 package org.simplepoint.security.oauth2.resourceserver.scope;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -21,23 +23,37 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 
 class StandardResourcePermissionCatalogTest {
   @TableQuery({@QueryField("name")})
-  static class Order extends TenantBaseEntityImpl<String> { String name; }
+  static class Order extends TenantBaseEntityImpl<String> {
+    String name;
+  }
+
   static class Orders extends BaseController<BaseService<Order, String>, Order, String> {
-    Orders() { super(mock(BaseService.class)); }
-    @GetMapping @PreAuthorize("hasAuthority('example.orders.view')")
+    Orders() {
+      super(mock(BaseService.class));
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('example.orders.view')")
     public void list() {}
   }
 
   @Test
   void discoversAnUnlistedStandardPageAndUsesItForInheritedSchema() throws Exception {
-    var scopes = new ClasspathResourceScopeRegistry(Map.of("example.orders.view", Set.of(ResourceScopeType.TENANT)),
-        Map.of("example.orders.view", "example.orders.view"));
+    var scopes =
+        new ClasspathResourceScopeRegistry(
+            Map.of("example.orders.view", Set.of(ResourceScopeType.TENANT)),
+            Map.of("example.orders.view", "example.orders.view"));
     var controller = new Orders();
     var mapping = mock(RequestMappingHandlerMapping.class);
-    when(mapping.getHandlerMethods()).thenReturn(Map.of(RequestMappingInfo.paths("/orders").build(),
-        new HandlerMethod(controller, "list")));
+    when(mapping.getHandlerMethods())
+        .thenReturn(
+            Map.of(
+                RequestMappingInfo.paths("/orders").build(),
+                new HandlerMethod(controller, "list")));
     var beans = new StaticListableBeanFactory(Map.of("mapping", mapping));
-    var catalog = new StandardResourcePermissionCatalog(beans.getBeanProvider(RequestMappingHandlerMapping.class), scopes);
+    var catalog =
+        new StandardResourcePermissionCatalog(
+            beans.getBeanProvider(RequestMappingHandlerMapping.class), scopes);
     var model = catalog.entries().get("example.orders.view");
     assertThat(model.data()).isTrue();
     assertThat(model.fieldModels()).containsExactly(Order.class.getName());
@@ -49,13 +65,15 @@ class StandardResourcePermissionCatalogTest {
     var context = new org.simplepoint.core.AuthorizationContext();
     context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
     context.setResources(Set.of("example.orders.view"));
-    org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+    org.simplepoint.core.RequestContextHolder.setContext(
+        org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     try {
       assertThat(interceptor.preHandle(request, response, handler)).isTrue();
       assertThat(ResourcePolicyContext.get()).isEqualTo("example.orders.view");
     } finally {
       interceptor.afterCompletion(request, response, handler, null);
-      org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+      org.simplepoint.core.RequestContextHolder.clearContext(
+          org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     }
     assertThat(ResourcePolicyContext.get()).isNull();
   }

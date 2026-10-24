@@ -1,0 +1,714 @@
+{
+  "date": "2026-10-21",
+  "scope": "Root protocol routing, reusable MCP gateway, optional storage HTTP and complete Common UI resource contribution",
+  "reports": {
+    "simplepoint-services/simplepoint-service-common": [
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest",
+        "timestamp": "2026-10-21T09:45:54",
+        "sha256": "ff8e34763a7bd3cc72ca6f871195d4cca9658e6a6e428d42f6edb405d9ecb09a"
+      },
+      {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:45:54",
+        "sha256": "9e307b07082cf086b46a4dd9a922541013e614f5c5114f3b4cddc0644742b564"
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.CurrentDirectoryHttpTest",
+        "timestamp": "2026-10-21T09:46:08",
+        "sha256": "0ebad0f93d4c0d2b8b854ab9277f89af4aff7e2535f716c1a1e29cb812213279"
+      },
+      {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+        "timestamp": "2026-10-21T09:46:09",
+        "sha256": "b75eccd8f9676d57bb58dbc737a65960800b1045f9a984ee3f502b3d54e4eb15"
+      },
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+        "timestamp": "2026-10-21T09:46:15",
+        "sha256": "261e70365a1d083ec44d9195afb3bc3bf294f30d1ab2c68bae43c1bacd8e0838"
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.DictionaryWriteHttpTest",
+        "timestamp": "2026-10-21T09:46:25",
+        "sha256": "b08416c9a7c1a729d4b5544cf09c9ae6dc50f609fa6fa3a072b9164d03885f62"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest",
+        "timestamp": "2026-10-21T09:46:26",
+        "sha256": "dc3885ba1fd7a9066bf907ba84fde0a4ea9599c371d755f178984eb72caedd83"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest",
+        "timestamp": "2026-10-21T09:46:27",
+        "sha256": "357ac8f9fd5967df36cc75dc4a4da10ac0a348d322ed28c2bbcffbd1e1cafac8"
+      },
+      {
+        "tests": 38,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+        "timestamp": "2026-10-21T09:46:27",
+        "sha256": "3250b3fd34985e69c98d1750021cea6cb9cc8bde8fce0ef302a5489be6b66ee5"
+      },
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.I18nTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:46:31",
+        "sha256": "adf4295587aa18d4c3e09d38d4fd5b0013aea20c184e6b9de342bef14e41a463"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.MultipartUploadLimitTest",
+        "timestamp": "2026-10-21T09:46:32",
+        "sha256": "bc753bdc9c5c95d246f308d638da44e059b668ca2c7b78147f8d281969d35dde"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest",
+        "timestamp": "2026-10-21T09:46:34",
+        "sha256": "8e24b15797b8c36ccd7e2f6340371ee16dfbcf056b7b6cf867866acfabf3927f"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest",
+        "timestamp": "2026-10-21T09:46:37",
+        "sha256": "df02a93ae1fbeb9a0f3f05ed2bb12b9d3818acb25a35770a4d5e1f4c8267bd57"
+      },
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.OrganizationSelectionHttpTest",
+        "timestamp": "2026-10-21T09:46:40",
+        "sha256": "00cd30b3c35847eea4e9e82a19b71e72f496e75488d51a56e2e909250a3fb55a"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+        "timestamp": "2026-10-21T09:46:44",
+        "sha256": "edb715ceee403e526bbc6e6e3518c4e4bd6a27364082ff7b3a0d9fcc2a37697f"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PersonalNotificationHttpAssemblyTest",
+        "timestamp": "2026-10-21T09:46:46",
+        "sha256": "90537e32a633765ac2f1da5e783b01dceed9da493d1fb9659884d0793fbe6d49"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PlatformAccountBindingTest",
+        "timestamp": "2026-10-21T09:46:51",
+        "sha256": "3f4470f206c226ab4068997601be1d5674cc992df89617af77257d16804413da"
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest",
+        "timestamp": "2026-10-21T09:46:51",
+        "sha256": "7c61e5b97b0ba120cec17ad8dd6f3a4dc87cd98c6d79a1e4d5b1b39b0241d51a"
+      },
+      {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "timestamp": "2026-10-21T09:46:57",
+        "sha256": "63cca9b2be5fa682d6de78519f20f85631c944789a46d86462dd1cc98e3ff880"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+        "timestamp": "2026-10-21T09:47:21",
+        "sha256": "6e24e57f6b15643edbef56b213f698cf842cca6e3b2d8c2c359dbad596fee112"
+      },
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest",
+        "timestamp": "2026-10-21T09:47:21",
+        "sha256": "b4472563ea79bd58fdda20fcc2f71b6a260c7aaccc3aeec43949a655d420c55a"
+      },
+      {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.StorageTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:47:24",
+        "sha256": "3c42975f5cefa5621932e1d6d8bec64c46365e1f0c3011de28fc847c7bee00f1"
+      },
+      {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+        "timestamp": "2026-10-21T09:47:27",
+        "sha256": "e446121a6da902d5a419495df48ddab087a859d64b61a4d4e6d36e684cf0ffc5"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest",
+        "timestamp": "2026-10-21T09:47:30",
+        "sha256": "6a2f4a6de7e706ffb2b2270b62e901136c761aadfa354589c38be1740d2075da"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantDirectoryHttpTest",
+        "timestamp": "2026-10-21T09:47:31",
+        "sha256": "a4bd6bf448a89b40cec0cc3e7689ddfde6a0e81f9bb9cdc99a55ce57037029e9"
+      },
+      {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantMemberQueryHttpTest",
+        "timestamp": "2026-10-21T09:47:36",
+        "sha256": "1e09320206bd9be64aecefbb7aa2afee2f3664034efd36b9a39be793c6443c6b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+        "timestamp": "2026-10-21T09:47:40",
+        "sha256": "eb71b09303625b2681447d79b8cf4f365d70230540b7f8465f54560f7f200d10"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest",
+        "timestamp": "2026-10-21T09:47:40",
+        "sha256": "138d6be8ee33fccfaf0a57303543edb9994679c8919c3a0f03bac26da49e5416"
+      },
+      {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.UserPickerHttpTest",
+        "timestamp": "2026-10-21T09:47:43",
+        "sha256": "e472f3cbc7eb6caefb3cb34ef0d5a87d296dedfb1c892c05889c026c6978fefa"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.UserPictureAuthorizationTest",
+        "timestamp": "2026-10-21T09:47:46",
+        "sha256": "2061cc0be4063e3fa002a0ec1e3f82f6aecfaef44672401e16d72a18a32aa346"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.UserPictureHttpTest",
+        "timestamp": "2026-10-21T09:47:49",
+        "sha256": "7a5ef290ad90c3319e7416db4b6ff8bb44a206df9a10fd8e68b34aa5dec4b6cd"
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest",
+        "timestamp": "2026-10-21T09:47:55",
+        "sha256": "8f9b04c0186b4f6c9dac2164aacb4e3b4e67fbde6d9becbdb1f3ba6ae34ffbbc"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.i18n.CommonI18nMessagesTest",
+        "timestamp": "2026-10-21T09:47:57",
+        "sha256": "787c6807458f61cbdc837fb52fddc133897ad36ca0b827f764bd08805b03988b"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest",
+        "timestamp": "2026-10-21T09:47:57",
+        "sha256": "e63cc3d10dc5bf436dce701635b6c13e76596ac701725a7ad9e494ce4b6bdc67"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest",
+        "timestamp": "2026-10-21T09:47:57",
+        "sha256": "1e5e2d260cd2269df57dd58149b989be9e5e2a71ab65a11b230dafd476c1b6ff"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-common-ui": [
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.common.ui.CommonUiResourceInitializationTest",
+        "timestamp": "2026-10-21T09:44:42",
+        "sha256": "20ee6a0017ddb5ca2994cf0550016ebcf04022994278e3dbe43a4b777c80b48e"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http": [
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.storage.http.StorageHttpCompositionTest",
+        "timestamp": "2026-10-21T09:44:41",
+        "sha256": "47d8ea9bca4711020ada0ee53591d920a476351a157802631d6587e96fbcded4"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway": [
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.client.DefaultRemoteMcpGatewayOperationsTest",
+        "timestamp": "2026-10-21T09:43:33",
+        "sha256": "89b49ec355f8b97fa62ec0411df0151d5cf6130977211572cdad3410d50180b4"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.client.McpEndpointPolicyTest",
+        "timestamp": "2026-10-21T09:43:37",
+        "sha256": "658c1d0df778fc48e131595712439cf77d4c5fb3fbf359f849c576f2c08cd9af"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.client.McpOauthProxySelectorTest",
+        "timestamp": "2026-10-21T09:43:37",
+        "sha256": "6b5c57f324be60e6006e44f6db1b389b64802e775d8de4e7be887d47bc3b9b1e"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.client.RemoteMcpOauthClientTest",
+        "timestamp": "2026-10-21T09:43:37",
+        "sha256": "253eea23f72b2d2c9593935ed71152ee3241ad23069dae6342090175f22f0166"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.event.McpProgressRelayTest",
+        "timestamp": "2026-10-21T09:43:38",
+        "sha256": "3d1b62c74dc8c70b349bd84072eaba5ce53a1d577f995f7ddcd00fb106183e7b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.module.McpGatewayCompositionTest",
+        "timestamp": "2026-10-21T09:43:38",
+        "sha256": "66ee4d1fa38d319d804f5f343f74023ecf680edb05d8258b4273c5a7e019bf15"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.module.McpGatewaySecurityCompositionTest",
+        "timestamp": "2026-10-21T09:43:41",
+        "sha256": "903a725acff4589d03690550449ca39bc11f3689f0869b542c4508926f6ab75c"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.publication.McpPublicationDispatcherServletTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "17247cecc3ec73d68af2006f43b29ece4d9590e73572cbaeca311140184344f5"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.publication.McpTaskProtocolHandlerTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "b6f14b9a065aeecc385cdc6a322c44c2ff99c8ab7d1ea171437af241a2041012"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.rest.McpGatewayExceptionHandlerTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "5620d81e42aad8e2118fd0c36f44e02c1d1a4d2fb8e218cad8b4c4f0dd493d87"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.rest.McpProtectedResourceMetadataControllerTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "c4121e121edfc4b7a3b79a419d0cd53eda13f2e237089a1a76801d99706c5624"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.security.McpOauthClientMetadataDocumentTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "72cf120856e31dcc609de6c457e7277d65c9c11fbab2da1886e0a01128ac75ef"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.mcp.gateway.security.McpPublicationAuthorizationFilterTest",
+        "timestamp": "2026-10-21T09:43:42",
+        "sha256": "beecd8140c02632d25a14c945077a03e614f7e0e45f73885dc0150f6c995bf0d"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-http-servlet": [
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.ModuleHttpAssemblyTest",
+        "timestamp": "2026-10-21T09:43:31",
+        "sha256": "7f99f0ab11a5f3278991de29a0d55d6c4cff2f8777a80d1481e9b28dac64fe2e"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.ModuleHttpPathsTest",
+        "timestamp": "2026-10-21T09:43:35",
+        "sha256": "79d140adae5b849917f4bbe9864af71da7cd66724861d015969fadb7187bcb81"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.ProtocolModuleHttpTest",
+        "timestamp": "2026-10-21T09:43:35",
+        "sha256": "894eef0f25d7f63da11fe7674d3e4565fa40316a791f35347333540a3a0626d5"
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.http.servlet.SharedModuleHttpTest",
+        "timestamp": "2026-10-21T09:43:35",
+        "sha256": "1d6a817af4c2d03d9021d4135980413cf0ff152ab751e68517ea674f32a396d3"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition": [
+      {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleCatalogTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "a015ec061533ca99c214d1cb1707b473b87ee042e3b3c7e22b926db81fef37dc"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleDefaultsTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "126e37e70e91374774e64dd57f72736fa49c71acf06cab851daa6c6ca743ac83"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleDictionaryPlanTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "fe6d4757c466c4a8af086db8bb18c0caa08f78726345aa1ddb29ff8b7a7b7261"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleHttpPlanTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "0565f8342e7872616b21967246d760869a084373e62154d7b863dfe860a439f8"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleHttpRoutesTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "9d32159474186bb885e9dc1fb92e285916f42ef08df27228371526d6fd16f653"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleResourcePlanTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "f707476f29b7b0c11955e45b9743b9b99f7013c8c992869510a63a9c2375db05"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.ModuleResourcesTest",
+        "timestamp": "2026-10-21T09:40:11",
+        "sha256": "5fc449487a7e37ff89732d2a5175526e4e0b82425711646f231f85ddb0bbb2a4"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition-verification": [
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+        "timestamp": "2026-10-21T09:44:46",
+        "sha256": "121f738ebf9044eeda9cc62a32e9709959c658daa1ab6646b6764c40c721041c"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+        "timestamp": "2026-10-21T09:44:43",
+        "sha256": "953fe45f20c8ba71d22bbb9cf1c7cf041d91e535d3c80545f709ae1cdb02bd58"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+        "timestamp": "2026-10-21T09:44:59",
+        "sha256": "d901c8ddeace75baa5e8a4d64657689a549447d12c6b73a8c25c3feb2a63c952"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 505,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceSha256": {
+    "gradle/module-boundaries.gradle.kts": "e9e896d1a6de5e0752d19bab48a861f8bfaaa75675459e8d7edd515417ae5d74",
+    "settings.gradle.kts": "f75dbfb55d56633bc3dce527a173417c849d6f28162a0fe699bba2c09ff87682",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "a41360708c5033288ee93255ed389532c1c1bc6710a6fc0443f2bbc411373972",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttp.java": "93fe8b7d95a0658616649c3cc5d3e0554bea28c75e42fe2675495e316425ff66",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttpPlan.java": "2a4afec32f4d444e7dfdf4ef662ccd5ddbf95b7811c8576412bc255e4f989359",
+    "simplepoint-platform/simplepoint-platform-composition/src/test/java/org/simplepoint/platform/composition/ModuleHttpPlanTest.java": "d3afdec75ea453ef51fde66a966af45be52a22cacca8b027e2b9a160c71c1409",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ControllerHttpRoutes.java": "0f43cad1c4e1fd2f81b9d7480305768e0ee923d856881fec2247e8d5ccc56b2f",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/HttpRoutePaths.java": "67a7677c325da930f6886f5bbb1c3494df112a2b0050809db62fdfdfe3972f25",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpAutoConfiguration.java": "b122a54d36094e5b20bf1bfd1d07820889f413f2ddd93ab5f33c545a221d6a47",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/main/java/org/simplepoint/platform/http/servlet/ModuleHttpPaths.java": "716ab5628f2d3f821399558455747168d011185d6b5fff6fcf8361623768f9b3",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/http/fixture/protocol/ProtocolModule.java": "41dd7ca6d3d99c5d3a0f4030c6abc9d3f0962e373159d1bdd20d515e13e1ebdc",
+    "simplepoint-platform/simplepoint-platform-http-servlet/src/test/java/org/simplepoint/platform/http/servlet/ProtocolModuleHttpTest.java": "e9ed4522ff4e8e6527ff4866d67329588c23ad40c7ae73220690d4939bc10cb9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/client/DefaultRemoteMcpGatewayOperations.java": "edcbc99eb4ec6465ddbb7bf211b65d3b2a92a328a57522121fccaffed0637201",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/client/McpEndpointPolicy.java": "d55cc669f6fcecbb09d8b44c755ebc74430939c58b2dcbfc8fc369a876bffa63",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/client/McpOauthProxySelector.java": "a69147566d49dd4f8569a99ea8e4f71cc4c76a8c0adab00f07992385e9fc8b95",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/client/RemoteMcpOauthClient.java": "676f79539c834394e1ac7de38814f204127827d2b8db934ababe6080029cc815",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/client/RuntimeMcpTlsClient.java": "6d68b4b7cde4ec8895e45290ca3e7fa9533ee73061909b9c27936e07940aa43d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/config/McpGatewayConfiguration.java": "6024db3b9dbd85f77eee64801a0d6b63a8c4b98dab519d3399ab73c553ff7506",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/config/McpGatewayProperties.java": "204700ef76535781929bfa1d302c730a05462e62c22bf31040abe10a3ca51ed9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/event/McpCancellationRegistry.java": "404b809aea390663f3ab8b26ad8f6d461f459a34ce26270aaa6e618abf13abde",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/event/McpGatewayClusterEvent.java": "80e173367c066ab3d966593ee33056bfc9fb612a8097d8d708e0f4c71642dad2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/event/McpGatewayClusterEventBus.java": "3fb25aa07b113647986843e3a52feed82de4e0c978ff0230db39f03e4840fdb8",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/event/McpProgressRelay.java": "8529d905386e5bad148de8cb07fcd9e8288178fc53f248153ef41c3e21ed5414",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/event/McpUpstreamEventCoordinator.java": "93ccc7d40e1d2610a399107acf745e2df56c5619016b82a7c80280e23c7272b8",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/module/McpGatewayHttpRoutes.java": "167b00f1e0996bc6b3ab6fad538ed6b31cadab3cf6827d46db2a386515ebf0c1",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/module/McpGatewayModule.java": "699b6023f96c6d92ce76584380ac1070934e49439a1a1252dcd285f60d911d09",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/publication/McpPublicationControlPlaneClient.java": "ba5c048230a8f4c7cd72abb2ce4339bb1cc5a31de1372753f8c7461b8f0b35c5",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/publication/McpPublicationDispatcherServlet.java": "62bc571a4dc9c05912e287d3c6ffaa297b6799b4961949afe64125381e34faeb",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/publication/McpPublicationRateLimiter.java": "b3ed71f2285be1817d79f06376f49b8d5b8f9252286888fbfe35250750391a77",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/publication/McpPublicationRegistry.java": "bf617b2fef316876e5e3d1eb0195d20bdd783360395aa48852f0b485533161f1",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/publication/McpTaskProtocolHandler.java": "2c2132252d1fee5d7a0ba3e91b2346ec34e7092ef2831294f3fb7990a589f3f2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/rest/McpGatewayExceptionHandler.java": "be637a6d09851f42ad3387cee839c45953d4057c4d1521654124ad3c69e0a8e0",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/rest/McpGatewayInternalController.java": "c2a7b90094dd40da8d8dbd25239519b59f5f9480910afa98e36b2db6788defd3",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/rest/McpOauthClientMetadataController.java": "3eea79f6aea27bef5dc5a9e98a08a376a305fe77dd2fd4f5f5275947b8797c1c",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/rest/McpProtectedResourceMetadataController.java": "2396f96f25b90ae277cb83f224275a0766130331046f3c136a83f02eed71522a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/security/InternalTokenAuthenticationFilter.java": "11c326aa7610eac22f01629cff0def92543877c91861af28ce2b0da4cd034f18",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/security/McpGatewaySecurityConfiguration.java": "88f3c0adbd3da23f33a1479cc7b61f59b95421c101d49659f9d16a8dfd5c4e7c",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/security/McpOauthClientMetadataDocument.java": "9d6a98090fab21e2ba76c101486a688ae719a740ffd8a5669ae781517b97bb67",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/security/McpPublicationAuthorizationFilter.java": "a34fd34711ccee7450cde6004c152c68d53bad34645dfd50167b5d2360e33a0e",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/client/DefaultRemoteMcpGatewayOperationsTest.java": "eecc90d44c493deb17a9857bdc20327244a265eec8dfc23151165e26e7f845f2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/client/McpEndpointPolicyTest.java": "dd741a8e6a4d7a13f49806c64bb324c34e7f798120001bb34d010fd7b12df8a6",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/client/McpOauthProxySelectorTest.java": "892b6fa3905c8ccb4d975e2b0337e80ec73e8d72e40752bb2964cf97cf4d1a25",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/client/RemoteMcpOauthClientTest.java": "f60f3c81a54797b81943bb01fe17d999fae6e62a7ed84fd705123a383ccd770d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/event/McpProgressRelayTest.java": "5615c8dfde8c178618df5465c3e125ffb57c6538aef470405c2e2a7fba2684b2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/module/McpGatewayCompositionTest.java": "7df11d8f2d7008b9ac30806cb4f5c0bd6f9f50e5e734954703e758cb69f1abd2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/module/McpGatewaySecurityCompositionTest.java": "eb76027df94ecce55467f179f0e70a8b1352a9033ee3d6fc78ae771e6034300a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/publication/McpPublicationDispatcherServletTest.java": "550d50ce6aa568f00c7e818e0052ceda7bbc3db05b29d9fe2072e6b9f0a5952e",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/publication/McpTaskProtocolHandlerTest.java": "e62f18304359e58aa6bea5631ce072490f3a80d35dc010acfc5f9ab6fa898b38",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/rest/McpGatewayExceptionHandlerTest.java": "73e38db6ed0f7db5218211c31a10066c4f2f4f05706fb45776a5c012df249c77",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/rest/McpProtectedResourceMetadataControllerTest.java": "572c9452965109ce6355216d6d418b65e6e8d17253eaebdb0daf4c4caf7915bc",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/security/McpOauthClientMetadataDocumentTest.java": "41c8c75e1f5ce9db686560804a47e529f67dfdfee58ef50a32d562579f33e83d",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/test/java/org/simplepoint/mcp/gateway/security/McpPublicationAuthorizationFilterTest.java": "22b78a71d18ca68c7e99d2017da86321ac25ed0f2bceb3758d86927e803aa1a0",
+    "simplepoint-plugins/simplepoint-plugin-common-ui/src/main/java/org/simplepoint/plugin/common/ui/CommonUiModule.java": "3d85739d18acc8748ffc8640c21caf4f74f53d494c254ad57c64225dda064db2",
+    "simplepoint-plugins/simplepoint-plugin-common-ui/src/test/java/org/simplepoint/plugin/common/ui/CommonUiResourceInitializationTest.java": "964a5614cf14bb85bf7eb9e75d6333c1c6f0a99a84860508d5a35b3de04de9f2",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/main/java/org/simplepoint/plugin/storage/http/StorageHttpModule.java": "a1f18c6a0eccb4a4a627c213922e8cbda6ea6d532ecaac8a7dc6ca0aa2dbb7cc",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/main/java/org/simplepoint/plugin/storage/rest/controller/ObjectStorageAdminController.java": "6df5db3e7b4c442722475e5f588fbf0b2541f60d430f6888e5ade25d9435f7be",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/main/java/org/simplepoint/plugin/storage/rest/controller/ObjectStorageServiceController.java": "60fb0a7e97c7b137b35db53ceb12ada840585944279f8bf96cc992f4d874d689",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/main/java/org/simplepoint/plugin/storage/rest/controller/ObjectStorageSourceController.java": "220cb17e246152af331a6c5d30f6c1269c9eb5c73c91b024c8d202ed06d5f5d8",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/test/java/org/simplepoint/plugin/storage/http/StorageHttpCompositionTest.java": "f250f150f77416f13f2878d2e0764c558ac5bc807d7ee233b80478a8b1973af4",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java": "38cd7cd71e0c98533413cdfc7034112c2dd5dc00ccfd7ee5cf80e261359de97e",
+    "simplepoint-react/scripts/personal-platform.test.mjs": "5b14375123d87d8d7d2b266500cecf2a9dcbe88959fd10d78424b133adcbc839"
+  },
+  "artifacts": {
+    "common": {
+      "jars": 333,
+      "classes": {
+        "org/simplepoint/plugin/common/ui/CommonUiModule.class": [
+          "simplepoint-plugin-common-ui.jar"
+        ],
+        "org/simplepoint/plugin/storage/rest/controller/ObjectStorageAdminController.class": [
+          "simplepoint-plugin-storage-http.jar"
+        ]
+      },
+      "frontend": [
+        {
+          "jar": "simplepoint-service-common.jar",
+          "files": 373,
+          "sha256": "d2273015131697c8a2a44182fc83eb03b60fdf975d29b1f1ddc7e34a4c5bad9a"
+        }
+      ]
+    },
+    "mcp-gateway": {
+      "jars": 184,
+      "classes": {
+        "org/simplepoint/mcp/gateway/module/McpGatewayModule.class": [
+          "simplepoint-plugin-ai-mcp-gateway.jar"
+        ],
+        "org/simplepoint/mcp/gateway/rest/McpGatewayInternalController.class": [
+          "simplepoint-plugin-ai-mcp-gateway.jar"
+        ]
+      },
+      "frontend": []
+    }
+  },
+  "frontendTests": {
+    "tests": 5,
+    "failures": 0
+  },
+  "validation": [
+    "MCP full existing protocol tests and new actual MVC/security chain/context-path internal credential tests",
+    "Root namespaces reject unbounded routes and overlap; actual MVC and gateway plans preserve RFC metadata URLs",
+    "MCP decoder is chain-private; exception advice stays within owned controllers",
+    "Common full existing H2/HTTP suite; storage HTTP route parity; actual complete resources/i18n preparation and request scopes",
+    "All owned controllers require HTTP declarations; 33-module graph, repository/persistence ownership checks",
+    "Common frontend-enabled installDist and asset gate; MCP standalone distribution; scoped zero-warning Checkstyle and module boundaries"
+  ],
+  "limitations": [
+    "Common UI resource snapshot requires all current Common HTTP contributors locally so permission descriptors are complete; splitting their resource snapshot requires explicit ownership migration or an authenticated descriptor contribution contract",
+    "No live standalone deployment or three-topology business acceptance yet",
+    "Running microservices unchanged"
+  ]
+}

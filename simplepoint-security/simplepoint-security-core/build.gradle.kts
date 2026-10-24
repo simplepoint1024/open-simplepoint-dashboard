@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
     implementation(project(":simplepoint-core"))
     implementation(project(":simplepoint-remoting:simplepoint-remoting-core"))
     implementation(project(":simplepoint-cache:simplepoint-cache-core"))

@@ -1,3 +1,4 @@
+import {localizeSchemaTitles} from '@simplepoint/shared/i18n/localizedSchema';
 import {validateBusinessPatterns} from '../../shared/validation/businessPattern';
 import {Form, Widgets, Templates} from "@rjsf/antd";
 import {FormProps} from "@rjsf/core";
@@ -7,7 +8,7 @@ import "./index.css";
 import validator from "@rjsf/validator-ajv8";
 import {RJSFValidationError, SubmitButtonProps} from "@rjsf/utils";
 import {forwardRef, lazy, memo, Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentType} from "react";
-import type {WidgetProps} from "@rjsf/utils";
+import type {FieldProps, WidgetProps} from "@rjsf/utils";
 import type {BaseInputTemplateProps, FieldTemplateProps} from '@rjsf/utils';
 import {useI18n} from "@simplepoint/shared/hooks/useI18n";
 import {dateFormValue} from './dateValue';
@@ -22,6 +23,8 @@ import {submitButtonState} from './submitButton';
 import {localizeValidationErrors} from '../../shared/validation/messages';
 import {displayOnlyProjection} from './displayOnly';
 import DisplayValue from './fields/DisplayValue';
+const LazyLocalizedTextField = lazy(() => import('./fields/LocalizedTextField'));
+const LocalizedTextField = (props: FieldProps) => <Suspense fallback={<Spin size="small"/>}><LazyLocalizedTextField {...props}/></Suspense>;
 import {schemaUi, mergeUiSchema} from './schemaUi';
 
 // Keep optional widget dependencies out of forms which do not use them.
@@ -88,7 +91,7 @@ const formTemplates = {
   BaseInputTemplate: ValidatedBaseInput,
   // RJSF assumes custom fields own their labels. DisplayValue uses the platform field layout.
   FieldTemplate: (props: FieldTemplateProps) => <DefaultFieldTemplate {...props}
-    displayLabel={props.schema['x-display-only'] === true ? true : props.displayLabel}/>,
+    displayLabel={props.uiSchema?.['ui:label'] === false ? false : props.schema['x-display-only'] === true || props.schema['x-localized'] ? true : props.displayLabel}/>,
   ButtonTemplates: {
     SubmitButton: CustomSubmitButton
   },
@@ -129,7 +132,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
   const lastFailures = useRef<RJSFValidationError[]>([]);
   const lastTranslator = useRef(t);
   const {schema: sourceSchema, uiSchema: sourceUiSchema, validate, customValidate, transformErrors: customTransformErrors, hideSubmit, submitLoading, submitDisabled, onBeforeSubmit, ...rest} = props as any;
-  const {schema, uiSchema} = useMemo(() => displayOnlyProjection(sourceSchema, sourceUiSchema), [sourceSchema, sourceUiSchema]);
+  const {schema, uiSchema} = useMemo(() => displayOnlyProjection(localizeSchemaTitles(sourceSchema, locale), sourceUiSchema), [sourceSchema, sourceUiSchema, locale]);
   useEffect(() => {void ensure(['common', ...(props.i18nNamespaces ?? [])]);}, [ensure, locale, props.i18nNamespaces]);
   useEffect(() => {
     const changed = lastTranslator.current !== t;
@@ -232,7 +235,7 @@ const SForm = forwardRef<SFormHandle, SFormProps>(function SForm(props, ref) {
       showErrorList={false}
       transformErrors={transformErrors}
       templates={mergedTemplates}
-      fields={{...rest.fields, DisplayValue}}
+      fields={{...rest.fields, DisplayValue, LocalizedText: LocalizedTextField}}
       widgets={resolvedWidgets as any}
     />
   );

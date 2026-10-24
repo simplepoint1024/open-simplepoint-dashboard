@@ -1,0 +1,168 @@
+{
+  "verifiedAt": "2026-10-17T17:32:19.503927+00:00",
+  "phase": "P3 control metadata and target maintenance serialization",
+  "passed": true,
+  "deployed": false,
+  "wholeGoalComplete": false,
+  "totalTests": 247,
+  "modules": [
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api",
+      "tests": 40,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": {
+        "TEST-org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventTest.xml": "8cd8a8371d4d8d24f88ec403e25177890520418d7973d111a18404d7ab9a853e",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContextTest.xml": "bccec57148974cac301c688f10327cd6962968073368b1fefbcd1b6f3d211dc8",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.dialect.DialectCapabilityDescriptorTest.xml": "f157031269f537343ea402a1b9e1788a0ad4cbb2dd3dc39128731164f55c33dc",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorDecoderTest.xml": "5f8c5068ff2e0a4ee0d8d49633e5cca3d7c607ae4929d24c8cc5940019eddb66",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelTransitionsTest.xml": "8bfd6e821e3e1eb95f64e6b2fcaabdffffec765f702bc6633112d15881bcbb55",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinitionTest.xml": "44ef3724bcfe0945f3717bbb2f7a09c6aa1b8956aca8a086d0cb5c11c25a4065",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCompletenessQueryTest.xml": "2fb5c9bde6d975bfdbbe83ceac8b9d17b3eb820691456c68878a7eb102f500aa",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommandTest.xml": "5652e9e4b500a7feb588c5ede4f905693740580c0f02c4ae5d0eeb186900e539",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModelTest.xml": "6ca53e368e63376d51c2a2aa1d3f32613c5021802bd4425bf46caf509169db05",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionTest.xml": "633656075da8b9f9e793dc34ebde59cde7b62e93e26696da2218005907a5bb63",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyProgressTest.xml": "b87cda510450101f464a352ff8f8448bbf4aa9c64a62a480947765044e026b9c",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationTest.xml": "e75b15b5c13a7825f2f3a6747d67a509b706ef3efd2858e2bf89a6a21ec1e5c5",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyVersionTest.xml": "52eb60a5d24c35ed6465bca81fe59ab3737ccd334d49d2e8c5f7b127ce77f3d4",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValuesTest.xml": "3555d12150c09e91fc600700e1b6df40d6e50022b30bd0c1cc82482419959227",
+        "TEST-org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinitionTest.xml": "1dbeab7409f68c2886713fbd1b3dd7e5228db21aafc90bc71662bd6a86304200"
+      }
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
+      "tests": 166,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": {
+        "TEST-org.simplepoint.plugin.dna.runtime.configuration.DnaRuntimeAssemblyTest.xml": "2927bfa3f69e54c829304f0f5112ade7519174e725826bb2cf4e4085849f6f5b",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.impl.PhysicalModelServiceDatabaseTest.xml": "c8e5dd94caba86c2cd86cf0c949b1757e2a235a063edc73e10aa90a5a647e400",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.impl.PhysicalResourceProjectionDatabaseTest.xml": "123dd723e704e6b619250c19babdeee4daa5dc77c7b6a9d5cacfcb783bbe647f",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationServiceImplTest.xml": "49b4296de2bd78023d5b8657c27f755fea36e91f779ae3d7d065381eb2e63fb3",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateServiceTest.xml": "34b0c9d4ed22e29725474e5367c25f9fbde2951d1bf24c28196bb24de9eda5b9",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest.xml": "f597a9758c85ad8e1f72475e33cd051e08e5442e68e6d7fa9875e07a5c20c1fa",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordServiceDatabaseTest.xml": "5ddc767fbcd6deebf31ee9eeca3755576486473ff2268aec67a144043308a213",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordAdmissionControllerTest.xml": "da2fcd163b0e8f5d12e862ad007ca55b89d2e7b621982a4d736584b5519a530a",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationAccessTest.xml": "88765c18968b1f918f50e911a4cb35a8329b8b7bf1d6321179db6170e863e645",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest.xml": "e995f8e3b75915407840db8dff333794e5f1504fbaa6424f3b8c88715191ef4c",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationConstraintsTest.xml": "6a5c5aaade5e212b37f6564b418a3938b2a08f043b257e5d8587a2eaafe7fb80",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationEvaluatorTest.xml": "c9d60485cbd16090f9a28bf5afb890737acff807c5475a7fc5b5e7410df6db32",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationGuardTest.xml": "4698136b156f5d56a7aa0cd74ba6dacc9b8a7cd23d07e0cf8d9147b1a79c84f3",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationStoreTest.xml": "5b859b7cfc51ba5c5f3c27ccfe02d00294c8ebbeda99b90d2321147b708211c6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCompletenessDatabaseTest.xml": "b85a093cd4a418cd53eb443fc8d1b00440662e250c66b5d9722b6c028604e28b",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCreateCoordinatorTest.xml": "63bf0b3f29df600f524b43b1311607240d68d9f61be31d9027cda4bb6e723c35",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCreateReceiptStoreTest.xml": "930c1dce08bd8ae438b5ddd33413688935014abe8f5d267fe4c08cc3bc6ad683",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordInspectionServiceTest.xml": "9b5b164c1e111877fd3bd1a7076ef94baa365c14970570ecafd5bbb3fe829013",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest.xml": "888245281500010cf69dbce36da98f0c2c0114e8485ad06531044596f1c4b0b8",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceDatabaseTest.xml": "2f5049197db744628707b7d1ee38167e8fa59d78ca2912a4de31f7a85c90c07f",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest.xml": "29fc6ef0de70c62c538701ecccea885907de535c0747288cbfa0790e2716f94e",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationCheckpointTest.xml": "41b477163cd9062f13d4566c305eb871a2a5d8a8894c4c1cc6efb2c0288ce20e",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchCompilerTest.xml": "b04f2760873b1d9a2984c231d46ecae9fa675fec587de28fd72c0e6c1e7d51c5",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchDatabaseTest.xml": "33e25139d669a81c283ca7079871ce8d63b83d25a967731192e9fb70339d7555",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStagesTest.xml": "7499f8a595458fa8762d70a867cc13bef9a73152e4dd7f6dcdf5c0a7500fdfe6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationStoreTest.xml": "8c4cec46e2e41af718e7a4e23e1d8d1f2d7ce2a28dd8dea26019eaa498b0d952",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordReadSessionTest.xml": "16ee1217a9d2c70a9266b7505e4d1c15ffbffc02e1540ef6d4e03c2f1e6701a6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest.xml": "9254371bf902828a0c8d6fa809d5346eb8eeb0c02b8ba7904b0d3b9677449ac3",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordResourceFenceTest.xml": "b564feaf7c1a24624dd74074a6a0f4340711abe6f7672d44ccfe5b018a4d3da6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSchemaCompatibilityTest.xml": "23485843d21b3800a1c5e5f3665a8df16e1fefce5c590e8963d7f1085c8c3c77",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordServicesDatabaseTest.xml": "55c714b3c92ab07715e0688a3f7be4f20e192e9dd05e0d21f85aa4ddb436292f",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSnapshotStoreTest.xml": "f508ba2d568fc7a3d5b26572c6dbfcd7293ed8328dc97a55c0b8d6acf7d09bd6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerCalculatedValuesTest.xml": "e0c16f6482ffb0882a456645d1905d800906639ebe92a36df86b8805e786b8ce",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest.xml": "11744a1b762a0e4ba04c7f2cb0a4aea3721a6f32d0d3bc446893187972472d24",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordTemporalDatabaseTest.xml": "a183050bcb6ebdff5aece39feeda471910ae1b52fbef91fcdf3c4b3d751c439d",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordViolationResultTest.xml": "a438702b9ce4007322ad454a6e24ea926e756b4f096f5c7895e606a94faaa3d6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest.xml": "9216f1a9103d15ce9bb31496cf03bdf2e62292e7eb85fc3a66bbaa020f2a63e7",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendDatabaseIntegrationTest.xml": "5017a4fb1d2508b34f558b48b257bfa2ba6e9c9ccaf67eb14f5b580c9c8af04f",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendTest.xml": "f9e5b6970e26f698a52d965bfb3d6acbac42a43e9a8762f3a82eead4c2c904f6",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeJdbcConnectionTest.xml": "ea1c064467281b1215d8398f515efe1a733e261fb3f4b5bc5b2eddc47fbe95c0",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeRecordModelResolverTest.xml": "fe0db74b81c7d7d2e708a2b577fb70eacd7d32b2a71dfdabd13e54abdcc16c23",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeCallerGuardTest.xml": "becd949fdacb1d5b369f988781d4e95f646e87f1b6b5386da075f24cc7532159",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.remote.DnaFormRuntimeServiceImplTest.xml": "32abc13c49d12d8c4788b11c792995272342ed3ccb067b34a4dd62adb10d8a72",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.schema.MysqlRuntimeSchemaDialectTest.xml": "55bc85b4a272cd738b416081e068b41fcb27bb4ce6215471f5e389961e240a90",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotCodecTest.xml": "a2bbbeb1e33e6d3174a2b22abb8cb181ba2b1b3a8158c53b7320d9d399840eb5",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialectIntegrationTest.xml": "f640ac53f79f6c0ef538c2bcbd4e44ef3c6bf4a89b8eca2da11f93e8be817239",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.support.DefaultDialectCapabilityResolverTest.xml": "ffdd2bbb145e4a853e5ba631d6d0d543c30774f0af8fa2feaa0733a7497fd188",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.support.PhysicalPlacementSupportTest.xml": "6b92111e092cc9c295b469499c485b8344bc646009bd6de19e2d2f86e647f0b9",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaValidatorTest.xml": "0579292eafa114116824263c18bd72afb8e1862120e01d4497fa1bf3731d7bf7",
+        "TEST-org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverterTest.xml": "dfdd2d00c95504c6ff53958db90e006aab1055fb8c1e414a77c12663ba2d5b36"
+      }
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-dna",
+      "tests": 41,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": {
+        "TEST-org.simplepoint.dna.model.controller.DnaDataModelControllerHttpTest.xml": "165bad3541d6c8032f4a1562835205e3da573424f7bff2fe178fb4c0a1e2c034",
+        "TEST-org.simplepoint.dna.model.service.DnaDataModelCatalogTest.xml": "174a139ce9568f8b7a34a09c3b502d931aea67a5a4287c6ce718f1d5cf3fd006",
+        "TEST-org.simplepoint.dna.runtime.RuntimeCalciteConfigurationTest.xml": "68cb82982dfb096c32204f84bf6808515dc1c0e1e652b506de4c902ed27ef44c",
+        "TEST-org.simplepoint.dna.runtime.RuntimeExceptionHandlerTest.xml": "e58cdc4e73daf2449db401621fd1881a51816c7a396018f544a9fd18b68827dc",
+        "TEST-org.simplepoint.dna.runtime.RuntimeGovernanceCatalogTest.xml": "d38fbdfa7b6167e78045d18ed31345ba1394e01ef71d1a7a3d8909750f687bba",
+        "TEST-org.simplepoint.dna.runtime.RuntimeRecordControllerHttpTest.xml": "3cd58beef272f0311c64dcaaf83c71ada58ad1c316997d042cff3c3ca43d9436",
+        "TEST-org.simplepoint.dna.server.DnaTableQueryHttpTest.xml": "bf90d297ee03d2a129d81838bf9246ed08a61990dc6cb0934dd199e9dce9cdd6"
+      }
+    }
+  ],
+  "checkstyle": {
+    "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation",
+    "violations": 0,
+    "reportSha256": "669a3a9224b09a91b5920772be21602cfe9f46cfcb5c9ac418f86405841063fe"
+  },
+  "databases": {
+    "control": "PostgreSQL 17, separate temporary schemas",
+    "targets": [
+      "PostgreSQL 17",
+      "MySQL 8.4"
+    ],
+    "containersRemoved": true
+  },
+  "checks": [
+    "New RecordMaintenanceControl requires a joined control transaction, tenant-scoped live entities and model write locks. It expands child scopes to their immutable roots and locks the union in stable order; a child-only lock is insufficient.",
+    "Model version creation, new owned-model registration, schema publication claim/retry, resource bind/unbind/project and resource-offline processing now check the durable target maintenance journal while holding their control model locks.",
+    "Resource projection changes lock both existing and requested model associations, including their roots. The existing resource-before-model ordering is retained; publication acquires no resource locks after model locks.",
+    "Real PostgreSQL control transactions combined with each real target database prove that management committing DRAFT first prevents the waiting publication from entering its target callback.",
+    "The converse race holds publication model locks through a real target journal commit. An injected control rollback after that commit does not erase maintenance ownership: waiting version creation and later management mutations are refused by the durable journal.",
+    "Resource binding/projection/unbinding, child version creation, new child registration, schema claim/retry and offline processing are refused during maintenance. Blocked operations leave model revisions, schema migration execution tokens and resource bindings unchanged.",
+    "Offline processing emits no completion event when maintenance prevents the local effect. After cancellation is committed in the target transaction under the same control fence, replay of the handler retires its binding and emits completion; ordinary model version creation also resumes.",
+    "Full DNA API/implementation/service regression passes with zero skipped tests, including existing production control schema migration/projection contention tests. Main implementation Checkstyle passes."
+  ],
+  "correctedFindings": [
+    {
+      "defect": "Checking target maintenance without holding a shared control-side model serialization boundary would permit a new maintenance claim between the check and metadata commit.",
+      "fix": "Management and publication now acquire the same model/root write locks before accessing the target. The publication callback retains control locks through target commit."
+    },
+    {
+      "defect": "Locking only the requested child permits metadata changes outside the root publication lock; resource replacement could miss old model associations.",
+      "fix": "Expand immutable owners and all old/new resource associations before acquiring sorted model locks; require the owning root lock during inspection."
+    },
+    {
+      "defect": "A pessimistically locked entity query compared an already-loaded stale JPA version before a later refresh could run. Real concurrent tests raised OptimisticLockException instead of re-evaluating the new model state.",
+      "fix": "Resolve the tenant model, then acquire the write lock through EntityManager.refresh itself and recheck ownership/live state. Both real control/target combinations now evaluate refreshed state."
+    }
+  ],
+  "limitations": [
+    "The production batch worker is not connected yet. Tests invoke the actual control fence with explicit target journal transactions and cancellation; this is not full APP formula publication, scheduling or activation acceptance.",
+    "The event-handler scenario uses a mock EventPublisher to assert absence/presence of completion; it does not replace a real outbox/inbox/broker lifecycle test. Maintenance failures continue through the existing bounded retry/dead-event replay infrastructure. Long maintenance and delayed cross-page lifecycle messages remain B5 acceptance work.",
+    "The existing metadata-only unit/H2/resource tests use RecordMaintenanceTestControl to isolate target availability; the new PostgreSQL-control/real-target tests exercise the actual guard and service entry points.",
+    "This batch is not deployed; current DNA remains 20261018-publication-journal1. Target stage storage, patch fixes and ordinary admission from preceding batches also remain undeployed. Formal formula publication is still guarded.",
+    "The 176 final acceptance entries remain incomplete; unrelated tenant implementation Checkstyle findings remain outstanding."
+  ],
+  "sourceFilesSha256": {
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordMaintenanceControl.java": "15077fed23ec3af429fcf90f249d3a30dfba373dc041cdced7476f86478771fd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordPublicationControlFence.java": "18f3a7b550d9f476462819636dea8ae388f44f3c81eb3cf0f16b6312c84c7d97",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RuntimeCalciteRecordBackend.java": "9d19ec20003967fb954d679e7df58cbfc9f54bf11b9046467c2d46918c1b8d48",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalModelServiceImpl.java": "ce72b476f960f4273427ddbf77905761b15d696feaf0d9c8d7b6042448aea99a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/impl/SchemaPublicationStateService.java": "fff52269cac666eff0f3b077e1e4c26a8c2559655355b7844e5f6f1dc34ea61a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalModelResourceStateService.java": "22a4b892466f816b545c39e9357a725e047cec7d2c7065ec4c09cc024829b082",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalResourceOfflineHandler.java": "2f5cbe2f5025e6917415cfc4817a080cb0eb11c1e4ef4e1fd0fc9b38c8d88e9b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordMaintenanceControlDatabaseTest.java": "7e67466547be35651bb864240baf3237ea62eaff1df36d2ad25e5af66f0a7433",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordMaintenanceTestControl.java": "f7dc0ec5bc09767241e0d38128f6a8c1af0a8db8e2d541ef3343adae8d52c31e",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalModelServiceDatabaseTest.java": "34a5ea8b8048d83fde333a004ce58bd892ed5184a977e1e6d235f7fe06f39d54",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/impl/SchemaPublicationStateServiceTest.java": "1b0862a6e53c908a6bbf1d158f3a62d97f2853bd542f744334799b4d3e048f26",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/impl/PhysicalResourceProjectionDatabaseTest.java": "46b0d22bef1c21de9db1d6e01cb3d6011f7809670827e116f0f44b26d56ed4fd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeAssemblyTest.java": "ed4f75a7b019169de60e51ad40e963de1246753af8942e9eb8c9627ceebaf052"
+  }
+}

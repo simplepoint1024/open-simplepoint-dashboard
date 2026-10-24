@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-20",
+  "phase": "G19 local user management isolation; G19/G20 and overall goal remain incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test :simplepoint-security:simplepoint-security-oauth2-server:test :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation:test verifyModuleBoundaries verifyUserBoundaryStyle -I /tmp/simplepoint-user-boundary-checkstyle.gradle -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation",
+      "tests": 168,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+      "tests": 188,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-server",
+      "tests": 96,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation",
+      "tests": 312,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 1146,
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/userBoundary.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/build/reports/checkstyle/userBoundary.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/reports/checkstyle/userBoundary.xml",
+      "violations": 0
+    }
+  ],
+  "scopedStyleFiles": [
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UserManagementService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UsersService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/LegacyUserLookupService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserRemoteBoundaryTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RemoteContractBoundaryTest.java"
+  ],
+  "scopedStyleProcedure": "The init script registers Checkstyle tasks over scopedStyleFiles using each owning project test compile classpath, unchanged repository checkstyle/google_checks.xml and maxWarnings=0. Type-only consumer migrations are compiled and regression-tested; this is not a full-repository style result.",
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "verified": [
+    "UserManagementService is a local persistence interface without a remote contract. UsersServiceImpl no longer implements or publishes the legacy RPC interface.",
+    "35 local production/test consumers migrated, including identity/tenant initialization, user management, authorization context, OAuth password/MFA/profile and Common HTTP tests.",
+    "Legacy security.user:1 exports only loadUserByPhoneOrEmail through a separate adapter; no BaseService inheritance. Actual artifact architecture checks keep its entity result explicitly in the remaining migration inventory.",
+    "Spring router boundary test keeps the local management bean unchanged, resolves a distinct legacy proxy, executes lookup through the dispatcher and confirms the wire response omits password/hash.",
+    "Remote removeAll, authorization lookup, username authentication, role assignment and password-change requests fail and never invoke the local management mock.",
+    "Existing authentication, MFA, authorization, tenant, Common/Authorization and DNA tests pass."
+  ],
+  "limitations": [
+    "The legacy JDBC consumer still compares a password against a serialized User. Its password is deliberately not serialized, so these tests do not prove working cross-service JDBC authentication.",
+    "G20 requires moving credentials into the authentication owner and preserving account checks, input/account attempt budgets, MFA, replay protection, authentication version and durable audit; no password-hash export or simplified comparison API is accepted.",
+    "Router fixture and existing tests do not replace actual OAuth, PostgreSQL, RabbitMQ, frontend or deployed topology acceptance.",
+    "No deployment or standalone service has been delivered in this phase. S1/S2 and later implementation/acceptance stages remain incomplete."
+  ],
+  "sourceSha256": {
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/RemoteContractBoundaryTest.java": "1732dc44da829cd2d74f7457a42626beddaefe72d7a1e3f849217a474310e05b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UserManagementService.java": "dbc0efed4f7bbd0d015be047387b932f2f5a1e9e092460086292219e5a49f8d5",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/UsersService.java": "c352d59de40a06619db2023548e4edc0580ac739525a2503078986b97a356400",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/configuration/UserAutoRegistrationInitializer.java": "41d742776edf7114053fe37948605d79894973f9a793194da0cbb6f50f709568",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImpl.java": "eb25ed8eb772fadf608d4762d571fd3da9efe9c0e08336e34d4ea4ccb4cf9dfe",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/CurrentUserAccessServiceImpl.java": "f8a6131daa3b17079cbe022a128f1f5123a4ccacd6f27d352aac0ff97ff4efe5",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/LegacyUserLookupService.java": "ce21f84b7a9b1575bcee20992c89615ffac091fcc341cabda424053b1e769221",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/PlatformAccountServiceImpl.java": "a4516d39784b7c20442466c7fff8dcb596800bbb31af969ceab6fdd00103315b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/UsersServiceImpl.java": "41c4877a521d0acb446ae4b18293482db14662dec77d7fb4c57f7b3da1fb8f0d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/configuration/UserAutoRegistrationInitializerTest.java": "caccce2768b580550bce32717d465b66e6af87a23791203d146cc0c6a7f9e0b1",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImplTest.java": "73611fcf87cd5714c41f2adb5a5d652b91e27bfed4aea83d2f3b491bb403d831",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/CurrentUserAccessServiceImplTest.java": "6b0c9fc1545e65011d0a4e424be8e26ef257bc82f8e54ee4cea55c4c60a4bd9b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/PlatformAccountDatabaseTest.java": "666f6ad0deac64dd22252acdfdbe3c0b3a108cda1d421e996198c4df10005261",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/UserRemoteBoundaryTest.java": "7d99515b82a45dc145ab26a3e4f23a0763478833beb26faa9e851d028e986fb1",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantServiceImpl.java": "7e691013d80082efc4988c8983c5951373b5330ed0d3c6a4863b8726cbf30fe4",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/BuiltInTenantWorkspaceInitializer.java": "49c63c3c90d408741536d697181bef9775118c19419061ce1db5be85fda31739",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantServiceImplTest.java": "b70aea8fbf74cc3344addf855cef2be41a3ec9b54b4aa059194893913b8e8c44",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/client/ExternalIdentityAccountLinker.java": "edbd172a53e608231731c17e3ba0149f4a3213fe2088fc3f59349fadcbc56634",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/AuthorizationServerConfiguration.java": "8a7bdc17d6cb592fe9b02bad5d2af4021691f1e4629ac23f3f5a83728c681584",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/OidcConfiguration.java": "07d7ae13aa380aeaaf62116646435daaaf85676aa2547f9c881bc165adbd310c",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/RegisterController.java": "f5efb5202cdcea3555e9851e782733eb30098043889d43a4a9f1056884750307",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupController.java": "7849449f56c35185bdba4f95092d309d0a6187dc0c36999fc6a6e5cfa4a25517",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/expansion/oidc/AbstractOidcUserInfoAuthentication.java": "1e3a8b76c1802f7d09dcf1e3829fa5773134d1c92ba2a2c0bd6542edc7ba00da",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/handler/LoginAuthenticationSuccessHandler.java": "d009fcb8bd299b27e9edeb58ad20ffd89877c18d58328531c02b6f9937a3aacc",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/oidc/OpenidOidcUserInfoAuthentication.java": "6c8f82258e9256d8cbe1b60dec0f8002bee663f01e929dacdb885bcbb9eda87c",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/provider/ProtectedPasswordAuthenticationProvider.java": "1962263d112864992f08f643f76059896c4bf345b9f9ff87a83ffeaf9f6de178",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/MfaVerificationService.java": "3cb2788a01b7309b6e1027b7ba9a935a8b4ce8b7873537e9bcc918cf95aff5c5",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/client/ExternalIdentityAccountLinkerTest.java": "f7010cf392b2c4eef155604ea711e2d48042ce573086c04740af736d1b55335e",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/AuthenticationBoundaryHttpTest.java": "a69e32d3ab58e1367769ad16e0b899f6f7242c7eb026674c12c06bc88ecdedab",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupControllerTest.java": "d7104b02598427a50a2caddbbea72adc342e87b94a01968dc126e26ae2860787",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/handler/LoginAuthenticationSuccessHandlerTest.java": "686a535a84c34119ffeb81b22a860445841c9384bf7040d0e1e3b7e7d85f3844",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/oidc/OpenidOidcUserInfoAuthenticationTest.java": "e75e0c710a0ff7611e249ec5c6bfea68c6f5713c1c5de0aeae4cb6d7b19f72d3",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/MfaVerificationServiceTest.java": "b9a1907deff868457849a10547136694b4cf1dce64ba3ce3a0f0850048d92732",
+    "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/plugin/rbac/core/rest/controller/UsersController.java": "0d11916b9a67bd58ea2348145fa7848f9da7b0dc1cfaaefadac3caebebd92873",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/CurrentUserAccessHttpTest.java": "23472bf986ffb0e01eea25e4566a039b876dac5b3f3307be6c3bc727b8d9104d",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/OrganizationSelectionHttpTest.java": "563fa334a479ce185b888f3baddc769d03ab2d6fdf8dd61ea162283ed625afe9",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/PlatformAccountQueryHttpTest.java": "4fa7be65ae879d6d53e2c79b1697a5390f687579a4cfc5604634248c3b7543cf",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantUserAssignmentHttpTest.java": "e40f7d7804200210989813247c3aa154f920592ad483ecbc53f944ed7fc955f5",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/UserPictureAuthorizationTest.java": "1c82ce69fef832c62c7f0c64610157a362d8cf97fe565bf71e26bd8bfc014b47",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/UserPictureHttpTest.java": "3ebccb50f7ceae8981a5b5da96ac991b913db2f8a425fddcd47608d4995ed680"
+  }
+}

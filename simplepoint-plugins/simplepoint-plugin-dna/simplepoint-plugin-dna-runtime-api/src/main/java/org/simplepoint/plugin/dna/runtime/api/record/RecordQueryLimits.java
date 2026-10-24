@@ -1,12 +1,14 @@
 package org.simplepoint.plugin.dna.runtime.api.record;
 
+
 import java.util.HashSet;
 import java.util.List;
 
 /** Shared validation budgets for public record queries. */
 final class RecordQueryLimits {
 
-  static final int MAX_PAGE_SIZE = 100;
+  // Transport contract stays independent of platform/framework dependencies.
+  static final int MAX_PAGE_SIZE = 500;
   static final int MAX_FILTER_NODES = 32;
   static final int MAX_FILTER_DEPTH = 4;
 

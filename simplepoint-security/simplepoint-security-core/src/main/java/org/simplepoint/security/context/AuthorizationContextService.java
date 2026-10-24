@@ -10,11 +10,28 @@ import org.simplepoint.remoting.RemoteContract;
  * <p>Implementations provide specific logic for determining authorization information from
  * supplied attributes.
  */
-@RemoteContract(name = "security.authorization-context")
+@RemoteContract(name = "security.authorization-context", errorDecoder = AuthorizationContextErrorDecoder.class)
 public interface AuthorizationContextService {
 
+  /** RPC boundary for version lookup; existing local methods retain Spring Security exceptions. */
+  default Long checkedCurrentVersion(String tenantId) {
+    return AuthorizationContextRejection.capture(() -> currentVersion(tenantId));
+  }
+
+  /** RPC boundary for subject lookup, including disabled/deleted identities. */
+  default Long checkedCurrentSubjectVersion(String userId) {
+    return AuthorizationContextRejection.capture(() -> currentSubjectVersion(userId));
+  }
+
+  /** RPC boundary for policy calculation. No exception class names or submitted identifiers cross it. */
+  default AuthorizationContext checkedCalculate(String tenantId, String userId, String contextId, Map<String, String> attributes) {
+    return AuthorizationContextRejection.capture(() -> calculate(tenantId, userId, contextId, attributes));
+  }
+
   /** Global account version; null disables cache reuse for older providers. */
-  default Long currentSubjectVersion(String userId) { return null; }
+  default Long currentSubjectVersion(String userId) {
+    return null;
+  }
 
   /** Current committed policy version; null disables cache reuse for an unversioned scope. */
   default Long currentVersion(String tenantId) {

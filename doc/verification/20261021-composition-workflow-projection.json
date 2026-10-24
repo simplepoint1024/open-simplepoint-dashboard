@@ -1,0 +1,812 @@
+{
+  "date": "2026-10-21",
+  "recordedAt": "2026-10-20T20:13:15.801037+00:00",
+  "scope": "Workflow-owned staged member-label projection with durable lease, cursor and source observation fencing; no query switch or event scheduling yet",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    {
+      "command": "./gradlew -I /tmp/simplepoint-workflow-projection-checkstyle.gradle verifyWorkflowProjectionStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-implementation:test :simplepoint-services:simplepoint-service-workflow:test -Psimplepoint.frontend.skip=true --console=plain",
+      "result": "Final test run: composition 74 and workflow 378 passed; build failed only scoped test style checks; service task subsequently executed separately"
+    },
+    {
+      "command": "./gradlew -I /tmp/simplepoint-workflow-projection-checkstyle.gradle verifyWorkflowProjectionStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:compileTestJava -Psimplepoint.frontend.skip=true --console=plain",
+      "result": "BUILD SUCCESSFUL in 5s; final scoped style and module boundary gates passed; recompilation preserved all 16 affected test class hashes"
+    },
+    {
+      "command": "./gradlew :simplepoint-services:simplepoint-service-workflow:test -Psimplepoint.frontend.skip=true --console=plain",
+      "result": "BUILD SUCCESSFUL in 13s; service test task executed, 13 passed"
+    }
+  ],
+  "totals": {
+    "tests": 465,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "projects": [
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 74,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.AiLegacySchemaContractPostgresTest.xml",
+          "sha256": "84ce3601914552d9ba208e4e015645313c34175f7a79b5d37138a3353a8fb427",
+          "name": "org.simplepoint.platform.composition.verification.AiLegacySchemaContractPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.AiModuleMigrationPostgresTest.xml",
+          "sha256": "5acea714f1e80afcda1eede77aaf84b6a3d610db7df6b2546937723de03d8de0",
+          "name": "org.simplepoint.platform.composition.verification.AiModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest.xml",
+          "sha256": "1bcc84465bf1ad1dab764a8b352cd8525c4696d034fcdfd598adc25cc6375e78",
+          "name": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.AuthenticationStoragePostgresTest.xml",
+          "sha256": "4e2610baa50d09a3b42878fc74bafa8eadf5f3d504097ba9c13078e0727fd0a8",
+          "name": "org.simplepoint.platform.composition.verification.AuthenticationStoragePostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest.xml",
+          "sha256": "90aa1092bce981a32153ee515dd0cf973d4bc56ae1263000fc8c07f4bc65aa2e",
+          "name": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.EventModuleMigrationPostgresTest.xml",
+          "sha256": "ecc5a0c53e71c67e96728ef3270d2c99ee688a3b03e94db02fba6fae27256ebe",
+          "name": "org.simplepoint.platform.composition.verification.EventModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.ExternalIdentityBindingPostgresTest.xml",
+          "sha256": "0b492bd06b6f03e81ae7ee5e64f7b90cc2e5f35632589cea61195a10b73ca934",
+          "name": "org.simplepoint.platform.composition.verification.ExternalIdentityBindingPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.FlowableNativeMigrationPostgresTest.xml",
+          "sha256": "54c08646155876269168c505d9740b025db195454e5761ecceed26ae33de463e",
+          "name": "org.simplepoint.platform.composition.verification.FlowableNativeMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.IdentityLabelsStoragePostgresTest.xml",
+          "sha256": "e126c8e601a428274b64e8f53369fc0d7d26d8dd237972264fe8239cfbaea1c6",
+          "name": "org.simplepoint.platform.composition.verification.IdentityLabelsStoragePostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest.xml",
+          "sha256": "2073815af876065875b2cd9d97d378049fbcc17b58e2b1f0223ca7178e846155",
+          "name": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.MemberLabelDirectoryPostgresTest.xml",
+          "sha256": "3bd0e13dab67f8a50297861ecb5338157fe99dea4fc171bd4a6c986b0f3c0716",
+          "name": "org.simplepoint.platform.composition.verification.MemberLabelDirectoryPostgresTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.OidcClientMigrationPostgresTest.xml",
+          "sha256": "4b0bde12d47d9c61da2ffee508825668054cb04aa320dbbc6be83dc597928f7b",
+          "name": "org.simplepoint.platform.composition.verification.OidcClientMigrationPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest.xml",
+          "sha256": "f5f1fefb455138a994a712a6df62338cc17ec1aea18b10ba6cf08fee63eccd12",
+          "name": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedInitializationTest.xml",
+          "sha256": "7138d2252822523a8f81af766e09272cc4fed522604548faae973e6cd1603028",
+          "name": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+          "sha256": "e30244540ef21d675595237b1a5c39b5094c411e0970ac9f03174ecfaa4efaf0",
+          "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+          "sha256": "7e117f5dcb8335d9ce033fab4c3a736fead0b5fd22874eb48e0cddd4f1f30dfa",
+          "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+          "sha256": "b516fea2bb40c77afe31a4a7f45c8d9c98a239a8642378a063c499d9096e5fd2",
+          "name": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+          "sha256": "60dfdc5ea0ff3046647bb6cfd497e0b666b14f460deb160acbfacd7a4110afc5",
+          "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest.xml",
+          "sha256": "beae2956ce665b2e5b94586416cee83f008f23889ca3da536f24b25337ac6c63",
+          "name": "org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.WorkflowEngineStoragePostgresTest.xml",
+          "sha256": "799ce70faeee8d42f8bd3906d1be89fbaca5cc4ee3103bde9306dd995be90720",
+          "name": "org.simplepoint.platform.composition.verification.WorkflowEngineStoragePostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.WorkflowMemberLabelProjectionPostgresTest.xml",
+          "sha256": "13cb9a66fb954b5f6f502f8ccd7bbb8383960c9312e7b8ea9e348096862f8480",
+          "name": "org.simplepoint.platform.composition.verification.WorkflowMemberLabelProjectionPostgresTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest.xml",
+          "sha256": "db4078e14ad87d2294a9bca39aa3eca3f46ac186557633bdf23461081b709a32",
+          "name": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-implementation",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 378,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.config.ModularWorkflowEngineConfigurationTest.xml",
+          "sha256": "645d520d7dee0d245f4753bb35abda2ec5c324eb3a3a29c5edab8dfe6f315a18",
+          "name": "org.simplepoint.plugin.workflow.config.ModularWorkflowEngineConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.directory.WorkflowMemberLabelPropertiesTest.xml",
+          "sha256": "d643518d4f94142005ff393d3ecc8adfedfff5dc3acdbd03619abaed601b2815",
+          "name": "org.simplepoint.plugin.workflow.directory.WorkflowMemberLabelPropertiesTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDefinitionValidatorTest.xml",
+          "sha256": "21f3d5ce5ba4c4d8c089f8f2e8404ea6435704f80059c2793689cf5c60a64a47",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnDefinitionValidatorTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDiagramCompilationTest.xml",
+          "sha256": "a00751cc930dd22c849310fc9e871cbaca81ffb301d611c663c2059bf88bbd65",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnDiagramCompilationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDiagramPolicyTest.xml",
+          "sha256": "7606e60d7137c369c97452eab5ef03145d7aa94f0534106fc22f5abe89b4915f",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnDiagramPolicyTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnExecutionSurfaceTest.xml",
+          "sha256": "cb26aff001006f62f0d6fc5348861709d0b1cad6f412d7bb92c72e1aea7fe5f8",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnExecutionSurfaceTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnMultiInstancePolicyTest.xml",
+          "sha256": "7358c41d392fd25dd374109f3f7304d1ba53bcdbafb3a5ed58b3ae78d7f70e2a",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnMultiInstancePolicyTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnStandardLoopPolicyTest.xml",
+          "sha256": "0a2ef3a23ebd7a20e1c02d3c9aa1ac6e64839702e7d92a2089ef1d381e842f6d",
+          "name": "org.simplepoint.plugin.workflow.service.BpmnStandardLoopPolicyTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.ExactWorkflowExpressionFactoryTest.xml",
+          "sha256": "109e1053952b9ea073b02e39aca238fd1676c0385a53215e419cf4b9c3ab96ed",
+          "name": "org.simplepoint.plugin.workflow.service.ExactWorkflowExpressionFactoryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowApplicationFormEngineTest.xml",
+          "sha256": "ed1facea76c88730c20de8970b942b9b6d08f40dbac60a59b9bac459effa03f8",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowApplicationFormEngineTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowAssignmentTransactionTest.xml",
+          "sha256": "b02bc60b7b0a343862997501fe79d170c6dc010d679dba84bb1f0b0052097abf",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowAssignmentTransactionTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowAuditTrailTest.xml",
+          "sha256": "827f6e73ed53a66fbf77212b334ef2c4c7bfad277e0f4429b9963dc91532a929",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowAuditTrailTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowBusinessRuntimeServiceTest.xml",
+          "sha256": "43a4b5f7ac380ec53f4ec5600b66d31d164f8a750bdd47709c98789033e92286",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowBusinessRuntimeServiceTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDecimalEngineTest.xml",
+          "sha256": "f00c09bb805580da40f31ebe1051f64cf8b4d76f5fc597d3555654b454a62b4e",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowDecimalEngineTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDefinitionQueriesTest.xml",
+          "sha256": "a229616c6dc89f0bb4d9fc1228c2ad7da6b40556d77cbac162235093284b608c",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowDefinitionQueriesTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDiagramExecutionTest.xml",
+          "sha256": "8bc6982c0b32bbada8a541d7396ca4609d646a8e363932fa0d2c81482d9a322a",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowDiagramExecutionTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDueDateEngineTest.xml",
+          "sha256": "b4dba83ae8d9a2ae14adfc54c1db041cd09782845499cd1c17e65ff765ef715d",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowDueDateEngineTest",
+          "tests": 40,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowEngineSignalsTest.xml",
+          "sha256": "facf6a5074ae90e19bee517482a3658a233200b8aadff648f082dc4f6b74b14e",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowEngineSignalsTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowExpressionIsolationTest.xml",
+          "sha256": "a59628648950e8ef98631f922e9aa085a9f22dbbe0f81ba7e1fb2d6dab560cfa",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowExpressionIsolationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowExpressionLiteralsTest.xml",
+          "sha256": "6ebb266bd9b88e6d8405c97bb29df55424cee2df769b21dc0d3cbe536e17d4d5",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowExpressionLiteralsTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowFormContractsTest.xml",
+          "sha256": "ef935caded62cf0feafcbaab7c7870654ccbb825520ec2b5fa0adc575314ccd9",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowFormContractsTest",
+          "tests": 41,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowInboxQueriesTest.xml",
+          "sha256": "b86ed8098e9bcb68aa5c0e70b79ffca1da22f2762303c1b3f1824b951a33ff5c",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowInboxQueriesTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowLinksTest.xml",
+          "sha256": "94e95fe382a483cf869b138d39890dbe71c09afab4898d46e63954a4278cbdc3",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowLinksTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowMatterQueriesTest.xml",
+          "sha256": "7ecdd0cb58e2aebc80203e3e56f8fbfcc853301083036838ef7eb50b398cd813",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowMatterQueriesTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowModelingExecutionTest.xml",
+          "sha256": "b8dcc6f90ef2cf2b00b1dd38dd208e61dbd1d52a7167efa00abe030c9843503b",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowModelingExecutionTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNotificationDeliveryTest.xml",
+          "sha256": "1411f7632150715dca8e9064d0ec0c9037fff6771e1194f8d369c9a1dd0797b8",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowNotificationDeliveryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNumericIdentityEngineTest.xml",
+          "sha256": "09d892d30e7006687dd6d3e9f9fd826e360cb276284a503296cc36b138ab4cd8",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowNumericIdentityEngineTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNumericLiteralPreviewTest.xml",
+          "sha256": "2bf8783d9b6d5185399f79fcb569d3da2ae04ff6a670dc352a65c8bba1aa1d98",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowNumericLiteralPreviewTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowOperationJournalTest.xml",
+          "sha256": "c03463050a6f1a14b83aeb5956f69244764b13502cdea793853263ec8b869268",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowOperationJournalTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowOverviewQueriesTest.xml",
+          "sha256": "a2f487131960890f705d623aca45e6ddf0908ef495bdc78fd6fbcce7402e68f2",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowOverviewQueriesTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPostgresPlanTest.xml",
+          "sha256": "e961a273a29a7e6b33b5f9ecc3a36b756d58e86850ed2f83e1cf0e9e3f3f8059",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowPostgresPlanTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPriorityEngineTest.xml",
+          "sha256": "9e846366dc675a33d800c7e29fbeebd75c67a0a991d7481e883aa6572d47dfdb",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowPriorityEngineTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPriorityLiteralPreviewTest.xml",
+          "sha256": "470c510776867c266b5b94c52530c4b11ba82a037c3db80d3f63860018c6043c",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowPriorityLiteralPreviewTest",
+          "tests": 29,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowResubmissionTest.xml",
+          "sha256": "e1073cff00132298802d6a963b5a33da2917416c1b8490768227f2329b46a50a",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowResubmissionTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowRuntimeDetailsTest.xml",
+          "sha256": "34fa9914e46d06dfcdc8d3f002746827d6bd491ee1f0b9c81ae5409e18a82071",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowRuntimeDetailsTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowRuntimeLifecycleTest.xml",
+          "sha256": "81fa270cba9225447ffb488159c16907aaa60e35ec89f98e1f8f3401a119a38d",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowRuntimeLifecycleTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowStandardLoopExecutionTest.xml",
+          "sha256": "c2847800ffdddcba4651df0627255e0dec6336ffe72fb2c95f57c59b8559c719",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowStandardLoopExecutionTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowStarterTemplateTest.xml",
+          "sha256": "7392c660ec663e28bc3689ebdd33ab2053f487e6a01e893a8c90f93d9cb1299c",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowStarterTemplateTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowVersionContractTest.xml",
+          "sha256": "a9d6d1c45481f1e28c8cd596ea49b5ac19e4cf85e2146684f6ecb57485dcc5f1",
+          "name": "org.simplepoint.plugin.workflow.service.WorkflowVersionContractTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-services:simplepoint-service-workflow",
+      "scope": "complete test task",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest.xml",
+          "sha256": "ff84707a2107c0e81d86479801200609ea54a45c6ff1592792601dae65057338",
+          "name": "org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowModelingErrorTest.xml",
+          "sha256": "f1aaea702a4e8b40766220faa05a2201261577074a938b412d8cffe180c05a96",
+          "name": "org.simplepoint.workflow.rest.WorkflowModelingErrorTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPersonalHttpTest.xml",
+          "sha256": "38f2c2648c575558065378dc36400c04e5d1e861abace23ffd802fece95c423f",
+          "name": "org.simplepoint.workflow.rest.WorkflowPersonalHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest.xml",
+          "sha256": "f2956aa6b795413772fd06c3f9ea9a4d6fc5a28f0c25d27153ed360eb7295959",
+          "name": "org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "path": "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.server.config.LegacyWorkflowEngineConfigurationTest.xml",
+          "sha256": "002f61b3ebffae8655fd534f62f83694949b7b85181610aa0554fb4aea72dcc7",
+          "name": "org.simplepoint.workflow.server.config.LegacyWorkflowEngineConfigurationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "checkstyle": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/workflowProjection.xml",
+      "sha256": "2a05c6117617292b15b0a47e0e398d3cfd7f9a1643fe081f1dd10ec4391f040a",
+      "files": 5,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/reports/checkstyle/workflowProjection.xml",
+      "sha256": "93a4cfe4d61aaba666e2edaf0dda210e70eaf7f79fcc8521e816839eb4eb8f31",
+      "files": 6,
+      "violations": 0
+    }
+  ],
+  "moduleBoundaryGate": "verifyModuleBoundaries passed after final changes",
+  "testStyleBytecodeProof": {
+    "classesChecked": 16,
+    "changedClasses": [],
+    "testedClassSha256": {
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$5.class": "eff811c5b09b9c4e43987c29bd698c93727ebf3de11beb1a840223414c36b52e",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$6.class": "b7c98c0af09a13435982d0a81401894424a577d79bd99c1a1c42214011c15fe9",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$DirectoryWrapper.class": "349c8ee708dee7142b2d056354be019fd9dc8c8fa19a86e1a84c7cd16243a8a6",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest.class": "c3c3132f19180c1e582c6b88f8e9ec04ec810da0768c2cd8f1f53369b447f93a",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$10.class": "4c2af83bf4dbc7a69315f6e1156558cf870a63ebdfd7fef585c22bd3a4dd1589",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$8.class": "9aa49ab65926f1b19569568027c2b2f1ba8ea6699f73c24da75debe298c2d095",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$1.class": "729f1300d5140f777b5c4327237159eef684ddbe51b3352703bc3225449a19c1",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$Fixture.class": "25ac9a82b6b8a522fa4bb7b4cb1f7bf729fd1a5e0bf8f25f0185ff4cb0938cf4",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$4.class": "e8319e262e1841032f61149960d5e0d3c97162c4394140e59e6f0deff4daa769",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$9.class": "e8e69ee99b385420bf8ba285d075dc6f593ffee6aa0121f2c71c7800b5bad4d0",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$11.class": "2d1cb68c82838b43c10e8c0c9acc30f34048a4d8265c5f64bf41a13ca77922e9",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$3.class": "bede42de6a2dcc4a83a5de331047524ba3d90660e78df77c323c29d2770e650a",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$7.class": "66e2c0ee361e3cec047617da646f7b3e1c462c7876f32b20b5d3d1f74544ca7e",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest$2.class": "de61d5fc318a02f7644f541af0829a99bc18607b5453730d98ee2a8ec13888ad",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/AiModuleMigrationPostgresTest$Persistence.class": "7ffc7c14074e866742da601007605c13e14a8e01e734f010a7fd7d64ed240a8e",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/classes/java/test/org/simplepoint/platform/composition/verification/AiModuleMigrationPostgresTest.class": "036bec6a3d28ed1eeee49875be94e33c415944cf2aae19d7d7ddca265c107b18"
+    },
+    "note": "After passing final tests, only final local declaration and Java text-block indentation were corrected. Recompiled class bytes match those tested exactly."
+  },
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "databaseStateBeforeCleanup": {
+      "image": "sha256:9e6d0dd4e587ae699e45b94302df6707531b3c2fabb7813c3ea33e85bf8c1d78",
+      "oomKilled": false,
+      "databases": {
+        "migration_test": {
+          "serverVersion": "17.11",
+          "remainingTestSchemas": 0,
+          "publicTables": 0
+        },
+        "workflow_test": {
+          "serverVersion": "17.11",
+          "remainingTestSchemas": 0,
+          "publicTables": 0
+        }
+      }
+    },
+    "gates": [
+      "SP_MIGRATIONS_POSTGRES_URL",
+      "SP_MIGRATIONS_POSTGRES_USER",
+      "SP_MIGRATIONS_POSTGRES_PASSWORD",
+      "WORKFLOW_TEST_POSTGRES",
+      "WORKFLOW_TEST_POSTGRES_URL",
+      "WORKFLOW_TEST_POSTGRES_USER",
+      "WORKFLOW_TEST_POSTGRES_PASSWORD"
+    ],
+    "topology": "One dedicated PostgreSQL 17.11 instance with separate test databases and isolated owned schemas; H2 legacy unit scenarios retained"
+  },
+  "verifiedScenarios": [
+    "Actual identity directory and workflow-owned JDBC/transaction storage, shared and split; identity marked primary without redirecting workflow writes",
+    "403-member rebuild spans bounded slices and new coordinator instances; no active partial generation",
+    "Rename, disabled membership and deleted tenant replace complete sets and clean old rows",
+    "PostgreSQL repeatable-read connection retains complete old names while another transaction activates and deletes old rows",
+    "Live lease contention and expired lease takeover; stale worker append/activate rejected and stale release/abandon cannot modify successor",
+    "Batch write failure rolls back new rows and cursor together; another process resumes without duplicates",
+    "Completed staging after worker death activates without fetching another page",
+    "Transport failure retains committed pages and releases lease",
+    "Source mutation between pages and at final fence discards staging without overwriting active generation",
+    "Observation watermark remains after staging discard; same-epoch regressed source is rejected, including final confirmation",
+    "Foreign tenant response and duplicate IDs across pages fail before replacing active generation",
+    "Build page budget and local concurrency are bounded; calls inside an existing workflow transaction fail before source I/O",
+    "Tracked workflow V1-to-V2 installation preserves existing definition data; complete migration catalog includes 177 owned tables",
+    "Automatic configuration binding supplies bounded defaults and rejects invalid limits"
+  ],
+  "correctedFindings": [
+    "Old combined APP/workflow migration assertion assumed every owner had one version; updated only workflow expected count to two",
+    "Missing Javadocs and test variable-distance/text-block indentation style findings corrected",
+    "Review identified that suspending caller transactions retains physical resources; rebuild uses PROPAGATION_NEVER before source I/O",
+    "Review identified that clearing staging could erase the latest observed source version; added independent durable watermark plus regression cases"
+  ],
+  "cleanup": {
+    "container": "simplepoint-workflow-projection-20261021",
+    "containerAndAnonymousVolumesRemoved": true,
+    "absenceRechecked": true,
+    "temporaryCredentialFileRemoved": true,
+    "remainingDisposableSchemasBeforeRemoval": 0,
+    "remainingPublicTablesBeforeRemoval": 0,
+    "businessDatabasesModified": false
+  },
+  "limits": [
+    "WorkflowReadSql.MEMBERS still joins identity tables. List SQL, source-fenced query transactions, cross-page filter/sort/count equivalence and current-data error UX remain incomplete",
+    "No background scheduler or MQ synchronization was added; advance is an explicit bounded work slice. READY only describes a complete projection, not source freshness or authorization",
+    "Projection tests call actual owned source/provider in-process with test service identity and fault decorators; they do not verify deployed HTTP, OAuth acquisition or RabbitMQ",
+    "Source revisions are global; high directory churn can force repeated rebuilds. Load/performance acceptance and scheduling backoff remain required",
+    "Work timeout is checked between steps; in-flight calls obey the platform RPC deadline. No new global timeout guarantee is claimed",
+    "Same-epoch source regression is fenced; controlled backup recovery, epoch rotation and full restore operations remain to be implemented",
+    "Database upgrade proof covers tracked V1, not adoption of untracked legacy databases",
+    "No frontend change, deployment, commit or push; standalone and full topology goal remain incomplete"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/directory/WorkflowMemberLabelProperties.java": "a7d72639d944317a4362da877a3ae61e449bcfffe3dfe988edba0b7ebb316ddb",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/directory/WorkflowMemberLabelException.java": "55a0c8b37c80241dfd583bea0f044a7b44a954a865ccc5fa966d620a5c9a4998",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/directory/WorkflowMemberLabelProjection.java": "faf3bde651f2e97a5916896f72590f84851eced13fa6c63cabeb383119ba910f",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/directory/WorkflowMemberLabelStore.java": "9fa1ef7dbfed9b6668893be2338384b419c5d08e33397405a355e5298b016813",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/test/java/org/simplepoint/plugin/workflow/directory/WorkflowMemberLabelPropertiesTest.java": "d4245ca6e72a13836cea1ea9bbbc4b72d3fc14c3d7a39448432a4f0e3356fd15",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java": "1da267d0b05676439ad6d5ec8879927c63d6bb814a5fe76b63c9a2d4d89b1517",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowMemberLabelProjectionPostgresTest.java": "68be6efb3bac704a2986573e7c4ae1e657bd10a854aec574bda26c263a4d173d",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowModuleMigrationPostgresTest.java": "c22e68b6375aa2db220bded193578d98f069186a517b2e79bb65cefe866cef47",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/FlowableNativeMigrationPostgresTest.java": "4576ae1fa2f31c5b1e05367ad6ad6340dd4792e40fb1d70872e96b250737456e",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AiModuleMigrationPostgresTest.java": "b9f8b9e6940ad87749e7c2a2ffef699d50e5efd400a25d161812b41283c091a8",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java": "e9cd27132ba90547ca28cd5c20d89080c1e2150321a0b8ed4ff92a153f6636ca",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/manifest.properties": "7927757b6f929415eb1ad915dcf0d9f9f5df578eead48abb9baa0713fe032c45",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/postgresql/V2__member_label_projection.sql": "dbfcb779cc0b000882ef1eb60f9cfd045558150dc5d4261dee3bf3c53a6da3f1",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/postgresql/V1__workflow_foundation.sql": "6e07531f5f1632a7aea6fcf01b5bf6e2311ff0493973b4d0ed43da25c823dd7a",
+    "AGENTS.md": "ab29f0b61398db2baefa1ba7034e89e7fac0b3c38ed2b6654ef2ffd054d6fb4a",
+    "doc/design/modular_service_composition_plan.md": "c3f8f66303b8ec9a34d83a236910d23bba724e71dc5c05d97d176443df596a1f",
+    "doc/design/workflow_member_label_projection.md": "f14a4a3446f5031d31e6d0d717d2679534cd406db03523bdc3054be9330b00b6",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/README.md": "0e0a81f4de66cc15c0440e103bf27c9fe0fbe9f448d0a4d7e84fb850b264e701"
+  },
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-workflow-projection-targeted.log",
+      "sha256": "a7432ddc18134ec6b326175d6d8f4195ff8bc68c13eadafd0e8626481f5163da"
+    },
+    {
+      "path": "/tmp/simplepoint-workflow-projection-first-full.log",
+      "sha256": "8b1af09359419efea809f5f746d6ad92794167d1006e693447a231ea77be0c05"
+    },
+    {
+      "path": "/tmp/simplepoint-workflow-projection-before-watermark.log",
+      "sha256": "792f60c25284673758ebb02a9e2b256b1a175e22dc4c450b572f669091aac20e"
+    },
+    {
+      "path": "/tmp/simplepoint-workflow-projection-final-tests.log",
+      "sha256": "53258cffd9a4b93e5440f63e7950d2f2d8e76e304a2b5ece73c5b714fef2d184"
+    },
+    {
+      "path": "/tmp/simplepoint-workflow-projection.log",
+      "sha256": "ff8f3d18e8716dd4f21e74314a9d08569a2717bee895b0e7f92fbbed218340a7"
+    },
+    {
+      "path": "/tmp/simplepoint-workflow-projection-service.log",
+      "sha256": "0be9e2e973bce588b01fa64de82a29c4ab3d1dc1d19c0d3f3dbedc1bbe7dabb3"
+    }
+  ]
+}

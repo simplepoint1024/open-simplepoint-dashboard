@@ -17,7 +17,11 @@ import org.simplepoint.plugin.dna.runtime.service.schema.RecordSnapshotSchema;
 /** Immutable, bounded value capture, atomically inserted alongside the metadata-only receipt. */
 final class RecordSnapshotStore {
   private static final ObjectMapper JSON =
-      new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+      new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+          .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
+          .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+          .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+          .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
   private static final int MAX_BYTES = 2 * 1024 * 1024;
   private static final String TABLE = "\"runtime\".\"" + RecordSnapshotSchema.TABLE + "\"";
 
@@ -33,10 +37,12 @@ final class RecordSnapshotStore {
   }
 
   RecordSqlStatement insert(
-      RecordOperationIdentity operation, OwnedRecordView snapshot, Instant at) {
+      RecordOperationIdentity operation, RecordStoredSnapshot snapshot, Instant at) {
     String json;
     try {
-      json = JSON.writeValueAsString(snapshot);
+      // Keep ordinary legacy snapshots readable during a rolling upgrade or rollback.
+      // Any installed definition, including an explicit removal, retains its versioned provenance.
+      json = JSON.writeValueAsString(snapshot.calculationRevision() == 0 ? snapshot.values() : snapshot);
     } catch (JsonProcessingException failure) {
       throw invalid(failure);
     }
@@ -76,11 +82,17 @@ final class RecordSnapshotStore {
         at);
   }
 
-  OwnedRecordView read(RecordOperationIdentity operation, CalciteQueryResult result) {
+  RecordStoredSnapshot read(RecordOperationIdentity operation, CalciteQueryResult result) {
+    if (result.rows().size() > 1) {
+      throw invalid(null);
+    }
     if (result.rows().isEmpty()) {
       return null;
     }
     var row = result.rows().getFirst();
+    if (row.size() != 6) {
+      throw invalid(null);
+    }
     if (!operation.tenantId().equals(row.get(0))
         || !operation.actorId().equals(row.get(1))
         || !operation.modelId().equals(row.get(2))
@@ -95,7 +107,18 @@ final class RecordSnapshotStore {
       throw invalid(null);
     }
     try {
-      return JSON.readValue(json, OwnedRecordView.class);
+      var tree = JSON.readTree(json);
+      if (!tree.isObject()) {
+        throw invalid(null);
+      }
+      if (!tree.has("contractVersion")) {
+        // Legacy publications could not install formulas. Preserve their original values.
+        return RecordStoredSnapshot.capture(JSON.treeToValue(tree, OwnedRecordView.class), null);
+      }
+      if (!tree.has("calculationRevision") || !tree.has("calculationChecksum") || !tree.has("values")) {
+        throw invalid(null);
+      }
+      return JSON.treeToValue(tree, RecordStoredSnapshot.class);
     } catch (JsonProcessingException | IllegalArgumentException failure) {
       throw invalid(failure);
     }

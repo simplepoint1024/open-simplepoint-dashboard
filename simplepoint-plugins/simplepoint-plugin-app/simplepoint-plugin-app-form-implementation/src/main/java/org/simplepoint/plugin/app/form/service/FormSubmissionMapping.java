@@ -3,6 +3,7 @@ package org.simplepoint.plugin.app.form.service;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -10,11 +11,10 @@ import java.util.stream.Collectors;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
-import org.simplepoint.plugin.app.form.api.model.FormFieldType;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.service.PublishedApplicationFormResolver.PublishedApplicationForm;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimeForm;
 
@@ -44,13 +44,11 @@ final class FormSubmissionMapping {
             (fieldId, name) -> {
               var field = fields.get(fieldId);
               var variable = variables.get(name);
-              if (field == null
-                  || !Set.of(FormStorageMode.STORED, FormStorageMode.REFERENCE)
-                      .contains(field.storageMode())
+              if (!FormWorkflowFields.supports(field)
                   || variable == null
                   || !Set.of("start", "both").contains(variable.scope())
                   || !targets.add(name)
-                  || !compatible(field.type(), variable.type())) {
+                  || !FormWorkflowFields.compatible(field.type(), variable.type())) {
                 throw invalid("Invalid or ambiguous form variable mapping: " + fieldId);
               }
               String policy = RecordPermissionModel.access(authority.fieldPermissions(), form.physicalModelId(),
@@ -93,20 +91,30 @@ final class FormSubmissionMapping {
     return java.util.Collections.unmodifiableMap(result);
   }
 
-  static boolean compatible(FormFieldType field, String variable) {
-    return switch (variable) {
-      case "decimal" ->
-          Set.of(FormFieldType.INT32, FormFieldType.INT64, FormFieldType.DECIMAL).contains(field);
-      case "number" -> field == FormFieldType.INT32;
-      case "boolean" -> field == FormFieldType.BOOLEAN;
-      case "date" -> field == FormFieldType.DATE;
-      case "date-time" -> field == FormFieldType.DATETIME;
-      case "user", "role" -> field == FormFieldType.STRING || field == FormFieldType.UUID;
-      case "string" ->
-          Set.of(FormFieldType.STRING, FormFieldType.TEXT, FormFieldType.UUID, FormFieldType.TIME)
-              .contains(field);
-      default -> false;
-    };
+  /** Freezes consumer requirements once; retries must reuse this result from the accepted intent. */
+  static List<RecordSnapshotFieldRequirement> captureRequirements(final PublishedApplicationForm form, final RuntimeForm workflow) {
+    var fields = fields(form);
+    var variables = workflow.formContract().variables().stream()
+        .collect(Collectors.toMap(WorkflowFormContract.Variable::name, Function.identity()));
+    List<RecordSnapshotFieldRequirement> requirements = workflow.binding().variableMappings().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey()).map(entry -> {
+          var field = fields.get(entry.getKey());
+          var variable = variables.get(entry.getValue());
+          if (!FormWorkflowFields.supports(field) || variable == null || !FormWorkflowFields.compatible(field.type(), variable.type())) {
+            throw invalid("Captured process variable mapping is invalid");
+          }
+          Integer maximum = switch (variable.type()) {
+            case "string" -> 4000;
+            case "user", "role" -> 100;
+            case "date", "date-time" -> 40;
+            default -> null;
+          };
+          boolean role = "role".equals(variable.type());
+          return new RecordSnapshotFieldRequirement(field.fieldId(), variable.required(), maximum,
+              "user".equals(variable.type()) ? "[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,99}" : role ? "[^,]*" : null,
+              role, role, role);
+        }).toList();
+    return requirements.isEmpty() ? null : requirements;
   }
 
   private static Map<String, FormFieldDefinition> fields(PublishedApplicationForm form) {

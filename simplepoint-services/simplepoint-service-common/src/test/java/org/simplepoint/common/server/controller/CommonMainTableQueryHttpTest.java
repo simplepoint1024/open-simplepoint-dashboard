@@ -236,8 +236,8 @@ class CommonMainTableQueryHttpTest {
       mvc.perform(query().param("sort", field + ",asc")).andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.code").value("INVALID_QUERY"));
     }
-    mvc.perform(query().param("size", "200")).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3));
-    mvc.perform(query().param("size", "201")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUERY"));
+    mvc.perform(query().param("size", "500")).andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3));
+    mvc.perform(query().param("size", "501")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUERY"));
     for (String permission : List.of("HIDDEN", "MASKED")) {
       var restricted = new AuthorizationContext();
       restricted.setUserId("reader"); restricted.setIsAdministrator(false); restricted.setDataScopeType("NONE");

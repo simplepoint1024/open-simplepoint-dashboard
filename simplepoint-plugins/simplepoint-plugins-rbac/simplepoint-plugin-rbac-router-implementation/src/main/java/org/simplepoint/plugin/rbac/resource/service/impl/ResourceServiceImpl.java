@@ -1,6 +1,5 @@
 package org.simplepoint.plugin.rbac.resource.service.impl;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -18,20 +17,17 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceAncestorRepository;
 import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
 import org.simplepoint.plugin.rbac.resource.api.service.MicroAppService;
 import org.simplepoint.plugin.rbac.resource.api.vo.MicroModuleItemVo;
 import org.simplepoint.plugin.rbac.resource.service.support.ButtonResourceMetadataRegistry;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
+import org.simplepoint.plugin.rbac.resource.service.support.ResourceCatalogWriteBoundary;
+import org.simplepoint.plugin.rbac.resource.service.support.ResourceRegistrationDeployments;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.BuiltInTenantProvisioner;
-import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
-import org.simplepoint.remoting.RemoteProvider;
 import org.simplepoint.security.ResourceDeclaration;
 import org.simplepoint.security.ResourceScopePolicy;
 import org.simplepoint.security.entity.Resource;
@@ -50,23 +46,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Default resource service implementation.
- */
+/** Default resource service implementation. */
 @Slf4j
 @Service
-@RemoteProvider
-public class ResourceServiceImpl
-    extends BaseServiceImpl<ResourceRepository, Resource, String>
+public class ResourceServiceImpl extends BaseServiceImpl<ResourceRepository, Resource, String>
     implements ResourceService {
 
   private final ResourceAncestorRepository resourceAncestorRepository;
   private final MicroAppService microAppService;
-  private final ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider;
-  private final ObjectProvider<TenantRepository> tenantRepositoryProvider;
-  private final ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider;
-  private final ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider;
-  private final ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider;
+  private final org.simplepoint.plugin.rbac.tenant.api.service.PlatformResourceCatalogEffects
+      catalogEffects;
+  private final ObjectProvider<ButtonResourceMetadataRegistry>
+      buttonResourceMetadataRegistryProvider;
   private final ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider;
   private TenantResourceCatalog tenantResourceCatalog;
 
@@ -78,30 +69,62 @@ public class ResourceServiceImpl
   private volatile ServiceResourceRouteResult adminRoutesCache;
   private volatile long adminRoutesCacheExpiry;
 
-  /**
-   * Creates the resource service.
-   */
+  private final jakarta.persistence.EntityManager permissionEntityManager;
+  private final ResourceCatalogWriteBoundary catalogWrites;
+  private final ResourceRegistrationDeployments deployments;
+
+  /** Creates the resource service. */
   public ResourceServiceImpl(
       ResourceRepository repository,
       DetailsProviderService detailsProviderService,
       ResourceAncestorRepository resourceAncestorRepository,
       MicroAppService microAppService,
-      ObjectProvider<TenantPackageRelevanceRepository> tenantPackageRelevanceRepositoryProvider,
-      ObjectProvider<TenantRepository> tenantRepositoryProvider,
-      ObjectProvider<RoleResourceGrantRepository> roleResourceGrantRepositoryProvider,
-      ObjectProvider<ResourceAuthorizationVersionService> resourceAuthorizationVersionServiceProvider,
       ObjectProvider<ButtonResourceMetadataRegistry> buttonResourceMetadataRegistryProvider,
-      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider
-  ) {
+      ObjectProvider<BuiltInTenantProvisioner> builtInTenantProvisionerProvider,
+      final jakarta.persistence.EntityManager permissionEntityManager,
+      ResourceCatalogWriteBoundary catalogWrites,
+      ResourceRegistrationDeployments deployments,
+      org.simplepoint.plugin.rbac.tenant.api.service.PlatformResourceCatalogEffects
+          catalogEffects) {
     super(repository, detailsProviderService);
     this.resourceAncestorRepository = resourceAncestorRepository;
     this.microAppService = microAppService;
-    this.tenantPackageRelevanceRepositoryProvider = tenantPackageRelevanceRepositoryProvider;
-    this.tenantRepositoryProvider = tenantRepositoryProvider;
-    this.roleResourceGrantRepositoryProvider = roleResourceGrantRepositoryProvider;
-    this.resourceAuthorizationVersionServiceProvider = resourceAuthorizationVersionServiceProvider;
+    this.catalogEffects = Objects.requireNonNull(catalogEffects);
     this.buttonResourceMetadataRegistryProvider = buttonResourceMetadataRegistryProvider;
     this.builtInTenantProvisionerProvider = builtInTenantProvisionerProvider;
+    this.permissionEntityManager = permissionEntityManager;
+    this.catalogWrites = Objects.requireNonNull(catalogWrites);
+    this.deployments = Objects.requireNonNull(deployments);
+  }
+
+  @Override
+  public Map<String, Object> schema() {
+    PlatformResourceBoundary.read(getAuthorizationContext());
+    return super.schema();
+  }
+
+  @Override
+  public java.util.Optional<Resource> findById(String id) {
+    PlatformResourceBoundary.read(getAuthorizationContext());
+    return super.findById(id);
+  }
+
+  @Override
+  public List<Resource> findAllByIds(Iterable<String> ids) {
+    PlatformResourceBoundary.read(getAuthorizationContext());
+    return super.findAllByIds(ids);
+  }
+
+  @Override
+  public List<Resource> findAll(Map<String, String> attributes) {
+    PlatformResourceBoundary.read(getAuthorizationContext());
+    return super.findAll(attributes);
+  }
+
+  @Override
+  public <S extends Resource> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
+    PlatformResourceBoundary.read(getAuthorizationContext());
+    return super.limit(attributes, pageable);
   }
 
   @Override
@@ -112,6 +135,20 @@ public class ResourceServiceImpl
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Resource> S create(S entity) {
+    PlatformResourceBoundary.write(getAuthorizationContext(), "resources.create");
+    return createDeclared(entity);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public List<Resource> create(Collection<Resource> entities) {
+    PlatformResourceBoundary.write(getAuthorizationContext(), "resources.create");
+    catalogWrites.enter();
+    return entities.stream().map(this::createDeclared).toList();
+  }
+
+  private <S extends Resource> S createDeclared(S entity) {
+    catalogWrites.enter();
     normalize(entity);
     validateScopeBoundary(entity);
     S saved = super.create(entity);
@@ -123,39 +160,46 @@ public class ResourceServiceImpl
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public <S extends Resource> Resource modifyById(S entity) {
+    PlatformResourceBoundary.write(getAuthorizationContext(), "resources.edit");
+    catalogWrites.enter();
     normalize(entity);
     validateScopeBoundary(entity);
-    Resource current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("资源不存在"));
+    Resource current =
+        findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("资源不存在"));
     String oldCode = current.getCode();
     Resource updated = (Resource) super.modifyById(entity);
     adminRoutesCache = null;
     saveAncestors(updated, true);
-    migrateResourceCode(oldCode, updated.getCode());
+    if (!Objects.equals(oldCode, updated.getCode())) {
+      catalogEffects.renamePlatformCode(oldCode, updated.getCode());
+    }
+    catalogEffects.synchronize(Set.of(updated.getId()));
     return updated;
   }
 
   @Override
   @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
   public void removeByIds(Collection<String> ids) {
+    PlatformResourceBoundary.write(getAuthorizationContext(), "resources.delete");
+    removeCatalogResources(ids);
+  }
+
+  private void removeCatalogResources(Collection<String> ids) {
     if (ids == null || ids.isEmpty()) {
       return;
     }
+    catalogWrites.enter();
     adminRoutesCache = null;
     Set<String> deleteIds = new HashSet<>(ids);
     deleteIds.addAll(resourceAncestorRepository.findChildIdsByAncestorIds(ids));
-    Set<String> deletedCodes = findAllByIds(deleteIds).stream()
-        .map(Resource::getCode)
-        .filter(this::hasText)
-        .collect(Collectors.toSet());
-    var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
-    if (grantRepository != null && !deletedCodes.isEmpty()) {
-      grantRepository.deleteAllByResourceCodes(deletedCodes);
-    }
+    Set<String> deletedCodes =
+        super.findAllByIds(deleteIds).stream()
+            .map(Resource::getCode)
+            .filter(this::hasText)
+            .collect(Collectors.toSet());
+    resourceAncestorRepository.deleteChild(deleteIds);
     super.removeByIds(deleteIds);
-    var refreshService = resourceAuthorizationVersionServiceProvider.getIfAvailable();
-    if (refreshService != null) {
-      refreshService.refreshByResourceCodes(deletedCodes);
-    }
+    catalogEffects.retire(deleteIds, deletedCodes);
   }
 
   @Override
@@ -164,92 +208,124 @@ public class ResourceServiceImpl
     if (declarations == null || declarations.isEmpty()) {
       return;
     }
+    catalogWrites.enter();
+    deployments.requireUnmanaged(owner);
+    applySnapshot(owner, declarations);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void syncRegistered(
+      String owner, Set<ResourceDeclaration> declarations, String verifiedClient) {
+    catalogWrites.enter();
+    deployments.requireRegistration(owner, verifiedClient);
+    if (declarations != null && !declarations.isEmpty()) {
+      applySnapshot(owner, declarations);
+    }
+  }
+
+  private void applySnapshot(String owner, Set<ResourceDeclaration> declarations) {
+    ResourceRegistrationPlan plan =
+        ResourceRegistrationPlan.prepare(
+            owner, declarations, getRepository().loadAll(), this::normalize);
     log.info("Resource sync started for owner: {}", owner);
     adminRoutesCache = null;
-    Map<String, Resource> resourcesByCode = new HashMap<>();
-    Map<String, Resource> resourcesByPath = new HashMap<>();
-    getRepository().loadAll().forEach(resource -> indexResource(resourcesByCode, resourcesByPath, resource));
-    Set<String> synchronizedCodes = new HashSet<>();
-
-    ArrayDeque<DeclarationEntry> queue = new ArrayDeque<>();
-    declarations.forEach(declaration -> queue.add(new DeclarationEntry(declaration, Set.of())));
-    while (!queue.isEmpty()) {
-      DeclarationEntry entry = queue.poll();
-      ResourceDeclaration declaration = entry.declaration();
-      Resource resource = declaration.toResource();
-      Set<ResourceScopeType> declaredScopes = declaration.getScopeTypes();
-      Set<ResourceScopeType> effectiveScopes = declaredScopes == null || declaredScopes.isEmpty()
-          ? (entry.parentScopes().isEmpty()
-              ? ResourceScopePolicy.effectiveScopes(Set.of())
-              : entry.parentScopes())
-          : ResourceScopePolicy.effectiveScopes(declaredScopes);
-      if (!entry.parentScopes().isEmpty()
-          && !ResourceScopePolicy.isValidChild(entry.parentScopes(), effectiveScopes)) {
-        throw new IllegalArgumentException(
-            "Resource scope exceeds parent boundary: " + declaration.getCode()
-        );
-      }
-      resource.setScopeTypes(effectiveScopes);
-      resource.setPluginId(firstNonBlank(resource.getPluginId(), owner));
-      normalize(resource);
-      synchronizedCodes.add(resource.getCode());
-      Resource existing = resolveExisting(resourcesByCode, resourcesByPath, resource);
-      if (existing != null) {
-        final String oldCode = existing.getCode();
-        final String oldPath = existing.getPath();
-        resource.setId(existing.getId());
-        // Shared resource manifests are also published by services without this page's controller.
-        // An absent contract must not erase the owning service's registered enforcement metadata.
-        if (resource.getPermissionMetadata() == null) resource.setPermissionMetadata(existing.getPermissionMetadata());
+    Map<String, Resource> savedByCode = new HashMap<>();
+    var parentChanges =
+        new java.util.LinkedHashMap<
+            String,
+            org.simplepoint.plugin.rbac.tenant.api.service.PlatformResourceCatalogEffects
+                .ParentChange>();
+    for (ResourceRegistrationPlan.Entry entry : plan.entries()) {
+      Resource resource = entry.resource();
+      resource.setParentId(
+          entry.externalParentId() != null
+              ? entry.externalParentId()
+              : entry.parentCode() == null ? null : savedByCode.get(entry.parentCode()).getId());
+      if (entry.existing() != null) {
+        String oldCode = entry.existing().getCode();
+        if (!Objects.equals(entry.existing().getParentId(), resource.getParentId())) {
+          parentChanges.put(
+              entry.existing().getId(),
+              new org.simplepoint.plugin.rbac.tenant.api.service.PlatformResourceCatalogEffects
+                  .ParentChange(entry.existing().getParentId(), resource.getParentId()));
+        }
         resource = getRepository().updateById(resource);
         saveAncestors(resource, true);
-        migrateResourceCode(oldCode, resource.getCode());
         if (!Objects.equals(oldCode, resource.getCode())) {
-          resourcesByCode.remove(oldCode);
-        }
-        if (!Objects.equals(oldPath, resource.getPath())) {
-          resourcesByPath.remove(oldPath);
+          catalogEffects.renamePlatformCode(oldCode, resource.getCode());
         }
       } else {
-        resource = create(resource);
+        resource = createDeclared(resource);
       }
-      indexResource(resourcesByCode, resourcesByPath, resource);
-
-      if (declaration.getChildren() != null && !declaration.getChildren().isEmpty()) {
-        for (ResourceDeclaration child : declaration.getChildren()) {
-          child.setParentId(resource.getId());
-          queue.offer(new DeclarationEntry(child, effectiveScopes));
-        }
-      }
+      savedByCode.put(resource.getCode(), resource);
     }
-    retireUndeclaredResources(owner, synchronizedCodes, resourcesByCode.values());
-    provisionBuiltInTenantResources(owner, synchronizedCodes);
+    retireUndeclaredResources(owner, plan.retiredIds(), plan.codes());
+    catalogEffects.synchronize(
+        savedByCode.values().stream().map(Resource::getId).toList(), parentChanges);
+    provisionBuiltInTenantResources(owner, plan.codes());
     log.info("Resource sync completed for owner: {}", owner);
   }
 
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void removeById(String id) {
+    removeByIds(Set.of(id));
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void removeAll() {
+    PlatformResourceBoundary.write(getAuthorizationContext(), "resources.delete");
+    catalogWrites.enter();
+    removeByIds(getRepository().loadAll().stream().map(Resource::getId).toList());
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+  public void removeByOwner(String owner) {
+    catalogWrites.enter();
+    deployments.requireUnmanaged(owner);
+    var plan =
+        ResourceRegistrationPlan.prepare(
+            owner, Set.of(), getRepository().loadAll(), this::normalize);
+    retireUndeclaredResources(owner, plan.retiredIds(), Set.of());
+  }
+
   private void provisionBuiltInTenantResources(String owner, Set<String> synchronizedCodes) {
-    if (builtInTenantProvisionerProvider == null || synchronizedCodes == null || synchronizedCodes.isEmpty()) {
+    if (builtInTenantProvisionerProvider == null
+        || synchronizedCodes == null
+        || synchronizedCodes.isEmpty()) {
       return;
     }
     BuiltInTenantProvisioner provisioner = builtInTenantProvisionerProvider.getIfAvailable();
     if (provisioner == null) {
       return;
     }
-    List<Resource> synchronizedResources = getRepository().findAllByCodes(synchronizedCodes).stream()
-        .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
-        .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-        .toList();
-    Set<String> tenantCodes = resourceCodesForScope(synchronizedResources, ResourceScopeType.TENANT);
-    Set<String> personalCodes = resourceCodesForScope(synchronizedResources, ResourceScopeType.PERSONAL);
+    List<Resource> synchronizedResources =
+        getRepository().findAllByCodes(synchronizedCodes).stream()
+            // Application membership distributes capabilities, not just role-grantable actions.
+            // Hidden runtime hosts and public endpoints still need explicit tenant entitlements.
+            .filter(
+                resource ->
+                    resource.getType() != null
+                        && resource.getType() != ResourceType.GROUP
+                        && resource.getType() != ResourceType.MODULE)
+            .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
+            .toList();
+    Set<String> tenantCodes =
+        resourceCodesForScope(synchronizedResources, ResourceScopeType.TENANT);
+    Set<String> personalCodes =
+        resourceCodesForScope(synchronizedResources, ResourceScopeType.PERSONAL);
     provisioner.provisionApplicationResources(owner, tenantCodes, personalCodes);
   }
 
   private Set<String> resourceCodesForScope(
-      Collection<Resource> resources,
-      ResourceScopeType scopeType
-  ) {
+      Collection<Resource> resources, ResourceScopeType scopeType) {
     return resources.stream()
-        .filter(resource -> ResourceScopePolicy.effectiveScopes(resource.getScopeTypes()).contains(scopeType))
+        .filter(
+            resource ->
+                ResourceScopePolicy.effectiveScopes(resource.getScopeTypes()).contains(scopeType))
         .map(Resource::getCode)
         .filter(this::hasText)
         .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -262,10 +338,15 @@ public class ResourceServiceImpl
       throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
     }
     String activeTenantId = context.getAttribute("X-Tenant-Id");
-    if (tenantResourceCatalog != null && context.getScopeType() == AuthorizationScopeType.TENANT
-        && hasText(activeTenantId)
-        && tenantResourceCatalog.mode(activeTenantId) == TenantResourceMode.CUSTOM) {
-      return customRoutes(context, activeTenantId);
+    if (context.getScopeType() == AuthorizationScopeType.TENANT
+        || context.getScopeType() == AuthorizationScopeType.PERSONAL) {
+      if (!hasText(activeTenantId) || tenantResourceCatalog == null) {
+        throw new org.springframework.security.access.AccessDeniedException("租户资源目录不可用");
+      }
+      return tenantRoutes(context, activeTenantId);
+    }
+    if (context.getScopeType() != AuthorizationScopeType.PLATFORM || hasText(activeTenantId)) {
+      throw new org.springframework.security.access.AccessDeniedException("工作空间范围不一致");
     }
     if (AuthorizationScopeGuards.isPlatformAdministrator(context)) {
       boolean cacheable = resourceLabelsAreCacheable();
@@ -274,15 +355,14 @@ public class ResourceServiceImpl
         return withScopeContext(cached, context);
       }
       Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
-      ServiceResourceRouteResult result = ServiceResourceRouteResult.of(
-          services,
-          buildResourceTree(
-              directoryQuery().navigation(Set.of(), true),
+      ServiceResourceRouteResult result =
+          ServiceResourceRouteResult.of(
               services,
-              true,
-              loadRemoteEntriesByServiceName()
-          )
-      );
+              buildResourceTree(
+                  directoryQuery().navigation(Set.of(), true),
+                  services,
+                  true,
+                  loadRemoteEntriesByServiceName()));
       if (cacheable) {
         adminRoutesCache = result;
         adminRoutesCacheExpiry = System.currentTimeMillis() + 30_000;
@@ -291,80 +371,63 @@ public class ResourceServiceImpl
     }
 
     Set<String> resourceCodes = normalizeCodes(context.getResources());
-    Set<String> managedCodes = tenantResourceCatalog == null || !hasText(activeTenantId)
-        ? Set.of()
-        : tenantResourceCatalog.managedGrantableCodes(activeTenantId, resourceCodes);
     resourceCodes.addAll(findPublicAccessCodes());
-    resourceCodes.retainAll(filterAccessibleCodes(
-        resourceCodes,
-        context.getScopeType(),
-        Boolean.TRUE.equals(context.getIsAdministrator())
-    ));
-    resourceCodes.addAll(managedCodes);
+    resourceCodes.retainAll(
+        filterAccessibleCodes(
+            resourceCodes,
+            context.getScopeType(),
+            Boolean.TRUE.equals(context.getIsAdministrator())));
     if (resourceCodes.isEmpty()) {
       return withScopeContext(ServiceResourceRouteResult.EMPTY, context);
     }
     List<Resource> resources = new ArrayList<>(directoryQuery().navigation(resourceCodes, false));
-    mergeManagedRoutes(resources, activeTenantId, resourceCodes);
     resources = resources.stream().filter(this::isRouteResource).toList();
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
-    return withScopeContext(ServiceResourceRouteResult.of(
-        services,
-        buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName())
-    ), context);
+    return withScopeContext(
+        ServiceResourceRouteResult.of(
+            services,
+            buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName())),
+        context);
   }
 
-  private ServiceResourceRouteResult customRoutes(AuthorizationContext context, String tenantId) {
+  private ServiceResourceRouteResult tenantRoutes(AuthorizationContext context, String tenantId) {
     Set<String> held = normalizeCodes(context.getResources());
-    Map<String, TenantResource> catalog = new java.util.LinkedHashMap<>();
-    for (TenantResource item : tenantResourceCatalog.navigationResources(tenantId, held)) {
-      catalog.put(item.getId(), item);
-    }
-    for (TenantResource item : tenantResourceCatalog.managedNavigationResources(tenantId, held)) {
-      catalog.put(item.getId(), item);
-    }
     List<Resource> resources = new ArrayList<>();
-    for (TenantResource item : catalog.values()) {
-      Resource resource = tenantRoute(item);
-      if (isRouteResource(resource)) resources.add(resource);
+    Map<String, org.simplepoint.api.locale.LocalizedText> localizedNames = new HashMap<>();
+    ResourceScopeType scope =
+        context.getScopeType() == AuthorizationScopeType.PERSONAL
+            ? ResourceScopeType.PERSONAL
+            : ResourceScopeType.TENANT;
+    for (TenantResource item : tenantResourceCatalog.navigationResources(tenantId, held)) {
+      if (item.getNameLocalization() != null)
+        localizedNames.put(item.getId(), item.getNameLocalization());
+      Resource resource = tenantRoute(item, scope);
+      if (isRouteResource(resource)) {
+        resources.add(resource);
+      }
     }
     Set<ServiceResourceRouteResult.ServiceEntry> services = new HashSet<>();
-    return withScopeContext(ServiceResourceRouteResult.of(services,
-        buildResourceTree(resources, services, true, loadRemoteEntriesByServiceName(), TenantResource.class)), context);
+    return withScopeContext(
+        ServiceResourceRouteResult.of(
+            services,
+            buildResourceTree(
+                resources,
+                services,
+                true,
+                loadRemoteEntriesByServiceName(),
+                TenantResource.class,
+                localizedNames)),
+        context);
   }
 
-  private void mergeManagedRoutes(
-      final List<Resource> resources,
-      final String tenantId,
-      final Set<String> heldCodes
-  ) {
-    if (tenantResourceCatalog == null || !hasText(tenantId) || heldCodes.isEmpty()) {
-      return;
-    }
-    List<TenantResource> managed = tenantResourceCatalog.managedNavigationResources(
-        tenantId,
-        heldCodes
-    );
-    if (managed.isEmpty()) return;
-    Set<String> parentIds = managed.stream()
-        .map(TenantResource::getParentId)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
-    Map<String, Resource> merged = new java.util.LinkedHashMap<>();
-    resources.forEach(resource -> merged.put(resource.getId(), resource));
-    directoryQuery().navigationAncestors(parentIds)
-        .forEach(resource -> merged.putIfAbsent(resource.getId(), resource));
-    managed.stream().map(ResourceServiceImpl::tenantRoute)
-        .forEach(resource -> merged.put(resource.getId(), resource));
-    resources.clear();
-    resources.addAll(merged.values());
-  }
-
-  private static Resource tenantRoute(final TenantResource item) {
+  private static Resource tenantRoute(final TenantResource item, ResourceScopeType scope) {
     Resource resource = new Resource();
     resource.setId(item.getId());
     resource.setCode(item.getCode());
     resource.setName(item.getName());
+    resource.setAlias(item.getAlias());
+    resource.setLabel(item.getLabel());
+    resource.setTitle(item.getTitle());
     resource.setType(item.getType());
     resource.setPath(item.getPath());
     resource.setComponent(item.getComponent());
@@ -375,9 +438,9 @@ public class ResourceServiceImpl
     resource.setDescription(item.getDescription());
     resource.setGrantable(item.isGrantable());
     resource.setDisabled(false);
-    resource.setPublicAccess(false);
-    resource.setRequireOrgTenant(true);
-    resource.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+    resource.setPublicAccess(item.isPublicAccess());
+    resource.setRequireOrgTenant(scope == ResourceScopeType.TENANT);
+    resource.setScopeTypes(Set.of(scope));
     return resource;
   }
 
@@ -389,55 +452,95 @@ public class ResourceServiceImpl
     List<Resource> treeResources = new ArrayList<>(result.descendants());
     treeResources.addAll(roots.getContent());
     List<ResourceNode> tree = buildResourceTree(treeResources, new HashSet<>(), false, Map.of());
-    // Navigation trees use natural menu order; this paginated management list must retain SQL order.
+    // Navigation trees use natural menu order; this paginated management list must retain SQL
+    // order.
     Map<String, Integer> rootOrder = new HashMap<>();
     for (int index = 0; index < rootIds.size(); index++) {
       rootOrder.put(rootIds.get(index), index);
     }
-    // The navigation builder promotes orphans. A paginated management tree must expose only its counted roots.
+    // The navigation builder promotes orphans. A paginated management tree must expose only its
+    // counted roots.
     tree.removeIf(node -> !rootOrder.containsKey(node.getId()));
-    tree.sort(Comparator.comparingInt(node -> rootOrder.getOrDefault(node.getId(), Integer.MAX_VALUE)));
-    return new PageImpl<>(
-        tree,
-        pageable,
-        roots.getTotalElements()
-    );
+    tree.sort(
+        Comparator.comparingInt(node -> rootOrder.getOrDefault(node.getId(), Integer.MAX_VALUE)));
+    return new PageImpl<>(tree, pageable, roots.getTotalElements());
   }
 
   @Override
   public Page<ResourceNode> children(Map<String, String> attributes, Pageable pageable) {
-    if (pageable.getPageSize() > 100) throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过100");
-    String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
-    String keyword = firstNonBlank(attribute(attributes, "keyword"), attribute(attributes, "search"));
-    var result = directoryQuery().children(parentId, keyword, pageable);
+    if (pageable.getPageSize() > TablePagination.MAX_PAGE_SIZE) {
+      throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过500");
+    }
+    String parentId =
+        firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
+    String keyword =
+        firstNonBlank(attribute(attributes, "keyword"), attribute(attributes, "search"));
+    boolean distribution = distributionRequested(attributes);
+    var result = directoryQuery(distribution).children(parentId, keyword, pageable);
     Page<Resource> page = result.page();
     List<ResourceNode> nodes = page.getContent().stream().map(this::toResourceNode).toList();
-    nodes.forEach(node -> node.setHasChildren(result.parentsWithChildren().contains(node.getId())));
+    nodes.forEach(
+        node -> {
+          node.setHasChildren(result.parentsWithChildren().contains(node.getId()));
+          if (distribution) {
+            node.setDistributable(
+                org.simplepoint.security.ResourceDistributionPolicy.accepts(node));
+          }
+        });
     return new PageImpl<>(nodes, pageable, page.getTotalElements());
   }
 
-  private ResourceDirectoryQuery directoryQuery() {
-    var context = getAuthorizationContext();
-    if (context == null || context.getUserId() == null || context.getUserId().isBlank()) throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
-    if (permissionEntityManager == null) throw new IllegalStateException("资源目录查询服务不可用");
-    String tenant = currentTenantId();
-    if (!hasText(tenant)) {
-      var tenants = tenantRepositoryProvider.getIfAvailable();
-      if (tenants != null) tenant = tenants.findPersonalTenantByOwnerId(context.getUserId()).map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId).orElse(null);
+  private boolean distributionRequested(Map<String, String> attributes) {
+    boolean distribution =
+        org.simplepoint.security.ResourceDirectoryPurpose.parse(attribute(attributes, "purpose"))
+            == org.simplepoint.security.ResourceDirectoryPurpose.DISTRIBUTION;
+    if (distribution) {
+      requireDistributionAdministrator();
     }
-    return new ResourceDirectoryQuery(permissionEntityManager, context, tenant);
+    return distribution;
+  }
+
+  private void requireDistributionAdministrator() {
+    PlatformResourceBoundary.distribute(getAuthorizationContext());
+  }
+
+  private ResourceDirectoryQuery directoryQuery() {
+    return directoryQuery(false);
+  }
+
+  private ResourceDirectoryQuery directoryQuery(boolean distribution) {
+    var context = getAuthorizationContext();
+    if (context == null || context.getUserId() == null || context.getUserId().isBlank()) {
+      throw new org.springframework.security.access.AccessDeniedException("授权上下文不可用");
+    }
+    if (permissionEntityManager == null) {
+      throw new IllegalStateException("资源目录查询服务不可用");
+    }
+    return new ResourceDirectoryQuery(permissionEntityManager, context, distribution);
   }
 
   @Override
-  public Page<ResourceNode> assignedTree(Collection<String> codes, Map<String, String> attributes, Pageable pageable) {
-    if (pageable.getPageSize() > 100) throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过100");
-    String parentId = firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
+  public Page<ResourceNode> assignedTree(
+      Collection<String> codes, Map<String, String> attributes, Pageable pageable) {
+    if (pageable.getPageSize() > TablePagination.MAX_PAGE_SIZE) {
+      throw new org.simplepoint.core.query.InvalidQueryException("目录分页大小不能超过500");
+    }
+    String parentId =
+        firstNonBlank(attribute(attributes, "parentId"), attribute(attributes, "parent"));
+    boolean distribution = distributionRequested(attributes);
+    // Keep unavailable assignments visible for removal; only new assignment uses delivery policy.
     var result = directoryQuery().assigned(normalizeCodes(codes), parentId, pageable);
-    List<ResourceNode> nodes = result.page().getContent().stream().map(this::toResourceNode).toList();
-    nodes.forEach(node -> {
-      node.setHasChildren(result.parentsWithChildren().contains(node.getId()));
-      node.setChecked(result.checkedIds().contains(node.getId()));
-    });
+    List<ResourceNode> nodes =
+        result.page().getContent().stream().map(this::toResourceNode).toList();
+    nodes.forEach(
+        node -> {
+          node.setHasChildren(result.parentsWithChildren().contains(node.getId()));
+          node.setChecked(result.checkedIds().contains(node.getId()));
+          if (distribution) {
+            node.setDistributable(
+                org.simplepoint.security.ResourceDistributionPolicy.accepts(node));
+          }
+        });
     return new PageImpl<>(nodes, pageable, result.page().getTotalElements());
   }
 
@@ -453,9 +556,12 @@ public class ResourceServiceImpl
   @Override
   public Collection<Resource> findDirectoryResourcesByCodes(Collection<String> codes) {
     Set<String> normalizedCodes = normalizeCodes(codes);
-    if (normalizedCodes.isEmpty()) return List.of();
+    if (normalizedCodes.isEmpty()) {
+      return List.of();
+    }
     var access = org.simplepoint.core.jackson.FieldPermissionPolicy.access(Resource.class, "code");
-    if ("MASKED".equals(access) || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access)) {
+    if ("MASKED".equals(access)
+        || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access)) {
       throw new org.springframework.security.access.AccessDeniedException("资源编码当前不可读取");
     }
     return directoryQuery().byCodes(normalizedCodes, true);
@@ -472,10 +578,7 @@ public class ResourceServiceImpl
 
   @Override
   public Collection<String> filterAccessibleCodes(
-      Collection<String> codes,
-      AuthorizationScopeType scopeType,
-      boolean systemAdministrator
-  ) {
+      Collection<String> codes, AuthorizationScopeType scopeType, boolean systemAdministrator) {
     Set<String> normalizedCodes = normalizeCodes(codes);
     if (normalizedCodes.isEmpty() || scopeType == null) {
       return List.of();
@@ -485,18 +588,28 @@ public class ResourceServiceImpl
 
   @Override
   public Collection<String> filterGrantableAccessibleCodes(
-      Collection<String> codes,
-      AuthorizationScopeType scopeType
-  ) {
+      Collection<String> codes, AuthorizationScopeType scopeType) {
     Set<String> normalizedCodes = normalizeCodes(codes);
-    return normalizedCodes.isEmpty() || scopeType == null ? List.of() : runtimeQuery().filter(normalizedCodes, scopeType, false, true);
+    return normalizedCodes.isEmpty() || scopeType == null
+        ? List.of()
+        : runtimeQuery().filter(normalizedCodes, scopeType, false, true);
+  }
+
+  @Override
+  public Collection<String> filterDistributableCodes(Collection<String> codes) {
+    requireDistributionAdministrator();
+    return runtimeQuery().distributable(normalizeCodes(codes));
+  }
+
+  @Override
+  public Collection<String> findSubtreeDistributableCodes(String rootId) {
+    requireDistributionAdministrator();
+    return hasText(rootId) ? directoryQuery(true).subtreeCodes(rootId) : List.of();
   }
 
   @Override
   public Collection<String> findAllAccessibleCodes(
-      AuthorizationScopeType scopeType,
-      boolean systemAdministrator
-  ) {
+      AuthorizationScopeType scopeType, boolean systemAdministrator) {
     if (scopeType == null) {
       return List.of();
     }
@@ -522,7 +635,9 @@ public class ResourceServiceImpl
   }
 
   private ResourceRuntimeQuery runtimeQuery() {
-    if (permissionEntityManager == null) throw new IllegalStateException("资源鉴权查询服务不可用");
+    if (permissionEntityManager == null) {
+      throw new IllegalStateException("资源鉴权查询服务不可用");
+    }
     return new ResourceRuntimeQuery(permissionEntityManager);
   }
 
@@ -536,7 +651,8 @@ public class ResourceServiceImpl
     if (!hasText(saved.getParentId())) {
       return;
     }
-    Collection<String> ancestors = resourceAncestorRepository.findAncestorIdsByChildIdIn(Set.of(saved.getParentId()));
+    Collection<String> ancestors =
+        resourceAncestorRepository.findAncestorIdsByChildIdIn(Set.of(saved.getParentId()));
     List<ResourceAncestor> relations = new ArrayList<>();
     for (String ancestorId : ancestors) {
       ResourceAncestor relation = new ResourceAncestor();
@@ -551,45 +667,22 @@ public class ResourceServiceImpl
     resourceAncestorRepository.saveAll(relations);
   }
 
-  @jakarta.persistence.PersistenceContext
-  private jakarta.persistence.EntityManager permissionEntityManager;
-
-  private void migrateResourceCode(String oldCode, String newCode) {
-    if (!hasText(oldCode) || !hasText(newCode) || Objects.equals(oldCode, newCode)) {
-      return;
-    }
-    var grantRepository = roleResourceGrantRepositoryProvider.getIfAvailable();
-    if (grantRepository != null) {
-      grantRepository.updateResourceCode(oldCode, newCode);
-    }
-    if (permissionEntityManager != null) {
-      permissionEntityManager.createQuery("update DataScope d set d.resourceCode=:newCode where d.resourceCode=:oldCode")
-          .setParameter("newCode", newCode).setParameter("oldCode", oldCode).executeUpdate();
-    }
-    var refreshService = resourceAuthorizationVersionServiceProvider.getIfAvailable();
-    if (refreshService != null) {
-      refreshService.refreshByResourceCodes(Set.of(oldCode, newCode));
-    }
-  }
-
   private void retireUndeclaredResources(
-      String owner,
-      Set<String> synchronizedCodes,
-      Collection<Resource> indexedResources
-  ) {
-    if (!hasText(owner)) {
-      return;
-    }
-    Set<String> retiredIds = indexedResources.stream()
-        .filter(resource -> owner.equals(resource.getPluginId()))
-        .filter(resource -> hasText(resource.getId()))
-        .filter(resource -> !synchronizedCodes.contains(resource.getCode()))
-        .map(Resource::getId)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+      String owner, Set<String> retiredIds, Set<String> synchronizedCodes) {
     if (retiredIds.isEmpty()) {
       return;
     }
-    removeByIds(retiredIds);
+    // The closure table may contain stale edges. Never let it delete a retained or foreign record.
+    Set<String> affectedIds = new HashSet<>(retiredIds);
+    affectedIds.addAll(resourceAncestorRepository.findChildIdsByAncestorIds(retiredIds));
+    for (Resource affected : getRepository().loadByIds(affectedIds)) {
+      if (!owner.equals(affected.getPluginId()) || synchronizedCodes.contains(affected.getCode())) {
+        throw new org.simplepoint.security.resource.ResourceRegistrationException(
+            org.simplepoint.security.resource.ResourceRegistrationException.Code
+                .HIERARCHY_CONFLICT);
+      }
+    }
+    removeCatalogResources(retiredIds);
     log.info("Retired {} undeclared resources for owner: {}", retiredIds.size(), owner);
   }
 
@@ -600,8 +693,9 @@ public class ResourceServiceImpl
     if (Objects.equals(resource.getId(), resource.getParentId())) {
       throw new IllegalArgumentException("资源不能将自身设置为父资源");
     }
-    Resource parent = findById(resource.getParentId())
-        .orElseThrow(() -> new IllegalArgumentException("父资源不存在"));
+    Resource parent =
+        super.findById(resource.getParentId())
+            .orElseThrow(() -> new IllegalArgumentException("父资源不存在"));
     if (!ResourceScopePolicy.isValidChild(parent.getScopeTypes(), resource.getScopeTypes())) {
       throw new IllegalArgumentException("子资源的资源级别不能超出父资源边界");
     }
@@ -611,34 +705,65 @@ public class ResourceServiceImpl
       Collection<Resource> resources,
       Set<ServiceResourceRouteResult.ServiceEntry> services,
       boolean clearRuntimeFields,
-      Map<String, String> remoteEntries
-  ) {
-    return buildResourceTree(resources, services, clearRuntimeFields, remoteEntries, Resource.class);
+      Map<String, String> remoteEntries) {
+    return buildResourceTree(
+        resources, services, clearRuntimeFields, remoteEntries, Resource.class);
   }
 
   private List<ResourceNode> buildResourceTree(
-      Collection<Resource> resources, Set<ServiceResourceRouteResult.ServiceEntry> services,
-      boolean clearRuntimeFields, Map<String, String> remoteEntries, Class<?> sourceType
-  ) {
+      Collection<Resource> resources,
+      Set<ServiceResourceRouteResult.ServiceEntry> services,
+      boolean clearRuntimeFields,
+      Map<String, String> remoteEntries,
+      Class<?> sourceType) {
+    return buildResourceTree(
+        resources, services, clearRuntimeFields, remoteEntries, sourceType, Map.of());
+  }
+
+  private List<ResourceNode> buildResourceTree(
+      Collection<Resource> resources,
+      Set<ServiceResourceRouteResult.ServiceEntry> services,
+      boolean clearRuntimeFields,
+      Map<String, String> remoteEntries,
+      Class<?> sourceType,
+      Map<String, org.simplepoint.api.locale.LocalizedText> localizedNames) {
     Map<String, String> readableLabels = new HashMap<>();
-    for (Resource resource : resources) readableLabels.put(resource.getId(), readableResourceLabel(resource, sourceType));
-    String sortAccess = org.simplepoint.core.jackson.FieldPermissionPolicy.access(sourceType, "sort");
-    boolean readableSort = !"MASKED".equals(sortAccess) && !org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(sortAccess);
-    List<Resource> sorted = resources.stream().sorted(Comparator
-        .comparing((Resource resource) -> readableSort ? resource.getSort() : null, Comparator.nullsLast(Integer::compareTo))
-        .thenComparing(resource -> readableLabels.get(resource.getId()), Comparator.nullsLast(String::compareTo))).toList();
+    for (Resource resource : resources) {
+      readableLabels.put(resource.getId(), readableResourceLabel(resource, sourceType));
+    }
+    String sortAccess =
+        org.simplepoint.core.jackson.FieldPermissionPolicy.access(sourceType, "sort");
+    boolean readableSort =
+        !"MASKED".equals(sortAccess)
+            && !org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(sortAccess);
+    List<Resource> sorted =
+        resources.stream()
+            .sorted(
+                Comparator.comparing(
+                        (Resource resource) -> readableSort ? resource.getSort() : null,
+                        Comparator.nullsLast(Integer::compareTo))
+                    .thenComparing(
+                        resource -> readableLabels.get(resource.getId()),
+                        Comparator.nullsLast(String::compareTo)))
+            .toList();
     Map<String, ResourceNode> nodeMap = new HashMap<>();
     for (Resource resource : sorted) {
       addServiceEntry(services, resource.getComponent(), remoteEntries);
-      ResourceNode node = sourceType == TenantResource.class ? new org.simplepoint.plugin.rbac.tenant.api.vo.TenantResourceNode() : new ResourceNode();
+      ResourceNode node =
+          sourceType == TenantResource.class
+              ? new org.simplepoint.plugin.rbac.tenant.api.vo.TenantResourceNode()
+              : new ResourceNode();
       BeanUtils.copyProperties(resource, node);
+      if (node instanceof org.simplepoint.plugin.rbac.tenant.api.vo.TenantResourceNode tenantNode)
+        tenantNode.setNameLocalization(localizedNames.get(resource.getId()));
       node.setLabel(readableLabels.get(resource.getId()));
       nodeMap.put(resource.getId(), node);
     }
     List<ResourceNode> roots = new ArrayList<>();
     for (Resource resource : sorted) {
       ResourceNode current = nodeMap.get(resource.getId());
-      ResourceNode parent = hasText(resource.getParentId()) ? nodeMap.get(resource.getParentId()) : null;
+      ResourceNode parent =
+          hasText(resource.getParentId()) ? nodeMap.get(resource.getParentId()) : null;
       if (parent == null) {
         roots.add(current);
       } else {
@@ -671,36 +796,57 @@ public class ResourceServiceImpl
     node.getChildren().forEach(this::clearRouteFields);
   }
 
-  /** Resolve display fallbacks only after source-field projection; otherwise a hidden name reappears through label. */
+  /**
+   * Resolve display fallbacks only after source-field projection; otherwise a hidden name reappears
+   * through label.
+   */
   private String readableResourceLabel(Resource resource) {
     return readableResourceLabel(resource, Resource.class);
   }
 
   private String readableResourceLabel(Resource resource, Class<?> sourceType) {
     var source = new java.util.LinkedHashMap<String, Object>();
-    source.put("label", resource.getLabel()); source.put("name", resource.getName());
-    source.put("title", resource.getTitle()); source.put("code", resource.getCode());
+    source.put("label", resource.getLabel());
+    source.put("name", resource.getName());
+    source.put("title", resource.getTitle());
+    source.put("code", resource.getCode());
     var readable = org.simplepoint.core.jackson.FieldPermissionPolicy.project(sourceType, source);
-    return firstNonBlank((String) readable.get("label"), (String) readable.get("name"), (String) readable.get("title"), (String) readable.get("code"));
+    return firstNonBlank(
+        (String) readable.get("label"),
+        (String) readable.get("name"),
+        (String) readable.get("title"),
+        (String) readable.get("code"));
   }
 
-  /** Ordinary administrator navigation retains its cache; request-specific redacted labels never enter or reuse it. */
+  /**
+   * Ordinary administrator navigation retains its cache; request-specific redacted labels never
+   * enter or reuse it.
+   */
   private boolean resourceLabelsAreCacheable() {
     return java.util.stream.Stream.of("label", "name", "title", "code")
-        .map(field -> org.simplepoint.core.jackson.FieldPermissionPolicy.access(Resource.class, field))
-        .noneMatch(access -> "MASKED".equals(access) || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access));
+        .map(
+            field ->
+                org.simplepoint.core.jackson.FieldPermissionPolicy.access(Resource.class, field))
+        .noneMatch(
+            access ->
+                "MASKED".equals(access)
+                    || org.simplepoint.core.jackson.FieldPermissionPolicy.hidden(access));
   }
 
-  private ServiceResourceRouteResult withScopeContext(ServiceResourceRouteResult result, AuthorizationContext context) {
+  private ServiceResourceRouteResult withScopeContext(
+      ServiceResourceRouteResult result, AuthorizationContext context) {
     if (context == null) {
       return result;
     }
-    return result.withAuthorizationContext(Map.of(
-        "scopeType", context.getScopeType() == null ? "" : context.getScopeType().name(),
-        "actorRole", context.getActorRole() == null ? "" : context.getActorRole().name(),
-        "tenantId", context.getAttribute("X-Tenant-Id") == null ? "" : context.getAttribute("X-Tenant-Id"),
-        "userId", context.getUserId() == null ? "" : context.getUserId()
-    ));
+    return result.withAuthorizationContext(
+        Map.of(
+            "scopeType", context.getScopeType() == null ? "" : context.getScopeType().name(),
+            "actorRole", context.getActorRole() == null ? "" : context.getActorRole().name(),
+            "tenantId",
+                context.getAttribute("X-Tenant-Id") == null
+                    ? ""
+                    : context.getAttribute("X-Tenant-Id"),
+            "userId", context.getUserId() == null ? "" : context.getUserId()));
   }
 
   private Map<String, String> loadRemoteEntriesByServiceName() {
@@ -723,13 +869,13 @@ public class ResourceServiceImpl
   private void addServiceEntry(
       Set<ServiceResourceRouteResult.ServiceEntry> services,
       String component,
-      Map<String, String> remoteEntries
-  ) {
+      Map<String, String> remoteEntries) {
     String serviceName = getServiceName(component);
     if (!hasText(serviceName) || isNonRemoteComponent(component)) {
       return;
     }
-    services.add(ServiceResourceRouteResult.ServiceEntry.of(serviceName, remoteEntries.get(serviceName)));
+    services.add(
+        ServiceResourceRouteResult.ServiceEntry.of(serviceName, remoteEntries.get(serviceName)));
   }
 
   private String getServiceName(String component) {
@@ -742,33 +888,8 @@ public class ResourceServiceImpl
   }
 
   private boolean isNonRemoteComponent(String component) {
-    return component != null && (component.startsWith("external:") || component.startsWith("iframe:"));
-  }
-
-  private Resource resolveExisting(
-      Map<String, Resource> resourcesByCode,
-      Map<String, Resource> resourcesByPath,
-      Resource resource
-  ) {
-    if (hasText(resource.getCode()) && resourcesByCode.containsKey(resource.getCode())) {
-      return resourcesByCode.get(resource.getCode());
-    }
-    if (hasText(resource.getPath())) {
-      return resourcesByPath.get(resource.getPath());
-    }
-    return null;
-  }
-
-  private void indexResource(Map<String, Resource> resourcesByCode, Map<String, Resource> resourcesByPath, Resource resource) {
-    if (resource == null) {
-      return;
-    }
-    if (hasText(resource.getCode())) {
-      resourcesByCode.put(resource.getCode(), resource);
-    }
-    if (hasText(resource.getPath())) {
-      resourcesByPath.put(resource.getPath(), resource);
-    }
+    return component != null
+        && (component.startsWith("external:") || component.startsWith("iframe:"));
   }
 
   private void normalize(Resource resource) {
@@ -784,7 +905,8 @@ public class ResourceServiceImpl
     if (resource.getType() == null) {
       resource.setType(hasText(resource.getPath()) ? ResourceType.PAGE : ResourceType.ACTION);
     }
-    Set<ResourceScopeType> effectiveScopes = ResourceScopePolicy.effectiveScopes(resource.getScopeTypes());
+    Set<ResourceScopeType> effectiveScopes =
+        ResourceScopePolicy.effectiveScopes(resource.getScopeTypes());
     resource.setScopeTypes(effectiveScopes);
     if (!hasText(resource.getRouteKind()) && isRouteType(resource.getType())) {
       if (resource.getType() == ResourceType.GROUP) {
@@ -798,10 +920,12 @@ public class ResourceServiceImpl
     if (resource.getPublicAccess() == null) {
       resource.setPublicAccess(Boolean.FALSE);
     }
-    resource.setRequireOrgTenant(effectiveScopes.contains(ResourceScopeType.TENANT)
-        && !effectiveScopes.contains(ResourceScopeType.PERSONAL));
+    resource.setRequireOrgTenant(
+        effectiveScopes.contains(ResourceScopeType.TENANT)
+            && !effectiveScopes.contains(ResourceScopeType.PERSONAL));
     if (resource.getGrantable() == null) {
-      resource.setGrantable(resource.getType() != ResourceType.GROUP && resource.getType() != ResourceType.MODULE);
+      resource.setGrantable(
+          resource.getType() != ResourceType.GROUP && resource.getType() != ResourceType.MODULE);
     }
     if (effectiveScopes.size() == 1 && effectiveScopes.contains(ResourceScopeType.SYSTEM)) {
       resource.setGrantable(Boolean.FALSE);
@@ -813,14 +937,18 @@ public class ResourceServiceImpl
   }
 
   private void applyButtonMetadata(Resource resource) {
-    if (resource == null || resource.getType() != ResourceType.ACTION || !hasText(resource.getCode())) {
+    if (resource == null
+        || resource.getType() != ResourceType.ACTION
+        || !hasText(resource.getCode())) {
       return;
     }
-    ButtonResourceMetadataRegistry registry = buttonResourceMetadataRegistryProvider.getIfAvailable();
+    ButtonResourceMetadataRegistry registry =
+        buttonResourceMetadataRegistryProvider.getIfAvailable();
     if (registry == null) {
       return;
     }
-    ButtonResourceMetadataRegistry.ButtonResourceMetadata metadata = registry.find(resource.getCode());
+    ButtonResourceMetadataRegistry.ButtonResourceMetadata metadata =
+        registry.find(resource.getCode());
     if (metadata == null) {
       return;
     }
@@ -843,12 +971,6 @@ public class ResourceServiceImpl
 
   private boolean isAccessible(Resource resource, AuthorizationContext context) {
     return resource != null && ResourceScopePolicy.isAccessible(resource.getScopeTypes(), context);
-  }
-
-  private record DeclarationEntry(
-      ResourceDeclaration declaration,
-      Set<ResourceScopeType> parentScopes
-  ) {
   }
 
   private String attribute(Map<String, String> attributes, String key) {

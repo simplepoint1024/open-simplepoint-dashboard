@@ -29,6 +29,10 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.*;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceSetup;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceEntitlement;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -50,12 +54,12 @@ class FieldScopeLifecycleHttpTest {
         .applySetting("hibernate.connection.url", "jdbc:h2:mem:field-scope-lifecycle-" + UUID.randomUUID())
         .applySetting("hibernate.session_factory.statement_inspector", (org.hibernate.resource.jdbc.spi.StatementInspector) sql -> {statements.add(sql); return sql;})
         .applySetting("hibernate.hbm2ddl.auto", "create-drop").applySetting("hibernate.generate_statistics", true).build())
-        .addAnnotatedClass(Resource.class).addAnnotatedClass(DataScope.class).addAnnotatedClass(User.class)
+        .addAnnotatedClass(TenantResource.class).addAnnotatedClass(TenantResourceSetup.class).addAnnotatedClass(TenantResourceEntitlement.class).addAnnotatedClass(DataScope.class).addAnnotatedClass(User.class)
         .addAnnotatedClass(Role.class).addAnnotatedClass(Tenant.class).addAnnotatedClass(Organization.class)
         .addAnnotatedClass(FieldScope.class).addAnnotatedClass(FieldScopeEntry.class)
         .addAnnotatedClass(RoleScopeBinding.class).addAnnotatedClass(RoleResourceGrant.class)
         .buildMetadata().buildSessionFactory();
-    em = factory.openSession(); em.beginTransaction();
+    em = factory.openSession(); em.beginTransaction(); TenantPermissionFixture.prepare(em, "scope-tenant");
     register("people.view", MODEL, "name", "email");
     var organizations = register("organizations.view", Organization.class.getName()); organizations.setName("组织管理");
     organizations.setPermissionMetadata(new PermissionPageDescriptor(List.of(PermissionModelDescriptor.describe(Organization.class))).toJson());
@@ -63,7 +67,7 @@ class FieldScopeLifecycleHttpTest {
     var policy = new FieldScope(); policy.setId("own-policy"); policy.setTenantId("scope-tenant"); policy.setName("原名称"); em.persist(policy);
     var foreign = new FieldScope(); foreign.setId("foreign-policy"); foreign.setTenantId("other-tenant"); foreign.setName("其他空间"); em.persist(foreign);
     em.flush(); em.clear();
-    context = new AuthorizationContext(); context.setUserId("verified-user");
+    context = new AuthorizationContext(); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT); context.setAttributes(Map.of("X-Tenant-Id", "scope-tenant")); context.setUserId("verified-user");
     context.setResources(Set.of("people.view", "organizations.view", "field-scope.view", "field-scope.edit", "field-scope.create"));
     context.setAttributes(Map.of("X-Tenant-Id", "scope-tenant"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
@@ -75,10 +79,10 @@ class FieldScopeLifecycleHttpTest {
     var generator = config.schemaGenerator(Set.of(config.openApiModule(), config.jacksonModule(), config.javaxValidationModule()));
     schemaContext = new org.springframework.context.support.GenericApplicationContext();
     schemaContext.registerBean(JsonSchemaGenerator.class, () -> config.defaultJsonSchemaGenerator(generator));
-    schemaContext.registerBean(JsonSchemaDetailsService.class, () -> new org.simplepoint.data.json.schema.service.DefaultJsonSchemaDetailsService(em)); schemaContext.refresh();
+    schemaContext.registerBean(JsonSchemaDetailsService.class, () -> new org.simplepoint.data.json.schema.service.DefaultJsonSchemaDetailsService()); schemaContext.refresh();
     var details = new org.simplepoint.core.security.SpringBeanDetailsProviderService(); details.setApplicationContext(schemaContext);
     versions = mock(ResourceAuthorizationVersionService.class);
-    var service = new FieldScopeServiceImpl(repository, details, versions, new FieldScopeCatalog(em), new PermissionPolicyGuard(em));
+    var service = new FieldScopeServiceImpl(repository, details, versions, TenantPermissionFixture.attach(em, new FieldScopeCatalog(em)), new PermissionPolicyGuard(em));
     mvc = MockMvcBuilders.standaloneSetup(new FieldScopeController(service))
         .defaultRequest(get("/").requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .addFilters(new org.springframework.security.web.access.ExceptionTranslationFilter(
@@ -90,11 +94,11 @@ class FieldScopeLifecycleHttpTest {
     factory.getStatistics().clear();
   }
 
-  Resource register(String code, String model, String... fields) {
+  TenantResource register(String code, String model, String... fields) {
     var properties = new LinkedHashMap<String, PermissionModelDescriptor.Field>();
     for (var name : fields) properties.put(name, new PermissionModelDescriptor.Field("java.lang.String", name, List.of("equals"), List.of()));
-    var resource = new Resource(); resource.setId(code); resource.setCode(code); resource.setName(code);
-    resource.setType(ResourceType.PAGE); resource.setDisabled(false);
+    var resource = TenantPermissionFixture.resource("scope-tenant", UUID.randomUUID().toString()); resource.setId(code); resource.setCode(code); resource.setName(code);
+    resource.setType(ResourceType.PAGE); resource.setEnabled(true);
     resource.setPermissionMetadata(new PermissionPageDescriptor(List.of(new PermissionModelDescriptor(model, true, true, "id", null, properties))).toJson());
     em.persist(resource); return resource;
   }
@@ -140,7 +144,7 @@ class FieldScopeLifecycleHttpTest {
   @org.junit.jupiter.params.ParameterizedTest
   @org.junit.jupiter.params.provider.CsvSource({"alias,MASKED", "alias,HIDDEN", "title,MASKED", "title,HIDDEN", "name,MASKED", "name,HIDDEN", "label,MASKED", "label,HIDDEN"})
   void directoryAndPageFieldTitlesProjectTheirActualFallbackSources(String source, String access) throws Exception {
-    var resource = em.find(Resource.class, "organizations.view");
+    var resource = em.find(TenantResource.class, new TenantResourceKey("scope-tenant", "organizations.view"));
     resource.setAlias(null); resource.setTitle(null); resource.setName("Allowed fallback name"); resource.setLabel("Allowed fallback label");
     String secret = source.equals("title") ? "menu.private.title" : "Private " + source;
     switch (source) {
@@ -150,8 +154,8 @@ class FieldScopeLifecycleHttpTest {
       case "label" -> resource.setLabel(secret);
       default -> throw new AssertionError(source);
     }
-    var permissions = new LinkedHashMap<String, String>(); permissions.put(Resource.class.getName() + "#" + source, access);
-    if (source.equals("label")) permissions.put(Resource.class.getName() + "#name", "HIDDEN");
+    var permissions = new LinkedHashMap<String, String>(); permissions.put(TenantResource.class.getName() + "#" + source, access);
+    if (source.equals("label")) permissions.put(TenantResource.class.getName() + "#name", "HIDDEN");
     context.setFieldPermissions(permissions); em.flush(); em.clear(); factory.getStatistics().clear();
     String expected = access.equals("MASKED") ? "***" : source.equals("name") ? "Allowed fallback label" : source.equals("label") ? "" : "Allowed fallback name";
     var directory = mvc.perform(get("/field-scopes/resources")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -171,11 +175,11 @@ class FieldScopeLifecycleHttpTest {
     var descriptor = new PermissionPageDescriptor(List.of(PermissionModelDescriptor.describe(Organization.class))).toJson();
     for (int index = 0; index < 521; index++) {
       String code = "matrix.page" + index; grants.add(code);
-      var resource = new Resource(); resource.setCode(code); resource.setId("matrix-resource-" + index);
+      var resource = TenantPermissionFixture.resource("scope-tenant", UUID.randomUUID().toString()); resource.setCode(code); resource.setId("matrix-resource-" + index);
       resource.setName("实际资源 " + index); resource.setSort(index); resource.setPermissionMetadata(descriptor);
-      resource.setType(ResourceType.PAGE); resource.setDisabled(false); em.persist(resource);
+      resource.setType(ResourceType.PAGE); resource.setEnabled(true); em.persist(resource);
     }
-    var directoryContext = new AuthorizationContext(); directoryContext.setUserId("verified-user"); directoryContext.setResources(grants);
+    var directoryContext = new AuthorizationContext(); directoryContext.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT); directoryContext.setAttributes(Map.of("X-Tenant-Id", "scope-tenant")); directoryContext.setUserId("verified-user"); directoryContext.setResources(grants);
     directoryContext.setAttributes(Map.of("X-Tenant-Id", "scope-tenant"));
     em.flush(); em.clear(); factory.getStatistics().clear(); statements.clear();
     var outputs = new LinkedHashMap<String, String>();
@@ -221,7 +225,7 @@ class FieldScopeLifecycleHttpTest {
   @Test void retainedUnavailableEntriesCanBeRemovedWithoutReloadingEitherCatalogButAccessChangesRemainDenied() throws Exception {
     mvc.perform(put("/field-scopes/configuration").param("id", "own-policy").contentType("application/json")
         .content(body("已保存", "name", FieldAccessType.MASKED))).andExpect(status().isOk()); em.flush();
-    em.find(Resource.class, "people.view").setDeletedAt(java.time.Instant.now()); em.flush(); factory.getStatistics().clear(); clearInvocations(versions);
+    em.find(TenantResource.class, new TenantResourceKey("scope-tenant", "people.view")).setSourceAvailable(false); em.flush(); factory.getStatistics().clear(); clearInvocations(versions);
     mvc.perform(put("/field-scopes/configuration").param("id", "own-policy").contentType("application/json")
         .content(body("仅改说明", "name", FieldAccessType.MASKED))).andExpect(status().isOk()); em.flush();
     assertEquals(0, metadataQueries());
@@ -252,12 +256,70 @@ class FieldScopeLifecycleHttpTest {
     assertEquals("其他空间", em.find(FieldScope.class, "foreign-policy").getName()); verifyNoInteractions(versions);
   }
 
-  @Test void legacyEntriesCanUseCanonicalLocalFieldsWithoutReadingUnrelatedRemoteRegistry() throws Exception {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"expired", "future", "manual-disabled", "source-unavailable", "offline", "scope-mismatch", "missing-parent", "unknown-managed"})
+  void unavailablePageCannotBeDiscoveredOrUsedForFieldPolicyWrites(String reason) throws Exception {
+    var row = em.find(TenantResource.class, new TenantResourceKey("scope-tenant", "people.view"));
+    switch (reason) {
+      case "expired", "future" -> {
+        row.setBaselineEntitled(false);
+        var balance = new TenantResourceEntitlement(); balance.setTenantId("scope-tenant"); balance.setId(row.getId());
+        balance.setStartsAt(java.time.Instant.now().plusSeconds(reason.equals("future") ? 60 : -120));
+        balance.setExpiresAt(java.time.Instant.now().plusSeconds(reason.equals("future") ? 120 : -60));
+        balance.setUpdatedAt(java.time.Instant.now()); em.persist(balance);
+      }
+      case "manual-disabled" -> row.setManualDisabled(true);
+      case "source-unavailable" -> row.setSourceAvailable(false);
+      case "offline" -> row.setFormallyOffline(true);
+      case "scope-mismatch" -> row.setScopeTypes(Set.of(org.simplepoint.security.entity.ResourceScopeType.PLATFORM));
+      case "missing-parent" -> row.setParentId("missing-parent");
+      case "unknown-managed" -> { row.setPlatformResourceId(null); row.setManagedOwner("unregistered-engine"); }
+      default -> throw new AssertionError(reason);
+    }
+    row.setPermissionMetadata("unparseable unavailable metadata"); em.flush(); em.clear();
+    mvc.perform(get("/field-scopes/page-fields").param("code", "people.view"))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PERMISSION_POLICY"));
+    mvc.perform(post("/field-scopes/configuration").contentType("application/json").content(body("不得创建", "name", FieldAccessType.HIDDEN)))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PERMISSION_POLICY"));
+    em.flush();
+    assertEquals(2L, em.createQuery("select count(p) from FieldScope p", Long.class).getSingleResult());
+    verifyNoInteractions(versions);
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"app,TENANT", "report,TENANT", "app,PERSONAL", "report,PERSONAL"})
+  void generatedFieldsUseTheirTenantCopyInBothKindsOfWorkspace(String owner, String scope) throws Exception {
+    var row = em.find(TenantResource.class, new TenantResourceKey("scope-tenant", "people.view"));
+    row.setPlatformResourceId(null); row.setManagedOwner(owner); row.setBaselineEntitled(false);
+    if (scope.equals("PERSONAL")) {
+      em.find(Tenant.class, "scope-tenant").setTenantType(org.simplepoint.plugin.rbac.tenant.api.entity.TenantType.PERSONAL);
+      context.replaceScopeType(org.simplepoint.core.AuthorizationScopeType.PERSONAL);
+    }
+    var foreign = TenantPermissionFixture.resource("other-tenant", row.getId());
+    foreign.setCode(row.getCode()); foreign.setType(ResourceType.PAGE); foreign.setName("Foreign secret");
+    foreign.setPermissionMetadata("invalid foreign definition"); em.persist(foreign); em.flush(); em.clear();
+    mvc.perform(get("/field-scopes/page-fields").param("code", "people.view"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.models[0].model").value(MODEL));
+    mvc.perform(post("/field-scopes/configuration").contentType("application/json").content(body("业务字段规则", "name", FieldAccessType.MASKED)))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].resource").value(MODEL));
+  }
+
+  @Test void legacyCatalogContainsOnlyModelsDeclaredByHeldTenantPages() throws Exception {
+    var result = mvc.perform(get("/field-scopes/catalog")).andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+    var parsed = mapper.readTree(result);
+    assertEquals(2, parsed.size());
+    assertTrue(parsed.has(MODEL)); assertTrue(parsed.has(Organization.class.getName()));
+    assertFalse(parsed.has(User.class.getName())); assertFalse(parsed.has(FieldScope.class.getName()));
+  }
+
+  @Test void legacyEntriesCannotUseUnregisteredLocalFieldsToBypassTenantMetadata() throws Exception {
     String entries = mapper.writeValueAsString(List.of(Map.of("resource", User.class.getName(), "field", " email ", "access", "VISIBLE")));
     mvc.perform(put("/field-scopes/entries").param("fieldScopeId", "own-policy").contentType("application/json").content(entries))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].resource").value(User.class.getName()));
-    em.flush(); assertEquals(0, metadataQueries());
-    assertEquals("email", em.find(FieldScope.class, "own-policy").getEntries().getFirst().getField()); verify(versions).refreshTenant("scope-tenant");
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PERMISSION_POLICY"));
+    em.flush();
+    assertTrue(em.find(FieldScope.class, "own-policy").getEntries().isEmpty());
+    verifyNoInteractions(versions);
   }
 
   @org.junit.jupiter.params.ParameterizedTest

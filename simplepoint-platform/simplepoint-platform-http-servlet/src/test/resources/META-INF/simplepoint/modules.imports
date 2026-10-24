@@ -1,0 +1,6 @@
+org.simplepoint.http.fixture.alpha.AlphaModule
+org.simplepoint.http.fixture.beta.BetaModule
+org.simplepoint.http.fixture.domain.DomainModule
+org.simplepoint.http.fixture.sharedalpha.SharedAlphaModule
+org.simplepoint.http.fixture.sharedbeta.SharedBetaModule
+org.simplepoint.http.fixture.protocol.ProtocolModule

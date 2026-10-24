@@ -41,7 +41,7 @@ class RecordExecutionObserver {
           .register(meterRegistry)
           .record(Duration.ofMillis(durationMs));
     }
-    if (!"succeeded".equals(outcome) || durationMs >= slowThresholdMs) {
+    if (!java.util.Set.of("succeeded", "pending", "restoring").contains(outcome) || durationMs >= slowThresholdMs) {
       LOGGER.warn(
           "DNA Runtime operation tenant={} model={} datasource={} operation={} outcome={} durationMs={}",
           access.actor().tenantId(),

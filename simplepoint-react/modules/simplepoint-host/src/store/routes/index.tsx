@@ -1,3 +1,4 @@
+import {hasVisibleNavigation} from './visibility';
 import type {ItemType} from "antd/es/menu/interface";
 export {getRouteKey} from './identity';
 
@@ -11,6 +12,7 @@ export interface RouteInfo {
   code?: string;
   title?: string;
   label?: string;
+  nameLocalization?: import('@simplepoint/shared/i18n/localizedText').LocalizedText | null;
   icon?: string;
   danger?: boolean;
   routeKind?: 'group' | 'divider' | 'submenu' | 'item' | 'hidden';
@@ -34,13 +36,10 @@ export const flattenRoutes = (nodes: RouteInfo[] = []): RouteInfo[] => {
   const res: RouteInfo[] = [];
   const dfs = (arr: RouteInfo[]) => {
     arr.forEach(n => {
-      if (n.routeKind === 'hidden') return;
-      const visibleChildren = (n.children ?? []).filter(child => child.routeKind !== 'hidden');
-      if (visibleChildren.length > 0) {
-        dfs(visibleChildren);
-      } else {
-        res.push(n);
-      }
+      const leaves = flattenRoutes(n.children ?? []);
+      if (!hasVisibleNavigation(n, leaves.length)) return;
+      if (leaves.length > 0) res.push(...leaves);
+      else res.push(n);
     });
   };
   dfs(nodes);

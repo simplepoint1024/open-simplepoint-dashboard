@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {smokePackageAdministration} from './smoke-tenant-package-administration.mjs';
 
 export async function smokeConfigurationLifecycle({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture}) {
   fixture.enable();
@@ -26,7 +27,7 @@ export async function smokeConfigurationLifecycle({clickMenu, clickReady, clickT
   assert.equal(await evaluate(`[...document.querySelectorAll('${tenant} button')].some(button=>button.textContent.includes('配置成员'))`), false);
   await clickText('.tenant-member-capability-error button', '重试');
   await poll(()=>evaluate(`(()=>{const button=[...document.querySelectorAll('${tenant} button')].find(element=>element.textContent.replaceAll(' ','')==='配置成员');return !!button && !button.disabled;})()`), 'real member capability is granted');
-  await evaluate(`(()=>{const buttons=[...document.querySelectorAll('${tenant} button')];const members=buttons.find(button=>button.textContent.replaceAll(' ','')==='配置成员'),packages=buttons.find(button=>button.textContent.replaceAll(' ','')==='配置套餐');members.click();packages.click();})()`);
+  await evaluate(`(()=>{const buttons=[...document.querySelectorAll('${tenant} button')];const members=buttons.find(button=>button.textContent.replaceAll(' ','')==='配置成员'),packages=buttons.find(button=>button.textContent.replaceAll(' ','')==='管理套餐');members.click();packages.click();})()`);
   await poll(()=>hasRow(side(members, true), 'member-000'), 'captured tenant member assignment');
   assert.equal(await evaluate(`!!document.querySelector('${tenantPackages}')`), false, 'same-frame configuration clicks cannot overwrite the first captured target');
   assert.equal(await evaluate(`document.querySelector('${side(members, true)} [data-row-key="member-000"] .ant-checkbox-input').disabled`), true, 'existing owner protection is preserved');
@@ -52,12 +53,7 @@ export async function smokeConfigurationLifecycle({clickMenu, clickReady, clickT
   await clickReady(members + ' .ant-drawer-close'); await poll(()=>evaluate(`!document.querySelector('${members}')`), 'clean member configuration closes');
   console.log('PASS: Tenant real lazy capabilities/retry, owner protection, 521 member pages, parent write barrier, retained owned failure, no inactive toast, captured retry and last-page clamp');
 
-  await clickText(tenant + ' button', '配置套餐'); await poll(()=>hasRow(side(tenantPackages, false), 'package-120'), 'tenant package assignment');
-  await select(side(tenantPackages, false), 'package-120'); await doubleMove(side(tenantPackages, false), '分配');
-  await poll(()=>fixture.writes.at(-1).completed && fixture.packageGrants.get(fixture.tenants[0].id).has('package-120'), 'actual captured package assignment');
-  assert.equal(fixture.writes.at(-1).data.tenantId, fixture.tenants[0].id); assert.deepEqual(fixture.writes.at(-1).data.packageCodes, ['package-120']);
-  await poll(()=>evaluate(`!!document.querySelector('${tenantPackages} .ant-drawer-close')`), 'successful child releases its own parent');
-  await clickReady(tenantPackages + ' .ant-drawer-close');
+  await smokePackageAdministration({clickReady, clickText, fill, poll, evaluate, fixture: fixture.administration, tenant, tenantId: fixture.tenants[0].id});
   await clickMenu('套餐包管理'); await select(packages, fixture.parentPackages[0].id); await clickText(packages + ' button', '配置应用');
   await poll(()=>hasRow(side(applications, false), 'application-120'), 'actual package application assignment');
   await clickReady(side(applications, false) + ' .ant-pagination-item-21'); await poll(()=>hasRow(side(applications, false), 'application-520'), 'application candidate beyond 500');
@@ -72,11 +68,13 @@ export async function smokeConfigurationLifecycle({clickMenu, clickReady, clickT
   await poll(()=>hasRow(side(applications, true), 'application-001'), 'different package has only its own assigned side');
   assert.equal(await evaluate(`document.querySelectorAll('${side(applications, true)} [data-row-key]').length`), 1);
   await clickReady(applications + ' .ant-drawer-close');
-  console.log('PASS: Tenant package and Package application configurations use real schema actions, captured parent IDs/codes, bounded 521-row pages, failures/retry and independent parent sessions');
+  console.log('PASS: Package application configurations use real schema actions, captured parent IDs/codes, bounded 521-row pages, failures/retry and independent parent sessions');
 
   await clickMenu('租户成员分配测试'); await clickText(tenant + ' button', '配置成员');
   await poll(()=>hasRow(side(members, false), 'member-120'), 'fresh captured member session'); await select(side(members, false), 'member-120');
-  fixture.failWrite(); await doubleMove(side(members, false), '分配'); const old = fixture.writes.at(-1);
+  fixture.failWrite(); const beforeTransitionWrites = fixture.writes.length; await doubleMove(side(members, false), '分配');
+  await poll(() => fixture.writes.length === beforeTransitionWrites + 1, 'captured old-scope write reaches server before switching authorization');
+  const old = fixture.writes.at(-1);
   await transition('viewer'); await poll(()=>old.completed && hasRow(tenant, fixture.tenants[0].id), 'old-scope callback is suppressed');
   await select(tenant, fixture.tenants[0].id); await poll(()=>fixture.reads.some(read=>read.path.endsWith('/capabilities') && read.mode === 'viewer'), 'real viewer capability');
   assert.equal(await evaluate(`[...document.querySelectorAll('${tenant} button')].some(button=>button.textContent.includes('配置成员'))`), false);

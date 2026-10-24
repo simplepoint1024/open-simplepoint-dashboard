@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.auditing.logging.api.pojo.command.ResourceGrantLogRecordCommand;
 import org.simplepoint.plugin.auditing.logging.api.service.ResourceGrantLogRemoteService;
@@ -30,13 +31,10 @@ import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.service.RoleService;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
-import org.simplepoint.security.entity.Resource;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.RoleResourceGrant;
-import org.simplepoint.security.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,9 +43,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service implementation class for managing Role entities in the RBAC (Role-Based Access Control) system.
- * This class extends the BaseServiceImpl to inherit common CRUD operations and implements the RolesService
- * interface for defining role-specific business logic.
+ * Service implementation class for managing Role entities in the RBAC (Role-Based Access Control)
+ * system. This class extends the BaseServiceImpl to inherit common CRUD operations and implements
+ * the RolesService interface for defining role-specific business logic.
  */
 @Slf4j
 @Service
@@ -58,41 +56,38 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   private final TenantRepository tenantRepository;
   private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceGrantLogRemoteService resourceGrantLogRemoteService;
-  private final ResourceService resourceService;
   private TenantResourceCatalog tenantResourceCatalog;
 
   @Autowired(required = false)
   public void setTenantResourceCatalog(TenantResourceCatalog tenantResourceCatalog) {
     this.tenantResourceCatalog = tenantResourceCatalog;
   }
+
   private final ScopePolicyValidator scopePolicyValidator;
   private final RoleScopeBindingService roleScopeBindingService;
 
   /**
-   * Constructs a new RolesServiceImpl with the specified repository, user context, and details provider service.
+   * Constructs a new RolesServiceImpl with the specified repository, user context, and details
+   * provider service.
    *
-   * @param repository                         the RoleRepository instance for data access
-   * @param detailsProviderService             the service for providing user details
+   * @param repository the RoleRepository instance for data access
+   * @param detailsProviderService the service for providing user details
    * @param roleResourceGrantRepository the repository for role-resource grants
    */
   public RolesServiceImpl(
       RoleRepository repository,
       DetailsProviderService detailsProviderService,
       RoleResourceGrantRepository roleResourceGrantRepository,
-      @Autowired(required = false)
-      TenantRepository tenantRepository,
+      @Autowired(required = false) TenantRepository tenantRepository,
       ResourceAuthorizationVersionService resourceAuthorizationVersionService,
       ResourceGrantLogRemoteService resourceGrantLogRemoteService,
-      ResourceService resourceService,
       ScopePolicyValidator scopePolicyValidator,
-      RoleScopeBindingService roleScopeBindingService
-  ) {
+      RoleScopeBindingService roleScopeBindingService) {
     super(repository, detailsProviderService);
     this.roleResourceGrantRepository = roleResourceGrantRepository;
     this.tenantRepository = tenantRepository;
     this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceGrantLogRemoteService = resourceGrantLogRemoteService;
-    this.resourceService = resourceService;
     this.scopePolicyValidator = scopePolicyValidator;
     this.roleScopeBindingService = roleScopeBindingService;
   }
@@ -119,8 +114,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   @Override
   public String requireManagementTenant() {
+    String tenantId = requireSelectedTenant();
     requireTenantOwnerOrAdministratorIfTenantScoped();
-    return resolveCurrentTenantScope();
+    return tenantId;
   }
 
   @Override
@@ -178,7 +174,6 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     refreshAuthorizationVersionByRoleTenantIds(roles);
   }
 
-
   /**
    * Removes the authorization of specified resources from a role.
    *
@@ -188,10 +183,11 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void unauthorized(String roleId, Set<String> resourceCodes) {
+    String tenantId = requireSelectedTenant();
     requireTenantOwnerOrAdministratorIfTenantScoped();
+    requireTenantCatalog().lockForGrantModification(tenantId);
     validateRoleBelongsToCurrentTenant(roleId);
-    String tenantId = resolveCurrentTenantScope();
-    getRepository().lockForAuthorization(tenantId, roleId);
+    lockRole(tenantId, roleId);
     this.getRepository().unauthorized(tenantId, roleId, resourceCodes);
     refreshCurrentTenantAuthorizationVersion();
     recordResourceGrantChange("UNAUTHORIZE", roleId, resourceCodes);
@@ -205,9 +201,10 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
    */
   @Override
   public Collection<String> authorized(String roleId) {
+    String tenantId = requireSelectedTenant();
     requireTenantOwnerOrAdministratorIfTenantScoped();
     validateRoleBelongsToCurrentTenant(roleId);
-    return getRepository().authorized(resolveCurrentTenantScope(), roleId);
+    return getRepository().authorized(tenantId, roleId);
   }
 
   /**
@@ -219,40 +216,25 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
   @Override
   @Transactional(rollbackFor = Exception.class)
   public Collection<RoleResourceGrant> authorize(RoleResourceGrantDto dto) {
+    String tenantId = requireSelectedTenant();
     requireTenantOwnerOrAdministratorIfTenantScoped();
     if (dto == null) {
       throw new IllegalArgumentException("角色资源授权参数不能为空");
     }
-    if (tenantResourceCatalog != null) {
-      tenantResourceCatalog.lockForGrantModification(resolveCurrentTenantScope());
-    }
+    requireTenantCatalog().lockForGrantModification(tenantId);
     validateRoleBelongsToCurrentTenant(dto.getRoleId());
-    getRepository().lockForAuthorization(resolveCurrentTenantScope(), dto.getRoleId());
-    scopePolicyValidator.validate(resolveCurrentTenantScope(), dto.getDataScopeId(), dto.getFieldScopeId());
-    roleScopeBindingService.validateLegacyAssignment(resolveCurrentTenantScope(), dto.getRoleId(), dto.getDataScopeId(), dto.getFieldScopeId());
-    Set<String> resourceCodes = normalizeResourceCodes(dto == null ? null : dto.getResourceCodes());
+    lockRole(tenantId, dto.getRoleId());
+    scopePolicyValidator.validate(tenantId, dto.getDataScopeId(), dto.getFieldScopeId());
+    roleScopeBindingService.validateLegacyAssignment(
+        tenantId, dto.getRoleId(), dto.getDataScopeId(), dto.getFieldScopeId());
+    Set<String> resourceCodes = normalizeResourceCodes(dto.getResourceCodes());
     if (resourceCodes.isEmpty()) {
       return List.of();
     }
-    String tenantId = resolveCurrentTenantScope();
-    Set<String> accessibleGrantableCodes = tenantResourceCatalog != null
-        && tenantResourceCatalog.mode(tenantId) == TenantResourceMode.CUSTOM
-        ? tenantResourceCatalog.grantableCodes(tenantId, resourceCodes)
-        : resourceService.findAllByCodes(resourceCodes).stream()
-            .filter(resource -> Boolean.TRUE.equals(resource.getGrantable()))
-            .filter(resource -> Boolean.FALSE.equals(resource.getDisabled()))
-            .map(Resource::getCode)
-            .collect(Collectors.toSet());
-    if (tenantResourceCatalog != null) {
-      accessibleGrantableCodes = new LinkedHashSet<>(accessibleGrantableCodes);
-      accessibleGrantableCodes.addAll(
-          tenantResourceCatalog.managedGrantableCodes(tenantId, resourceCodes)
-      );
-    }
+    Set<String> accessibleGrantableCodes =
+        requireTenantCatalog().grantableCodes(tenantId, resourceCodes);
     if (!accessibleGrantableCodes.containsAll(resourceCodes)) {
-      Set<String> rejected = new LinkedHashSet<>(resourceCodes);
-      rejected.removeAll(accessibleGrantableCodes);
-      throw new AccessDeniedException("资源不属于当前工作空间、未开通或不可授权: " + String.join(",", rejected));
+      throw new AccessDeniedException("资源不属于当前工作空间、未开通或不可授权");
     }
     if ((dto.getDataScopeId() != null || dto.getFieldScopeId() != null)
         && resourceCodes.stream().anyMatch(code -> code.startsWith("tenant." + tenantId + "."))) {
@@ -275,13 +257,44 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     return saved;
   }
 
+  private TenantResourceCatalog requireTenantCatalog() {
+    if (tenantResourceCatalog == null) {
+      throw new AccessDeniedException("租户资源目录不可用");
+    }
+    return tenantResourceCatalog;
+  }
+
+  private String requireSelectedTenant() {
+    var context = getAuthorizationContext();
+    if (context == null
+        || context.getUserId() == null
+        || context.getUserId().isBlank()
+        || (context.getScopeType() != AuthorizationScopeType.TENANT
+            && context.getScopeType() != AuthorizationScopeType.PERSONAL)) {
+      throw new AccessDeniedException("请选择有效的租户工作空间");
+    }
+    String tenantId = context.getAttribute("X-Tenant-Id");
+    if (tenantId == null || tenantId.isBlank()) {
+      throw new AccessDeniedException("请选择有效的租户工作空间");
+    }
+    return tenantId;
+  }
+
+  private void lockRole(String tenantId, String roleId) {
+    if (getRepository().lockForAuthorization(tenantId, roleId).isEmpty()) {
+      throw new AccessDeniedException("角色不存在或不属于当前租户");
+    }
+  }
+
   private void requireTenantOwnerOrAdministratorIfTenantScoped() {
     String tenantId = resolveCurrentTenantScope();
     if (Boolean.TRUE.equals(getAuthorizationContext().getIsAdministrator())) {
       return;
     }
-    var tenant = tenantRepository.findById(tenantId)
-        .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
+    var tenant =
+        tenantRepository
+            .findById(tenantId)
+            .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
     if (!Objects.equals(tenant.getOwnerId(), getAuthorizationContext().getUserId())) {
       throw new AccessDeniedException("仅租户所有者可以配置当前租户角色权限");
     }
@@ -300,7 +313,8 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     if (tenantRepository == null) {
       throw new IllegalStateException("Tenant repository is required to resolve tenant context");
     }
-    return tenantRepository.findPersonalTenantByOwnerId(userId)
+    return tenantRepository
+        .findPersonalTenantByOwnerId(userId)
         .map(org.simplepoint.plugin.rbac.tenant.api.entity.Tenant::getId)
         .orElseThrow(() -> new IllegalStateException("Tenant context is required"));
   }
@@ -310,7 +324,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
       return;
     }
     AuthorizationContext context = getAuthorizationContext();
-    if (context != null && (context.getAttribute("X-Tenant-Id") == null || context.getAttribute("X-Tenant-Id").isBlank())) {
+    if (context != null
+        && (context.getAttribute("X-Tenant-Id") == null
+            || context.getAttribute("X-Tenant-Id").isBlank())) {
       context.mergeAttributes(Map.of("X-Tenant-Id", tenantId));
     }
   }
@@ -340,10 +356,11 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     if (roles == null || roles.isEmpty()) {
       return;
     }
-    Set<String> tenantIds = roles.stream()
-        .map(Role::getTenantId)
-        .filter(tenantId -> tenantId != null && !tenantId.isBlank())
-        .collect(Collectors.toSet());
+    Set<String> tenantIds =
+        roles.stream()
+            .map(Role::getTenantId)
+            .filter(tenantId -> tenantId != null && !tenantId.isBlank())
+            .collect(Collectors.toSet());
     if (!tenantIds.isEmpty()) {
       resourceAuthorizationVersionService.refreshTenants(tenantIds);
     }
@@ -351,7 +368,9 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
 
   private void recordResourceGrantChange(String action, String roleId, Set<String> resourceCodes) {
     AuthorizationContext authorizationContext = getAuthorizationContext();
-    if (authorizationContext == null || authorizationContext.getUserId() == null || authorizationContext.getUserId().isBlank()) {
+    if (authorizationContext == null
+        || authorizationContext.getUserId() == null
+        || authorizationContext.getUserId().isBlank()) {
       return;
     }
 
@@ -370,16 +389,18 @@ public class RolesServiceImpl extends BaseServiceImpl<RoleRepository, Role, Stri
     command.setTenantId(resolveCurrentTenantScope());
     command.setContextId(authorizationContext.getContextId());
     command.setSourceService("common");
-    command.setDescription(action + " ROLE_RESOURCE [" + command.getSubjectLabel() + "] -> [" + command.getTargetSummary() + "]");
+    command.setDescription(
+        action
+            + " ROLE_RESOURCE ["
+            + command.getSubjectLabel()
+            + "] -> ["
+            + command.getTargetSummary()
+            + "]");
     try {
       resourceGrantLogRemoteService.record(command);
     } catch (RuntimeException ex) {
       log.warn(
-          "Failed to record role resource change log: action={}, roleId={}",
-          action,
-          roleId,
-          ex
-      );
+          "Failed to record role resource change log: action={}, roleId={}", action, roleId, ex);
     }
   }
 

@@ -24,7 +24,7 @@
 .sp-form-palette-item .ant-btn { font-size: 12px; padding-inline: 3px; gap: 5px; }
 .sp-form-palette-item .ant-btn > span:not(.ant-btn-icon) { overflow: hidden; text-overflow: ellipsis; }
 .sp-form-designer-properties .ant-form-item { margin-bottom: 12px; }
-.sp-form-designer-properties .ant-form-item-row, .sp-form-data-modal .ant-form-item-row, .sp-form-rule-modal .ant-form-item-row { flex-wrap: nowrap; }
+.sp-form-designer-properties .ant-form-item-row, .sp-form-data-modal .ant-form-item-row, .sp-form-field-calculation-modal .ant-form-item-row, .sp-form-rule-modal .ant-form-item-row { flex-wrap: nowrap; }
 .sp-form-designer-properties .ant-form-item-label { text-align: left; padding-right: 8px; }
 .sp-form-designer-properties .ant-form-item-label > label { font-size: 12px; max-width: 100%; }
 .sp-form-designer-properties .ant-form-item-control { min-width: 0; }
@@ -67,7 +67,9 @@
 .sp-form-preview-content { padding-top: 44px; }
 .sp-form-preview-stage { height: 70dvh; overflow: auto; background: var(--ant-color-fill-quaternary); padding: 12px; overscroll-behavior: contain; }
 .sp-form-preview-viewport { box-sizing: border-box; min-height: 100%; margin-inline: auto; padding: 16px; background: var(--ant-color-bg-container); border-radius: var(--ant-border-radius-lg); box-shadow: 0 0 0 1px var(--ant-color-border-secondary); }
-.sp-form-data-modal .ant-modal-body, .sp-form-rule-modal .ant-modal-body { max-height: 65vh; overflow: auto; }
+.sp-form-data-modal .ant-modal-body, .sp-form-field-calculation-modal .ant-modal-body, .sp-form-rule-modal .ant-modal-body { max-height: 65vh; overflow: auto; }
+.sp-form-calculation-properties { min-width: 0; }
+.sp-form-calculation-properties .sp-form-calculation-expression { max-height: 180px; overflow: auto; padding: 8px; background: var(--ant-color-fill-quaternary); border-radius: var(--ant-border-radius); }
 .sp-form-data-editor, .sp-form-rule-editor { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .sp-form-data-editor td { overflow-wrap: anywhere; }
 .sp-form-editor-help { display: flex; justify-content: flex-end; padding-bottom: 8px; }
@@ -86,3 +88,9 @@
 .sp-form-property-tabs > .ant-tabs-nav { margin-bottom: 12px; }
 .sp-form-property-tabs > .ant-tabs-nav .ant-tabs-tab { padding-block: 8px; }
 .sp-form-property-tabs .sp-form-data-editor { min-width: 0; padding: 0; }
+.sp-form-calculation-trial { margin-top: 12px; }
+.sp-form-calculation-trial form { max-height: 300px; overflow: auto; padding-inline-end: 8px; }
+.sp-form-calculation-trial .sp-table-button-group { margin-block: 8px; }
+.sp-form-designer-navigation .ant-tree { overflow: auto; max-height: calc(100vh - 240px); }
+.sp-form-designer-navigation .ant-tabs-content { min-width: 0; }
+.sp-form-diagnostics > .ant-alert { margin-bottom: 12px; }

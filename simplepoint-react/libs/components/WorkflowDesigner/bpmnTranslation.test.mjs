@@ -5,7 +5,7 @@ import {translateBpmn} from './bpmnTranslation.ts';
 import {createTranslator} from '../../shared/i18n/translator.ts';
 
 test('native editor strings use platform locales, including diagrams and loop controls', () => {
-  const root = new URL('../../../../simplepoint-services/simplepoint-service-workflow/src/main/resources/META-INF/simplepoint/i18n/', import.meta.url);
+  const root = new URL('../../../../simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/resources/META-INF/simplepoint/modules/workflow-http/i18n/', import.meta.url);
   const zh = createTranslator(JSON.parse(readFileSync(new URL('zh-CN/workflow.json', root), 'utf8')));
   const en = createTranslator(JSON.parse(readFileSync(new URL('en-US/workflow.json', root), 'utf8')));
   assert.equal(translateBpmn(zh, 'Create pool/participant'), '创建泳池（仅支持一个可执行流程）');

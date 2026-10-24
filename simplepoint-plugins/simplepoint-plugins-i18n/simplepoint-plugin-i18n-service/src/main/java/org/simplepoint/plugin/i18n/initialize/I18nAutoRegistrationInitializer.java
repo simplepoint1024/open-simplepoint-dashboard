@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.simplepoint.core.entity.Message;
-import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.core.utils.ClassPathResourceUtil;
 import org.simplepoint.platform.bootstrap.BootstrapContribution;
 import org.simplepoint.platform.bootstrap.PlatformBootstrapContribution;
@@ -17,6 +16,7 @@ import org.simplepoint.plugin.i18n.api.entity.TimeZone;
 import org.simplepoint.plugin.i18n.api.repository.I18nMessageRepository;
 import org.simplepoint.plugin.i18n.api.service.I18nCountriesService;
 import org.simplepoint.plugin.i18n.api.service.I18nLanguageService;
+import org.simplepoint.plugin.i18n.api.service.I18nMessageManagementService;
 import org.simplepoint.plugin.i18n.api.service.I18nNamespaceService;
 import org.simplepoint.plugin.i18n.api.service.I18nRegionService;
 import org.simplepoint.plugin.i18n.api.service.I18nTimeZoneService;
@@ -27,17 +27,13 @@ import org.springframework.stereotype.Component;
 /**
  * I18nAutoRegistrationInitializer automatically registers internationalization data.
  *
- * <p>This class defines platform bootstrap contributions for base i18n data and i18n messages.
- * The bootstrap contributions read classpath JSON files and populate the corresponding services.
+ * <p>This class defines platform bootstrap contributions for base i18n data and i18n messages. The
+ * bootstrap contributions read classpath JSON files and populate the corresponding services.
  */
 @Component
 public class I18nAutoRegistrationInitializer {
-  private static final Set<String> I18N_GLOBAL_NAMESPACES = Set.of(
-      "common",
-      "errors",
-      "messages",
-      "settings"
-  );
+  private static final Set<String> I18N_GLOBAL_NAMESPACES =
+      Set.of("common", "errors", "messages", "settings");
 
   private static final String I18N_INIT_MODULE = "i18n-base";
 
@@ -49,6 +45,21 @@ public class I18nAutoRegistrationInitializer {
 
   private static final String I18N_MODULE_MESSAGES_PATH = "/META-INF/simplepoint/i18n/";
 
+  private org.springframework.beans.factory.ObjectProvider<
+          org.simplepoint.platform.composition.ModulePlan>
+      modulePlan;
+
+  /**
+   * Keeps historical bootstrap repair scoped when this provider is selected into a modular host.
+   */
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setModulePlan(
+      org.springframework.beans.factory.ObjectProvider<
+              org.simplepoint.platform.composition.ModulePlan>
+          modulePlan) {
+    this.modulePlan = modulePlan;
+  }
+
   /**
    * Registers a bootstrap contribution for base i18n data.
    *
@@ -59,13 +70,24 @@ public class I18nAutoRegistrationInitializer {
       I18nCountriesService countriesService,
       I18nLanguageService languageService,
       I18nRegionService regionService,
-      I18nTimeZoneService timeZoneService
-  ) {
-    return () -> BootstrapContribution.versioned("i18n", "base", I18N_INIT_MODULE, "1", 200, () -> {
-      if (languageService.findAll(Map.of()).isEmpty()) {
-        importBaseI18nData(loadBaseI18nData(), countriesService, languageService, regionService, timeZoneService);
-      }
-    });
+      I18nTimeZoneService timeZoneService) {
+    return () ->
+        BootstrapContribution.versioned(
+            "i18n",
+            "base",
+            I18N_INIT_MODULE,
+            "1",
+            200,
+            () -> {
+              if (languageService.findAll(Map.of()).isEmpty()) {
+                importBaseI18nData(
+                    loadBaseI18nData(),
+                    countriesService,
+                    languageService,
+                    regionService,
+                    timeZoneService);
+              }
+            });
   }
 
   /**
@@ -76,12 +98,22 @@ public class I18nAutoRegistrationInitializer {
   @Bean
   public PlatformBootstrapContribution i18nMessagesBootstrapContribution(
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> BootstrapContribution.versioned("i18n", "messages", I18N_INIT_MSG_MODULE, "1", 210, () ->
-        importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true)
-    );
+      I18nMessageManagementService messageService,
+      I18nMessageRepository messageRepository) {
+    return () ->
+        BootstrapContribution.versioned(
+            "i18n",
+            "messages",
+            I18N_INIT_MSG_MODULE,
+            "1",
+            210,
+            () ->
+                importMessages(
+                    loadMessages(),
+                    namespaceService,
+                    messageService,
+                    messageRepository,
+                    namespace -> true));
   }
 
   /**
@@ -97,30 +129,50 @@ public class I18nAutoRegistrationInitializer {
       I18nRegionService regionService,
       I18nTimeZoneService timeZoneService,
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
-      I18nMessageRepository messageRepository
-  ) {
-    return () -> BootstrapContribution.versioned("i18n", "repair", I18N_BOOTSTRAP_REPAIR_MODULE, "1", 220, () -> {
-      if (!messageRepository.findAvailableLocales().isEmpty()) {
-        return;
-      }
-      if (languageService.findAll(Map.of()).isEmpty()) {
-        importBaseI18nData(loadBaseI18nData(), countriesService, languageService, regionService, timeZoneService);
-      }
-      importMessages(loadMessages(), namespaceService, messageService, messageRepository, namespace -> true);
-    });
+      I18nMessageManagementService messageService,
+      I18nMessageRepository messageRepository) {
+    return () ->
+        BootstrapContribution.versioned(
+            "i18n",
+            "repair",
+            I18N_BOOTSTRAP_REPAIR_MODULE,
+            "1",
+            220,
+            () -> {
+              if (!messageRepository.findAvailableLocales().isEmpty()) {
+                return;
+              }
+              if (languageService.findAll(Map.of()).isEmpty()) {
+                importBaseI18nData(
+                    loadBaseI18nData(),
+                    countriesService,
+                    languageService,
+                    regionService,
+                    timeZoneService);
+              }
+              importMessages(
+                  loadMessages(),
+                  namespaceService,
+                  messageService,
+                  messageRepository,
+                  namespace -> true);
+            });
   }
 
   private Map<String, I18nInitializeProperties> loadBaseI18nData() throws Exception {
-    Map<String, I18nInitializeProperties> data = ClassPathResourceUtil
-        .readJson(I18N_COUNTRIES_PATH, I18nInitializeProperties.class);
+    Map<String, I18nInitializeProperties> data =
+        ClassPathResourceUtil.readJson(I18N_COUNTRIES_PATH, I18nInitializeProperties.class);
     verifyI18n(data);
     return data;
   }
 
   private Map<String, Map<String, Map<String, String>>> loadMessages() throws Exception {
-    Map<String, Map<String, Map<String, String>>> messages = ClassPathResourceUtil
-        .readJsonPathMap(I18N_MODULE_MESSAGES_PATH);
+    Map<String, Map<String, Map<String, String>>> messages =
+        modulePlan != null && modulePlan.getIfAvailable() != null
+            ? org.simplepoint.plugin.i18n.api.initialization.I18nModuleInitializer.readDeclarations(
+                "i18n", getClass().getClassLoader())
+            : org.simplepoint.plugin.i18n.api.initialization.I18nDeclarationRegistration
+                .readLegacyDeclarations();
     verifyMessages(messages);
     return messages;
   }
@@ -130,34 +182,34 @@ public class I18nAutoRegistrationInitializer {
       I18nCountriesService countriesService,
       I18nLanguageService languageService,
       I18nRegionService regionService,
-      I18nTimeZoneService timeZoneService
-  ) {
-    data.values().forEach(item -> {
-      Countries countries = new Countries();
-      BeanUtils.copyProperties(item, countries);
-      countriesService.create(countries);
-      Set<Language> languages = item.getLanguages();
-      if (languages != null && !languages.isEmpty()) {
-        languageService.create(languages);
-      }
-      Set<Region> regions = item.getRegions();
-      if (regions != null && !regions.isEmpty()) {
-        regionService.create(regions);
-      }
-      Set<TimeZone> timeZones = item.getTimezones();
-      if (timeZones != null && !timeZones.isEmpty()) {
-        timeZoneService.create(timeZones);
-      }
-    });
+      I18nTimeZoneService timeZoneService) {
+    data.values()
+        .forEach(
+            item -> {
+              Countries countries = new Countries();
+              BeanUtils.copyProperties(item, countries);
+              countriesService.create(countries);
+              Set<Language> languages = item.getLanguages();
+              if (languages != null && !languages.isEmpty()) {
+                languageService.create(languages);
+              }
+              Set<Region> regions = item.getRegions();
+              if (regions != null && !regions.isEmpty()) {
+                regionService.create(regions);
+              }
+              Set<TimeZone> timeZones = item.getTimezones();
+              if (timeZones != null && !timeZones.isEmpty()) {
+                timeZoneService.create(timeZones);
+              }
+            });
   }
 
   private void importMessages(
       Map<String, Map<String, Map<String, String>>> load,
       I18nNamespaceService namespaceService,
-      I18nMessageService messageService,
+      I18nMessageManagementService messageService,
       I18nMessageRepository messageRepository,
-      Predicate<String> namespaceFilter
-  ) {
+      Predicate<String> namespaceFilter) {
     Set<String> namespaceCodesToImport = new HashSet<>();
     for (Map<String, Map<String, String>> namespaceMessages : load.values()) {
       for (String namespaceCode : namespaceMessages.keySet()) {
@@ -215,13 +267,15 @@ public class I18nAutoRegistrationInitializer {
 
   private void verifyI18n(Map<String, I18nInitializeProperties> data) {
     if (data == null || data.isEmpty()) {
-      throw new IllegalStateException("No i18n country resources found under " + I18N_COUNTRIES_PATH);
+      throw new IllegalStateException(
+          "No i18n country resources found under " + I18N_COUNTRIES_PATH);
     }
   }
 
   private void verifyMessages(Map<String, Map<String, Map<String, String>>> data) {
     if (data == null || data.isEmpty()) {
-      throw new IllegalStateException("No i18n message resources found under " + I18N_MODULE_MESSAGES_PATH);
+      throw new IllegalStateException(
+          "No i18n message resources found under " + I18N_MODULE_MESSAGES_PATH);
     }
   }
 }

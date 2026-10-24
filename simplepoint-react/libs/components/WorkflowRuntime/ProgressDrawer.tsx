@@ -1,7 +1,8 @@
+import {asyncComponent} from '../AsyncComponent';
 import {formatDateTime} from '@simplepoint/shared/format/temporal';
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {Suspense, useEffect, useState} from 'react';
 import {Alert, Descriptions, Drawer, Empty, Segmented, Space, Spin, Timeline, Typography} from 'antd';
-import {useData} from '@simplepoint/shared/api/methods';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
@@ -9,11 +10,11 @@ import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {workflowApi} from '@simplepoint/shared/workflow/api';
 import TableActions from '../Table/Actions';
 import {WorkflowStatus} from './Status';
-import {initialProgressSelection} from './progressSelection';
+import {initialProgressSelection, progressSection, type ProgressSection} from './progressSelection';
 
-const ProcessStatusDiagram = lazy(() => import('../ProcessStatusDiagram'));
-const ActionTimeline = lazy(() => import('./ActionTimeline'));
-const BusinessSnapshot = lazy(() => import('../ApplicationWorkflow/SnapshotView'));
+const ProcessStatusDiagram = asyncComponent(() => import('../ProcessStatusDiagram'));
+const ActionTimeline = asyncComponent(() => import('./ActionTimeline'));
+const BusinessSnapshot = asyncComponent(() => import('../ApplicationWorkflow/SnapshotView'));
 
 export default function ProgressDrawer(props: {id: string; onClose: () => void}) {
   const scope = useQueryScope();
@@ -33,9 +34,10 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
 }) {
   const {t, locale} = useI18n(), selected = usePageSelected();
   const [node, setNode] = useState<string>(), [page, setPage] = useState(0), [activeOnly, setActiveOnly] = useState(false);
-  const [section, setSection] = useState<'nodes' | 'actions' | 'business'>('nodes');
-  const query = useData(['workflow', 'progress', id], ({signal}) => workflowApi.progress(id, signal), {retry: false});
+  const [chosenSection, setSection] = useState<ProgressSection>();
+  const query = useOwnedData(['workflow', 'progress', id], ({signal}) => workflowApi.progress(id, signal), {retry: false});
   const progress = query.data, diagram = progress?.diagram;
+  const section = progressSection(progress?.matter.businessKey, chosenSection);
   useEffect(() => {
     if (node || query.error) return;
     const selection = initialProgressSelection(diagram, query.isFetching);
@@ -46,7 +48,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
       setActiveOnly(false); setPage(0);
     }
   }, [diagram, node, activeOnly, query.isFetching, query.error]);
-  const history = useData(['workflow', 'node-history', id, node, page, activeOnly],
+  const history = useOwnedData(['workflow', 'node-history', id, node, page, activeOnly],
     ({signal}) => workflowApi.nodeHistory(id, node!, page, activeOnly, signal), {enabled: Boolean(node) && section === 'nodes', retry: false});
   const pick = (value: string) => {setNode(value); setPage(0); setActiveOnly(Boolean(diagram?.activeActivityIds.includes(value)));};
   const date = (value?: string) => value ? formatDateTime(value, locale) : '—';
@@ -60,7 +62,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
     {query.error && <Alert showIcon type="error" title={resolveApiErrorMessage(query.error, t('workflow.diagram.loadFailed', '流程状态图加载失败'))}
       action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 1, text: t('workflow.retry', '重试')}]}
         onButtonEvents={{retry: () => void query.refetch()}}/>}/>}
-    {progress && diagram && <>
+    {progress && diagram && !query.isFetching && !query.isError && <>
       <Descriptions size="small" column={{xs: 1, sm: 2, md: 3}} items={[
         {key: 'definition', label: t('workflow.definition.name', '流程名称'), children: progress.matter.definitionName},
         {key: 'version', label: t('workflow.matter.definitionVersion', '流程版本'), children: `v${progress.matter.definitionVersion}`},
@@ -75,7 +77,7 @@ function ProgressSession({id, onClose, onNavigate, onBack}: {
         ...(progress.matter.nextInstanceId ? [{key: 'nextMatter', sort: 2,
           text: t('workflow.resubmit.next', '查看重新发起的事项'), onClick: () => onNavigate(progress.matter.nextInstanceId!)}] : []),
       ]}/>
-      <Segmented value={section} onChange={value => setSection(value as 'nodes' | 'actions' | 'business')} options={[
+      <Segmented value={section} onChange={value => setSection(value as ProgressSection)} options={[
         {value: 'nodes', label: t('workflow.audit.nodes', '审批节点')},
         {value: 'actions', label: t('workflow.audit.title', '流程操作记录')},
         ...(progress.matter.businessKey?.startsWith('app-form:') ? [{value: 'business', label: t('app.submission.snapshot', '业务快照')}] : []),

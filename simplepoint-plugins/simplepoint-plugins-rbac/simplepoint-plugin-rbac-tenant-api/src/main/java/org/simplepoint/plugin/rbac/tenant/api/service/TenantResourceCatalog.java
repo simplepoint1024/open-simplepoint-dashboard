@@ -1,16 +1,40 @@
 package org.simplepoint.plugin.rbac.tenant.api.service;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
 import org.simplepoint.security.entity.ResourceType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 /** Tenant resource catalog and entitlement boundary. */
 public interface TenantResourceCatalog {
+  /**
+   * Tenant-local permissions and the exclusive deadline for re-evaluating time-based eligibility.
+   */
+  record AuthorizationSelection(Set<String> resourceCodes, Instant validUntil) {
+    public AuthorizationSelection {
+      resourceCodes = Set.copyOf(resourceCodes);
+    }
+  }
+
+  /**
+   * Resolves role grants, eligible public entries and aliases from a ready tenant directory. The
+   * caller must establish ownership or explicit administrator policy before requesting all entries.
+   * A null deadline means no scheduled entitlement transition; lifecycle changes still invalidate
+   * caches.
+   */
+  default AuthorizationSelection authorization(
+      String tenantId, Collection<String> roleCodes, boolean allEntitled) {
+    return authorization(tenantId, roleCodes, allEntitled, null);
+  }
+
+  /** Actor identity comes from authentication; ownership is rechecked against the tenant row. */
+  AuthorizationSelection authorization(
+      String tenantId, Collection<String> roleCodes, boolean allEntitled, String actorId);
+
   /** Editable navigation metadata; ownership and stable codes remain service-controlled. */
   record Mutation(
       String parentId,
@@ -21,7 +45,15 @@ public interface TenantResourceCatalog {
       String icon,
       Integer sort,
       String description,
-      Boolean enabled) {}
+      Boolean enabled,
+      @org.simplepoint.api.schema.LocalizedField(maxLength = 100)
+      org.simplepoint.api.locale.LocalizedText nameLocalization) {
+    /** Older callers keep the scalar contract; an absent localized value never deletes translations. */
+    public Mutation(String parentId, String name, ResourceType type, String path, String targetResourceId,
+        String icon, Integer sort, String description, Boolean enabled) {
+      this(parentId, name, type, path, targetResourceId, icon, sort, description, enabled, null);
+    }
+  }
 
   /** Counts applied entitlement and navigation changes. */
   record SyncResult(int added, int refreshed, int deactivated) {}
@@ -48,12 +80,6 @@ public interface TenantResourceCatalog {
   default void lockForGrantModification(String tenantId) {
     throw new UnsupportedOperationException("Tenant grant serialization is required");
   }
-
-  /** Returns the tenant's resource loading mode. */
-  TenantResourceMode mode(String tenantId);
-
-  /** Changes the authorized workspace's resource loading mode. */
-  TenantResourceMode selectMode(TenantResourceMode mode);
 
   /** Reconciles entitlements and optionally replaces local presentation. */
   SyncResult synchronize(boolean overwrite);
@@ -95,6 +121,16 @@ public interface TenantResourceCatalog {
   /** Active catalog entries; includes structural ancestors. */
   List<TenantResource> activeResources(String tenantId);
 
+  /** Eligible executable entries and their structural ancestors for the tenant role editor. */
+  Set<String> roleResourceIds(String tenantId);
+
+  /**
+   * Intersects requested executable codes with current tenant eligibility, including public
+   * non-grantable entries. Does not add permissions or authorize the caller; the consumer must
+   * supply only codes held by its verified caller.
+   */
+  Set<String> eligiblePermissionCodes(String tenantId, Collection<String> requested);
+
   /**
    * Held navigation nodes and required active ancestors, with backing pages suppressed for selected
    * aliases.
@@ -107,21 +143,30 @@ public interface TenantResourceCatalog {
    */
   List<TenantResource> selectedResources(String tenantId, Collection<String> codes);
 
-  /** Codes which may be granted by roles in custom mode. */
+  /**
+   * Eligible role-grant codes from the ready tenant directory, current time balances and resource
+   * lifecycle.
+   */
   Set<String> grantableCodes(String tenantId, Collection<String> requested);
 
-  /** Effective platform permission codes in custom mode, including licensed page aliases. */
+  /**
+   * Platform-origin permission codes resolved from tenant copies and eligible page aliases, without
+   * platform reads.
+   */
   Set<String> effectivePlatformCodes(String tenantId, Collection<String> requested);
 
-  /** Active service-managed permission codes, independent of presentation mode. */
+  /**
+   * Active service-managed permission codes with the same tenant readiness, lifecycle and hierarchy
+   * checks.
+   */
   Set<String> managedGrantableCodes(String tenantId, Collection<String> requested);
 
-  /** All active service-managed permission codes for tenant owner/administrator access. */
+  /**
+   * Internal enumeration of eligible managed codes; calling domains still decide whether the actor
+   * may hold them.
+   */
   Set<String> activeManagedGrantableCodes(String tenantId);
 
-  /** Held managed navigation nodes and their managed ancestors. */
-  List<TenantResource> managedNavigationResources(
-      String tenantId,
-      Collection<String> heldCodes
-  );
+  /** Held managed navigation nodes and their eligible tenant-side ancestors. */
+  List<TenantResource> managedNavigationResources(String tenantId, Collection<String> heldCodes);
 }

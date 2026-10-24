@@ -1,0 +1,97 @@
+{
+  "status": "IMPLEMENTED_AND_VERIFIED_NOT_DEPLOYED_NOT_FINAL_ACCEPTANCE",
+  "at": "2026-10-17T19:48:57.522984+00:00",
+  "deployed": false,
+  "liveApp": "20261018-runtime-projection1",
+  "liveDna": "20261018-publication-service1",
+  "implementation": [
+    "Optional immutable validation rules keyed by stable scope/field identities; legacy JSON and definition absence preserved",
+    "Typed two-valued predicates, conditional required, exact ranges, temporal order, detail count and parent/detail sum",
+    "Bounded model-aware compilation rejects unknown, managed and cross-detail field references, malformed literals and hidden invalid branches",
+    "Evaluate against freshly calculated typed aggregate inside existing Record transaction; never validate stale stored calculation outputs",
+    "Immutable APP version projection carries requirements and aggregate rules; calculated submit requirements do not become draft requirements solely because outputs are read-only",
+    "Allowed lifecycle state choices prevent unknown states from bypassing conditions; 300 business fields plus internal state fit the bounded 512-field constraint map"
+  ],
+  "quality": {
+    "simplepoint-plugin-dna-runtime-api": {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "53f1620119480d77e60e21a5d733022a687c2f37723b0f0d90b8a1de828a9005",
+      "checkstyleMain": "passed",
+      "checkstyleSha256": "7b3fafa4b65b1e37d62bc23f1f9cc1e082a2cb1da70ba677552838625fecc009"
+    },
+    "simplepoint-plugin-dna-runtime-implementation": {
+      "tests": 183,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "dc2f00752ed0526603d0c60d097aab7b7afe382203025b96917ab29eb900f664",
+      "checkstyleMain": "passed",
+      "checkstyleSha256": "9ea89ee199ad2428d1dc871887acef074f96bd72b95748c68832ec71f98078b1"
+    },
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 274,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "007f4b93bf508e7adc7064788b531068fd1c1c25d6f8344145a8e4b557039845",
+      "checkstyleMain": "passed",
+      "checkstyleSha256": "48df343f733592099f1f69e9dbd69c3c4bf1dffb7bea35f81e2c59a8f7cedf3b"
+    },
+    "simplepoint-service-app": {
+      "tests": 51,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "c43e501e6421f500f5c0040ee5066eb53819928bf0299b1d28c4af5376f7f385"
+    }
+  },
+  "totalTests": 553,
+  "newCoverage": [
+    "Four contract tests: exact legacy JSON, immutable roundtrip, malformed/oversized graphs, field capacity",
+    "Six validator tests: Unicode empty values, JSON, null negation, off-scale and sub-microsecond thresholds, scoped row conditions, exact aggregate relations, invalid definitions",
+    "Evaluator regression: fresh computed values override stale columns before validation; nullable physical output still honors required rule",
+    "Three APP projection tests: computed condition identities, all aggregate kinds, draft/submission distinction, transient rejection, 300-field capacity",
+    "Real PostgreSQL and MySQL: installed validation loaded from target metadata, owned failure leaves no receipt/snapshot or row/version change; sequence failure rolls back preceding valid writes; prior immutable snapshot unchanged"
+  ],
+  "databaseCases": {
+    "class": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest",
+    "timestamp": "2026-10-17T19:45:13",
+    "tests": [
+      "mysqlAggregate()",
+      "postgresAggregate()"
+    ],
+    "resultSha256": "3510a24b54aabe1f9de8372a5ce4ac190c1f7614b36c943697fab7cfd048b1ee",
+    "disposableContainersRemoved": true
+  },
+  "commands": [
+    "JAVA_HOME=... PATH=... python3 scripts/verification/run-dna-databases.py :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:test :simplepoint-services:simplepoint-service-app:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api:checkstyleMain :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation:checkstyleMain -Psimplepoint.frontend.skip=true --continue --console=plain",
+    "git diff --check"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjection.java": "8bd3ad92ac4aef716cd354e354351b3bb731f5ad7ba389c253592042ec1c1dbc",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationValidationProjection.java": "7d21395cbe60eafd05d41a2ac8e6546d5009d62de92dbcbb6a3a6564955617a6",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormSubmissionRequirements.java": "7404a49d63770fdc3a3bc1f9f1faf14aa397559c29212e30ad32b0c50d2ac74f",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationValidationProjectionTest.java": "0e64b611f0ae0bc593fdb1f9eaf55c31ecdc0148c3e987bd8022324198880a65",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationDefinition.java": "bfbbddf02f798a7c7a0b325ef4ba12ebfac8069705e4afe55ec386a02f5425d1",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationCondition.java": "f048a4de8b44036fb883465b7ea6171037e3b347255996b0d28f5c456f78b945",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationField.java": "f8a2362f4bb7f59601a9999bffe79e8dcb7aeffc6102ed2831839e17a7089b6a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationRule.java": "e9973a9fb938ffe0d2ef211a92b2564f3759feae6d86a2fe224efea28f49abfa",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/test/java/org/simplepoint/plugin/dna/runtime/api/record/RecordValidationRuleTest.java": "06e343eb8a69715810f1cc80148c5022d7cd1f2f25b842c183b9de166387ef23",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordAggregateValidation.java": "e240541ac9567a0d68c0b46fc6e0228ba8d4f3ac4676520b8c30c5967b8cc36b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationCompiler.java": "136e271262e4e5400e438582b733db2af062daccecf0e7ce77f58e0fca1b3197",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationEvaluator.java": "51fc56d4cd9bb0ec5802f56bc425058961f88e7c9a198547d99beaf56c1dfbcf",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/CalculatedTransactionDatabaseAssertions.java": "fc510424283d6759945ff178732daa05c849fcaed350ffb773330ce3308e0297",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java": "c8145e4d80008db8fe9abec7d3dbf9ddf359730cb63fdfc7a0e570fded0e768e",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordAggregateValidationTest.java": "1c2f2f82291ecabfe20b82364719ba8e0ff8941f1de0ddb844bf79e2bc458464",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationEvaluatorTest.java": "e759a4638651ac50649ea718b7ef363612c2ef2f4284c5d3fdb17e77eb6ac9e2"
+  },
+  "limitations": [
+    "APP preflight still uses uncalculated/old values; it is intentionally not removed before equivalent complete runtime preview and authoritative protection are integrated.",
+    "All active historical page requirements, publication-impact conditions, allowed state transitions and workflow final-value requirements still need reconciliation before enabling formula publication.",
+    "The new rules are source-only. No live formula publication, interrupted backfill, UI calculator integration or calculation-driven business workflow was accepted in this batch.",
+    "B1–B5 and all 176 final acceptance entries remain incomplete. Existing office deployment regression is not proof of formula business integration."
+  ]
+}

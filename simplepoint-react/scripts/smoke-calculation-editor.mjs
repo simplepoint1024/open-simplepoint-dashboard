@@ -50,6 +50,11 @@ try {
   };
   const fill = (selector, value) => evaluate(`(() => {const input=document.querySelector(${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   const clickText = (selector, text) => evaluate(`[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim()===${JSON.stringify(text)}).click()`);
+  const shortcut = async (key, code, modifiers, windowsVirtualKeyCode) => {
+    await send('Input.dispatchKeyEvent', {type: 'keyDown', key, code, modifiers, windowsVirtualKeyCode});
+    await send('Input.dispatchKeyEvent', {type: 'keyUp', key, code, modifiers, windowsVirtualKeyCode});
+  };
+  const formula = value => poll(() => evaluate(`document.querySelector('output').textContent===${JSON.stringify(value)}`), 'formula ' + value);
   await send('Runtime.enable'); await send('Network.enable'); await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', {width: 1280, height: 800, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: 'http://127.0.0.1:' + server.address().port + '/'});
@@ -85,14 +90,51 @@ try {
   await poll(() => evaluate("!document.querySelector('[role=alert]')"), 'valid expression');
   await clickText('[role=tab]', '▦ Visual');
   await poll(() => evaluate("document.querySelector('.sp-calculator-block-label')?.textContent==='SUM'"), 'text parsed back into visual blocks');
+  await evaluate("[...document.querySelectorAll('.sp-calculator-block-label')].find(e=>e.textContent==='单价').focus()");
+  await shortcut('ArrowRight', 'ArrowRight', 1, 39);
+  await formula('=SUM(0.123456789012345678901234567890,[单价])');
+  await poll(() => evaluate("document.activeElement?.textContent==='单价' && document.activeElement.id.endsWith('-node-1')"), 'moved block retains keyboard focus');
+  await evaluate("document.querySelector('[aria-label=Undo]').click()");
+  await formula('=SUM([单价],0.123456789012345678901234567890)');
+  await evaluate("document.querySelector('[aria-label=Redo]').click()");
+  await formula('=SUM(0.123456789012345678901234567890,[单价])');
+  await evaluate("document.querySelector('.sp-calculator-block-label').focus()");
+  await shortcut('z', 'KeyZ', 2, 90);
+  await formula('=SUM([单价],0.123456789012345678901234567890)');
+  await shortcut('Z', 'KeyZ', 10, 90);
+  await formula('=SUM(0.123456789012345678901234567890,[单价])');
   await clickText('[role=tab]', 'ƒ Expression');
   await fill('textarea', '=SUM(');
   await poll(() => evaluate("document.querySelector('[role=alert]')?.textContent.includes('SYNTAX')"), 'precise syntax feedback');
+  await evaluate("document.querySelector('textarea').focus()");
+  await shortcut('z', 'KeyZ', 2, 90);
+  await formula('=SUM(0.123456789012345678901234567890,[单价])');
+  await shortcut('y', 'KeyY', 2, 89);
+  await formula('=SUM(');
   await clickText('[role=tab]', '▦ Visual');
   assert.equal(await evaluate("document.querySelector('output').textContent"), '=SUM(');
   assert.equal(await evaluate("[...document.querySelectorAll('.sp-calculator-palette-items button')].every(e=>e.disabled)"), true);
   await clickText('[role=tab]', 'ƒ Expression'); await fill('textarea', '=SUM([单价],[数量])');
   await clickText('[role=tab]', '▦ Visual');
+  await clickText('fieldset button', 'Replace from host');
+  await formula('=SUM(7,11)');
+  assert.equal(await evaluate("document.querySelector('[aria-label=Undo]').disabled && document.querySelector('[aria-label=Redo]').disabled"), true, 'external replacement clears stale history');
+  await evaluate("document.querySelectorAll('fieldset input')[1].click()");
+  await clickText('[role=tab]', 'ƒ Expression'); await fill('textarea', '=SUM(17,19)');
+  await formula('=SUM(7,11)');
+  assert.equal(await evaluate("document.querySelector('[aria-label=Undo]').disabled && document.querySelector('[aria-label=Redo]').disabled"), true, 'rejected changes cannot enter undo history');
+  await evaluate("document.querySelectorAll('fieldset input')[1].click()");
+  await fill('textarea', '=SUM(23,29)'); await formula('=SUM(23,29)');
+  await evaluate("document.querySelector('[aria-label=Undo]').click()"); await formula('=SUM(7,11)');
+  await evaluate("document.querySelector('fieldset input').click()");
+  await evaluate("document.querySelector('textarea').focus()"); await shortcut('y', 'KeyY', 2, 89);
+  await formula('=SUM(7,11)');
+  assert.equal(await evaluate("document.querySelector('textarea').readOnly && document.querySelector('[aria-label=Redo]').disabled"), true);
+  await clickText('[role=tab]', '▦ Visual');
+  await evaluate("[...document.querySelectorAll('.sp-calculator-block-label')].find(e=>e.textContent==='7').focus()");
+  await shortcut('ArrowRight', 'ArrowRight', 1, 39); await formula('=SUM(7,11)');
+  assert.equal(await evaluate("[...document.querySelectorAll('.sp-calculator-palette-items button')].every(e=>e.disabled)"), true);
+  await evaluate("document.querySelector('fieldset input').click()");
   for (const width of [1280, 768, 390]) {
     await send('Emulation.setDeviceMetricsOverride', {width, height: 800, deviceScaleFactor: 1, mobile: false});
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
@@ -102,7 +144,7 @@ try {
   if (screenshot) await writeFile(screenshot, Buffer.from((await send('Page.captureScreenshot', {format: 'png'})).data, 'base64'));
   assert.deepEqual(errors, []);
   assert.ok(requests.every(url => url.startsWith('http://127.0.0.1:') || url.startsWith('data:')), 'no platform or external service dependency');
-  console.log('PASS: standalone editor pointer drag, keyboard insertion, Unicode editing, expression round-trip, invalid draft preservation and bounded PC/tablet/phone layout');
+  console.log('PASS: standalone editor pointer drag, keyboard insertion/reordering/focus, exact decimal and invalid-draft undo/redo, host replacement/rejection, read-only guards, Unicode round-trip and bounded PC/tablet/phone layout');
 } finally {
   socket?.close(); chrome.kill('SIGTERM'); server.close(); await delay(300); await rm(profile, {recursive: true, force: true});
 }

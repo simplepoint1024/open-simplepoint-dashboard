@@ -11,7 +11,10 @@ const KEY_CTX = 'sp.contextId';
 const KEY_CTX_PREFIX = 'sp.contextId:';
 
 const CTX_ENDPOINT_PATH = '/common/tenants/authorization-context-id';
-const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string }> = [
+const API_SCOPE_RULES: ReadonlyArray<{ scope: ApiScope; prefix: string; exact?: boolean }> = [
+  // Account discovery precedes workspace restoration, including a user's first login.
+  // This remains an authenticated endpoint; it must not depend on an active tenant.
+  { scope: 'global', prefix: '/userinfo', exact: true },
   { scope: 'tenant', prefix: '/common/resources/service-routes' },
   { scope: 'global', prefix: '/common/i18n' },
   { scope: 'global', prefix: '/common/logging' },
@@ -132,7 +135,7 @@ export function shouldUseTenantContext(url: string): boolean {
 export function resolveApiScope(url: string): ApiScope {
   const pathname = resolvePathname(url) ?? url;
   const matchedRule = API_SCOPE_RULES.find(
-    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    ({ prefix, exact }) => pathname === prefix || (!exact && pathname.startsWith(`${prefix}/`))
   );
   return matchedRule?.scope ?? 'tenant';
 }

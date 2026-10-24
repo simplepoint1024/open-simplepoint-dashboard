@@ -65,3 +65,11 @@ test('field-key indexes retain canonical and first legacy aliases, page isolatio
   const fresh = permissionLabels(createTranslator({}), {...data, pages: {a: {title: 'A', models: [model('one.Shared', '新会话字段')]}}});
   assert.equal(fresh.fieldKey('Shared#privateField', 'a'), '新会话字段');
 });
+
+test('generated field permission labels use authored translations without treating them as platform keys', () => {
+  const metadata = {title: '工作明细 / 工时', titleLocalization: {defaultValue: '工作明细 / 工时', defaultLocale: 'zh-CN', translations: {en: 'Work items / Hours', ja: '作業明細 / 工数'}}};
+  const translate = (_key, fallback) => fallback;
+  assert.equal(permissionLabels(translate, undefined, 'en-US').field('stable-id', metadata), 'Work items / Hours');
+  assert.equal(permissionLabels(translate, undefined, 'ja-JP').field('stable-id', metadata), '作業明細 / 工数');
+  assert.equal(permissionLabels(translate, undefined, 'fr-FR').field('stable-id', metadata), '工作明细 / 工时');
+});

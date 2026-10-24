@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.simplepoint.cloud.oauth.server.service.TwoFactorSetupService;
-import org.simplepoint.cloud.oauth.server.service.TwoFactorSetupService.EnableResult;
+import org.simplepoint.plugin.rbac.authentication.mfa.TwoFactorSetupService;
+import org.simplepoint.plugin.rbac.authentication.mfa.TwoFactorSetupService.EnableResult;
 import org.simplepoint.security.entity.User;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,8 +19,7 @@ import org.springframework.ui.ExtendedModelMap;
 @ExtendWith(MockitoExtension.class)
 class TwoFactorSetupControllerTest {
 
-  @Mock
-  private TwoFactorSetupService service;
+  @Mock private TwoFactorSetupService service;
 
   private TwoFactorSetupController controller;
 
@@ -30,7 +29,11 @@ class TwoFactorSetupControllerTest {
 
   @BeforeEach
   void setUp() {
-    controller = new TwoFactorSetupController(service);
+    controller =
+        new TwoFactorSetupController(
+            service,
+            org.mockito.Mockito.mock(
+                org.simplepoint.plugin.rbac.core.api.service.UserManagementService.class));
     user = new User();
     user.setId("user-1");
     authentication = new UsernamePasswordAuthenticationToken(user, null);
@@ -66,14 +69,16 @@ class TwoFactorSetupControllerTest {
   void confirmReturnsToGatewaySettingsAfterSuccess() {
     when(service.confirm(user, "123456")).thenReturn(true);
 
-    String view = controller.confirm(
-        "123456",
-        new ExtendedModelMap(),
-        authentication,
-        true
-    );
+    String view =
+        controller.confirm(
+            new org.springframework.mock.web.MockHttpServletRequest(),
+            new org.springframework.mock.web.MockHttpServletResponse(),
+            "123456",
+            new ExtendedModelMap(),
+            authentication,
+            true);
 
-    assertThat(view).isEqualTo("redirect:/authorization/account/2fa?gateway=true");
+    assertThat(view).isEqualTo("redirect:/authorization/login");
     verify(service).confirm(user, "123456");
   }
 }

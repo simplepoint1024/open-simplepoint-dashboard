@@ -53,7 +53,7 @@ final class RecordWritePolicyDatabaseAssertions {
     when(models.resolve(eq(access.actor()), eq(model.physicalModelId()), any())).thenReturn(model);
     var service = new RecordWritePolicyServiceImpl(context, models, compiler, backend,
         new RecordRequestFingerprint(new ObjectMapper().findAndRegisterModules()),
-        new RecordAdmissionController(new DnaRuntimeExecutionProperties()), mock(RecordAuditSupport.class), mock(RecordExecutionObserver.class));
+        new RecordAdmissionController(new DnaRuntimeExecutionProperties()), mock(RecordAuditSupport.class), mock(RecordExecutionObserver.class), mock(RecordCalculationPublicationAdapter.class));
     var command = command(8, 9, 15_000);
     assertThatThrownBy(() -> service.publish(command)).isInstanceOfSatisfying(DnaRuntimeException.class,
         failure -> assertThat(failure.errorCode()).isEqualTo(DnaRuntimeErrorCode.RECORD_ACCESS_DENIED));

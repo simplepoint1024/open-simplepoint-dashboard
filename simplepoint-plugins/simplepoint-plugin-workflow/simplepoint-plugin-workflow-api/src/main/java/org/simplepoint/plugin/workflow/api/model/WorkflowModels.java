@@ -3,6 +3,7 @@ package org.simplepoint.plugin.workflow.api.model;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.simplepoint.core.query.TablePagination;
 
 /** Transport-neutral contracts for workflow definition and runtime operations. */
 public final class WorkflowModels {
@@ -39,7 +40,7 @@ public final class WorkflowModels {
 
   /** Definition list projection; header capabilities match database-backed fields only. */
   @org.simplepoint.core.query.TableQuery(
-      maxPageSize = 100,
+      maxPageSize = TablePagination.MAX_PAGE_SIZE,
       value = {
         @org.simplepoint.core.query.QueryField("name"),
         @org.simplepoint.core.query.QueryField("key"),

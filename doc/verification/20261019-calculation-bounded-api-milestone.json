@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T06:37:23.619945+00:00",
+  "checks": {
+    "boundedPublicCalls": {
+      "passed": true,
+      "cases": [
+        {
+          "name": "expression-length",
+          "status": 400,
+          "elapsedMs": 2646,
+          "envelope": {
+            "timestamp": "2026-10-19T06:33:10.703Z",
+            "status": 400,
+            "error": "Bad Request",
+            "path": "/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/forms/010d9a57-343a-4b0d-98b8-2921ab296519/calculations/preview"
+          }
+        },
+        {
+          "name": "expression-depth",
+          "status": 400,
+          "elapsedMs": 4346,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: EXPRESSION_DEPTH",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:11.809233476Z"
+          }
+        },
+        {
+          "name": "expression-nodes",
+          "status": 400,
+          "elapsedMs": 94,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: EXPRESSION_SIZE",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:15.333154791Z"
+          }
+        },
+        {
+          "name": "number-range",
+          "status": 400,
+          "elapsedMs": 93,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: NUMBER_RANGE",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:15.428488244Z"
+          }
+        },
+        {
+          "name": "output-size",
+          "status": 400,
+          "elapsedMs": 401,
+          "envelope": {
+            "code": "RECORD_INVALID",
+            "message": "Form calculation failed: VALUE_SIZE",
+            "messageKey": "app.error.RECORD_INVALID",
+            "timestamp": "2026-10-19T06:33:15.829149848Z"
+          }
+        },
+        {
+          "name": "unknown-reference",
+          "status": 400,
+          "elapsedMs": 79,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: UNKNOWN_FIELD",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:15.908754336Z"
+          }
+        },
+        {
+          "name": "dependency-cycle",
+          "status": 400,
+          "elapsedMs": 54,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: CIRCULAR_REFERENCE",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:15.964697371Z"
+          }
+        },
+        {
+          "name": "invalid-syntax",
+          "status": 400,
+          "elapsedMs": 82,
+          "envelope": {
+            "code": "DOCUMENT_INVALID",
+            "message": "Invalid form calculation: SYNTAX",
+            "messageKey": "app.error.DOCUMENT_INVALID",
+            "timestamp": "2026-10-19T06:33:16.067857368Z"
+          }
+        },
+        {
+          "name": "sample-row-budget",
+          "status": 400,
+          "elapsedMs": 67,
+          "envelope": {
+            "timestamp": "2026-10-19T06:33:16.138Z",
+            "status": 400,
+            "error": "Bad Request",
+            "path": "/applications/a13a2685-8fa9-40de-8620-5113b7ecb44f/forms/010d9a57-343a-4b0d-98b8-2921ab296519/calculations/preview"
+          }
+        }
+      ],
+      "submittedValuesAbsentFromErrors": true,
+      "rejectedDraftUnchanged": true,
+      "nonDesignerStatus": 403,
+      "timingNote": "Observed wall times include HTTP and cold service startup/cache effects; not an SLA."
+    },
+    "dependencyValidation": {
+      "passed": true,
+      "liveRejections": [
+        "unknown-reference",
+        "dependency-cycle"
+      ],
+      "draftUnchanged": true,
+      "aggregateExecutionEvidence": "doc/verification/20261019-calculation-recovery-crud-workflow-milestone.json#checks.aggregateCrud",
+      "unitCoverage": [
+        "main/detail dependency ordering",
+        "parent references from detail rows",
+        "parent aggregates over owned rows",
+        "empty collections",
+        "cycles across parent/detail before rows exist",
+        "foreign detail references and forged computed values"
+      ],
+      "unitExecutionEvidence": "doc/verification/20261019-calculation-function-edge-milestone.json"
+    }
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration10/calculation-boundaries.json": "877445f903e6cc34f409dc9eefafa0b924654b0ea8502d47a11566e468f782e0"
+  },
+  "sources": {
+    "scripts/business/calculation-acceptance/calculation-boundaries.mjs": "e26cb669eb1f14c855f1312883f6365615302919ab0c30cf715c261f7beea1c6",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/FormulaAggregatePlanTest.java": "d40be8ae2a18a30c1d224155f849e44e0ad5045fa5b9328c94318ce6a803b054",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/FormulaEngineTest.java": "22162b4940b5631a5ba8d34de8d28b01af0b25afe0b2db692f04ebbc68998feb"
+  }
+}

@@ -1,0 +1,174 @@
+-- Immutable workflow module schema, version 1. Existing installations require verified adoption.
+CREATE TABLE simpoint_workflow_definitions (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  definition_key VARCHAR(80) NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  category VARCHAR(80),
+  description VARCHAR(1000),
+  status VARCHAR(20) NOT NULL,
+  latest_version INTEGER NOT NULL DEFAULT 0,
+  draft_revision BIGINT NOT NULL DEFAULT 1,
+  draft_xml TEXT NOT NULL,
+  draft_form_contract TEXT,
+  published_checksum VARCHAR(64),
+  created_by VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  row_version BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT uk_workflow_definition_tenant_key UNIQUE (tenant_id, definition_key)
+);
+CREATE INDEX idx_workflow_definition_tenant_updated
+  ON simpoint_workflow_definitions (tenant_id, updated_at);
+
+CREATE TABLE simpoint_workflow_definition_versions (
+  id VARCHAR(36) PRIMARY KEY,
+  definition_id VARCHAR(36) NOT NULL REFERENCES simpoint_workflow_definitions(id),
+  tenant_id VARCHAR(64) NOT NULL,
+  version_no INTEGER NOT NULL,
+  bpmn_xml TEXT NOT NULL,
+  form_contract TEXT,
+  definition_name VARCHAR(160),
+  definition_category VARCHAR(80),
+  definition_description VARCHAR(1000),
+  checksum_version INTEGER,
+  checksum VARCHAR(64) NOT NULL,
+  comment VARCHAR(500),
+  flowable_deployment_id VARCHAR(64) NOT NULL,
+  flowable_process_definition_id VARCHAR(128) NOT NULL,
+  published_by VARCHAR(64) NOT NULL,
+  published_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  CONSTRAINT uk_workflow_definition_version UNIQUE (definition_id, version_no),
+  CONSTRAINT uk_workflow_version_process_definition UNIQUE (flowable_process_definition_id)
+);
+CREATE INDEX idx_workflow_version_tenant_definition
+  ON simpoint_workflow_definition_versions (tenant_id, definition_id, version_no);
+
+
+CREATE TABLE simpoint_workflow_instances (
+  process_instance_id VARCHAR(64) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  definition_id VARCHAR(36) NOT NULL REFERENCES simpoint_workflow_definitions(id),
+  definition_version_id VARCHAR(36) NOT NULL REFERENCES simpoint_workflow_definition_versions(id),
+  definition_key VARCHAR(80) NOT NULL,
+  definition_name VARCHAR(160) NOT NULL,
+  definition_version INTEGER NOT NULL,
+  business_key VARCHAR(160),
+  title VARCHAR(240) NOT NULL,
+  starter_id VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  started_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  ended_at TIMESTAMP WITH TIME ZONE,
+  cancel_reason VARCHAR(500)
+);
+CREATE INDEX idx_workflow_instance_tenant_started
+  ON simpoint_workflow_instances (tenant_id, started_at);
+CREATE INDEX idx_workflow_instance_starter_started
+  ON simpoint_workflow_instances (tenant_id, starter_id, started_at);
+CREATE INDEX idx_workflow_instance_business_key
+  ON simpoint_workflow_instances (tenant_id, business_key);
+
+-- Resubmission is a new instance, never an update of the original decision history.
+ALTER TABLE simpoint_workflow_instances ADD COLUMN previous_instance_id VARCHAR(64)
+  REFERENCES simpoint_workflow_instances(process_instance_id);
+CREATE UNIQUE INDEX uk_workflow_instance_successor
+  ON simpoint_workflow_instances (previous_instance_id);
+
+CREATE TABLE simpoint_workflow_instance_watchers (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  process_instance_id VARCHAR(64) NOT NULL REFERENCES simpoint_workflow_instances(process_instance_id),
+  user_id VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  CONSTRAINT uk_workflow_watcher_instance_user UNIQUE (process_instance_id, user_id)
+);
+CREATE INDEX idx_workflow_watcher_user_created
+  ON simpoint_workflow_instance_watchers (tenant_id, user_id, created_at);
+
+CREATE TABLE simpoint_workflow_notification_outbox (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  event_key VARCHAR(200) NOT NULL,
+  target_user_id VARCHAR(64) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  content VARCHAR(2000) NOT NULL,
+  link_url VARCHAR(1024) NOT NULL,
+  status VARCHAR(16) NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  sent_at TIMESTAMP WITH TIME ZONE,
+  last_error VARCHAR(1000),
+  CONSTRAINT uk_workflow_outbox_event UNIQUE (event_key)
+);
+CREATE INDEX idx_workflow_outbox_delivery
+  ON simpoint_workflow_notification_outbox (status, next_attempt_at);
+
+-- Business outcomes are independent of engine completion/deletion reasons. Never backfill
+-- an unrecorded historical actor or approval decision from an instance's final status.
+CREATE TABLE simpoint_workflow_actions (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  process_instance_id VARCHAR(64) NOT NULL REFERENCES simpoint_workflow_instances(process_instance_id),
+  task_id VARCHAR(64),
+  task_definition_key VARCHAR(255),
+  decision_task_id VARCHAR(64),
+  terminal_instance_id VARCHAR(64),
+  action_type VARCHAR(20) NOT NULL,
+  actor_id VARCHAR(64) NOT NULL,
+  comment VARCHAR(2000),
+  occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  CONSTRAINT uk_workflow_action_task_decision UNIQUE (decision_task_id),
+  CONSTRAINT uk_workflow_action_instance_terminal UNIQUE (terminal_instance_id)
+);
+CREATE INDEX idx_workflow_action_actor_time
+  ON simpoint_workflow_actions (tenant_id, actor_id, occurred_at);
+CREATE INDEX idx_workflow_action_instance_time
+  ON simpoint_workflow_actions (tenant_id, process_instance_id, occurred_at);
+
+-- Engine callbacks append here in the native transaction. Consumers take platform locks only
+-- after that transaction commits, avoiding engine/platform lock-order inversion.
+CREATE TABLE simpoint_workflow_engine_signals (
+  id VARCHAR(36) PRIMARY KEY,
+  process_instance_id VARCHAR(64) NOT NULL,
+  event_type VARCHAR(80) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  next_attempt_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error VARCHAR(1000)
+);
+CREATE INDEX idx_workflow_signal_ready
+  ON simpoint_workflow_engine_signals (next_attempt_at, created_at);
+
+-- Durable confirmations share the workflow engine transaction; no business field values are stored here.
+CREATE TABLE simpoint_workflow_operation_receipts (
+  id VARCHAR(64) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  actor_id VARCHAR(64) NOT NULL,
+  request_fingerprint VARCHAR(64) NOT NULL,
+  result_json TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX idx_workflow_receipt_tenant_created
+  ON simpoint_workflow_operation_receipts (tenant_id, created_at);
+
+-- One immutable business submission can create one workflow instance even with another client operation key.
+CREATE TABLE simpoint_workflow_business_links (
+  id VARCHAR(64) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  provider VARCHAR(80) NOT NULL,
+  business_key VARCHAR(160) NOT NULL,
+  process_instance_id VARCHAR(64) NOT NULL
+);
+CREATE INDEX idx_workflow_business_process ON simpoint_workflow_business_links(tenant_id, process_instance_id);
+
+CREATE TABLE simpoint_workflow_form_bindings (
+  id VARCHAR(36) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL,
+  definition_id VARCHAR(36) NOT NULL,
+  definition_version INTEGER NOT NULL,
+  provider VARCHAR(80) NOT NULL,
+  form_id VARCHAR(160) NOT NULL,
+  form_version INTEGER NOT NULL
+);
+CREATE INDEX idx_workflow_bound_form ON simpoint_workflow_form_bindings(tenant_id, provider, form_id, form_version);

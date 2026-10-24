@@ -11,6 +11,8 @@ import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
 import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import ResourceLifecycle from './ResourceLifecycle';
 import PublicationInspection from './PublicationInspection';
+import PublicationProgress from './PublicationProgress';
+import {mergeReleaseProgress} from './publicationProgress';
 import {releaseIsActive, releaseIsCancelled, releaseIsBlocked, type PublicationInspection as Inspection, type FormRelease} from './publication';
 
 type ReleaseRow = {id: string; pageId: string; pageName: string; formVersion: number; status: string; canCancel?: boolean; errorCode?: string};
@@ -27,10 +29,14 @@ export default function ReleaseHistory({applicationId, formId, onClose, onViewDa
   const [pending, setPending] = useState<{row: ReleaseRow; action: 'resume' | 'cancel'}>();
   const [cancelled, setCancelled] = useState(false);
   const [inspection, setInspection] = useState<Inspection | null>();
+  const [progressRelease, setProgressRelease] = useState<{id: string; value: FormRelease}>();
+  const progressRef = useRef(progressRelease); progressRef.current = progressRelease;
+  useEffect(() => {progressRef.current = undefined; setProgressRelease(undefined);}, [scope, baseUrl]);
   usePageRetention(!operation.busy && !pending, operation.busy || Boolean(pending));
   const run = async (row?: ReleaseRow, action: 'resume' | 'cancel' = 'resume') => {
     if (!row || ['ACTIVE', 'RETIRED', 'CANCELLED'].includes(row.status) || action === 'cancel' && !row.canCancel) return;
     const controller = operation.begin(); if (!controller) return;
+    if (progressRef.current?.id !== row.id) {progressRef.current = undefined; setProgressRelease(undefined);}
     setError(''); setComplete(false); setCancelled(false); setInspection(undefined);
     try {
       const result = await post<FormRelease>(`${baseUrl}/${encodeURIComponent(row.id)}/${action}`, {},
@@ -38,6 +44,8 @@ export default function ReleaseHistory({applicationId, formId, onClose, onViewDa
       if (!operation.current(controller.signal)) return;
       if (result.pageBinding?.pageId !== row.pageId || result.pageBinding.formId !== formId
         || result.pageBinding.formVersion !== row.formVersion) throw new Error('Unexpected publication recovery result');
+      const next = {id: row.id, value: mergeReleaseProgress(progressRef.current?.id === row.id ? progressRef.current.value : undefined, result)};
+      progressRef.current = next; setProgressRelease(next);
       const active = releaseIsActive(result);
       const blocked = releaseIsBlocked(result);
       setInspection(result.inspection);
@@ -80,6 +88,7 @@ export default function ReleaseHistory({applicationId, formId, onClose, onViewDa
       : t('app.release.recovering', '正在继续原发布。完成后会更新记录，关闭窗口不会丢失发布信息。')}/>}
     {cancelled && <Alert type="info" showIcon title={t('app.publication.cancelled', '本次发布已取消，现有页面保持不变。')}/>}
     {complete && <Alert type="success" showIcon title={t('app.publication.success', '表单已发布，可以开始使用。')}/>}
+    <PublicationProgress progress={progressRelease?.value.progress}/>
     <PublicationInspection inspection={inspection} onViewData={pageId => {if (!operation.isBusy()) {onClose(); onViewData(pageId);}}}/>
     {inspection === null && <Alert type="info" showIcon title={t('app.publication.inspectionClear', '此发布当前没有待处理的检查结果。')}/>}
     {lifecyclePage && <ResourceLifecycle applicationId={applicationId} pageId={lifecyclePage}

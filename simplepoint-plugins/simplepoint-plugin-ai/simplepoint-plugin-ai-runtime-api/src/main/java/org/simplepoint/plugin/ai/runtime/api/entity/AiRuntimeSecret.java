@@ -16,6 +16,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 
@@ -41,7 +42,7 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
       @QueryField("rotatedAt"),
       @QueryField("createdAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class AiRuntimeSecret extends BaseEntityImpl<String> {
 
   @Enumerated(EnumType.STRING)

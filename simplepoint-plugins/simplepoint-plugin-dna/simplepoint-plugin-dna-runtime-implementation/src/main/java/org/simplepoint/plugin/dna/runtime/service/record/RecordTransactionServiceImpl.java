@@ -36,6 +36,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
   private final RecordAdmissionController admission;
   private final RecordExecutionObserver observer;
   private final RecordRequestFingerprint fingerprints;
+  private final RecordCalculationWriteSupport calculations;
 
   /** Creates the transaction service. */
   public RecordTransactionServiceImpl(
@@ -47,7 +48,8 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
       final RecordAuditSupport audit,
       final RecordAdmissionController admission,
       final RecordExecutionObserver observer,
-      final RecordRequestFingerprint fingerprints
+      final RecordRequestFingerprint fingerprints,
+      final RecordCalculationWriteSupport calculations
   ) {
     this.requestContext = requestContext;
     this.modelResolver = modelResolver;
@@ -58,6 +60,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
     this.admission = admission;
     this.observer = observer;
     this.fingerprints = fingerprints;
+    this.calculations = calculations;
   }
 
   @Override
@@ -67,8 +70,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
     }
     PreparedRecordTransaction prepared = prepare(command);
     // Apply current schema, field and resource policy before revealing any receipt metadata.
-    command.mutations().forEach(mutation -> compiler.mutation(
-        prepared.model(), prepared.access(), mutation, Instant.EPOCH));
+    command.mutations().forEach(mutation -> validateIntent(prepared, mutation));
     long startedAt = System.nanoTime();
     try (RecordAdmissionController.Permit ignored = admission.enter(prepared.access().actor().tenantId())) {
       List<RecordCommandResult> results = backend.findResult(prepared.model(),
@@ -110,19 +112,30 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
         command.schemaReference()
     );
     RecordAccessContext access = accessPolicy.authorize(actor, model);
-    return new PreparedRecordTransaction(command, model, access);
+    var installed = backend.calculation(model, actor.tenantId(), command.writePolicyVersion(), command.timeoutMs());
+    var calculation = calculations.bind(actor, model, installed);
+    var children = new java.util.LinkedHashMap<String, RecordCalculationWriteSupport.Scope>();
+    if (calculation != null) {
+      calculation.details().values().forEach(child -> children.put(child.physicalModelId(),
+          new RecordCalculationWriteSupport.Scope(child, accessPolicy.owned(actor, child, access))));
+    }
+    return new PreparedRecordTransaction(command, model, access, calculation, children);
   }
 
-  /** Validates create values and write scope before a durable idempotency key is reserved. */
+  /** Validates client create fields before reserving a key; computed write scope is checked in the target transaction. */
   void validatePreparedCreate(final PreparedRecordTransaction prepared) {
     RecordCreateMutation create = requireSingleCreate(prepared);
-    compiler.mutation(
-        prepared.model(),
-        prepared.access(),
-        create,
-        Instant.EPOCH,
-        VALIDATION_RECORD_ID
-    );
+    validateIntent(prepared, create);
+  }
+
+  private void validateIntent(final PreparedRecordTransaction prepared, final RecordMutation mutation) {
+    if (prepared.calculation() == null) {
+      compiler.mutation(prepared.model(), prepared.access(), mutation, Instant.EPOCH,
+          mutation instanceof RecordCreateMutation ? VALIDATION_RECORD_ID : null);
+    } else {
+      compiler.validateIntent(prepared.model(), prepared.access(), mutation,
+          prepared.calculation().outputs(prepared.model().physicalModelId()));
+    }
   }
 
   /** Executes one already authorized create with a durable server-derived identity. */
@@ -146,6 +159,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
     )) {
       CalciteQueryResult result = backend.query(
           prepared.model(),
+          prepared.access().actor().tenantId(),
           compiler.creation(prepared.model(), prepared.access(), recordId),
           prepared.command().timeoutMs()
       );
@@ -168,7 +182,8 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
           model,
           access,
           createRecordId,
-          operationAt
+          operationAt,
+          prepared
       );
     } catch (DnaRuntimeException exception) {
       if (exception.errorCode() == DnaRuntimeErrorCode.RECORD_RATE_LIMITED) {
@@ -191,31 +206,51 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final String createRecordId,
-      final Instant operationAt
+      final Instant operationAt,
+      final PreparedRecordTransaction prepared
   ) {
     try {
       List<RecordSqlStatement> statements = new ArrayList<>(command.mutations().size());
-      for (int index = 0; index < command.mutations().size(); index++) {
-        RecordMutation mutation = command.mutations().get(index);
-        Instant mutationAt = operationAt == null ? Instant.now() : operationAt;
-        String preferredId = index == 0 ? createRecordId : null;
-        statements.add(compiler.mutation(model, access, mutation, mutationAt, preferredId));
-      }
       var writeAdmission = new RecordWriteAdmission(access.actor().tenantId(), command.writePolicyVersion(), access.resourceGeneration());
-      RecordBatchExecutionResult execution = command.idempotencyKey() == null
-          ? backend.execute(model, writeAdmission, statements, command.timeoutMs())
-          : backend.execute(model, writeAdmission, statements, command.timeoutMs(),
-              RecordOperationIdentity.of(access.actor(), command, fingerprints.of(command)));
+      var operation = command.idempotencyKey() == null ? null : RecordOperationIdentity.of(access.actor(), command, fingerprints.of(command));
+      RecordBatchExecutionResult execution;
+      if (prepared.calculation() == null) {
+        Instant mutationAt = operationAt == null ? Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS) : operationAt;
+        for (int index = 0; index < command.mutations().size(); index++) {
+          statements.add(compiler.mutation(model, access, command.mutations().get(index), mutationAt, index == 0 ? createRecordId : null));
+        }
+        execution = backend.execute(model, writeAdmission, statements, command.timeoutMs(), operation);
+      } else {
+        command.mutations().forEach(mutation -> validateIntent(prepared, mutation));
+        var steps = new ArrayList<RecordWritePreparation.Work>();
+        for (int index = 0; index < command.mutations().size(); index++) {
+          var mutation = command.mutations().get(index);
+          String generated = index == 0 && createRecordId != null ? createRecordId
+              : java.util.UUID.randomUUID().toString();
+          String id = mutation instanceof RecordUpdateMutation update ? update.recordId()
+              : mutation instanceof RecordDeleteMutation delete ? delete.recordId() : generated;
+          steps.add((reader, at, installed) -> {
+            prepared.calculation().verify(installed);
+            var write = calculations.prepareSingle(prepared.calculation(), new RecordCalculationWriteSupport.Scope(model, access),
+                prepared.calculationChildren(), mutation, id, reader, operationAt == null ? at : operationAt);
+            statements.add(write.getFirst());
+            return new RecordWritePreparation(write, null);
+          });
+        }
+        execution = backend.executePreparedSequence(model,
+            prepared.calculationChildren().values().stream().map(RecordCalculationWriteSupport.Scope::model).toList(),
+            writeAdmission, command.timeoutMs(), operation, steps);
+      }
       List<RecordMutationResult> results = new ArrayList<>(statements.size());
-      for (int index = 0; index < statements.size(); index++) {
-        RecordSqlStatement statement = statements.get(index);
+      for (int index = 0; index < command.mutations().size(); index++) {
+        RecordSqlStatement statement = execution.replayedResults() == null ? statements.get(index) : null;
         results.add(new RecordMutationResult(
             command.mutations().get(index).reference(),
             execution.replayedResults() != null ? execution.replayedResults().get(index) : new RecordCommandResult(
                 statement.mutationType(),
                 statement.recordId(),
                 statement.resultVersion(),
-                execution.affectedRows().get(index),
+                1,
                 statement.updatedAt()
             )
         ));
@@ -303,6 +338,7 @@ public class RecordTransactionServiceImpl implements RecordTransactionService {
     }
     CalciteQueryResult result = backend.query(
         model,
+        access.actor().tenantId(),
         compiler.version(model, access, recordId),
         timeoutMs
     );

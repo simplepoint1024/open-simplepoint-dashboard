@@ -1,3 +1,6 @@
+import {renamedFieldScenes} from './localization.ts';
+import {localizedTextValid} from '../../shared/i18n/localizedText.ts';
+import {parseFormula} from '@simplepoint/calculation';
 import {businessPattern} from '../../shared/validation/businessPattern.ts';
 import {normalizedValidation, textField, validateFieldRules} from './fieldValidation.ts';
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
@@ -6,19 +9,22 @@ import {normalizeFormLiteral, fieldValueKind} from '../FormRuntime/literals.ts';
 import {exactDecimal} from '../../shared/utils/decimal.ts';
 import {sameDesignValue} from './draftState.ts';
 import {validateStructure} from './model.ts';
+import {persistentField, calculableField} from './fieldCapabilities.ts';
+export {persistentField, calculableField} from './fieldCapabilities.ts';
 
 export type DesignIndex = DesignDocument['indexes'][number];
-export type FieldEdit = Pick<DesignField, 'validation' | 'label' | 'type' | 'length' | 'precision' | 'scale' | 'submitRequired' | 'storageRequired' | 'choices'> & {
+export type FieldEdit = Pick<DesignField, 'validation' | 'labelLocalization' | 'label' | 'type' | 'length' | 'precision' | 'scale' | 'submitRequired' | 'storageRequired' | 'choices'> & {
   writePolicy: FormFieldWritePolicy;
+  calculationMode?: 'stored' | 'calculated';
+  expression?: string;
   defaultMode: 'NONE' | 'NULL' | 'VALUE';
   defaultText: string;
 };
 export class DataEditError extends Error {
-  readonly code: 'conflict' | 'fieldType' | 'constraints' | 'defaultValue' | 'choices' | 'indexFields' | 'limit';
+  readonly code: 'conflict' | 'fieldType' | 'constraints' | 'defaultValue' | 'choices' | 'indexFields' | 'limit' | 'calculation';
   constructor(code: DataEditError['code']) {super(code); this.code = code;}
 }
 export const fieldTypes: readonly FormFieldType[] = ['STRING', 'TEXT', 'BOOLEAN', 'INT32', 'INT64', 'DECIMAL', 'DATE', 'TIME', 'DATETIME', 'UUID', 'JSON'];
-export const persistentField = (field: DesignField) => ['STORED', 'REFERENCE', 'ATTACHMENT'].includes(field.storageMode);
 
 /** A shared field must remain compatible with every scene and existing typed rule. */
 export function allowedFieldTypes(document: DesignDocument, field: DesignField, components: readonly ComponentDescriptor[]) {
@@ -38,7 +44,7 @@ export function allowedFieldTypes(document: DesignDocument, field: DesignField, 
 }
 
 export function fieldEdit(field: DesignField): FieldEdit {
-  return {validation: field.validation, label: field.label, type: field.type, length: field.length, precision: field.precision, scale: field.scale,
+  return {calculationMode: field.calculation ? 'calculated' : 'stored', expression: field.calculation?.expression ?? '', validation: field.validation, labelLocalization: field.labelLocalization, label: field.label, type: field.type, length: field.length, precision: field.precision, scale: field.scale,
     submitRequired: field.submitRequired, storageRequired: field.storageRequired, choices: structuredClone(field.choices),
     writePolicy: field.writePolicy ?? 'EDITABLE', defaultMode: field.defaultValue == null ? 'NONE'
       : field.defaultValue.kind === 'NULL' ? 'NULL' : 'VALUE', defaultText: field.defaultValue?.value ?? ''};
@@ -81,15 +87,19 @@ function literalIdentity(type: FormFieldType, value: string): string {
   return value;
 }
 
+/** Inspect existing metadata without normalizing or mutating an immutable draft. */
+export function validateDesignField(field: DesignField) {validateField(structuredClone(field));}
+
 function validateField(field: DesignField) {
   const integer = (value: unknown, min: number, max: number) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
-  if (!field.label?.trim() || field.label.length > 120
+  if (!field.label?.trim() || [...field.label].length > 120
+    || field.labelLocalization && (!localizedTextValid(field.labelLocalization, 120) || field.labelLocalization.defaultValue !== field.label)
     || field.type === 'STRING' && !integer(field.length, 1, 65535)
     || field.type === 'DECIMAL' && (!integer(field.precision, 1, 38) || !integer(field.scale, 0, field.precision!))) {
     throw new DataEditError('constraints');
   }
   try {validateFieldRules(field.validation, field.length ?? undefined);} catch {throw new DataEditError('constraints');}
-  if (field.storageRequired && (!persistentField(field) || !field.defaultValue || field.defaultValue.kind === 'NULL')) {
+  if (field.storageRequired && (!persistentField(field) || !field.calculation && (!field.defaultValue || field.defaultValue.kind === 'NULL'))) {
     throw new DataEditError('defaultValue');
   }
   let defaultText: string | undefined;
@@ -103,7 +113,7 @@ function validateField(field: DesignField) {
   const values = new Set<string>();
   for (const choice of field.choices) {
     try {
-      if (!choice.value?.trim() || choice.value.length > 256 || !choice.label?.trim() || choice.label.length > 120 || field.type === 'JSON') throw Error();
+      if (!choice.value?.trim() || choice.value.length > 256 || !choice.label?.trim() || [...choice.label].length > 120 || choice.labelLocalization && (!localizedTextValid(choice.labelLocalization, 120) || choice.labelLocalization.defaultValue !== choice.label) || field.type === 'JSON') throw Error();
       const canonical = literalIdentity(field.type, literal(field, choice.value));
       if (values.has(canonical)) throw Error();
       values.add(canonical);
@@ -123,18 +133,31 @@ export function applyFieldEdit(document: DesignDocument, base: DesignField, edit
   if (edit.writePolicy !== (base.writePolicy ?? 'EDITABLE') && (!persistentField(base) || !writePolicies.includes(edit.writePolicy))) {
     throw new DataEditError('constraints');
   }
-  const field: DesignField = {...base, validation: textField(edit.type) ? normalizedValidation(edit.validation) : undefined, label: edit.label, type: edit.type,
+  const field: DesignField = {...base, validation: textField(edit.type) ? normalizedValidation(edit.validation) : undefined, label: edit.label, labelLocalization: edit.labelLocalization, type: edit.type,
     length: edit.type === 'STRING' ? edit.length : null, precision: edit.type === 'DECIMAL' ? edit.precision : null,
     scale: edit.type === 'DECIMAL' ? edit.scale : null, submitRequired: edit.submitRequired, storageRequired: edit.storageRequired,
     choices: structuredClone(edit.choices), defaultValue: edit.defaultMode === 'NONE' ? null
       : edit.defaultMode === 'NULL' ? {kind: 'NULL'} : {kind: fieldValueKind(edit.type), value: edit.defaultText}};
+  if (calculableField(base)) {
+    if (edit.calculationMode === 'calculated') {
+      if (!edit.expression?.trim()) throw new DataEditError('calculation');
+      try {parseFormula(edit.expression);} catch {throw new DataEditError('calculation');}
+      field.storageMode = 'COMPUTED';
+      field.calculation = {languageVersion: '1', expression: edit.expression};
+      field.defaultValue = null;
+      delete field.writePolicy;
+    } else {
+      field.storageMode = 'STORED';
+      delete field.calculation;
+    }
+  }
   if (creating) field.storageLabel = edit.label;
-  if (edit.writePolicy === 'EDITABLE') delete field.writePolicy;
+  if (field.calculation || edit.writePolicy === 'EDITABLE') delete field.writePolicy;
   else field.writePolicy = edit.writePolicy;
   validateField(field);
   const next = {...document, fields: creating ? [field, ...document.fields]
     : document.fields.map(item => item.fieldId === field.fieldId ? field : item)};
-  if (scope === 'form') validateStructure(next, components);
+  if (scope === 'form') {next.scenes = renamedFieldScenes(next, base, field); validateStructure(next, components);}
   else if (next.fields.length > 48) throw new DataEditError('limit');
   return next;
 }

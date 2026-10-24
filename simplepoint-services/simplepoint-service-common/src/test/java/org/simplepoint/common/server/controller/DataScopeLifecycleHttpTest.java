@@ -30,6 +30,10 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.OrganizationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.*;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceSetup;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceEntitlement;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -51,14 +55,14 @@ class DataScopeLifecycleHttpTest {
         .applySetting("hibernate.connection.url", "jdbc:h2:mem:data-scope-lifecycle-" + UUID.randomUUID())
         .applySetting("hibernate.session_factory.statement_inspector", (org.hibernate.resource.jdbc.spi.StatementInspector) sql -> {statements.add(sql); return sql;})
         .applySetting("hibernate.hbm2ddl.auto", "create-drop").applySetting("hibernate.generate_statistics", true).build())
-        .addAnnotatedClass(Resource.class).addAnnotatedClass(DataScope.class).addAnnotatedClass(User.class)
+        .addAnnotatedClass(TenantResource.class).addAnnotatedClass(TenantResourceSetup.class).addAnnotatedClass(TenantResourceEntitlement.class).addAnnotatedClass(DataScope.class).addAnnotatedClass(User.class)
         .addAnnotatedClass(Role.class).addAnnotatedClass(Tenant.class).addAnnotatedClass(Organization.class)
         .addAnnotatedClass(FieldScope.class).addAnnotatedClass(FieldScopeEntry.class)
         .addAnnotatedClass(RoleScopeBinding.class).addAnnotatedClass(RoleResourceGrant.class)
         .buildMetadata().buildSessionFactory();
     em = factory.openSession(); em.beginTransaction();
-    var resource = new Resource(); resource.setId("scope-resource"); resource.setCode("organizations.view");
-    resource.setName("组织管理"); resource.setType(ResourceType.PAGE); resource.setDisabled(false);
+    var resource = TenantPermissionFixture.resource("scope-tenant", UUID.randomUUID().toString()); resource.setId("scope-resource"); resource.setCode("organizations.view");
+    resource.setName("组织管理"); resource.setType(ResourceType.PAGE); resource.setEnabled(true);
     resource.setPermissionMetadata(new PermissionPageDescriptor(List.of(PermissionModelDescriptor.describe(Organization.class))).toJson()); em.persist(resource);
     var user = new User(); user.setId("verified-user"); user.setName("验证用户"); user.setNickname("不是实名"); em.persist(user);
     var tenant = new Tenant(); tenant.setId("scope-tenant"); tenant.setName("验证工作空间"); tenant.setAuthorizationVersion(0L);
@@ -69,7 +73,8 @@ class DataScopeLifecycleHttpTest {
     policy.setType(DataScopeType.EXPRESSION); policy.setResourceCode(resource.getCode()); policy.setExpression("name = \"可见组织\"");
     policy.setCreatedAt(java.time.Instant.parse("2026-10-10T00:00:00Z")); policy.setUpdatedAt(policy.getCreatedAt()); em.persist(policy);
     em.flush(); em.clear();
-    context = new AuthorizationContext(); context.setUserId(user.getId()); context.setDataScopeType("CUSTOM");
+    TenantPermissionFixture.prepare(em, "scope-tenant");
+    context = new AuthorizationContext(); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT); context.setUserId(user.getId()); context.setDataScopeType("CUSTOM");
     context.setDeptIds(Set.of(organization.getId())); context.setDataScopeIncludeSelf(false);
     context.setResources(Set.of(resource.getCode(), "data-scope.view", "data-scope.edit", "data-scope.create"));
     context.setAttributes(Map.of("X-Tenant-Id", tenant.getId()));
@@ -84,15 +89,15 @@ class DataScopeLifecycleHttpTest {
     var generator = config.schemaGenerator(Set.of(config.openApiModule(), config.jacksonModule(), config.javaxValidationModule()));
     schemaContext = new org.springframework.context.support.GenericApplicationContext();
     schemaContext.registerBean(JsonSchemaGenerator.class, () -> config.defaultJsonSchemaGenerator(generator));
-    schemaContext.registerBean(JsonSchemaDetailsService.class, () -> new org.simplepoint.data.json.schema.service.DefaultJsonSchemaDetailsService(em)); schemaContext.refresh();
+    schemaContext.registerBean(JsonSchemaDetailsService.class, () -> new org.simplepoint.data.json.schema.service.DefaultJsonSchemaDetailsService()); schemaContext.refresh();
     var details = new org.simplepoint.core.security.SpringBeanDetailsProviderService(); details.setApplicationContext(schemaContext);
     versions = mock(ResourceAuthorizationVersionService.class);
     var organizations = mock(OrganizationRepository.class);
     when(organizations.findByIdAndTenantId(organization.getId(), tenant.getId())).thenAnswer(invocation -> Optional.ofNullable(em.find(Organization.class, organization.getId())));
     service = new DataScopeServiceImpl(repository, details, versions, organizations, new PermissionPolicyGuard(em));
-    var expressions = new PermissionExpressionService(em); ReflectionTestUtils.setField(service, "expressions", expressions);
+    var expressions = TenantPermissionFixture.attach(em, new PermissionExpressionService(em)); ReflectionTestUtils.setField(service, "expressions", expressions);
     var controller = new DataScopeController(service); ReflectionTestUtils.setField(controller, "expressions", expressions);
-    ReflectionTestUtils.setField(controller, "presentation", new PermissionPresentationService(em, new FieldScopeCatalog(em)));
+    ReflectionTestUtils.setField(controller, "presentation", new PermissionPresentationService(em, TenantPermissionFixture.attach(em, new FieldScopeCatalog(em))));
     mvc = MockMvcBuilders.standaloneSetup(controller).setControllerAdvice(new org.simplepoint.core.handler.GlobalExceptionHandler())
         .setMessageConverters(new org.springframework.http.converter.json.JacksonJsonHttpMessageConverter(
             tools.jackson.databind.json.JsonMapper.builder().addModule(new org.simplepoint.core.jackson.FieldScopeJackson3Module()).build()))
@@ -116,14 +121,14 @@ class DataScopeLifecycleHttpTest {
     var fieldRule = new FieldScope(); fieldRule.setId("field-rule"); fieldRule.setTenantId("scope-tenant"); fieldRule.setName("Private field rule"); em.persist(fieldRule);
     var user = em.find(User.class, "verified-user"); user.setEmail("private@example.invalid");
     em.flush(); em.clear(); factory.getStatistics().clear();
-    context = new AuthorizationContext(); context.setUserId("verified-user"); context.setDeptIds(Set.of("scope-organization"));
+    context = new AuthorizationContext(); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT); context.setUserId("verified-user"); context.setDeptIds(Set.of("scope-organization"));
     context.setDataScopeType("CUSTOM"); context.setDataScopeIncludeSelf(false);
     context.setResources(Set.of("organizations.view", "data-scope.view", "field-scope.view"));
     context.setAttributes(Map.of("X-Tenant-Id", "scope-tenant", "X-Role-Id", "scope-role"));
     context.setFieldPermissions(Map.of(User.class.getName() + "#name", access, User.class.getName() + "#email", access,
         Tenant.class.getName() + "#name", access, Role.class.getName() + "#roleName", access,
         DataScope.class.getName() + "#name", access, FieldScope.class.getName() + "#name", access,
-        Organization.class.getName() + "#name", access, Resource.class.getName() + "#name", access));
+        Organization.class.getName() + "#name", access, TenantResource.class.getName() + "#name", access));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     var result = mapper.readTree(read("/presentation"));
     if (access.equals("MASKED")) {
@@ -190,7 +195,7 @@ class DataScopeLifecycleHttpTest {
       var field = new FieldScope(); field.setId("field-" + suffix); field.setTenantId("scope-tenant"); field.setName("实际字段规则 " + suffix); em.persist(field);
     }
     em.flush(); em.clear(); factory.getStatistics().clear(); statements.clear();
-    context = new AuthorizationContext(); context.setUserId("verified-user"); context.setDeptIds(Set.of("scope-organization"));
+    context = new AuthorizationContext(); context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT); context.setUserId("verified-user"); context.setDeptIds(Set.of("scope-organization"));
     context.setResources(Set.of("organizations.view", "data-scope.view", "field-scope.view")); context.setAttributes(Map.of("X-Tenant-Id", "scope-tenant"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     var result = mapper.readTree(read("/presentation"));

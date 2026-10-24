@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.ai.catalog.api.model;
 
 import java.time.Instant;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 
 /** Normalized extension package presented by the workbench. */
@@ -16,7 +17,7 @@ import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
       @org.simplepoint.core.query.QueryField("status"),
       @org.simplepoint.core.query.QueryField("updatedAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public record AiCatalogItem(
     String id,
     CatalogSource source,

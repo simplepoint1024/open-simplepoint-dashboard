@@ -27,9 +27,12 @@ const checksum = document => createHash('sha256').update(JSON.stringify(document
 /** Independent HTTP state machine for browser editing/response-loss/conflict scenarios. */
 export function createFormDesignerFixture() {
   let active = false, tenant, readonly = false, loseResponse = false, hold = false, release;
-  const forms = [], drafts = new Map(), writes = [];
+  const forms = [], drafts = new Map(), writes = [], calculationReads = [];
+  let calculationResult = {values: {}, details: {}};
+  let calculationHold;
   const publication = createFormPublicationFixture(forms, drafts);
-  return {forms, drafts, writes, publication, enable(id, applications) {active = true; tenant = id; publication.enable(applications);}, readonly(value) {readonly = value;},
+  return {forms, drafts, writes, publication, calculationReads, calculationPreview(result) {calculationResult = result;}, enable(id, applications) {active = true; tenant = id; publication.enable(applications);}, readonly(value) {readonly = value;},
+    holdNextCalculation() {let release; calculationHold = new Promise(resolve => {release = resolve;}); return release;},
     loseSaveResponse() {loseResponse = true;}, holdNextSave() {hold = true;}, isHeld() {return Boolean(release);},
     releaseSave() {release?.(); release = undefined;},
     externalEdit() {const draft = [...drafts.values()][0]; draft.revision++; draft.document.scenes[0].name = '外部修改'; draft.checksum = checksum(draft.document);},
@@ -56,6 +59,18 @@ export function createFormDesignerFixture() {
           totalPages: Math.ceil(page.totalElements / page.size)}}), true;
       }
       const id = path.split('/')[1];
+      if (req.method === 'GET' && path.endsWith('/calculations/catalog')) return respond({languageVersion: '1', functions: [
+        {name: 'UPPER', category: 'text', minArguments: 1, maxArguments: 1, resultType: 'STRING', parameters: ['text']},
+        {name: 'ROUND', category: 'math', minArguments: 1, maxArguments: 2, resultType: 'NUMBER', parameters: ['number', 'digits']},
+      ]}), true;
+      if (req.method === 'POST' && path.endsWith('/calculations/preview')) {
+        assert.equal(readonly, false);
+        let raw = ''; for await (const chunk of req) raw += chunk;
+        calculationReads.push(JSON.parse(raw));
+        const result = structuredClone(calculationResult), held = calculationHold; calculationHold = undefined;
+        if (held) await held;
+        return respond(result), true;
+      }
       if (req.method === 'GET' && path === '/' + id) return respond(forms.find(form => form.id === id && form.applicationId === applicationId)), true;
       if (req.method === 'GET' && path.endsWith('/draft')) return respond(structuredClone(drafts.get(id))), true;
       assert.equal(readonly, false, 'view-only designers cannot dispatch mutations');

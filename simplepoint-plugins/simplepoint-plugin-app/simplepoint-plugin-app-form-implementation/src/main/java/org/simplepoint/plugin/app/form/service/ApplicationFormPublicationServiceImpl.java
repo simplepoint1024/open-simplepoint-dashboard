@@ -132,6 +132,11 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
       pageBindings.resourceReady(work.bindingId(), work.executionToken(), prepared);
       if (work.policyProtocolVersion() == 1) {
         var policy = policies.prepareTarget(work, impacts.requirements(work));
+        if (policy.targetInProgress()) {
+          policies.releaseBatch(work);
+          return new ApplicationFormReleaseView(data, pageBindings.get(appId, formId, work.bindingId()),
+              null, FormPublicationProgressProjection.project(policy));
+        }
         if (policy.status() == FormWritePolicyPublicationStatus.PREPARED) {
           return blocked(work, data);
         }
@@ -198,7 +203,7 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
         data, binding, inspections.get(work.applicationId(), work.formId(), work.bindingId()));
   }
 
-  private ApplicationFormReleaseView recoverPolicy(
+  ApplicationFormReleaseView recoverPolicy(
       final String appId, final String formId, final BindingClaim claim, final boolean cancelling) {
     var data = state.getForVersion(appId, formId, claim.view().formVersion());
     if (!claim.execute()) {
@@ -207,6 +212,11 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
     BindingWork work = claim.work();
     try {
       var policy = cancelling ? policies.cancelTarget(work) : policies.resumeTarget(work);
+      if (policy != null && policy.targetInProgress()) {
+        policies.releaseBatch(work);
+        return new ApplicationFormReleaseView(data, pageBindings.get(appId, formId, work.bindingId()),
+            null, FormPublicationProgressProjection.project(policy));
+      }
       if (policy != null && policy.status() == FormWritePolicyPublicationStatus.PREPARED) {
         return blocked(work, data);
       }

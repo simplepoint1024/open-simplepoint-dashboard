@@ -13,7 +13,7 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.client.ExternalIdentityLinkFlow;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.entity.User;
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequiredArgsConstructor
 public class RegisterController {
 
-  private final UsersService usersService;
+  private final UserManagementService usersService;
 
   private final MessageSource messageSource;
 

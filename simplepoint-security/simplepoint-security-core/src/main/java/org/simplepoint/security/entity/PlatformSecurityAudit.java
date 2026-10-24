@@ -11,6 +11,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import org.simplepoint.core.annotation.UuidStringGenerator;
+import org.simplepoint.core.query.TablePagination;
 import org.springframework.core.annotation.Order;
 
 /** Transactional audit of platform account changes, deliberately excluding credentials. */
@@ -32,7 +33,7 @@ import org.springframework.core.annotation.Order;
       @org.simplepoint.core.query.QueryField("occurredAt"),
       @org.simplepoint.core.query.QueryField("id")
     },
-    maxPageSize = 50)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class PlatformSecurityAudit {
   @Id
   @UuidStringGenerator

@@ -16,7 +16,18 @@ public record PermissionModelDescriptor(String model, boolean data, boolean fiel
     String owner, String department, Map<String, Field> properties) {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  public record Field(String type, String title, List<String> operators, List<String> values, boolean readOnly) {
+  public record Field(String type, String title, List<String> operators, List<String> values, boolean readOnly,
+      @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+      org.simplepoint.api.locale.LocalizedText titleLocalization) {
+    public Field {
+      if (titleLocalization != null) {
+        titleLocalization = org.simplepoint.api.locale.LocalizedTexts.validate(titleLocalization, 255, 64);
+        if (!java.util.Objects.equals(title, titleLocalization.defaultValue())) throw new IllegalArgumentException("Invalid localized permission title");
+      }
+    }
+    public Field(String type, String title, List<String> operators, List<String> values, boolean readOnly) {
+      this(type, title, operators, values, readOnly, null);
+    }
     public Field(String type, String title, List<String> operators, List<String> values) {
       this(type, title, operators, values, false);
     }

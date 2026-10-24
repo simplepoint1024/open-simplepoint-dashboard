@@ -115,6 +115,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
           {(() => {
             const tableProps = {
               cards: props.cards,
+              rowActions: props.rowActions,
               refresh: controller.table.refresh,
               pageable: pageData ?? emptyPage,
               schema: schemaData?.schema ?? [],
@@ -127,11 +128,12 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               onFilterChange: controller.table.onFilterChange,
               storageKey: props.storageKey ?? `${props.baseUrl}:${props.name}`,
               onButtonEvents: buttonEvents,
+              isButtonVisible: props.isButtonVisible,
               isButtonDisabled: (button: TableButtonProps, keys: React.Key[], rows: any[]) =>
-                tableLoading || submitLoading || deleteOpen || !!props.isButtonDisabled?.(button, keys, rows),
+                tableLoading || submitLoading || deleteOpen || props.isButtonVisible?.(button, rows) === false || !!props.isButtonDisabled?.(button, keys, rows),
               onRowDoubleClick: props.onRowDoubleClick ?? (editButton && buttonEvents[editButton.key]
                 ? (record: any, key: React.Key) => {
-                  if (props.isButtonDisabled?.(editButton, [key], [record])) return;
+                  if (props.isButtonVisible?.(editButton, [record]) === false || props.isButtonDisabled?.(editButton, [key], [record])) return;
                   if (tableLoading || submitLoading || deleteOpen) return;
                   buttonEvents[editButton.key]([key], [record], editButton);
                 }
@@ -166,10 +168,10 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
         placement="right"
         width={props.drawerWidth ?? 480}
         open={drawerOpen && selected}
-        maskClosable={!submitLoading && !props.formCloseDisabled}
-        keyboard={!submitLoading && !props.formCloseDisabled}
+        maskClosable={!submitLoading && !props.formCloseDisabled && !discard}
+        keyboard={!submitLoading && !props.formCloseDisabled && !discard}
         onClose={() => {
-          if (!controller.drawer.canClose()) {
+          if (discardRef.current || !controller.drawer.canClose()) {
             return;
           }
           if (props.confirmDiscard && dirty) changeDiscard(true);
@@ -196,7 +198,7 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
           <Suspense fallback={<LoadingPlaceholder />}>
             {submitError && <Alert type="error" showIcon title={submitError} />}
             {props.renderForm ? props.renderForm({
-              formData: formInput, editingRecord, disabled: submitLoading || discard,
+              formData: formInput, editingRecord, disabled: submitLoading || discard || !drawerOpen || !selected,
               readOnly: Boolean(props.formReadOnly), submitting: submitLoading,
               onChange: next => {
                 if (controller.status.isSubmitting() || discardRef.current) return;
@@ -229,11 +231,12 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
           </Suspense>
         )}
         </LoadingBoundary>
+        {/* Keep the confirmation in its owning drawer's overlay context, including nested drawers. */}
+        <Modal wrapClassName="sp-simple-table-discard" open={discard && selected && drawerOpen} title={t('personal.discard', '放弃未保存的修改？')}
+          onCancel={() => {if (controller.drawer.canClose()) changeDiscard(false);}}
+          onOk={() => {if (controller.drawer.canClose()) {changeDiscard(false); setDrawerOpen(false);}}}
+          okText={t('personal.discardConfirm', '放弃修改')} cancelText={t('personal.continueEditing', '继续编辑')} />
       </Drawer>
-      <Modal wrapClassName="sp-simple-table-discard" open={discard && selected && drawerOpen} title={t('personal.discard', '放弃未保存的修改？')}
-        onCancel={() => {if (controller.drawer.canClose()) changeDiscard(false);}}
-        onOk={() => {if (controller.drawer.canClose()) {changeDiscard(false); setDrawerOpen(false);}}}
-        okText={t('personal.discardConfirm', '放弃修改')} cancelText={t('personal.continueEditing', '继续编辑')} />
       <Modal wrapClassName="sp-simple-table-delete" open={controller.deletion.open && selected}
         destroyOnHidden={!controller.deletion.open} title={t('table.confirmDeleteTitle', '确认删除')}
         confirmLoading={submitLoading} closable={!submitLoading} maskClosable={!submitLoading} keyboard={!submitLoading}

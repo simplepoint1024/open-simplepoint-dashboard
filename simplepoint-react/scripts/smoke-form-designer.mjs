@@ -1,3 +1,5 @@
+import {smokeFormCalculationDesigner} from './smoke-form-calculation-designer.mjs';
+import {smokeCalculationRuntime} from './smoke-calculation-runtime.mjs';
 import {smokeFormInspectors} from './smoke-form-inspectors.mjs';
 import {smokeFormStandardComponents} from './smoke-form-standard-components.mjs';
 import assert from 'node:assert/strict';
@@ -49,7 +51,15 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
   await clickReady(root + ' .app-form-editor-name');
   const save = async () => {
     const needed = await evaluate(`document.querySelector('${root} .app-form-editor-identity .ant-tag')?.textContent!=='已保存'`);
-    if (needed) await action('保存');
+    if (needed) {
+      await clickReady(root + ' .sp-form-designer-toolbar button[aria-label="操作"]');
+      const outcome = await poll(() => evaluate(`(()=>{
+        if(document.querySelector('${root} .app-form-editor-identity .ant-tag')?.textContent==='已保存')return 'saved';
+        const item=[...document.querySelectorAll('${actionMenu} .ant-dropdown-menu-item')].find(e=>e.textContent.replaceAll(' ','')==='保存'
+          && e.getClientRects().length && e.getAttribute('aria-disabled')!=='true');
+        if(!item)return false;item.click();return 'clicked';})()`), 'save action or acknowledged queued save');
+      if (outcome === 'saved') await clickReady(root + ' .app-form-editor-name');
+    }
     await poll(() => evaluate(`document.querySelector('${root} .app-form-editor-identity .ant-tag')?.textContent==='已保存'`), 'draft persisted');
   };
   const drag = async (type, parentId) => {
@@ -96,6 +106,7 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
   assert.equal(addressField.writePolicy, 'UNTIL_SUBMITTED');
   assert.equal(countField.writePolicy, 'CREATE_ONLY');
   await smokeFormDataDesigner({action, clickText, clickReady, clickMenu, fill, poll, evaluate, save, draft, textField, countField});
+  await smokeFormCalculationDesigner({clickReady, clickText, fill, poll, evaluate, save, draft, fixture, textField});
   await smokeFormRuleDesigner({action, clickText, clickReady, fill, poll, evaluate, save, draft, textField, addressField, countField});
   const dialogScene = draft().document.scenes.find(scene => scene.type === 'DIALOG');
   const drawerScene = draft().document.scenes.find(scene => scene.type === 'DRAWER');
@@ -176,7 +187,15 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
   assert.equal(fixture.publication.writes.length, writesAfterCancellation, 'cancelled publications stop polling');
   assert.equal(fixture.publication.releases.size, 0, 'cancellation does not activate the page');
   fixture.publication.loseResponses();
+  fixture.publication.stagePublication('STAGING');
   await clickText(publicationModal + ' .ant-modal-footer button', '发布');
+  await poll(() => evaluate(`document.querySelector('${publicationModal} .app-form-publication-progress')?.textContent.includes('数据核算 · 10 / 10')`), 'acknowledged staging counters');
+  assert.equal(fixture.publication.releases.size, 0, '100 percent staged is not an activated page');
+  fixture.publication.stagePublication('APPLYING');
+  await poll(() => evaluate(`document.querySelector('${publicationModal} .app-form-publication-progress')?.textContent.includes('数据写入 · 10 / 10')`), 'phase-specific application counters');
+  assert.equal(await evaluate(`!!document.querySelector('${publicationModal} .ant-alert-success')`), false, '100 percent applied still awaits final confirmation');
+  assert.equal(fixture.publication.releases.size, 0);
+  fixture.publication.stagePublication();
   await poll(() => evaluate(`!!document.querySelector('${publicationModal} .ant-alert-error')`), 'lost publication response is recoverable');
   assert.equal(fixture.publication.versions.get('design-form-1').length, 1);
   assert.equal(fixture.publication.releases.size, 1);
@@ -184,15 +203,20 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
   await poll(() => evaluate(`!!document.querySelector('${publicationModal} .ant-alert-success')`), 'exact publication retry confirms activated page');
   const publicationWrites = fixture.publication.writes.filter(write => write.path.endsWith('/publication')
     && write.data.idempotencyKey !== cancelledWrite.data.idempotencyKey);
-  assert.equal(publicationWrites.length, 2); assert.deepEqual(publicationWrites[0].data, publicationWrites[1].data);
+  assert(publicationWrites.length >= 4, 'bounded progress, failed acknowledgement and retry each reuse the original intent');
+  for (const write of publicationWrites) assert.deepEqual(write.data, publicationWrites[0].data);
+  assert.equal(await evaluate(`!!document.querySelector('${publicationModal} .app-form-publication-progress')`), false, 'confirmation clears nonterminal counters');
   assert.equal(publicationWrites[0].path, cancelledWrite.path, 'a new request can publish the same immutable version');
   assert.equal([...fixture.publication.intents.values()].filter(intent => intent.status === 'CANCELLED').length, 1,
     'publishing a new attempt preserves the cancelled history');
+  fixture.publication.calculations.enable(textField.fieldId);
   await clickText(publicationModal + ' .ant-modal-footer button', '查看数据');
   const dataDrawer = '.app-published-form-data.ant-drawer-open';
   await clickText(dataDrawer + ' button', '新增记录');
   await poll(() => evaluate(`!!document.querySelector('.ant-drawer-open #form_main_${textField.fieldId}')`), 'published SimpleTable creates fields from the saved design');
   await fill(`.ant-drawer-open #form_main_${textField.fieldId}`, '发布后客户');
+  await smokeCalculationRuntime({clickMenu, clickReady, clickText, fill, poll, evaluate,
+    calculations: fixture.publication.calculations, nameId: textField.fieldId, writes: fixture.publication.writes});
   await clickText('.sp-simple-table-drawer.ant-drawer-open button', '打开弹窗');
   await fill(`${dialog} #form_${dialogScene.sceneId}_${addressField.fieldId}`, '東京');
   await clickText(dialog + ' button', '打开抽屉');
@@ -202,6 +226,13 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
   const detailRows = `.sp-simple-table-drawer.ant-drawer-open [data-detail-id="${detailDefinition.detailId}"]`;
   await clickReady(detailRows + ' button[aria-label="添加明细"]');
   await fill(detailRows + ' .sp-form-detail-cell input', '明细加载回归');
+  try {
+    await poll(() => evaluate(`document.querySelector('${detailRows}')?.textContent.includes('preview-row:明细加载回归')`), 'owned calculated field previews within the same inline row');
+  } catch (error) {
+    console.error('Calculated detail diagnostics', JSON.stringify({reads: fixture.publication.calculations.reads.slice(-3),
+      view: await evaluate(`({text:document.querySelector('${detailRows}')?.textContent,inputs:[...document.querySelectorAll('${detailRows} input')].map(e=>({id:e.id,value:e.value})),status:document.querySelector('.sp-simple-table-drawer.ant-drawer-open')?.textContent})`)}));
+    throw error;
+  }
   await clickText(detailRows + ' button', '完成');
   await clickText('.ant-drawer-open button', '提交');
   await poll(() => fixture.publication.records.size === 1, 'published data facade receives a version-pinned record');
@@ -223,6 +254,7 @@ export async function smokeFormDesigner({clickMenu, clickReady, clickText, fill,
     'async complete-record loading opens editor with children omitted from list results');
   await clickText(detailRows + ' button', '编辑');
   await fill(detailRows + ' .sp-form-detail-cell input', '完整加载后修改');
+  await poll(() => evaluate(`document.querySelector('${detailRows}')?.textContent.includes('preview-row:完整加载后修改')`), 'existing owned row recalculates without writing its computed cell');
   await clickText(detailRows + ' button', '完成');
   await fill(`.ant-drawer-open #form_main_${textField.fieldId}`, '编辑后客户');
   fixture.publication.loseRecordResponse();

@@ -25,66 +25,147 @@ public class FormRuntimeDocumentCompiler {
 
   /** Removes hidden field metadata and forces non-editable components to read-only. */
   public ApplicationFormRuntimeDocument compile(final PublishedApplicationForm form) {
-    Map<String, String> permissions = fieldPermissions(form.resourceCode());
+    return compile(form, fieldPermissions(form.resourceCode()));
+  }
+
+  /** Internal projection with an already intersected current and historical permission floor. */
+  ApplicationFormRuntimeDocument compile(final PublishedApplicationForm form, final Map<String, String> policy) {
+    Map<String, String> permissions = FormCalculationPermissions.restrict(form, policy);
     Map<String, FieldAccess> accessByField = new HashMap<>();
-    form.document().fields().forEach(field -> accessByField.put(
-        field.fieldId(),
-        access(field, RecordPermissionModel.access(permissions, form.physicalModelId(), field.fieldId(), field.storageCode()))
-    ));
-    List<ApplicationFormRuntimeFieldDefinition> fields = form.document().fields().stream()
-        .filter(field -> accessByField.get(field.fieldId()) != FieldAccess.HIDDEN)
-        .map(field -> runtimeField(field, accessByField.get(field.fieldId())))
-        .toList();
-    List<FormSceneDefinition> scenes = form.document().scenes().stream()
-        .map(scene -> runtimeScene(scene, accessByField))
-        .toList();
+    form.document()
+        .fields()
+        .forEach(
+            field ->
+                accessByField.put(
+                    field.fieldId(),
+                    access(
+                        field,
+                        RecordPermissionModel.access(
+                            permissions,
+                            form.physicalModelId(),
+                            field.fieldId(),
+                            field.storageCode()))));
+    List<ApplicationFormRuntimeFieldDefinition> fields =
+        form.document().fields().stream()
+            .filter(field -> accessByField.get(field.fieldId()) != FieldAccess.HIDDEN)
+            .map(field -> runtimeField(field, accessByField.get(field.fieldId())))
+            .toList();
+    List<FormSceneDefinition> scenes =
+        form.document().scenes().stream().map(scene -> runtimeScene(scene, accessByField)).toList();
     Set<String> componentIds = new HashSet<>();
     scenes.forEach(scene -> collectComponentIds(scene.root(), componentIds));
-    Set<String> readableFields = accessByField.entrySet().stream()
-        .filter(entry -> entry.getValue() == FieldAccess.EDITABLE || entry.getValue() == FieldAccess.READ_ONLY)
-        .map(Map.Entry::getKey)
-        .collect(java.util.stream.Collectors.toUnmodifiableSet());
-    List<FormRuleDefinition> rules = form.document().rules().stream()
-        .filter(rule -> componentIds.contains(rule.targetComponentId()))
-        .filter(rule -> referencesOnly(rule.condition(), readableFields))
-        .toList();
+    Set<String> readableFields =
+        accessByField.entrySet().stream()
+            .filter(
+                entry ->
+                    entry.getValue() == FieldAccess.EDITABLE
+                        || entry.getValue() == FieldAccess.READ_ONLY)
+            .map(Map.Entry::getKey)
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    List<FormRuleDefinition> rules =
+        form.document().rules().stream()
+            .filter(rule -> componentIds.contains(rule.targetComponentId()))
+            .filter(rule -> referencesOnly(rule.condition(), readableFields))
+            .toList();
     return new ApplicationFormRuntimeDocument(
         form.document().contractVersion(),
         fields,
         scenes,
         rules,
-        form.document().details().stream().map(detail -> {
-          var binding = form.detailBindings().stream().filter(item -> item.detailId().equals(detail.detailId()))
-              .findFirst().orElseThrow(() -> new IllegalStateException("Published detail binding is missing"));
-          return new org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeDetailDefinition(
-              detail.detailId(), detail.label(), detail.fields().stream()
-                  .filter(field -> access(field, RecordPermissionModel.access(permissions, binding.physicalModelId(), field.fieldId(), field.storageCode())) != FieldAccess.HIDDEN)
-                  .map(field -> runtimeField(field, access(field, RecordPermissionModel.access(permissions, binding.physicalModelId(), field.fieldId(), field.storageCode())))).toList(),
-              detail.fields().stream().filter(field -> access(field, RecordPermissionModel.access(permissions, binding.physicalModelId(), field.fieldId(), field.storageCode())) != FieldAccess.EDITABLE)
-                  .map(FormFieldDefinition::fieldId).toList());
-        }).toList(),
-        form.document().constraints().stream().filter(rule ->
-            (rule.fieldId() == null || readableFields.contains(rule.fieldId()))
-                && (rule.otherFieldId() == null || readableFields.contains(rule.otherFieldId()))
-                && (rule.detailFieldId() == null || form.document().details().stream()
-                    .filter(detail -> detail.detailId().equals(rule.detailId()))
-                    .flatMap(detail -> detail.fields().stream())
-                    .filter(field -> field.fieldId().equals(rule.detailFieldId())).anyMatch(field -> {
-                      var binding = form.detailBindings().stream()
-                          .filter(item -> item.detailId().equals(rule.detailId())).findFirst().orElseThrow();
-                      FieldAccess visible = access(field, RecordPermissionModel.access(permissions, binding.physicalModelId(), field.fieldId(), field.storageCode()));
-                      return visible == FieldAccess.EDITABLE || visible == FieldAccess.READ_ONLY;
-                    }))).toList(), form.document().presentation() == null ? null
+        form.document().details().stream()
+            .map(
+                detail -> {
+                  var binding =
+                      form.detailBindings().stream()
+                          .filter(item -> item.detailId().equals(detail.detailId()))
+                          .findFirst()
+                          .orElseThrow(
+                              () ->
+                                  new IllegalStateException("Published detail binding is missing"));
+                  return new org.simplepoint.plugin.app.form.api.model
+                      .ApplicationFormRuntimeDetailDefinition(
+                      detail.detailId(),
+                      detail.label(),
+                      detail.fields().stream()
+                          .filter(
+                              field ->
+                                  access(
+                                          field,
+                                          RecordPermissionModel.access(
+                                              permissions,
+                                              binding.physicalModelId(),
+                                              field.fieldId(),
+                                              field.storageCode()))
+                                      != FieldAccess.HIDDEN)
+                          .map(
+                              field ->
+                                  runtimeField(
+                                      field,
+                                      access(
+                                          field,
+                                          RecordPermissionModel.access(
+                                              permissions,
+                                              binding.physicalModelId(),
+                                              field.fieldId(),
+                                              field.storageCode()))))
+                          .toList(),
+                      detail.fields().stream()
+                          .filter(
+                              field ->
+                                  access(
+                                          field,
+                                          RecordPermissionModel.access(
+                                              permissions,
+                                              binding.physicalModelId(),
+                                              field.fieldId(),
+                                              field.storageCode()))
+                                      != FieldAccess.EDITABLE)
+                          .map(FormFieldDefinition::fieldId)
+                          .toList(), detail.labelLocalization());
+                })
+            .toList(),
+        form.document().constraints().stream()
+            .filter(
+                rule ->
+                    (rule.fieldId() == null || readableFields.contains(rule.fieldId()))
+                        && (rule.otherFieldId() == null
+                            || readableFields.contains(rule.otherFieldId()))
+                        && (rule.detailFieldId() == null
+                            || form.document().details().stream()
+                                .filter(detail -> detail.detailId().equals(rule.detailId()))
+                                .flatMap(detail -> detail.fields().stream())
+                                .filter(field -> field.fieldId().equals(rule.detailFieldId()))
+                                .anyMatch(
+                                    field -> {
+                                      var binding =
+                                          form.detailBindings().stream()
+                                              .filter(
+                                                  item -> item.detailId().equals(rule.detailId()))
+                                              .findFirst()
+                                              .orElseThrow();
+                                      FieldAccess visible =
+                                          access(
+                                              field,
+                                              RecordPermissionModel.access(
+                                                  permissions,
+                                                  binding.physicalModelId(),
+                                                  field.fieldId(),
+                                                  field.storageCode()));
+                                      return visible == FieldAccess.EDITABLE
+                                          || visible == FieldAccess.READ_ONLY;
+                                    })))
+            .toList(),
+        form.document().presentation() == null
+            ? null
             : new org.simplepoint.plugin.app.form.api.model.FormPresentation(
-                form.document().presentation().listFieldOrder().stream().filter(id -> accessByField.get(id) != FieldAccess.HIDDEN).toList(),
-                form.document().presentation().labelWidth())
-    );
+                form.document().presentation().listFieldOrder().stream()
+                    .filter(id -> accessByField.get(id) != FieldAccess.HIDDEN)
+                    .toList(),
+                form.document().presentation().labelWidth()));
   }
 
   private static ApplicationFormRuntimeFieldDefinition runtimeField(
-      final FormFieldDefinition field,
-      final FieldAccess access
-  ) {
+      final FormFieldDefinition field, final FieldAccess access) {
     return new ApplicationFormRuntimeFieldDefinition(
         field.fieldId(),
         field.label(),
@@ -96,34 +177,31 @@ public class FormRuntimeDocumentCompiler {
         access == FieldAccess.MASKED ? null : field.defaultValue(),
         access == FieldAccess.MASKED ? List.of() : field.choices(),
         field.writePolicy(),
-        access == FieldAccess.MASKED ? null : field.validation(), field.access()
-    );
+        access == FieldAccess.MASKED ? null : field.validation(),
+        field.access(),
+        field.calculation() != null ? Boolean.TRUE : null, field.labelLocalization());
   }
 
   private static FormSceneDefinition runtimeScene(
-      final FormSceneDefinition scene,
-      final Map<String, FieldAccess> accessByField
-  ) {
+      final FormSceneDefinition scene, final Map<String, FieldAccess> accessByField) {
     return new FormSceneDefinition(
         scene.sceneId(),
         scene.code(),
         scene.name(),
         scene.type(),
         scene.width(),
-        runtimeComponent(scene.root(), accessByField)
-    );
+        runtimeComponent(scene.root(), accessByField));
   }
 
   private static FormComponentDefinition runtimeComponent(
-      final FormComponentDefinition component,
-      final Map<String, FieldAccess> accessByField
-  ) {
-    List<FormComponentDefinition> children = component.children().stream()
-        .filter(child -> visible(child, accessByField))
-        .map(child -> runtimeComponent(child, accessByField))
-        .toList();
-    FieldAccess access = component.fieldId() == null
-        ? FieldAccess.EDITABLE : accessByField.get(component.fieldId());
+      final FormComponentDefinition component, final Map<String, FieldAccess> accessByField) {
+    List<FormComponentDefinition> children =
+        component.children().stream()
+            .filter(child -> visible(child, accessByField))
+            .map(child -> runtimeComponent(child, accessByField))
+            .toList();
+    FieldAccess access =
+        component.fieldId() == null ? FieldAccess.EDITABLE : accessByField.get(component.fieldId());
     return new FormComponentDefinition(
         component.componentId(),
         component.componentType(),
@@ -136,41 +214,30 @@ public class FormRuntimeDocumentCompiler {
         component.targetSceneId(),
         component.readOnly() || access != FieldAccess.EDITABLE,
         component.properties(),
-        children
-    );
+        children, component.labelLocalization());
   }
 
   private static boolean visible(
-      final FormComponentDefinition component,
-      final Map<String, FieldAccess> accessByField
-  ) {
+      final FormComponentDefinition component, final Map<String, FieldAccess> accessByField) {
     return component.fieldId() == null
         || accessByField.get(component.fieldId()) != FieldAccess.HIDDEN;
   }
 
   private static void collectComponentIds(
-      final FormComponentDefinition component,
-      final Set<String> componentIds
-  ) {
+      final FormComponentDefinition component, final Set<String> componentIds) {
     componentIds.add(component.componentId());
     component.children().forEach(child -> collectComponentIds(child, componentIds));
   }
 
   private static boolean referencesOnly(
-      final FormCondition condition,
-      final Set<String> visibleFields
-  ) {
+      final FormCondition condition, final Set<String> visibleFields) {
     if (condition.fieldId() != null && !visibleFields.contains(condition.fieldId())) {
       return false;
     }
-    return condition.children().stream()
-        .allMatch(child -> referencesOnly(child, visibleFields));
+    return condition.children().stream().allMatch(child -> referencesOnly(child, visibleFields));
   }
 
-  private static FieldAccess access(
-      final FormFieldDefinition field,
-      final String permission
-  ) {
+  private static FieldAccess access(final FormFieldDefinition field, final String permission) {
     if ("HIDDEN".equals(permission)) {
       return FieldAccess.HIDDEN;
     }

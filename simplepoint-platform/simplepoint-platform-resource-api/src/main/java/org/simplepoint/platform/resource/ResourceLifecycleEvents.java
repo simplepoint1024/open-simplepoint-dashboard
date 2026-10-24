@@ -6,19 +6,40 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import org.simplepoint.events.api.EventMessage;
+import org.simplepoint.events.api.EventPublication;
+import org.simplepoint.events.api.EventSubscription;
 
 /** Versioned resource lifecycle facts shared by independent authorization and data participants. */
 public final class ResourceLifecycleEvents {
   public static final String OFFLINE_REQUESTED = "resource.offline.requested";
   public static final String OFFLINE_COMPLETED = "resource.offline.completed";
   public static final Set<String> REQUIRED_PARTICIPANTS = Set.of("common", "dna");
+  public static final EventPublication REQUEST_PUBLICATION =
+      new EventPublication(OFFLINE_REQUESTED, 1);
+  public static final EventPublication COMPLETION_PUBLICATION =
+      new EventPublication(OFFLINE_COMPLETED, 1);
+  public static final EventSubscription GRANTS_SUBSCRIPTION =
+      new EventSubscription("resource-offline.grants", "app", OFFLINE_REQUESTED, 1);
+  public static final EventSubscription PROJECTION_SUBSCRIPTION =
+      new EventSubscription("resource-offline.projection", "app", OFFLINE_REQUESTED, 1);
 
   private ResourceLifecycleEvents() {}
 
+  /** One durable completion effect per required participant, reused by manifests and handlers. */
+  public static EventSubscription completionSubscription(String participant) {
+    if (!REQUIRED_PARTICIPANTS.contains(participant)) {
+      throw new IllegalArgumentException("Unknown lifecycle participant");
+    }
+    return new EventSubscription(
+        "resource-offline." + participant, participant, OFFLINE_COMPLETED, 1);
+  }
+
   /** Strict payload validation; scope and generation remain in the event envelope. */
   public static OfflineRequest request(EventMessage event) {
-    if (!OFFLINE_REQUESTED.equals(event.eventType()) || event.schemaVersion() != 1
-        || !"app".equals(event.producer()) || event.generation() < 1) {
+    if (!OFFLINE_REQUESTED.equals(event.eventType())
+        || event.schemaVersion() != 1
+        || !"app".equals(event.producer())
+        || event.generation() < 1) {
       throw new IllegalArgumentException("Unsupported resource lifecycle request");
     }
     var payload = event.payload();
@@ -35,15 +56,31 @@ public final class ResourceLifecycleEvents {
     if (!REQUIRED_PARTICIPANTS.contains(participant)) {
       throw new IllegalArgumentException("Unknown lifecycle participant");
     }
-    return new EventMessage(UUID.randomUUID(), OFFLINE_COMPLETED, 1, participant,
-        request.tenantId(), request.resourceId(), request.generation(), request.operationId(),
-        request.correlationId(), Instant.now(), JsonNodeFactory.instance.objectNode()
-        .put("requestEventId", request.payload().path("rootRequestEventId").asText(request.eventId().toString())).put("participant", participant));
+    return new EventMessage(
+        UUID.randomUUID(),
+        OFFLINE_COMPLETED,
+        1,
+        participant,
+        request.tenantId(),
+        request.resourceId(),
+        request.generation(),
+        request.operationId(),
+        request.correlationId(),
+        Instant.now(),
+        JsonNodeFactory.instance
+            .objectNode()
+            .put(
+                "requestEventId",
+                request.payload().path("rootRequestEventId").asText(request.eventId().toString()))
+            .put("participant", participant));
   }
 
   private static String text(JsonNode payload, String name) {
     JsonNode value = payload.get(name);
-    if (value == null || !value.isTextual() || value.asText().isBlank() || value.asText().length() > 160) {
+    if (value == null
+        || !value.isTextual()
+        || value.asText().isBlank()
+        || value.asText().length() > 160) {
       throw new IllegalArgumentException("Invalid lifecycle " + name);
     }
     return value.asText();

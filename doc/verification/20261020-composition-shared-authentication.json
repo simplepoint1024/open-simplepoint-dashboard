@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-20",
+  "phase": "G20 shared identity authentication policy extraction; JDBC remote integration and overall goal remain incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-authentication:check :simplepoint-security:simplepoint-security-oauth2-server:test :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries verifySharedAuthenticationStyle -I /tmp/simplepoint-shared-auth-checkstyle.gradle -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-server",
+      "tests": 76,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 488,
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build/reports/checkstyle/sharedAuthentication.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-server/build/reports/checkstyle/sharedAuthentication.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml",
+      "violations": 0
+    }
+  ],
+  "scopedStyleFiles": [
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/AuthenticationModuleBoundaryTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/TotpServiceTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/AccountCredentialVerifierTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/LoginProtectionTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/MfaVerificationServiceTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/AccountCredentialVerifier.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/ProtectedPasswordAuthenticationProvider.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/TotpService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/LoginProtection.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/MfaVerificationService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/MfaChallenge.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/AuthenticationAccountState.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorController.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/provider/PendingMfaAuthentication.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/LoginAttemptFilter.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/handler/LoginAuthenticationSuccessHandler.java"
+  ],
+  "scopedStyleProcedure": "Standard check runs on the entire new authentication library and actual-artifact composition verification project. The init script also checks scopedStyleFiles with unchanged repository checkstyle/google_checks.xml, each owning project test compile classpath and maxWarnings=0. This is not a full repository style result.",
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "verified": [
+    "Moved shared password provider, attempt/replay guard, TOTP adapter and MFA verifier out of the OAuth server; old implementations removed. OAuth imports and its controller/session adapter now use the shared library.",
+    "The independent authentication library runtime does not load OAuth server configuration or the browser PendingMfaAuthentication type. It belongs to the identity module package and is not a separately deployable domain.",
+    "AccountCredentialVerifier uses the same Spring Security password provider and MFA verifier, reloads account state and authorization version after password verification, and enforces configured MFA before clearing the normalized input budget.",
+    "Real BCrypt tests reject incorrect/unknown credentials, inactive/deleted accounts, null/changed authorization version, removed accounts, absent/replayed MFA and oversized input. Repository/MFA collaborators are test doubles.",
+    "An isolated real Redis server verifies concurrent reservations, fixed attempt budgets, expiry, cross-instance TOTP/challenge replay rejection and fail-closed storage failure.",
+    "A real Redis/BCrypt test alternates browser password-provider and non-browser verifier attempts using email and phone aliases; both paths are locked after one shared canonical account budget is exhausted.",
+    "Actual OAuth HTTP tests still enforce pending MFA isolation, CSRF, session rotation and removal of credentials from the completed browser session. Common and Authorization regression suites pass."
+  ],
+  "limitations": [
+    "No JDBC transport or remote credential provider is integrated yet. Legacy security.user:1 entity lookup and DNA password comparison still require removal.",
+    "The local verifier does not issue or audit a session; an authorized transport adapter must durably audit outcomes before session exposure and implement expiry/account-version revalidation.",
+    "Credential audit must bind the correct logical producer/storage under G05/G06; no authorization producer impersonation or local-event fallback is introduced.",
+    "No real database/OAuth/HTTP deployment, frontend distribution or complete standalone/distributed/mixed topology was accepted in this phase.",
+    "No standalone service has been delivered; S1/S2 and later implementation/acceptance work remain active."
+  ],
+  "removedOldImplementationPaths": [
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/LoginProtection.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/MfaVerificationService.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/TotpService.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/provider/ProtectedPasswordAuthenticationProvider.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/LoginProtectionTest.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/MfaVerificationServiceTest.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/TotpServiceTest.java"
+  ],
+  "sourceSha256": {
+    "settings.gradle.kts": "2b31c774a5683df40c5b4e1d0584dffadd835c39fecb2cdcd6340db54fa4b818",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/README.md": "ba9a84ef33089f98ae15cb1814b5e1e2cfde9053f0698369f0c68da5e0850f60",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build.gradle.kts": "8d0a06f922ab34dff77de295bc38d02d9f782cdf7c094e8204050b71a3345225",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/AccountCredentialVerifier.java": "18635a7d3a871e31ec35ab99ce86c101c0257d93d44b2465e6ffa7d482b31fa7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/AuthenticationAccountState.java": "9960b141094e73b0d7056c6bd8e9d3ea3aeef40d02e6c9f525d7d07039e559bc",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/LoginProtection.java": "b7421146e24b6c5aa4f50152ba6222118cfebe6b11585b3ddc25ff99ec41ed06",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/MfaChallenge.java": "f1ae693839d58c0989d81d89c94ad93c30e0f3dccc5690fd890a1a228544c562",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/MfaVerificationService.java": "2e93791f823caa334c948de21151fe194d03f676fe040fc470768b58b061cb81",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/ProtectedPasswordAuthenticationProvider.java": "60e97604607f2d51a2295881acb7349629327577886ac58f9f9f70861daef4ad",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/TotpService.java": "b00c49b958c0d31a397c5e0b29fcc8aa7bcfe90bb50c13475514a4f861db2a5f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/AccountCredentialVerifierTest.java": "f66589157b55216ce06ba248b8cfaf622bcd2a0b283852d68ee124ba2a4e49af",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/AuthenticationModuleBoundaryTest.java": "5a593c45da745bf3c3cb0dad0eaf073309534f29ff2fbc1455674c2654b7b6dc",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/LoginProtectionTest.java": "9bd73fe68bf0d7cf37f190c41bafc4e7eb5dfb015767c269dcd75fff45d6e822",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/MfaVerificationServiceTest.java": "e4568d7653bd4b828c766efaebd68ff0e4cda367e7f186543ff4992e2e4f284e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/TotpServiceTest.java": "f765db3dcca658c862eeef26ddd0b1949bbea25c536d2b5488ac79ec60437bab",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build.gradle.kts": "a6b18a43368ed9bd55f338fe08fd55f0261b0e509d1209833b2129bbf97d8508",
+    "simplepoint-security/simplepoint-security-oauth2-server/build.gradle.kts": "9ea9a085f3eb7f1e1880f376d5496261fd8014f0277d5975746cf51449dbac10",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/AuthorizationServerConfiguration.java": "a6d648af6c83147f081f71edd0123cf3f8fc912fa57daf622bad21dc42aa1107",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/LoginAttemptFilter.java": "e2a48627793741629bf2507ad58ad6a5ed16fc85920aea0549da18fc41e7ec87",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorController.java": "8127805a0ec79512e58f822ba3cd3ff3b322d9f807d14ad8026e48466ecca5f7",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/handler/LoginAuthenticationSuccessHandler.java": "5787353b8ebf389296eafe1a072749a5a67d52f5318f8064459b1f5fdeda2457",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/provider/PendingMfaAuthentication.java": "8dbe50b5f32633bed3bcb38f4813a1823c5ecd10878b7bf40937a61180b3edad",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/TwoFactorSetupServiceImpl.java": "23ad044f1fdc76e9c77783d38399d1acd8c97d4ae493bd4c2a0243de136cee87",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/AuthenticationBoundaryHttpTest.java": "03f01f686292c99513662043268a1d58647572c8a4b3bae4b815ddebb33169d3",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorControllerTest.java": "ffca54140503259bb2c7d47f6c30cd38da0cf92370f76cc4a0c8c39b1e801e30",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/handler/LoginAuthenticationSuccessHandlerTest.java": "05b6e3a047fe683b97868f2126f386c457ed9fb340124b806fd1d4e521d4f276",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/TwoFactorSetupServiceImplTest.java": "9e3ca3385ed9d57b2a7c16ee1486e618f175e11072b741bc934fe04d0a3ba239"
+  }
+}

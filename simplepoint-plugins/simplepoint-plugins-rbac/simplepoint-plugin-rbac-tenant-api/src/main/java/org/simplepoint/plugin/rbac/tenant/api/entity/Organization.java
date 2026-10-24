@@ -189,4 +189,30 @@ public class Organization extends TenantBaseEntityImpl<String> {
   )
   @Column(nullable = false)
   private Boolean enabled;
+
+  @Order(4)
+  @Schema(title = "i18n:organizations.title.leaderId", description = "i18n:organizations.description.leaderId",
+      maxLength = 36, extensions = @Extension(name = "x-ui", properties = {
+          @ExtensionProperty(name = "x-list-visible", value = "false"),
+          @ExtensionProperty(name = "widget", value = "UserSelect")}))
+  @Column(name = "leader_id", length = 36)
+  private String leaderId;
+
+  @jakarta.persistence.Transient
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  @Schema(hidden = true)
+  @lombok.Getter(lombok.AccessLevel.NONE)
+  @lombok.Setter(lombok.AccessLevel.NONE)
+  private boolean leaderIdSupplied;
+
+  /** Distinguishes an explicit clear from an older client's omitted association. */
+  @com.fasterxml.jackson.annotation.JsonSetter("leaderId")
+  public void setLeaderId(String value) {
+    leaderIdSupplied = true;
+    leaderId = value == null || value.isBlank() ? null : value.trim();
+  }
+
+  @com.fasterxml.jackson.annotation.JsonIgnore
+  public boolean hasLeaderIdInput() {return leaderIdSupplied;}
+
 }

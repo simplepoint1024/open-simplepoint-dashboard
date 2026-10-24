@@ -1,6 +1,6 @@
 import type {ItemType} from "antd/es/menu/interface";
 import {App as AntdApp, Avatar, Button, Dropdown, Popover, MenuProps, Tooltip, Popconfirm} from "antd";
-import {ApartmentOutlined, CreditCardOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
+import {CreditCardOutlined, DesktopOutlined, DownOutlined, EditOutlined, FontSizeOutlined, FullscreenExitOutlined, FullscreenOutlined, GithubOutlined, GlobalOutlined, HomeOutlined, LogoutOutlined, MoonOutlined, QuestionCircleOutlined, SafetyCertificateOutlined, SearchOutlined, SettingOutlined, SunOutlined, UserOutlined} from "@simplepoint/shared/types/icon";
 import React, {useEffect, useRef, useState} from 'react';
 import TableActions from '@simplepoint/components/Table/Actions';
 import TenantSelect from '@simplepoint/components/TenantSelect';
@@ -92,6 +92,7 @@ export const TenantSwitcherTop: React.FC = () => {
   const { data } = useCurrentTenants();
   const [pickerOpen, setPickerOpen] = useState(false);
   const switching = useRef(false);
+  const [switchPending, setSwitchPending] = useState(false);
   const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
 
   // 同步外部切换
@@ -111,7 +112,7 @@ export const TenantSwitcherTop: React.FC = () => {
 
   const changeTenant = async (nextId?: string, option?: EntityOption) => {
     if (!nextId || nextId === tenantId || switching.current) return;
-    switching.current = true;
+    switching.current = true; setSwitchPending(true);
     const previous = tenantId;
     try {
       const changed = await switchAuthorizedContext({confirm: confirmWorkspaceChange,
@@ -128,19 +129,21 @@ export const TenantSwitcherTop: React.FC = () => {
       if (changed) message.success(`${t('tenant.switchDone', '已切换租户，后续请求将生效')} · ${option?.label ?? ''}`);
     } catch (error) {
       message.error(resolveApiErrorMessage(error, t('error.operationFailed', '操作失败，请重试')));
-    } finally {switching.current = false;}
+    } finally {switching.current = false; setSwitchPending(false);}
   };
 
   return (
-    <Popover title={<TenantTypeTag type={currentTenant?.tenantType}/>} open={pickerOpen} onOpenChange={setPickerOpen} trigger="click" placement="bottom" destroyOnHidden
-      content={pickerOpen && <div style={{width: 'min(340px, 75vw)'}}>
-        <TenantSelect directory="current" value={tenantId} allowClear={false} autoFocus defaultOpen
+    <Popover title={<div className="nb-workspace-picker-heading"><span>{t('label.workspace', '工作空间')}</span><TenantTypeTag type={currentTenant?.tenantType}/></div>}
+      open={pickerOpen} onOpenChange={next => {if (!switching.current) setPickerOpen(next);}} trigger="click" placement="bottomLeft" destroyOnHidden
+      content={pickerOpen && <div className="nb-workspace-picker" style={{width: 'min(390px, 80vw)'}}>
+        <TenantSelect directory="current" presentation="list" value={tenantId} allowClear={false} autoFocus disabled={switchPending}
           ariaLabel={t('label.workspace', '工作空间')} onChange={(id, option) => {void changeTenant(id, option);}}/>
       </div>}>
 
       <button
         type="button"
         className="nb-context-switcher nb-tenant-switcher"
+        aria-label={t('label.workspace', '工作空间')} aria-expanded={pickerOpen} aria-haspopup="dialog" aria-busy={switchPending}
         onClick={(e) => { try { e.stopPropagation(); } catch {} }}
         onMouseDown={(e) => { try { e.stopPropagation(); } catch {} }}
         title={`${t('label.tenant', '租户')} · ${currentType}: ${currentName}`}
@@ -638,7 +641,7 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  */
  export const aboutMeItem = (
    navigate: (path: string) => void,
-   tenant?: {enabled: boolean; editable: boolean; organization?: boolean},
+   tenant?: {enabled: boolean; editable: boolean; resourceManageable?: boolean; packageManageable?: boolean},
  ): ItemType => {
   const menu = avatarConfig(navigate, tenant);
   return {
@@ -655,7 +658,7 @@ export const toolsSwitcherGroupItem = (): ItemType => {
  */
 export const avatarConfig = (
   navigate: (path: string) => void,
-  tenant?: {enabled: boolean; editable: boolean; organization?: boolean},
+  tenant?: {enabled: boolean; editable: boolean; resourceManageable?: boolean; packageManageable?: boolean},
 ): MenuProps => {
   return {
     items: [
@@ -673,7 +676,6 @@ export const avatarConfig = (
         children: [
           {key: 'tenant-home', label: <I18nText k='menu.tenantHome' fallback='租户主页'/>, icon: <HomeOutlined/>, onClick: () => navigate('/tenant')},
           ...(tenant.editable ? [{key: 'tenant-profile', label: <I18nText k='menu.workspaceSettings' fallback='空间设置'/>, icon: <EditOutlined/>, onClick: () => navigate('/tenant/settings')}] : []),
-          ...(tenant.editable && tenant.organization ? [{key: 'tenant-resources', label: <I18nText k='menu.tenantResources' fallback='租户资源管理'/>, icon: <ApartmentOutlined/>, onClick: () => navigate('/tenant/resources')}] : []),
         ],
       }] : []),
       {

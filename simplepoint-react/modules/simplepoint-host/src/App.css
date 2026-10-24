@@ -810,3 +810,8 @@ html.theme-transition, html.theme-transition body, html.theme-transition * {
   .nb-context-arrow { display: none; }
   .nb-root .ant-layout-sider { width: 0 !important; min-width: 0 !important; }
 }
+
+.nb-workspace-picker-heading {display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 4px 8px;}
+.nb-workspace-picker .sp-tenant-mark {width: 30px !important; height: 30px !important; line-height: 30px !important; border-radius: 8px;}
+.nb-workspace-picker .sp-tenant-identity {gap: 10px;}
+.nb-tenant-switcher[aria-expanded="true"] {background: var(--ant-color-primary-bg); border-color: var(--ant-color-primary-border);}

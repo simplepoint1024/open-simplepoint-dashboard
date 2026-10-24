@@ -37,7 +37,7 @@ class CommonI18nMessagesTest {
   }
 
   private static Map<String, String> readCommonMessages(String locale) throws Exception {
-    String path = "META-INF/simplepoint/i18n/" + locale + "/common.json";
+    String path = "META-INF/simplepoint/modules/common-ui/i18n/" + locale + "/common.json";
     try (InputStream input = CommonI18nMessagesTest.class.getClassLoader().getResourceAsStream(path)) {
       assertTrue(input != null, () -> "missing " + path);
       return OBJECT_MAPPER.readValue(input, new TypeReference<>() {

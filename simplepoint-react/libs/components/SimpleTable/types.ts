@@ -69,6 +69,7 @@ export type SimpleTableAfterSubmitContext = SimpleTableBeforeSubmitContext & {
 
 export interface SimpleTableProps<T> {
   cards?: TableProps<T>['cards'];
+  rowActions?: TableProps<T>['rowActions'];
   /** Opt in only if the entire route has no state outside this table that must survive eviction. */
   allowTabEviction?: boolean;
   schemaStaleTime?: number;
@@ -93,6 +94,7 @@ export interface SimpleTableProps<T> {
   initialFilters?: Record<string, string>;
   customButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
   customButtons?: TableButtonProps[];
+  isButtonVisible?: TableProps<T>['isButtonVisible'];
   isButtonDisabled?: (
     button: TableButtonProps,
     selectedRowKeys: React.Key[],
@@ -102,6 +104,8 @@ export interface SimpleTableProps<T> {
   onDrawerOpenChange?: (open: boolean) => void;
   /** Let a containing configuration panel protect this table's nested editor/confirmation/write. */
   onInteractionLockChange?: (locked: boolean) => void;
+  /** Close page-owned overlays when schema/list reads revoke access; transport failures do not trigger this. */
+  onReadAccessDenied?: (error: unknown) => void;
   editingRecord?: any | null;
   onEditingRecordChange?: (record: any | null) => void;
   initialValues?: any;

@@ -1,0 +1,246 @@
+{
+  "date": "2026-10-21",
+  "scope": "Optional auditing HTTP adapters and derived Redis metadata permissions",
+  "deployment": false,
+  "modulesInVerifiedPlan": 29,
+  "tests": {
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http": [
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.auditing.http.AuditingHttpCompositionTest",
+        "timestamp": "2026-10-21T09:17:31",
+        "sha256": "81e5b24f40c657e4a56740e99587a12ed56fa786de9ad3ca5e9d7ea299f464b4"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.auditing.http.AuditingResourceInitializationTest",
+        "timestamp": "2026-10-21T09:17:32",
+        "sha256": "114c653a7aa2a87193d7537303a0dfe41afe7a94ee8204c17a0c2b2086e9985f"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.auditing.server.AuditingQueryHttpTest",
+        "timestamp": "2026-10-21T09:17:33",
+        "sha256": "ae90c0beb6d7f574d93e0c0055f03276be969bd1a5a236f2e178ea33273c1ecc"
+      },
+      {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.auditing.server.RedisEntryQueryHttpTest",
+        "timestamp": "2026-10-21T09:17:22",
+        "sha256": "8a1d74c04d830699fbae36d1931cd65ca01ee61255d26a76b382756b2f73fc85"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation": [
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.logging.service.impl.CredentialAuditEventHandlerTest",
+        "timestamp": "2026-10-21T09:14:50",
+        "sha256": "bd377b25460182f907b64ff21343ef993a2353101924ee0c94f1ad7f8d417386"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.logging.service.impl.ErrorLogServiceImplTest",
+        "timestamp": "2026-10-21T09:14:53",
+        "sha256": "315dd1d28aa55020e27d20bd39d0483ccfcf8f1a54ee23904aac2fc9e5db827b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.logging.service.impl.LoginAuditEventHandlerTest",
+        "timestamp": "2026-10-21T09:14:54",
+        "sha256": "25564dcf203e7a8a04d897039273793eeb4495bd73132aeb3807b7702aa0fe62"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.logging.service.impl.LoginLogServiceImplTest",
+        "timestamp": "2026-10-21T09:14:55",
+        "sha256": "318859c854617a7077f302d497b67c5488cfa1509ff0f5d29da5033f251cc044"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.logging.service.impl.ResourceGrantLogServiceImplTest",
+        "timestamp": "2026-10-21T09:14:55",
+        "sha256": "cec1382b8f931beec7b4875af05845fde6db61ee10179c9d2d26349d61100371"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-rate-limit-implementation": [
+      {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.ratelimit.service.impl.EndpointRateLimitRuleServiceImplTest",
+        "timestamp": "2026-10-21T09:14:46",
+        "sha256": "193243d12035c68a167506cc5d373605fdc07fc73692c590fcd64927da3b42a7"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.ratelimit.service.impl.ServiceRateLimitRuleServiceImplTest",
+        "timestamp": "2026-10-21T09:14:54",
+        "sha256": "96481d937f40c690a3ebc3dce6b7e7ac51a30a3419d5af37ec71f2c82dcf63b7"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-implementation": [
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.redis.service.impl.RedisMonitoringServiceImplTest",
+        "timestamp": "2026-10-21T09:16:37",
+        "sha256": "86c8d8c1dddf82f4745861d2878580a17decfcd6a0d4284beebe5d7a353037d6"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.redis.service.query.RedisConnectionMetadataScannerTest",
+        "timestamp": "2026-10-21T09:16:47",
+        "sha256": "ce06f298a46a6dba2173cbb0059956c54aa57fc5455f8008bbfac5d10e7e91d9"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.auditing.redis.service.query.RedisEntryQueryServiceTest",
+        "timestamp": "2026-10-21T09:16:48",
+        "sha256": "b206fe28147ac18c86c04be90a0b00152b33341a18e79e8cbcf1d0505e9411e7"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition-verification": [
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+        "timestamp": "2026-10-21T09:16:38",
+        "sha256": "436558366f40978853d9761b955f6bd01340519529fc9d29a5fd091a545a576b"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+        "timestamp": "2026-10-21T09:17:05",
+        "sha256": "0e6affb893f40f733e1d2f9b3b7f08b9928624fb86a93cb7db9754d53ef99a50"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+        "timestamp": "2026-10-21T09:17:06",
+        "sha256": "d37cb5d0c151767c5e9a4e48613e5f7673fe8515d94f66d4e156cd031bbae9aa"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 129,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceSha256": {
+    "gradle/module-boundaries.gradle.kts": "335fa8c971a02ea1f869220701c14047372d29fb1cbfb316ed5848cc701cba08",
+    "settings.gradle.kts": "826f206ea9d75c54fe4e2c068645b86880f9f0ee86cbb0de19f666cf1c791a18",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "f661a219b911eff249318894e67514a3d4e4db62bdc879ef264dc1952c9440d0",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "2fc671103fad19679d6d2bc04455c5dbf938d709ccc7f5b66286ee06f7374692",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/build.gradle.kts": "84e176a670003962a42ceb2cb29af5544c5e83914a76b2776faf9e3072896bf2",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/auditing/http/AuditingHttpModule.java": "b142710486a6942a2742a47a832f610d1def2db2313c46f4c6c159d6bf67419b",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/logging/rest/controller/ErrorLogController.java": "414f43530eb7c045f873217645d086bf8c78e4fa7bf41f80751703af73bff79d",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/logging/rest/controller/LoginLogController.java": "3bbb87c207588e445468d503469cfc2b9b13f4a753d6026d2dab7fd8334a8d92",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/logging/rest/controller/ResourceGrantLogController.java": "ebc2f6b59be20aec91ab748d2d04e566d4d2a798e90394ab98b82d0db2d13b07",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/ratelimit/rest/controller/EndpointRateLimitRuleController.java": "f7a69a1d03684522f6488fc5ba5970c5e6d338968546b9ba708af3a8517e6cb7",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/ratelimit/rest/controller/ServiceRateLimitRuleController.java": "bba6c0801c9000bcf8903b32b2a49f556463944b8fab8681979201f485cea2b5",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/redis/rest/controller/RedisEntryQueryController.java": "f5c2182143d8e6f957994bd40756db9a1a28132d66b594b417e422d7187c0d65",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/plugin/auditing/redis/rest/controller/RedisMonitoringController.java": "469248dfef18f2d36a0f47fa4d28ab84963a52cc5bff75c84c238e95109b1820",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules.imports": "7066a21d25b92bf75fb1b7621ee7e5d79a26b64b0d024df0ef836d447777a4a2",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n.imports": "ce5af5a5aa364c7ff7a9acbee8089f008961b113c607a0385f9ef099666809a6",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-endpoint-rate-limit-rules.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-error-logs.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-login-logs.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-redis.json": "f826e2c1c851302cf9deca52fcbd1748f6bfbf285675086ce9bfd4e0cc9caf0a",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-resource-grant-logs.json": "3016371582f7c3e65357e5220745433da2f5653b393bbff423caa77ba7b8cc2d",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/en-US/monitoring-service-rate-limit-rules.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-endpoint-rate-limit-rules.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-error-logs.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-login-logs.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-redis.json": "62cd4ad3ee891c656b80df2515b33f8eab8a1b27a18d52e0b76e725f8313e52d",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-resource-grant-logs.json": "cc4272ed5d128bcc12ad78e73543f9d754f4ef3365cb4c768be7dda05d61e4a5",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/i18n/zh-CN/monitoring-service-rate-limit-rules.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/resources/META-INF/simplepoint/modules/auditing-http/resources.json": "5994921e3eb4cd58d7e1dae345d94d7bb1ea43d5ee81d72ab0a5918110b33b5f",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/test/java/org/simplepoint/auditing/http/AuditingHttpCompositionTest.java": "7d7e00bc2119f233a9e81fcf363dd16b5beb8d735321efe5535af0d80f9bbb29",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/test/java/org/simplepoint/auditing/http/AuditingResourceInitializationTest.java": "cb5e432f0da5af20f2938dca6a22035b072ed0232c47d0dadac98e1783f85792",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/test/java/org/simplepoint/auditing/server/AuditingQueryHttpTest.java": "1d830ef96149b1e0d3dca107edfa573aa3ba96f592d85ff874d8037cdb51fb9b",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/test/java/org/simplepoint/auditing/server/RedisEntryQueryHttpTest.java": "d46ade94479fa685ef019b68886e8d0caf810289d5ff188717f27a4fccf122a3",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation/src/main/java/org/simplepoint/plugin/auditing/logging/module/AuditLoggingModule.java": "20a47d208337cc32adb9786f21880b50bec59c19b57d428d9e9dce147a238dc1",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-rate-limit-implementation/src/main/java/org/simplepoint/plugin/auditing/ratelimit/module/AuditRateLimitModule.java": "be96d65b3de5fe4537c32b6ccb5edd8a6e943737fd8ea366f84b8e549f956a4f",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-api/src/main/java/org/simplepoint/plugin/auditing/redis/api/model/RedisEntryMetadata.java": "7fc43ce898a701a480bdd5e5eeb36e0bff0c2711e201ca58a5a143da5825148b",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-redis-implementation/src/main/java/org/simplepoint/plugin/auditing/redis/module/AuditRedisModule.java": "2761c45de59ff1f6f9b9fd2fb09f7c7473dda88ebff3a6e73cdf9de6bac5754e"
+  },
+  "artifacts": {
+    "jars": 263,
+    "classes": {
+      "org/simplepoint/plugin/auditing/logging/rest/controller/LoginLogController.class": [
+        "simplepoint-plugin-auditing-http.jar"
+      ],
+      "org/simplepoint/plugin/auditing/redis/rest/controller/RedisEntryQueryController.class": [
+        "simplepoint-plugin-auditing-http.jar"
+      ],
+      "org/simplepoint/plugin/auditing/redis/service/query/RedisEntryQueryService.class": [
+        "simplepoint-plugin-auditing-redis-implementation.jar"
+      ]
+    },
+    "frontend": [
+      {
+        "jar": "simplepoint-service-auditing.jar",
+        "sha256": "8f13eb0ed3f69950080522fd4db96bdb83af2368051a985ca071ecf543a4b4e1",
+        "files": 90
+      }
+    ]
+  },
+  "validation": [
+    "Real disposable Redis on loopback: paging snapshots, hidden/masked fields, query inference restrictions, exact-key deletion, bounded previews and schema parity",
+    "Existing logging/rate-limit/Redis domain tests; packaged module planning, persistence ownership and boundaries",
+    "Actual MVC legacy/modular mappings, method authorization, SYSTEM scope and complete resource/i18n initialization",
+    "Scoped zero-warning Checkstyle; frontend-enabled auditing installDist and verifyFrontendDistribution"
+  ],
+  "limitations": [
+    "No live standalone deployment or three-topology business acceptance yet",
+    "This increment does not change running microservices"
+  ]
+}

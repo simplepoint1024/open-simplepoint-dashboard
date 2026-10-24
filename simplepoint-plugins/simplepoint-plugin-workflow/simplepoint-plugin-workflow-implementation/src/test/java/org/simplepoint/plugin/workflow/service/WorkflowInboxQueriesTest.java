@@ -27,12 +27,12 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
 
   @BeforeEach
   void inboxQueries() {
-    inbox = new WorkflowInboxQueries(em);
+    inbox = new WorkflowInboxQueries(em, labelReader());
   }
 
   @Test
   void directTaskLinksUseTheSamePersonalBoundaryAsTheInboxEvenOutsideTheCurrentPage() {
-    var instance = start(publish("${initiator}", null), "Direct task");
+    final var instance = start(publish("${initiator}", null), "Direct task");
     String taskId = task(instance);
     var item = transaction.execute(status -> inbox.task(taskId));
     assertThat(item.taskId()).isEqualTo(taskId);
@@ -47,7 +47,7 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
 
   @Test
   void pendingUsesRealNamesAndIsRemovedAfterApprovalWithActualDecisionAndComment() {
-    var instance = start(publish("${initiator}", null), "Purchase");
+    final var instance = start(publish("${initiator}", null), "Purchase");
     var pending = rows("pending");
     assertThat(pending.totalElements()).isEqualTo(1);
     assertThat(pending.content())
@@ -78,8 +78,8 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   }
 
   @Test
-  void withdrawalWithoutAssignedTaskIsAProcessActionAndAssigneeSeesWhoTerminatedTheirTask() {
-    var instance = start(publish("${initiator}", null), "Withdraw");
+  void withdrawalWithoutAssignmentCreatesProcessActionAndAssigneeSeesWhoTerminatedTheirTask() {
+    final var instance = start(publish("${initiator}", null), "Withdraw");
     engine.getTaskService().setAssignee(task(instance), "reviewer");
     transaction.execute(status -> service.withdraw(instance.id(), "资料需要修改"));
     assertThat(rows("completed").content())
@@ -104,8 +104,8 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   }
 
   @Test
-  void cancelingAnOwnTaskDoesNotCreateADuplicateProcessAction() {
-    var instance = start(publish("${initiator}", null), "Cancel");
+  void cancelingOwnTaskDoesNotCreateDuplicateProcessAction() {
+    final var instance = start(publish("${initiator}", null), "Cancel");
     transaction.execute(status -> service.cancel(instance.id(), "作废"));
     assertThat(rows("completed").content())
         .singleElement()
@@ -118,8 +118,8 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   }
 
   @Test
-  void rejectionIsAFirstClassCompletedResult() {
-    var instance = start(publish(null, "actor"), "Reject");
+  void rejectionRemainsFirstClassCompletedResult() {
+    final var instance = start(publish(null, "actor"), "Reject");
     transaction.execute(status -> service.reject(task(instance), "不符合要求"));
     assertThat(rows("completed").content())
         .singleElement()
@@ -147,17 +147,17 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
                           "<bpmn:sequenceFlow id=\"flow_review_end\" sourceRef=\"review\""
                               + " targetRef=\"end\"/>",
                           """
-<bpmn:sequenceFlow id="flow_review_end" sourceRef="review" targetRef="next"/>
-<bpmn:userTask id="next" name="Next review" flowable:assignee="${initiator}"/>
-<bpmn:sequenceFlow id="finish" sourceRef="next" targetRef="end"/>
-""");
+                          <bpmn:sequenceFlow id="flow_review_end" sourceRef="review" targetRef="next"/>
+                          <bpmn:userTask id="next" name="Next review" flowable:assignee="${initiator}"/>
+                          <bpmn:sequenceFlow id="finish" sourceRef="next" targetRef="end"/>
+                          """);
               service.updateDraft(
                   initial.definition().id(),
                   new UpdateDraftCommand(1, "Two steps", null, null, xml, null));
               service.publish(initial.definition().id(), new PublishDefinitionCommand(2, null));
               return initial.definition().id();
             });
-    var instance = start(definition, "Sequential");
+    final var instance = start(definition, "Sequential");
     transaction.execute(
         status ->
             service.complete(task(instance), new CompleteTaskCommand(Map.of(), "First accepted")));
@@ -178,7 +178,7 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
 
   @Test
   void candidatesAreDeduplicatedAndNeverReceiveOtherPeoplesCompletedWork() {
-    var instance = start(publish(null, "actor"), "Candidates");
+    final var instance = start(publish(null, "actor"), "Candidates");
     engine.getTaskService().addCandidateGroup(task(instance), "tenant.approver");
     AuthorizationContextHolder.getContext().setRoles(List.of("tenant.approver"));
     assertThat(rows("pending").totalElements()).isEqualTo(1);
@@ -194,7 +194,7 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
 
   @Test
   void roleCandidatesCanSeePendingButNotAnUnclaimedTerminatedTask() {
-    var instance = start(publishRole("tenant.approver"), "Role");
+    final var instance = start(publishRole("tenant.approver"), "Role");
     authorize("reviewer", "tenant", false, List.of("workflow.tasks.view"));
     AuthorizationContextHolder.getContext().setRoles(List.of("tenant.approver"));
     assertThat(rows("pending").totalElements()).isEqualTo(1);
@@ -267,16 +267,34 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   @Test
   void legacyStructuredNameAndEmailFallbackDriveBothDisplayAndDatabaseQueries() {
     start(publish("${initiator}", null), "Identity fallback");
-    transaction.executeWithoutResult(status -> em.createNativeQuery("update simpoint_ac_users set name=' ',"
-        + " family_name=' Zhang ',given_name=' San ',email='actor@example.test' where id='actor'").executeUpdate());
-    var structured = transaction.execute(status -> inbox.query("pending", Map.of("starterName", "equals:Zhang San"),
-        PageRequest.of(0, 1, Sort.by("starterName"))));
+    transaction.executeWithoutResult(
+        status ->
+            em.createNativeQuery(
+                    "update simpoint_ac_users set name=' ', family_name=' Zhang ',given_name=' San"
+                        + " ',email='actor@example.test' where id='actor'")
+                .executeUpdate());
+    var structured =
+        transaction.execute(
+            status ->
+                inbox.query(
+                    "pending",
+                    Map.of("starterName", "equals:Zhang San"),
+                    PageRequest.of(0, 1, Sort.by("starterName"))));
     assertThat(structured.totalElements()).isEqualTo(1);
     assertThat(structured.content().getFirst().starterName()).isEqualTo("Zhang San");
-    transaction.executeWithoutResult(status -> em.createNativeQuery("update simpoint_ac_users set family_name=null,"
-        + " given_name=null where id='actor'").executeUpdate());
-    var email = transaction.execute(status -> inbox.query("pending", Map.of("starterName", "equals:actor@example.test"),
-        PageRequest.of(0, 1, Sort.by("starterName"))));
+    transaction.executeWithoutResult(
+        status ->
+            em.createNativeQuery(
+                    "update simpoint_ac_users set family_name=null,"
+                        + " given_name=null where id='actor'")
+                .executeUpdate());
+    var email =
+        transaction.execute(
+            status ->
+                inbox.query(
+                    "pending",
+                    Map.of("starterName", "equals:actor@example.test"),
+                    PageRequest.of(0, 1, Sort.by("starterName"))));
     assertThat(email.totalElements()).isEqualTo(1);
     assertThat(email.content().getFirst().starterName()).isEqualTo("actor@example.test");
     assertThat(email.content().getFirst().assigneeName()).isEqualTo("actor@example.test");
@@ -284,7 +302,7 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
 
   @Test
   void legacyEngineCompletionIsNotInventedAsAnApprovalAndEndedProcessIsNotShownRunning() {
-    var instance = start(publish("${initiator}", null), "Legacy");
+    final var instance = start(publish("${initiator}", null), "Legacy");
     engine.getTaskService().complete(task(instance));
     assertThat(rows("completed").content())
         .singleElement()
@@ -317,7 +335,7 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
                       status -> inbox.query("pending", filters, PageRequest.of(0, 20))))
           .isInstanceOf(InvalidQueryException.class);
     }
-    assertThatThrownBy(() -> inbox.query("pending", Map.of(), PageRequest.of(0, 101)))
+    assertThatThrownBy(() -> inbox.query("pending", Map.of(), PageRequest.of(0, 501)))
         .isInstanceOf(InvalidQueryException.class);
     assertThatThrownBy(
             () -> inbox.query("pending", Map.of(), PageRequest.of(0, 20, Sort.by("actorId"))))

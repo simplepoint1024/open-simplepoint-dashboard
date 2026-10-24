@@ -44,6 +44,7 @@ import org.simplepoint.plugin.rbac.core.api.repository.UserRoleRelevanceReposito
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PersonalTenantProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.entity.Role;
 import org.simplepoint.security.entity.User;
@@ -80,6 +81,9 @@ class UsersServiceImplTest {
   ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
   @Mock
+  PersonalTenantProvisioningService personalTenants;
+
+  @Mock
   RoleRepository roleRepository;
 
   @Mock
@@ -103,8 +107,7 @@ class UsersServiceImplTest {
     Tenant personalTenant = new Tenant();
     personalTenant.setId("tenant-u1");
     when(userRoleRelevanceRepository.loadUserByPhoneOrEmail("test@example.com")).thenReturn(user);
-    when(tenantRepository.findPersonalTenantByOwnerId("u1")).thenReturn(Optional.of(personalTenant));
-    when(tenantUserRelevanceRepository.authorized("tenant-u1")).thenReturn(List.of("u1"));
+    when(personalTenants.ensureForUser("u1")).thenReturn(personalTenant);
 
     var result = service.loadUserByUsername("test@example.com");
 
@@ -120,15 +123,13 @@ class UsersServiceImplTest {
     Tenant savedTenant = new Tenant();
     savedTenant.setId("tenant-personal");
     when(userRoleRelevanceRepository.loadUserByPhoneOrEmail("test@example.com")).thenReturn(user);
-    when(tenantRepository.findPersonalTenantByOwnerId("u1")).thenReturn(Optional.empty());
-    when(tenantRepository.save(any(Tenant.class))).thenReturn(savedTenant);
-    when(tenantUserRelevanceRepository.authorized("tenant-personal")).thenReturn(List.of());
+    when(personalTenants.ensureForUser("u1")).thenReturn(savedTenant);
 
     var result = service.loadUserByUsername("test@example.com");
 
     assertThat(result).isEqualTo(user);
-    verify(tenantRepository).save(any(Tenant.class));
-    verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
+    verify(personalTenants).ensureForUser("u1");
+    verify(tenantRepository, never()).save(any(Tenant.class));
   }
 
   @Test
@@ -208,6 +209,58 @@ class UsersServiceImplTest {
     assertThat(user.getPassword()).isEqualTo("encodedPassword");
   }
 
+  @Test
+  void ordinaryRegistrationCannotSucceedWithoutPersonalPreparation() {
+    var user = new User();
+    user.setId("registered-user");
+    user.setPassword("raw");
+    when(passwordEncoder.encode("raw")).thenReturn("encoded");
+    when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    when(personalTenants.ensureForUser("registered-user"))
+        .thenThrow(new org.simplepoint.plugin.rbac.tenant.api.error.TenantResourceSetupException(
+            org.simplepoint.plugin.rbac.tenant.api.error.TenantResourceSetupException.Code.CATALOG_NOT_READY));
+    assertThatThrownBy(() -> service.create(user)).hasMessageContaining("CATALOG_NOT_READY");
+  }
+
+  @Test
+  void systemBootstrapCreatesOnlyAccountBeforeResourceDeclarationsExist() {
+    var user = new User();
+    user.setId("system-user");
+    user.setPassword("raw");
+    when(passwordEncoder.encode("raw")).thenReturn("encoded");
+    when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    assertThat(service.createBootstrapAccount(user)).isSameAs(user);
+    assertThat(user.getPassword()).isEqualTo("encoded");
+    verify(personalTenants, never()).ensureForUser(anyString());
+  }
+
+  @Test
+  void trustedBootstrapRetainsRootConfigurationInTheCreationTransaction() {
+    var user = new User();
+    user.setId("system-root");
+    user.setSuperAdmin(true);
+    user.setPassword("raw");
+    when(passwordEncoder.encode("raw")).thenReturn("encoded");
+    when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    assertThat(service.createBootstrapAccount(user).getSuperAdmin()).isTrue();
+    verify(passwordEncoder).encode("raw");
+    verify(personalTenants, never()).ensureForUser(anyString());
+  }
+
+  @Test
+  void systemBootstrapIsNotAvailableFromRequestContexts() {
+    var user = new User();
+    user.setSuperAdmin(true);
+    var attributes = mock(org.springframework.web.context.request.RequestAttributes.class);
+    org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(attributes);
+    try {
+      assertThatThrownBy(() -> service.createBootstrapAccount(user)).isInstanceOf(AccessDeniedException.class);
+    } finally {
+      org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+    }
+    verify(userRepository, never()).save(any());
+  }
+
   // ── modifyById ────────────────────────────────────────────────────────────
 
   @Test
@@ -275,7 +328,8 @@ class UsersServiceImplTest {
   @Test
   void profileFullNameCanBeUpdatedOrClearedButOldClientsCannotEraseIt() throws Exception {
     var user = new User();
-    user.setId("u1"); user.setName("Existing name");
+    user.setId("u1");
+    user.setName("Existing name");
     when(userRepository.findByIdForAuthorization("u1")).thenReturn(Optional.of(user));
     when(userRepository.updateById(user)).thenReturn(user);
     var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -287,7 +341,8 @@ class UsersServiceImplTest {
     assertThat(update.isNameProvided()).isTrue();
     service.updateCurrentProfile("u1", update);
     assertThat(user.getName()).isEqualTo("新姓名");
-    var unicode = new UserProfileUpdateCommand(); unicode.setName("😀".repeat(100));
+    var unicode = new UserProfileUpdateCommand();
+    unicode.setName("😀".repeat(100));
     service.updateCurrentProfile("u1", unicode);
     assertThat(user.getName()).isEqualTo(unicode.getName());
     service.updateCurrentProfile("u1", mapper.readValue("{\"name\":null}", UserProfileUpdateCommand.class));
@@ -302,7 +357,8 @@ class UsersServiceImplTest {
 
   @Test
   void profileRejectsOversizeNameBeforeLoadingOrWritingTheAccount() {
-    var command = new UserProfileUpdateCommand(); command.setName("x".repeat(101));
+    var command = new UserProfileUpdateCommand();
+    command.setName("x".repeat(101));
     assertThatThrownBy(() -> service.updateCurrentProfile("u1", command)).isInstanceOf(IllegalArgumentException.class);
     verify(userRepository, never()).findByIdForAuthorization(anyString());
     verify(userRepository, never()).updateById(any());

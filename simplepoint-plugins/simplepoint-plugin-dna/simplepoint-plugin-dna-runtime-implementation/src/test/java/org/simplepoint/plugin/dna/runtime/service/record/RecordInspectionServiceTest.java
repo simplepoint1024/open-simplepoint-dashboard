@@ -74,11 +74,11 @@ class RecordInspectionServiceTest {
         List.of(List.of(1L, new BigDecimal("0.5"))),
         List.of(List.of(new BigDecimal("9223372036854775808"), 0L)));
     for (var invalid : rows) {
-      when(backend.aggregateQuery(any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
+      when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
           List.of(), invalid, false, invalid.size(), 0, null));
       assertExecutionFailure();
     }
-    when(backend.aggregateQuery(any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
+    when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
         List.of(), List.of(List.of(1L, 0L)), true, 1, 0, null));
     assertExecutionFailure();
   }
@@ -87,7 +87,7 @@ class RecordInspectionServiceTest {
   void propagatesExecutionFailureAndCanRetryTheReadWithoutReservedState() {
     prepare();
     var timeout = new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, "Inspection timed out");
-    when(backend.aggregateQuery(any(), any(), anyInt())).thenThrow(timeout).thenReturn(new CalciteQueryResult(
+    when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenThrow(timeout).thenReturn(new CalciteQueryResult(
         List.of(), List.of(List.of(3L, new BigDecimal("2"))), false, 1, 0, null));
     assertThatThrownBy(() -> service.inspectCompleteness(QUERY)).isSameAs(timeout);
     assertThat(service.inspectCompleteness(QUERY).emptyCounts()).containsExactlyEntriesOf(Map.of("title", 2L));

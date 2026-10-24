@@ -22,6 +22,7 @@ export interface ResourceRelevantVo {
   description?: string | null;
   scopeTypes?: Array<'SYSTEM' | 'PLATFORM' | 'TENANT' | 'PERSONAL'>;
   grantable?: boolean;
+  distributable?: boolean;
   publicAccess?: boolean;
   disabled?: boolean;
   hasChildren?: boolean;
@@ -48,4 +49,17 @@ export async function fetchByCodes(codes: string[]) {
 
 export async function fetchSubtreeCodes(rootId: string, options?: RequestOptions) {
   return await get<string[]>(`${baseUrl}/subtree-codes`, {rootId}, options);
+}
+
+/** Template delivery is explicitly requested; ordinary role directories retain their own policy. */
+export async function fetchDistributionChildren(params: Record<string, string> = {}, options?: RequestOptions) {
+  return fetchChildren({...params, purpose: 'DISTRIBUTION'}, options);
+}
+
+export async function fetchDistributionAssignedTree(codes: string[], params: Record<string, string> = {}, options?: RequestOptions) {
+  return fetchAssignedTree(codes, {...params, purpose: 'DISTRIBUTION'}, options);
+}
+
+export async function fetchDistributionSubtreeCodes(rootId: string, options?: RequestOptions) {
+  return get<string[]>(`${baseUrl}/subtree-codes`, {rootId, purpose: 'DISTRIBUTION'}, options);
 }

@@ -1,3 +1,5 @@
+import {DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZES} from './pagination.ts';
+
 /**
  * 空分页
  */
@@ -68,15 +70,15 @@ export function normalizePage<T>(raw: RawPage<T> | null | undefined, defaultSize
 }
 
 export function toPagination(page: RawPage<any> | null | undefined) {
-    const normalized = normalizePage(page)
+    const normalized = normalizePage(page, DEFAULT_TABLE_PAGE_SIZE)
     const {size, number, totalElements} = normalized.page
     return {
         total: totalElements ?? 0,
-        pageSize: size ?? 20,
+        pageSize: size || DEFAULT_TABLE_PAGE_SIZE,
         current: (number ?? 0) + 1,
         showSizeChanger: true,
         showQuickJumper: true,
-        pageSizeOptions: ['10', '20', '50', '100'],
+        pageSizeOptions: [...TABLE_PAGE_SIZES],
         showTotal: (total: number) => `共 ${total} 条`,
     }
 }

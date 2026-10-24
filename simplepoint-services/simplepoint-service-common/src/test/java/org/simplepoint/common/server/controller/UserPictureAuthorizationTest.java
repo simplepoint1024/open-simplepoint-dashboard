@@ -7,7 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.rbac.core.api.pojo.command.UserPictureUpdateCommand;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.core.rest.controller.UsersController;
 import org.simplepoint.security.entity.User;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -27,7 +27,7 @@ class UserPictureAuthorizationTest {
   @Test void anonymousCannotWriteButAuthenticatedAccountsCanWriteOnlyThemselves() {
     try (var context = new AnnotationConfigApplicationContext(SecurityConfiguration.class)) {
       var controller = context.getBean(UsersController.class);
-      var service = context.getBean(UsersService.class);
+      var service = context.getBean(UserManagementService.class);
       SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("test", "anonymous",
           List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
       assertThrows(AccessDeniedException.class, () -> controller.updateCurrentPicture(new UserPictureUpdateCommand(null)));
@@ -42,7 +42,7 @@ class UserPictureAuthorizationTest {
   @Test void pickerRequiresItsRealIndependentCapabilityAndDeniesAnonymousBeforeTheService() {
     try (var context = new AnnotationConfigApplicationContext(SecurityConfiguration.class)) {
       var controller = context.getBean(UsersController.class);
-      var service = context.getBean(UsersService.class);
+      var service = context.getBean(UserManagementService.class);
       SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("test", "anonymous",
           List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))));
       assertThrows(AccessDeniedException.class, () -> controller.pickerItems("picker", org.springframework.data.domain.PageRequest.of(0, 20)));
@@ -65,7 +65,7 @@ class UserPictureAuthorizationTest {
 
   @Configuration(proxyBeanMethods = false) @EnableMethodSecurity(proxyTargetClass = true)
   static class SecurityConfiguration {
-    @Bean UsersService usersService() {return mock(UsersService.class);}
-    @Bean UsersController usersController(UsersService service) {return new UsersController(service);}
+    @Bean UserManagementService usersService() {return mock(UserManagementService.class);}
+    @Bean UsersController usersController(UserManagementService service) {return new UsersController(service);}
   }
 }

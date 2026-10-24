@@ -1,0 +1,92 @@
+{
+  "vhosts": [
+    {
+      "name": "/simplepoint"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "sp.events.authorization",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "sp.events.auditing",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "sp.events.common",
+      "vhost": "/simplepoint",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "sp.events.auditing.login-audit",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    },
+    {
+      "name": "sp.events.auditing.credential-audit",
+      "vhost": "/simplepoint",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": -1
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "sp.events.authorization",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.auditing.login-audit",
+      "destination_type": "queue",
+      "routing_key": "security.login-audit.v1",
+      "arguments": {}
+    },
+    {
+      "source": "sp.events.common",
+      "vhost": "/simplepoint",
+      "destination": "sp.events.auditing.credential-audit",
+      "destination_type": "queue",
+      "routing_key": "security.credential-audit.v1",
+      "arguments": {}
+    }
+  ],
+  "permissions": [
+    {
+      "user": "authorization",
+      "vhost": "/simplepoint",
+      "configure": "^$",
+      "write": "^sp\\.events\\.authorization$",
+      "read": "^$"
+    },
+    {
+      "user": "auditing",
+      "vhost": "/simplepoint",
+      "configure": "^$",
+      "write": "^sp\\.events\\.auditing$",
+      "read": "^sp\\.events\\.auditing\\.(login-audit|credential-audit)$"
+    }
+  ]
+}

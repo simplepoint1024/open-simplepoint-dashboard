@@ -28,3 +28,20 @@ test('platform types stay readonly and existing absent sort values are not rewri
   assert.equal(schema.properties.type.readOnly, true); assert.equal(valid(schema, resourceDraft(row)), true);
   assert.equal(resourcePayload(resourceDraft(row)).sort, null);
 });
+
+test('localized resource drafts use the server contract and save default plus all translations together', () => {
+  const text={type:'string',minLength:1,maxLength:100,pattern:'\\S'};
+  const localized={type:'object','x-localized':{version:1},additionalProperties:false,
+    required:['defaultValue','defaultLocale','translations'], properties:{defaultValue:text,defaultLocale:{type:'string'},
+      translations:{type:'object',maxProperties:32,additionalProperties:text}}};
+  const schema=resourceFormSchema(t,null,'GROUP',localized);
+  const value={defaultValue:'客户',defaultLocale:'zh-CN',translations:{'en-US':'Customers','ja-JP':'顧客'}};
+  const draft={nameLocalization:value,type:'GROUP',enabled:true};
+  assert.equal(schema.properties.name,undefined);
+  assert.equal(schema.properties.nameLocalization,localized);
+  assert.equal(valid(schema,draft),true);
+  assert.equal(valid(schema,{...draft,nameLocalization:{...value,translations:{'en-US':' '}}}),false);
+  const payload=resourcePayload(draft);
+  assert.equal(payload.name,'客户'); assert.deepEqual(payload.nameLocalization,value);
+  assert.equal(resourceDraft({...draft,id:'owned',name:'客户'}).nameLocalization,value);
+});

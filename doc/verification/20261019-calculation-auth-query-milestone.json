@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "wholeGoalComplete": false,
+  "status": "milestone_passed_not_final_acceptance",
+  "checks": {
+    "authorization-restart": {
+      "passed": true,
+      "completedAt": "2026-10-19T05:04:06.481Z",
+      "elapsedMs": 18229,
+      "publicKids": [
+        "56a5c7ad-1dfa-4437-9511-2dbcf0660214",
+        "f97a60c9-26a6-45ee-a499-9c56b2451457"
+      ],
+      "privateMaterialExposed": false,
+      "sameSession": true,
+      "records": 5,
+      "recordIds": [
+        "e067a510-2c4e-5852-8e95-9a39da482f98",
+        "243eb98f-6b36-5071-bc85-41a4db66b66e",
+        "33663830-4cd9-5b83-a443-a1580b088dae",
+        "dc5ebef1-38bc-5120-89f8-bcba98333833",
+        "f5860057-0524-578e-b2ae-2bbbe748c0b4"
+      ]
+    },
+    "calculated-server-queries": {
+      "startedAt": "2026-10-19T05:04:15.317Z",
+      "passed": true,
+      "completedAt": "2026-10-19T05:04:17.261Z",
+      "filter": {
+        "operator": "GREATER_THAN_OR_EQUAL",
+        "fieldId": "total_amount",
+        "values": [
+          "5000"
+        ],
+        "children": []
+      },
+      "pages": [
+        {
+          "page": 0,
+          "ids": [
+            "243eb98f-6b36-5071-bc85-41a4db66b66e",
+            "33663830-4cd9-5b83-a443-a1580b088dae"
+          ],
+          "total": 2
+        }
+      ],
+      "rows": [
+        {
+          "id": "243eb98f-6b36-5071-bc85-41a4db66b66e",
+          "amount": "6800"
+        },
+        {
+          "id": "33663830-4cd9-5b83-a443-a1580b088dae",
+          "amount": "5000"
+        }
+      ],
+      "defaultOrder": [
+        {
+          "id": "e067a510-2c4e-5852-8e95-9a39da482f98",
+          "createdAt": "2026-10-19T03:34:34.763327Z"
+        },
+        {
+          "id": "243eb98f-6b36-5071-bc85-41a4db66b66e",
+          "createdAt": "2026-10-19T03:34:09.767341Z"
+        },
+        {
+          "id": "33663830-4cd9-5b83-a443-a1580b088dae",
+          "createdAt": "2026-10-19T03:33:44.239366Z"
+        },
+        {
+          "id": "dc5ebef1-38bc-5120-89f8-bcba98333833",
+          "createdAt": "2026-10-19T03:33:20.667362Z"
+        },
+        {
+          "id": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+          "createdAt": "2026-10-19T03:28:38.249932Z"
+        }
+      ],
+      "exactUnicodeSubject": {
+        "value": "【计算验收】客户交付差旅 4800",
+        "total": 2
+      }
+    },
+    "deployment": {
+      "passed": true,
+      "at": "2026-10-19T05:04:14.479Z",
+      "version": "20261019-calculation-integration7",
+      "sourceDigest": "60396625ca7a246074a07d443a8d071ca8ce1371680646b740ce4ec41ac18caf",
+      "services": [
+        {
+          "service": "authorization",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 258,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "common",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 317,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "auditing",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 246,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "dna",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 296,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "ai",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 326,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "app",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 262,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "workflow",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 298,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "mcp-gateway",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 180,
+          "jarHashesMatch": true
+        },
+        {
+          "service": "host",
+          "version": "20261019-calculation-integration7",
+          "health": "healthy",
+          "consul": "passing",
+          "jarCount": 226,
+          "jarHashesMatch": true
+        }
+      ],
+      "allNineServiceHealth": "passing",
+      "rabbitmq": "healthy"
+    },
+    "quality": {
+      "passed": true,
+      "tests": {
+        "simplepoint-service-router/simplepoint-service-router-core": {
+          "tests": 32,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "simplepoint-security/simplepoint-security-oauth2-server": {
+          "tests": 111,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "checkstyle": "both modules zero violations",
+      "runtimeFrontendUnchanged": true
+    },
+    "bpmn-schema-error": {
+      "passed": true,
+      "restored": true,
+      "error": {
+        "status": 400,
+        "code": "WORKFLOW_VALIDATION",
+        "messageKey": "workflow.error.VALIDATION"
+      }
+    }
+  },
+  "privateEvidence": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/auth-restart.json": "bb9ee5790ef75247a32e8d5758272e9d181c0bcb7c847c163133026ce41141a8",
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/queries.json": "92878e484416379f0d374e7d5ad6685763529e5a4a486fa9fce3f7e96cd4b805",
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/deployment.json": "085fd8031542f27d3b7a2ffa8dccc7ffd313a557ef22426835441087b20c30e0",
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/quality.json": "f92b35cc85fade88de3d299123fa0a69e1c5c74bfd0468f94b6b4106f2871124"
+  },
+  "sourceFiles": {
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceRouterAccessTokenProvider.java": "eb1820c94a0bef9ef78fd790cc3c68af74a6c2b6627257b19c3aa13d2c9eb642",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ClientCredentialsServiceRouterAccessTokenProvider.java": "4c6e6efd96ac336f002b1780261f4af2babc24c4a75c7010956f04eb37aeadcb",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RestClientRemoteInvoker.java": "99b4a6f4cfc632710672d2a1ba981d9439b4291760141b6ba2bbc85968059078",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/LocalJwkConfiguration.java": "a8359d4b6181f4ac0c86c3c366741cea61af879ca382c1d4dbf5a296677cd261",
+    "scripts/business/calculation-acceptance/queries.mjs": "9eac3b3dab11d9ff9bbe7d99fe89b82e5e7d5813d49ab082f3fe1b66e957a800",
+    "doc/deployment/authorization-signing-keys.md": "18c9c1d93515a7e289b7d03f039b49286a136c2905a1d343005eb93a2879009d"
+  },
+  "limitations": [
+    "All component UI chains and remaining permission/fault acceptance cases are still in progress.",
+    "Previous full-repository build failed its unrelated Checkstyle gates; this milestone verifies the two modified authorization/router modules without skips."
+  ]
+}

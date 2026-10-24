@@ -58,6 +58,31 @@ final class RecordWriteFence {
     }
   }
 
+  /** Readers resolve the current revision while preventing a concurrent policy activation. */
+  Snapshot admitRead(final Connection connection, final RecordWriteFenceKey key,
+      final int timeoutMs) throws SQLException {
+    return lock(connection, key, false, timeoutMs);
+  }
+
+  /** Serializes a journal batch without consuming the publication's target admission version. */
+  Snapshot lockPublication(final Connection connection, final RecordWriteFenceKey key,
+      final long expectedRevision, final RecordExecutionDeadline deadline) throws SQLException {
+    if (expectedRevision < 0) {
+      throw new IllegalArgumentException("A nonnegative publication admission revision is required");
+    }
+    Snapshot current = lockPublication(connection, key, deadline);
+    if (current.revision() != expectedRevision) {
+      throw conflict();
+    }
+    return current;
+  }
+
+  /** Locks current ownership without requiring a particular version, including idempotent retries. */
+  Snapshot lockPublication(final Connection connection, final RecordWriteFenceKey key,
+      final RecordExecutionDeadline deadline) throws SQLException {
+    return lock(connection, key, true, deadline.remainingMillis());
+  }
+
   /**
    * Runs an impact check after earlier writers drain, then advances admission in the same
    * transaction. A repeated committed transition returns without rechecking mutable data.

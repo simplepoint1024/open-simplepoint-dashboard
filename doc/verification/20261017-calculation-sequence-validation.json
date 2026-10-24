@@ -1,0 +1,649 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-17T13:04:57.068274+00:00",
+  "scope": "P2 single-record/general transaction calculation, receipt atomicity and neutral field constraints",
+  "wholeGoalComplete": false,
+  "deployed": false,
+  "plan": "../design/form_calculation_delivery_plan.md",
+  "matrix": "form-calculation-acceptance-matrix.json",
+  "results": {
+    "simplepoint-plugin-dna-runtime-api": {
+      "totals": {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "reports": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventTest.xml",
+          "sha256": "b8df75afff7303fcabd6e08927f9e76a3a117d56c831b0d3b46ef6dc069cd424"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContextTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContextTest.xml",
+          "sha256": "f19a175388f66d1e7467764732469f762a9ed74ddc143a467113fdbbf7f7390a"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.dialect.DialectCapabilityDescriptorTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.dialect.DialectCapabilityDescriptorTest.xml",
+          "sha256": "c265b5e758b28bd019be0ce3ecfec728b8956d054ac880762649c4b17ae0de36"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorDecoderTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorDecoderTest.xml",
+          "sha256": "b1c9ceea2e82353df3f88ee6836634b834fee31ff586c03a6d0bc55b48ef87c3"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelTransitionsTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelTransitionsTest.xml",
+          "sha256": "cfdb74c96a82569a05df43dbbaee000e8b182bf2dd48f515227f812a29d29b34"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinitionTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinitionTest.xml",
+          "sha256": "3041156953ecb2a886ba941c444d4890e70d4672459bef738e779dcdbdaead62"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordCompletenessQueryTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCompletenessQueryTest.xml",
+          "sha256": "71180bfa189d1f692cd67e4878b1a3e9719ce8adb8119047b5d63c43c0af7118"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommandTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommandTest.xml",
+          "sha256": "33c87d2392a14167f2b8b4ee3927da74be6cb902be60ea898cd330a85ec27243"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModelTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModelTest.xml",
+          "sha256": "f46f17c6f00fb587af8cd533f63c17d4228d8c0a1a9019330880a6f097b567f6"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionTest.xml",
+          "sha256": "5b1afc7fffa8994d3868e4720ec6fecf8396b750105c22ee2377b0426fd0fa50"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationTest.xml",
+          "sha256": "341977a61bbe65fb0f0d249343009c94e12f4ce4d67c8cbc5e36c7d220bffd45"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyVersionTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyVersionTest.xml",
+          "sha256": "eeb8582950d0a8f4ce2e3e39cf13d220af96acd0328d7cf2742154cd867093e0"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValuesTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValuesTest.xml",
+          "sha256": "e29667bafd8296ea55026d645af81903ec4102810806200c8730d132738a3920"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinitionTest",
+          "at": "2026-10-17T13:00:17",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinitionTest.xml",
+          "sha256": "bfceb0926c3bdd26951a79bbc5daae97264cfdc52c01cdbc3008e3947ed32ade"
+        }
+      ]
+    },
+    "simplepoint-plugin-dna-runtime-implementation": {
+      "totals": {
+        "tests": 87,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "reports": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest",
+          "at": "2026-10-17T13:00:16",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordRealDatabaseTest.xml",
+          "sha256": "10f2c6be8c9ce815ff435a7e0309cbca5c539220299caa00c978a11218279548"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordServiceDatabaseTest",
+          "at": "2026-10-17T13:00:50",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.OwnedRecordServiceDatabaseTest.xml",
+          "sha256": "15c846dbb1852ae5334a619584067f7112aca97c2f435b0651380cc8bf51d2d5"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordAdmissionControllerTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordAdmissionControllerTest.xml",
+          "sha256": "64d0a06ba815b993ed67da2e7d3ab12f6a900625ac36e3f96f9a057dfbf9a509"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest.xml",
+          "sha256": "b5a221ec6aa252c2c38273bef0216122d0f9d2e25f92f8ec16189a3a3229f12b"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationConstraintsTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationConstraintsTest.xml",
+          "sha256": "b3e09e81cb31984a4eca69ee44f29ae04e02b1222144aeaa1f3451b5d7416588"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationEvaluatorTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationEvaluatorTest.xml",
+          "sha256": "a150f70e0b4080e62cfae80c28c02d98f9bc7ccd42fd20e1629a969c8fa1184d"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationGuardTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationGuardTest.xml",
+          "sha256": "91c106485e46a3afcc612fa3a611a4d2e0f4071c403944c6f60bf47a968da745"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationStoreTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationStoreTest.xml",
+          "sha256": "7e2bf36c75d5064a7ac41064fb28c858706bd7ab3b720c6da4695d8766ea23ea"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCompletenessDatabaseTest",
+          "at": "2026-10-17T13:00:52",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCompletenessDatabaseTest.xml",
+          "sha256": "9a3810e0159592e84f0dafeca42c740f62d88517c154c6a5211b555f838006d1"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateCoordinatorTest",
+          "at": "2026-10-17T13:00:59",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCreateCoordinatorTest.xml",
+          "sha256": "e186089d550cb19200db4dd12239c291d86e1f92f550754f4ff66172c30b0a80"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordCreateReceiptStoreTest",
+          "at": "2026-10-17T13:00:59",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordCreateReceiptStoreTest.xml",
+          "sha256": "e157265a0caff3ebd76e2b01cacfb6c337777cc0a870d8b9fe44fd4090f55744"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordInspectionServiceTest",
+          "at": "2026-10-17T13:00:59",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordInspectionServiceTest.xml",
+          "sha256": "d03c82525525d01aa8ed8289bb5c8fc19b6443c2b519ecf6398aac3d4a735385"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest",
+          "at": "2026-10-17T13:00:59",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordOperationJournalDatabaseTest.xml",
+          "sha256": "879941534f128c23a1c5d0b0fe61d7724b33f210daa4f7dc154e63e47f6cb888"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest",
+          "at": "2026-10-17T13:01:10",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest.xml",
+          "sha256": "2db02c9253f838a9d46369a7b59d1e791bae9e43d11313dd55599e1a2b0d34ab"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordResourceFenceTest",
+          "at": "2026-10-17T13:01:11",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordResourceFenceTest.xml",
+          "sha256": "0bc6aae9cc5611f0416912d51c21d2d44bc59965b3c3185717ceaf219f1d1068"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSchemaCompatibilityTest",
+          "at": "2026-10-17T13:01:13",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSchemaCompatibilityTest.xml",
+          "sha256": "2258b5f6cf26d224e757a8d2191b91ff32f9080d7b9457018faa514f085a8fad"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordServicesDatabaseTest",
+          "at": "2026-10-17T13:01:13",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordServicesDatabaseTest.xml",
+          "sha256": "f989b7039d1a68987a07738de64e94797a2b6519d9d3a58df0a44137c556fd81"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerCalculatedValuesTest",
+          "at": "2026-10-17T13:01:13",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerCalculatedValuesTest.xml",
+          "sha256": "0605eb70b92e52f228cbd934af46369872e98663c496ed5319b794adaf7176b1"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest",
+          "at": "2026-10-17T13:01:13",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest.xml",
+          "sha256": "8bb2a803f50620ce7554c237f845ce63fee4018faf3cb24aa59e4697727f6a93"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordTemporalDatabaseTest",
+          "at": "2026-10-17T13:01:13",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordTemporalDatabaseTest.xml",
+          "sha256": "367db9db79ddaa9c7e8ca01ad5719cd775ade13ab384f203539bfbd3a44d7449"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordViolationResultTest",
+          "at": "2026-10-17T13:01:24",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordViolationResultTest.xml",
+          "sha256": "bd69f7c22a04d0035722cddca1b93bdef2ed3caa4983c89b885c9aa9cd53944d"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest",
+          "at": "2026-10-17T13:01:24",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest.xml",
+          "sha256": "1214ea95bf02f3469063296decb6fc8cb1d57adf731bdf4c7b020180adad9743"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendDatabaseIntegrationTest",
+          "at": "2026-10-17T13:01:31",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendDatabaseIntegrationTest.xml",
+          "sha256": "cf181e2fa12a711a6bb75569836f87a92f0ae1e4a1f8c69fd1c74f98b8907401"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendTest",
+          "at": "2026-10-17T13:01:31",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeCalciteRecordBackendTest.xml",
+          "sha256": "17de690291459c3a585cc15adb50105b2e1126e0af38521e98a1c10927b1e24d"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeJdbcConnectionTest",
+          "at": "2026-10-17T13:01:32",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeJdbcConnectionTest.xml",
+          "sha256": "ee3c62741f9dab40810846ef6f2d5c4bf1d1aefbf45ecc846c3fa95210155f6f"
+        },
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RuntimeRecordModelResolverTest",
+          "at": "2026-10-17T13:01:32",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build/test-results/test/TEST-org.simplepoint.plugin.dna.runtime.service.record.RuntimeRecordModelResolverTest.xml",
+          "sha256": "417b145c0154425cbe3a627200e25eed990376ec973a64863770f79af1617c4f"
+        }
+      ]
+    }
+  },
+  "qualityGates": {
+    "runtimeImplementationCheckstyle": "passed",
+    "runtimeApiCheckstyle": "passed",
+    "gitDiffCheck": "passed",
+    "acceptanceInventory": {
+      "structure": "passed",
+      "entries": 175,
+      "finalBusinessPassed": 0,
+      "finalBusinessPending": 175
+    }
+  },
+  "environment": {
+    "databases": [
+      "PostgreSQL 17",
+      "MySQL 8.4"
+    ],
+    "temporaryContainersRemoved": true,
+    "businessDatabasesModified": false,
+    "frontendChanged": false
+  },
+  "execution": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 PATH=/home/ymsl/.jdks/ms-21.0.12.1/bin:$PATH python3 scripts/verification/run-dna-databases.py :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test --tests org.simplepoint.plugin.dna.runtime.service.record.* :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api:test :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api:checkstyleMain -Psimplepoint.frontend.skip=true",
+  "scenarios": [
+    {
+      "case": "Sequential updates to the same aggregate",
+      "expected": "Step 2 observes rate 2 written by step 1; total 23.27, parent version 2, both detail versions 2; NOW equals both receipt times",
+      "result": "passed in PostgreSQL and MySQL"
+    },
+    {
+      "case": "Step 2 divides by zero or uses a stale expected version",
+      "expected": "Step 1 and detail recalculations roll back; complete original view retained; no receipt",
+      "result": "passed in both databases"
+    },
+    {
+      "case": "Two concurrent identical batches each create two records",
+      "expected": "One set of two records remains, both callers get the same receipt identities; all mutation times equal",
+      "result": "passed in both databases"
+    },
+    {
+      "case": "Single-create facade with a preclaimed durable identity/time",
+      "expected": "Computed NOW equals the claim time; create retry/find-result/update retry/delete retain recovery semantics",
+      "result": "passed in both databases, control receipt store mocked"
+    },
+    {
+      "case": "Single/general deletion of calculated parent",
+      "expected": "Owned rows soft-delete in the same transaction; repeat receipt remains recoverable",
+      "result": "passed in both databases"
+    },
+    {
+      "case": "Physical mutation budget exceeded after the first successful write",
+      "expected": "Whole sequence rolls back and returns RECORD_COMMAND_INVALID",
+      "result": "passed in both databases"
+    },
+    {
+      "case": "Direct DNA input violates min-length; computed text output exceeds max-length",
+      "expected": "Rejected with no state or receipt change",
+      "result": "passed in both databases"
+    },
+    {
+      "case": "Unicode code point length and RE2 expressions",
+      "expected": "One emoji counts as one; invalid lookbehind/type/field/capacity rejected before evaluation",
+      "result": "passed in unit tests"
+    },
+    {
+      "case": "Exact scalar choices",
+      "expected": "9007199254740993.01 preserved; near value/wrong logical kind/semantic duplicate choices rejected",
+      "result": "passed in unit tests"
+    },
+    {
+      "case": "Invalid calculated producer wrapped by downstream IFERROR",
+      "expected": "Producer validation fails the aggregate; downstream formula cannot hide invalid stored output",
+      "result": "passed in unit tests"
+    },
+    {
+      "case": "Parent and detail reuse identical field IDs",
+      "expected": "Separate rules accept parent 家 and detail 明细 independently",
+      "result": "passed in unit tests"
+    },
+    {
+      "case": "130 server-generated fields",
+      "expected": "Internal typed create/update succeeds; client payload above 100 and direct computed-field writes remain rejected; overflow/unknown audit fields rejected",
+      "result": "passed in SQL compilation tests"
+    },
+    {
+      "case": "Legacy definition JSON/fingerprints and rule-only definitions",
+      "expected": "Absent constraints stay absent; rules round-trip immutably and activate validation even with no formula",
+      "result": "passed in API and implementation tests"
+    }
+  ],
+  "limits": [
+    "Public formula publication remains guarded; test fixtures install metadata internally and are not business publication acceptance.",
+    "Model resolver/access policy are mocked in real SQL tests; field/data permissions still require full service integration.",
+    "Requiredness in these adapters is the physical schema nullability contract; submission-only requirements remain APP lifecycle policy.",
+    "APP projection of rules, component-specific option domains, controlled durable backfill/activation, dependent read permissions and designer/runtime integration remain to complete.",
+    "Current environment has not received this batch or its target metadata upgrade.",
+    "Javadoc and delivery-plan text were clarified after the final test run; executable implementation was unchanged."
+  ],
+  "sourceFiles": [
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationDefinition.java",
+      "sha256": "bffce3e294ccb3e2e731e1813cae647365cf04461e4a277c8c26e0ad49860d57"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationScope.java",
+      "sha256": "b754931e59f2ea7c5c500ac71b7b5f892408f4c9d28d295c598ef847bd98f0ce"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordFieldConstraints.java",
+      "sha256": "2c3aeebc6b6f5677c443585a64684f7ca793aa181d914a837a95bf332ce58aad"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/test/java/org/simplepoint/plugin/dna/runtime/api/record/RecordCalculationDefinitionTest.java",
+      "sha256": "f453c9faf6c81c47a449057184c2953e22653a1310a30a9d0ae6c3f35faf0f2a"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build.gradle.kts",
+      "sha256": "511adf786abd4e005ffe447650ced214ff9855defb345f7069d49f709ae53568"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/PreparedRecordTransaction.java",
+      "sha256": "f5d58dfe5b604068fe89ef11dc7eb609b79e67de305ae229f7ff97005e67ac93"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationCompiler.java",
+      "sha256": "2609b61e54c495cdc62c8be71686ef8fbb67f8722fe1c4b14e14cc10e29ea0c6"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationConstraints.java",
+      "sha256": "34c9a2cf30ca4949f070cbe42d47475a9fea6f4f20d3f363a807eaf50f7c93c3"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationEvaluator.java",
+      "sha256": "54581701e6f8d886df1b05d70e67718cbd2d7e6bf621cc40055cc45d2ea8cb9e"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationPolicy.java",
+      "sha256": "481e9ac8b44619967e283264d50bf5e7fced7704a9c5e01f78616c33633b22ec"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationStore.java",
+      "sha256": "8ea21a19c275a2b8d9290a2ca404e7e6fd8a912377bc0a0a52188d5387489be6"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationValues.java",
+      "sha256": "b37bdbecb045894cb2fe66f169bb49e775e2898efd3cf7e4bdadfa97ac415377"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationWriteSupport.java",
+      "sha256": "e793888984ec24c21ce9e1bb44adedbddd8b66bc9bbc4c72e2a67eda266df339"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordSqlCompiler.java",
+      "sha256": "b89c4db654ba320211ff6297394a911e9fb8024bc0962922c11bfd65d5e55066"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordTransactionServiceImpl.java",
+      "sha256": "5bb5cddfe9e1b3b9bff871f64f28bc38acd89c0ebef78e27c70e6eb0f193d243"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordWritePreparation.java",
+      "sha256": "a23145a1df975314ad548f4b0384d1f143bda59c5ee2284cd33e85750cad9775"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RuntimeCalciteRecordBackend.java",
+      "sha256": "ef4cf57036b7773c9ca1d649f84dc3c0d990dc677dc029b13ceec19127820f09"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/schema/RecordCalculationProvisioner.java",
+      "sha256": "948a941c8e616cc66617062cc4b20f7b898ddc1097c0b73c74913273fbf95277"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/schema/RecordCalculationSchema.java",
+      "sha256": "c63e25c55e0f345722f7538892346af56de06646a03a3e4cd56da11768a93e6f"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/CalculatedTransactionDatabaseAssertions.java",
+      "sha256": "cf6d23ae4973695193ad5822a90a78efc32d978e6c8362500293e92424f346e8"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java",
+      "sha256": "fc976b5582522e475b5597a0ce2993a2bcb462cc97f2a8e6430564f0cf55b48d"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationCompilerTest.java",
+      "sha256": "d063a2a1e15dfd58d2c6cc0acc3b2cf1613d1b8bf03856c7ebb50d0993fc32aa"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationConstraintsTest.java",
+      "sha256": "10e082f7230948e1aed33a7c1e199c0ebe9b341d3da6f6ac06efea80df80d3ec"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationDatabaseAssertions.java",
+      "sha256": "e7a3258e3075087df01b16c48eae20d05dccf3f56f06218fc7d6dea6367923ab"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationEvaluatorTest.java",
+      "sha256": "486fd9b508127439381ff4ede50e721946fe0a87ed3b8f52800dacdbc862623e"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationPublicationGuardTest.java",
+      "sha256": "0cefb073cee390b6f6cf9ce20387e95aa92ff6879cc5265f86fbf184d1f2d367"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordCalculationStoreTest.java",
+      "sha256": "124f400b1f1e0aeda187b739b969775116411076cf9ccbb0dff624476ecd1d15"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordOperationJournalDatabaseTest.java",
+      "sha256": "9692f0e38bf103a4817820fa6694b5f8385c7681219c9527439b5515acf9b325"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordServicesDatabaseTest.java",
+      "sha256": "9110ef600a8bac73e9277fe5613f308a62054825ec5608b849829be7f610c9dd"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordSqlCompilerCalculatedValuesTest.java",
+      "sha256": "0ef7f899cdd8ab73658ceb84a913dbcd3c5b718aead1517f88c91e2eb53bb404"
+    }
+  ]
+}

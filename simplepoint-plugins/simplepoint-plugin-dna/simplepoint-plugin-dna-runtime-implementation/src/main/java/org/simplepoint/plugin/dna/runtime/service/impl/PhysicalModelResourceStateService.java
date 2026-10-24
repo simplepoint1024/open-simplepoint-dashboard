@@ -20,6 +20,7 @@ import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelResourceBindingEnt
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalResourceProjectionEntity;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelRepository;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelResourceBindingRepository;
+import org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,6 +34,7 @@ public class PhysicalModelResourceStateService {
 
   private static final String MANAGE_PERMISSION = "dna.runtime.model-bindings.manage";
 
+  private final RecordMaintenanceControl maintenance;
   private final EntityManager entityManager;
   private final RuntimeRequestContext requestContext;
   private final PhysicalModelRepository modelRepository;
@@ -43,8 +45,10 @@ public class PhysicalModelResourceStateService {
       final EntityManager entityManager,
       final RuntimeRequestContext requestContext,
       final PhysicalModelRepository modelRepository,
-      final PhysicalModelResourceBindingRepository bindingRepository
+      final PhysicalModelResourceBindingRepository bindingRepository,
+      final RecordMaintenanceControl maintenance
   ) {
+    this.maintenance = maintenance;
     this.entityManager = entityManager;
     this.requestContext = requestContext;
     this.modelRepository = modelRepository;
@@ -61,6 +65,9 @@ public class PhysicalModelResourceStateService {
     requireResourceAdministration();
     requireUnmanaged(lockResource(actor, command.resourceCode()));
     PhysicalModelEntity model = requireLockedModel(actor.tenantId(), command.physicalModelId());
+    // lockResource may have created a legacy projection. Even an idempotent binding lookup must
+    // fence that mutation before returning, otherwise it could change a frozen maintenance snapshot.
+    maintenance.requireAvailable(actor.tenantId(), model);
     PhysicalModelResourceBindingEntity existing = bindingRepository.findActive(
         actor.tenantId(),
         model.getId(),
@@ -88,6 +95,9 @@ public class PhysicalModelResourceStateService {
     requireResourceAdministration();
     requireUnmanaged(lockResource(actor, command.resourceCode()));
     PhysicalModelEntity model = requireLockedModel(actor.tenantId(), command.physicalModelId());
+    // lockResource may have created a legacy projection. Even an idempotent binding lookup must
+    // fence that mutation before returning, otherwise it could change a frozen maintenance snapshot.
+    maintenance.requireAvailable(actor.tenantId(), model);
     PhysicalModelResourceBindingEntity binding = bindingRepository.findActive(
         actor.tenantId(),
         model.getId(),
@@ -135,15 +145,21 @@ public class PhysicalModelResourceStateService {
             && !command.physicalModelId().equals(projection.getPhysicalModelId())) {
       throw conflict("Resource projection owner or generation does not match");
     }
-    PhysicalModelEntity target = requireLockedModel(actor.tenantId(), command.physicalModelId());
-    if (target.getStatus() != PhysicalModelStatus.ACTIVE) {
-      throw conflict("Only an active model can receive a managed resource projection");
-    }
-    Instant timestamp = Instant.now();
     List<PhysicalModelResourceBindingEntity> previous = entityManager.createQuery(
             "from PhysicalModelResourceBindingEntity b where b.tenantId = :tenant "
                 + "and b.resourceCode = :resource and b.deletedAt is null", PhysicalModelResourceBindingEntity.class)
         .setParameter("tenant", actor.tenantId()).setParameter("resource", command.resourceCode()).getResultList();
+    var affected = new java.util.HashSet<String>();
+    affected.add(command.physicalModelId());
+    previous.forEach(binding -> affected.add(binding.getPhysicalModelId()));
+    if (projection.getPhysicalModelId() != null) {
+      affected.add(projection.getPhysicalModelId());
+    }
+    PhysicalModelEntity target = maintenance.lockAvailable(actor.tenantId(), affected).get(command.physicalModelId());
+    if (target.getStatus() != PhysicalModelStatus.ACTIVE) {
+      throw conflict("Only an active model can receive a managed resource projection");
+    }
+    Instant timestamp = Instant.now();
     for (PhysicalModelResourceBindingEntity binding : previous) {
       if (!target.getId().equals(binding.getPhysicalModelId())) {
         binding.setDeletedAt(timestamp);
@@ -221,8 +237,7 @@ public class PhysicalModelResourceStateService {
       final String tenantId,
       final String physicalModelId
   ) {
-    return modelRepository.findActiveByIdForUpdate(tenantId, physicalModelId)
-        .orElseThrow(PhysicalModelResourceStateService::notFound);
+    return maintenance.lockModels(tenantId, List.of(physicalModelId)).get(physicalModelId);
   }
 
   private static void requireResourceAdministration() {

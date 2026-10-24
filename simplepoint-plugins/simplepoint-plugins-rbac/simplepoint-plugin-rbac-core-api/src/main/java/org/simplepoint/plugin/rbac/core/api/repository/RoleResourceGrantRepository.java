@@ -6,9 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.security.entity.RoleResourceGrant;
 
-/**
- * Repository for role resource grants.
- */
+/** Repository for role resource grants. */
 public interface RoleResourceGrantRepository {
 
   /**
@@ -19,9 +17,6 @@ public interface RoleResourceGrantRepository {
    * @return persisted grants
    */
   <S extends RoleResourceGrant> List<S> saveAll(Iterable<S> entities);
-
-  /** Deletes every grant associated with one of the resource codes. */
-  void deleteAllByResourceCodes(Collection<String> resourceCodes);
 
   /** Deletes every grant assigned to the role. */
   void deleteAllByroleId(String roleId);
@@ -40,7 +35,4 @@ public interface RoleResourceGrantRepository {
 
   /** Updates the data and field scopes for every grant assigned to the role. */
   void updateScopeForRole(String tenantId, String roleId, String dataScopeId, String fieldScopeId);
-
-  /** Replaces an existing resource code in all grants. */
-  void updateResourceCode(String oldCode, String newCode);
 }

@@ -1,3 +1,4 @@
+import {localizeSchemaTitles} from '../i18n/localizedSchema';
 import { useEffect, useMemo, useState } from 'react';
 import type { TableButtonProps } from "../../components/Table";
 import { get, useData } from "../api/methods";
@@ -261,7 +262,7 @@ export function useSchema(
   }, {enabled: !!rawSchema});
   const data = useMemo(() => query.data ? {
     ...query.data,
-    schema: normalizeSchemaI18n(sortSchemaProperties(structuredClone(dictionaries.data ?? rawSchema))),
+    schema: localizeSchemaTitles(normalizeSchemaI18n(sortSchemaProperties(structuredClone(dictionaries.data ?? rawSchema))), locale),
     buttons: sortByOrder(query.data.buttons ?? []).map(normalizeButtonI18n),
   } : undefined, [query.data, rawSchema, dictionaries.data, locale, messages]);
 

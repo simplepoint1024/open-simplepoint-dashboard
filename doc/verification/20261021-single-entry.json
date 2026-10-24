@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-21",
+  "status": "Public DNS and reserved HTTPS entry verified; standalone deployment pending",
+  "entry": "https://single.simplepoint.online:8000",
+  "intent": "Dedicated standalone entry; reserved 503 until actual standalone deployment",
+  "validation": "Local loopback with curl --resolve and existing CA validation, not public DNS validation",
+  "checks": [
+    {
+      "host": "single.simplepoint.online",
+      "scheme": "https",
+      "path": "/",
+      "status": 503,
+      "tlsVerify": 0
+    },
+    {
+      "host": "single.simplepoint.online",
+      "scheme": "https",
+      "path": "/edge-health",
+      "status": 200,
+      "tlsVerify": 0
+    },
+    {
+      "host": "single.simplepoint.online",
+      "scheme": "https",
+      "path": "/actuator/health",
+      "status": 404,
+      "tlsVerify": 0
+    },
+    {
+      "host": "single.simplepoint.online",
+      "scheme": "https",
+      "path": "/internal/test",
+      "status": 404,
+      "tlsVerify": 0
+    },
+    {
+      "host": "single.simplepoint.online",
+      "scheme": "http",
+      "path": "/",
+      "status": 308,
+      "tlsVerify": null
+    },
+    {
+      "host": "home.simplepoint.online",
+      "scheme": "https",
+      "path": "/",
+      "status": 302,
+      "tlsVerify": 0
+    },
+    {
+      "host": "www.simplepoint.online",
+      "scheme": "https",
+      "path": "/",
+      "status": 302,
+      "tlsVerify": 0
+    }
+  ],
+  "nginxSha256": "d70bf9a2a5778ae98dc2ab5464c670345bf78b80918711b0765a1be4841da11f",
+  "dnsRequired": {
+    "provider": "Aliyun DNS",
+    "type": "CNAME",
+    "host": "single",
+    "value": "www.simplepoint.online",
+    "suggestedTtl": 600
+  },
+  "dnsObservedBefore": "NXDOMAIN",
+  "backendChanged": false,
+  "publicValidation": {
+    "observedAt": "2026-10-21T02:38:32Z",
+    "resolvers": [
+      "Google DNS",
+      "Cloudflare DNS",
+      "system resolver"
+    ],
+    "cname": "www.simplepoint.online",
+    "ipv4": "123.120.57.191",
+    "requestMode": "Normal DNS; curl --noproxy *, no --resolve; connection to public IPv4 from deployment machine",
+    "httpsStatus": 503,
+    "tlsVerify": 0,
+    "trust": "Existing SimplePoint local CA",
+    "body": "SimplePoint 单体版尚未上线。入口已就绪，服务部署后开放访问。",
+    "cacheControl": "no-store",
+    "httpStatus": 308,
+    "httpLocation": "https://single.simplepoint.online:8000/",
+    "limit": "Not an independent off-network browser test; standalone service is not deployed."
+  }
+}

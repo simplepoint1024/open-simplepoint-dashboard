@@ -1,13 +1,18 @@
 package org.simplepoint.cloud.oauth.server.controller;
 
 import jakarta.servlet.http.HttpSession;
-import org.simplepoint.cloud.oauth.server.client.ExternalIdentityAccountManager;
+import java.util.Map;
 import org.simplepoint.cloud.oauth.server.client.ExternalIdentityLinkFlow;
+import org.simplepoint.plugin.oidc.api.error.ExternalIdentityBindingException;
 import org.simplepoint.plugin.oidc.api.model.ResolvedExternalIdentityProvider;
+import org.simplepoint.plugin.oidc.api.service.ExternalIdentityAccountService;
+import org.simplepoint.plugin.oidc.api.service.ExternalIdentityProviderService;
 import org.simplepoint.security.entity.User;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,9 +24,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/account/external-identities")
 public class ExternalIdentityAccountController {
 
-  private final ExternalIdentityAccountManager accountManager;
+  private final ExternalIdentityAccountService accountManager;
 
   private final ExternalIdentityLinkFlow linkFlow;
+  private final ExternalIdentityProviderService providers;
 
   /**
    * Creates the external identity account controller.
@@ -30,11 +36,12 @@ public class ExternalIdentityAccountController {
    * @param linkFlow session-bound external account link flow
    */
   public ExternalIdentityAccountController(
-      final ExternalIdentityAccountManager accountManager,
-      final ExternalIdentityLinkFlow linkFlow
-  ) {
+      final ExternalIdentityAccountService accountManager,
+      final ExternalIdentityLinkFlow linkFlow,
+      final ExternalIdentityProviderService providers) {
     this.accountManager = accountManager;
     this.linkFlow = linkFlow;
+    this.providers = providers;
   }
 
   /**
@@ -49,8 +56,7 @@ public class ExternalIdentityAccountController {
   public String connections(
       final Authentication authentication,
       final Model model,
-      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway) {
     String userId = currentUserId(authentication);
     String prefix = gateway ? "/authorization" : "";
     String suffix = gateway ? "?gateway=true" : "";
@@ -75,13 +81,12 @@ public class ExternalIdentityAccountController {
       @PathVariable("registrationId") final String registrationId,
       final Authentication authentication,
       final HttpSession session,
-      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway) {
     String userId = currentUserId(authentication);
     if (accountManager.isLinked(userId, registrationId)) {
       return redirectToSettings(gateway, "alreadyLinked=" + registrationId);
     }
-    ResolvedExternalIdentityProvider provider = accountManager.providerForLink(registrationId);
+    ResolvedExternalIdentityProvider provider = providers.resolve(registrationId);
     linkFlow.begin(session, userId, provider, gateway);
     String prefix = gateway ? "/authorization" : "";
     return "redirect:" + prefix + "/oauth2/authorization/" + registrationId;
@@ -99,10 +104,28 @@ public class ExternalIdentityAccountController {
   public String unlink(
       @PathVariable("registrationId") final String registrationId,
       final Authentication authentication,
-      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway
-  ) {
+      @RequestParam(name = "gateway", defaultValue = "false") final boolean gateway) {
     accountManager.unlink(currentUserId(authentication), registrationId);
     return redirectToSettings(gateway, "unlinked=" + registrationId);
+  }
+
+  /** Returns a stable, translated domain key without submitted identity values. */
+  @ExceptionHandler(ExternalIdentityBindingException.class)
+  public ResponseEntity<Map<String, String>> bindingFailure(
+      ExternalIdentityBindingException error) {
+    int status =
+        switch (error.getReason()) {
+          case INVALID_INPUT -> 400;
+          case NOT_LINKED -> 404;
+          default -> 409;
+        };
+    return ResponseEntity.status(status)
+        .body(
+            Map.of(
+                "code",
+                "OIDC_BINDING_" + error.getReason().name(),
+                "messageKey",
+                error.getMessageKey()));
   }
 
   private String redirectToSettings(final boolean gateway, final String state) {

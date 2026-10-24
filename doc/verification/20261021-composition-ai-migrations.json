@@ -1,0 +1,869 @@
+{
+  "date": "2026-10-21",
+  "scope": "AI module-owned PostgreSQL migrations and isolated-schema vector retrieval",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    "./gradlew -I /tmp/simplepoint-ai-migration-checkstyle.gradle verifyAiMigrationStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-implementation:test :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-knowledge-implementation:test :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-runtime-implementation:test :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-mcp-implementation:test :simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-implementation:test :simplepoint-services:simplepoint-service-ai:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-ai-migration-checkstyle.gradle verifyAiMigrationStyle -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "gates": [
+      "SP_MIGRATIONS_POSTGRES_URL",
+      "SP_MIGRATIONS_POSTGRES_USER",
+      "SP_MIGRATIONS_POSTGRES_PASSWORD"
+    ],
+    "database": {
+      "version": "PostgreSQL 17.11 (Alpine)",
+      "image": "sha256:9e6d0dd4e587ae699e45b94302df6707531b3c2fabb7813c3ea33e85bf8c1d78",
+      "extensions": {
+        "vector": "0.8.1",
+        "pg_trgm": "1.6"
+      },
+      "topology": "One disposable PostgreSQL instance; shared schema or two independent AI DataSource/schema groups; no public in application search_path",
+      "remainingTestSchemasBeforeCleanup": 0,
+      "draftSchemaTablesRemovedWithContainer": 26
+    }
+  },
+  "migrationContributions": {
+    "newSqlModules": {
+      "ai-core": 5,
+      "ai-knowledge": 4,
+      "ai-runtime": 8,
+      "ai-mcp": 7,
+      "ai-catalog": 2
+    },
+    "currentSqlModuleCount": 19,
+    "currentSqlTableCount": 126,
+    "explicitNoSqlModules": [
+      "audit-redis"
+    ],
+    "remainingUndeclaredModules": []
+  },
+  "coverage": [
+    "All 19 module-owned SQL contributions install 126 tables in one new schema, then repeat migration and verify without replay.",
+    "AI dependency closure validates and queries 25 entity/read-model mappings across 26 physical tables in shared and two-group storage.",
+    "New baseline physical columns, constraints and indexes equal current Hibernate mapping creation plus existing host post-Hibernate DDL on real PostgreSQL.",
+    "System/tenant provider uniqueness, soft-deleted code reuse, runtime lease fencing and uniqueness, MCP task completion/hash/lease consistency and restart retention.",
+    "Actual PgVectorKnowledgeChunkRepository vector, keyword and hybrid search, scoped lookup, deleted-document hiding and chunk replacement transaction rollback under schema-only search_path.",
+    "Explicit catalog-to-MCP co-storage prevents assigning an aggregate read model to a store without its source table."
+  ],
+  "executionNotes": [
+    "Initial full-catalog entity queries exposed workflow native-table and identity-table dependencies. Recorded G22; all-catalog test covers only module-owned DDL, and complete AI runtime mapping/retrieval tests use the AI closure. No claim that all workflow read models or full application startup passed.",
+    "Isolated schema reproduced unqualified pgvector type lookup failure. Repository now qualifies extension type, cosine operator and trigram similarity function in public.",
+    "Physical-contract comparison initially found equivalent but differently serialized ARRAY cast constraints from pg_dump; static baselines now retain readable IN/NOT IN syntax and compare exactly with the legacy DDL result.",
+    "First full regression found one existing asynchronous timeout-test race and Java indentation warnings. Final command passed after scoped formatting and bounded waiting for the asynchronous cancellation ledger callback; gateway production logic was unchanged.",
+    "Final command actually executed 284 test cases including the optional skip; 135 unchanged tests were UP-TO-DATE from this increment previous execution.",
+    "One skipped test: NativeOpenAiClientTest.realCodexExecutesToolAndReturnsItsResultThroughGateway requires SIMPLEPOINT_CODEX_BINARY; this is not a skipped migration or retrieval test.",
+    "After the successful full-scope command, removed incidental trailing whitespace from the timeout test text blocks; reran all scoped Checkstyle checks. Test semantics were unchanged; the test counts above refer to the full-scope command."
+  ],
+  "totals": {
+    "tests": 419,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "passed": 418,
+  "finalActualExecutionTests": 284,
+  "finalUpToDateTests": 135,
+  "testProjects": [
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "finalTaskState": "EXECUTED",
+      "totals": {
+        "tests": 45,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AiLegacySchemaContractPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AiModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AuthenticationStoragePostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.ExternalIdentityBindingPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.OidcClientMigrationPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-core-implementation",
+      "finalTaskState": "EXECUTED",
+      "totals": {
+        "tests": 84,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.ai.core.repository.AiEmbeddingModelOptionsDatabaseTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.AiGenerationAdapterRegistryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.AiGenerationAdaptersTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.NativeOpenAiGatewayTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.OpenAiProviderAdapterTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.ProviderHttpSupportTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.impl.AiApiKeyPagePermissionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.impl.AiGatewayAccessServiceImplTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.impl.AiModelCatalogServiceImplTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.schedule.AiIdlePollBackoffTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.security.AiApiKeyHasherTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.security.AiCredentialCipherTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.support.AiButtonAuthorityTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.support.AiDiscoveredPricingParserTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.support.AiModelBillingCalculatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.support.AiModelTypeDetectorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicyTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-knowledge-implementation",
+      "finalTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.impl.AiKnowledgeDocumentServiceImplTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.impl.KnowledgeDocumentQueriesTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.index.AiKnowledgeIndexWorkerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.index.KnowledgeIndexCoordinatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.index.KnowledgeIndexProcessorTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.service.support.KnowledgeTextChunkerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-runtime-implementation",
+      "finalTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 56,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.repository.JpaAiRuntimeNodeRepositoryContractTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeImageResolverImplTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeMcpAdmissionServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeMcpEndpointServiceImplTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeMcpProfileServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeNodeServiceImplTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimePoolServiceImplTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeSecretServiceImplTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.impl.AiRuntimeWorkloadServiceImplTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.node.HttpAiRuntimeNodeOperationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.scheduler.AiRuntimePoolCoordinatorTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.scheduler.AiRuntimeWorkloadCoordinatorTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.support.AiRuntimeEgressPolicyCodecTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.support.AiRuntimeImageCacheCodecTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.support.AiRuntimeProfileCodecTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.service.support.RedisManagedMcpSessionDirectoryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-mcp-implementation",
+      "finalTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 41,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.repository.McpCatalogDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.impl.AiMcpOauthRedirectUriValidationTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.impl.AiMcpServerDefinitionServiceImplTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.impl.McpCatalogServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.impl.McpSnapshotQueriesTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.support.AiMcpInvocationLedgerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.support.AiMcpProviderRuntimeSecretResolverTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.service.task.AiMcpTaskServiceImplTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-catalog-implementation",
+      "finalTaskState": "UP-TO-DATE",
+      "totals": {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.repository.OfficialCatalogDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.service.impl.AiCatalogQueriesTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.service.impl.AiCatalogServiceImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.service.registry.HttpOfficialMcpRegistryClientTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.service.registry.OfficialMcpRegistrySyncTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-services:simplepoint-service-ai",
+      "finalTaskState": "EXECUTED",
+      "totals": {
+        "tests": 155,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.ai.server.AiConfigurationLifecycleHttpTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.ai.server.AiTableQueryHttpTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.ai.server.RuntimeTableQueryHttpTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogControllerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.catalog.rest.controller.AiCatalogPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiApiKeyControllerTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiBillingControllerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiCompatibleGatewayControllerTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiModelDebugControllerTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiModelDefinitionControllerTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.controller.AiProviderDefinitionControllerTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.gateway.AiCompatibilityMapperTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.rest.gateway.OpenAiResponsesProtocolTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.AiGatewayResourcePersistenceTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.core.service.adapter.NativeOpenAiClientTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.knowledge.rest.controller.AiKnowledgeBaseControllerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpErrorContractTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpGatewayControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpOauthBrowserCallbackControllerTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpServerDefinitionControllerTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.mcp.rest.controller.AiMcpWorkbenchPermissionsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.rest.config.AiRuntimeInternalSecurityConfigurationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.ai.runtime.rest.controller.AiRuntimeRestExceptionHandlerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "scopedCheckstyle": [
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "448f0e1cde0c60f5527116c6729b17d032acca784d64419fbd21eb01ea7dad9d"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "5166aa5495677027b68c9a779f2215d283d67ae7cbdfae6cb9208652453a18f3"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "9b8f7f15fe5891d8c383348377cbab403c2ca4674604994dcdda1951856d9dc3"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "55c4ad7561b14d3be8fd0dcf6d57ee83803eff1b63ac2822274f823af43cd32b"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "88e083f7a1d3524ed722761b97760304e5d6f451a625c979741618089d69acfd"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/build/reports/checkstyle/aiMigration.xml",
+      "violations": 0,
+      "sha256": "94c509cc7d2d9415e932241fd752293716bf9854ad62fa6732ec3b2a580bd515"
+    }
+  ],
+  "moduleBoundaries": "passed",
+  "cleanup": {
+    "testContainerRemoved": true,
+    "anonymousTestVolumeRemoved": true,
+    "temporaryCredentialFileRemoved": true,
+    "businessDatabaseModified": false,
+    "deployed": false,
+    "committed": false,
+    "pushed": false
+  },
+  "limitations": [
+    "G22 workflow read models still need identity-query decoupling and native Flowable schema readiness.",
+    "Shared event ledger and native engine installation contributions, legacy schema/data adoption, host startup integration and readiness remain unfinished.",
+    "pgvector/pg_trgm server packages and installation privileges must exist or be provisioned separately; extensions are expected in public.",
+    "No full standalone host, remote AI provider, MCP runtime deployment, broker, browser or multi-host topology acceptance in this increment.",
+    "Shared/split tests use independent schemas/data sources in one physical PostgreSQL instance; they do not prove multi-server failure recovery."
+  ],
+  "sourceSha256": {
+    "doc/design/modular_service_composition_plan.md": "c638944a27c53ba981b2d68ef9a6eb84912eba6782ad055e0375045917047e23",
+    "docker/postgres/Dockerfile": "5b436d74db1a935a5ee35f2f88d1e10acb5a6ddfe10f8e8609e32973afc36503",
+    "simplepoint-data/simplepoint-data-jpa-composition/README.md": "436345673b4518948a8ba41615d35bfb18f5edf92692e38357ae2d23fcbe309d",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "0f70ac22ae9e2897a0562f17b0518cfbf610ebc4ad4cc2c370793747daad4b50",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "7ce8b7b0d8c061ccdf20d71885f3c6cad50037c0c3092b41f9d8febe2f165026",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AiLegacySchemaContractPostgresTest.java": "862b4c3bc2c22c33de1fc79119279b54f819e46b7a19224aac123c58e57e558a",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AiModuleMigrationPostgresTest.java": "a12aaca56d0152fcfa9c5374bcdac17565eb828e724dc564440ae027c4c59d11",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "4a6d7a14354978842f13295261bb47cfdebbbc6162042a56d4c88b68e5ce75b2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/java/org/simplepoint/plugin/ai/catalog/module/AiCatalogModule.java": "0afeb2a5dab85f97be658ad2b53919e75bba130ee0be0fa60383d56d1e4879fc",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/resources/META-INF/simplepoint/modules/ai-catalog/db/manifest.properties": "185776d36b807d005243252634a85315b91ca4fc52a8daea9d4f05bbf11a2042",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-catalog-implementation/src/main/resources/META-INF/simplepoint/modules/ai-catalog/db/postgresql/V1__ai_catalog_foundation.sql": "e4a5d6c457605e050a8b2fa3eca54486ed739c5986c26f61a260a41955c7df50",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/java/org/simplepoint/plugin/ai/core/module/AiCoreModule.java": "37cc1f091f7288252fbc9e412bab9d2b66e1a79b2c1c810ee1b8dca65fc4f6f3",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/resources/META-INF/simplepoint/modules/ai-core/db/manifest.properties": "4378fad4c5c3e86a0fca5086b95e9df5717e8344fd1bb8aa6cc64b630c5a6bd9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/main/resources/META-INF/simplepoint/modules/ai-core/db/postgresql/V1__ai_core_foundation.sql": "c9f54bb238c28e8c7c79bf6df93d809e650e71b0dd576dcdfdda1336aa912b06",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-core-implementation/src/test/java/org/simplepoint/plugin/ai/core/service/adapter/NativeOpenAiGatewayTest.java": "0067186256508ea0202867c7263525cc419c8845613f4cd2e0719d43d7c2e4c9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/module/AiKnowledgeModule.java": "e89f972355ac9f5249b6b677b70914ab9e2a86f612ffa4467787a82564707e6f",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/java/org/simplepoint/plugin/ai/knowledge/repository/PgVectorKnowledgeChunkRepository.java": "51c4f81add254c0979da0914d98ed3ecfadc8b06ed0ab6a85a68e0b2cfbf41bf",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/resources/META-INF/simplepoint/modules/ai-knowledge/db/manifest.properties": "d54d4d2c99a481b1fc7cf24f088375360488dc783791df4bd3ccc6b814fac2d7",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-knowledge-implementation/src/main/resources/META-INF/simplepoint/modules/ai-knowledge/db/postgresql/V1__ai_knowledge_foundation.sql": "fd91077c8c4ea632c2330d677049cee3a37a5ad2fe72fc5a0096a14d6702f9c6",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/java/org/simplepoint/plugin/ai/mcp/module/AiMcpModule.java": "05a9571fe5c2cb35ebb8de22b273b76902bfbfded03c2c7dc6bbbc2faaa410ef",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/resources/META-INF/simplepoint/modules/ai-mcp/db/manifest.properties": "191421fd6569f226ea8545bb4c33d301c55d7c68864cd92207df94656fa5110a",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-implementation/src/main/resources/META-INF/simplepoint/modules/ai-mcp/db/postgresql/V1__ai_mcp_foundation.sql": "a23564093032d11b9f8b247262195e3fc0abaaec9cf2db64f53e19fd5fc69dd9",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/java/org/simplepoint/plugin/ai/runtime/module/AiRuntimeModule.java": "c315420fbe630a5102cda067d008ccaa7277549da48bc27489717f5ae10f22d2",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/resources/META-INF/simplepoint/modules/ai-runtime/db/manifest.properties": "98c7a54386c5fc8ab7a3824e854cdc82e31233a52d7d6b152ee242acc9e522a4",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-runtime-implementation/src/main/resources/META-INF/simplepoint/modules/ai-runtime/db/postgresql/V1__ai_runtime_foundation.sql": "a6200e50e95fc3d13958e49a5918765991c90c73baf7da6a63ba0c4aa151e850",
+    "simplepoint-services/simplepoint-service-ai/src/main/resources/schema.sql": "266c2e82258be254d54787641a497ceadadd65e34b4372ffde7dd33c7c740990"
+  }
+}

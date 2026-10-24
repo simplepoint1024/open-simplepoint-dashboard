@@ -1,7 +1,7 @@
 import {runtimeDescriptorKey, type ApplicationFormRuntimeView} from '@simplepoint/components/FormRuntime';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {get, useData} from '@simplepoint/shared/api/methods';
-import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {Alert, App, Skeleton} from 'antd';
 import {useEffect, useState} from 'react';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -19,6 +19,7 @@ export default function FormRuntime() {
 
 function RuntimePage({location}: {location: string}) {
   const {t, ensure, locale} = useI18n();
+  const [readAccessError, setReadAccessError] = useState<unknown>();
   const route = location.split(/[?#]/)[0].split('/').filter(Boolean);
   const validRoute = route.length === 4 && route[0] === 'app' && route[1] === 'runtime';
   const applicationId = validRoute ? route[2] : undefined;
@@ -32,24 +33,30 @@ function RuntimePage({location}: {location: string}) {
     {enabled: validRoute, retry: false, staleTime: 30_000},
   );
   useEffect(() => {void ensure(['app-workbench']);}, [ensure, locale]);
+  const loadError = readAccessError ?? descriptor.error;
+  const denied = !!readAccessError || isHttpError(descriptor.error) && [401, 403, 404].includes(descriptor.error.status);
+  const retry = async () => {
+    const result = await descriptor.refetch();
+    if (!result.isError) setReadAccessError(undefined);
+  };
   if (!validRoute) {
     return <Alert type="error" showIcon title={t('app.runtime.invalidRoute', '应用页面地址无效')}/>;
   }
   return <section style={{height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column'}}>
       {descriptor.isPending && <Skeleton active paragraph={{rows: 6}}/>}
-      {descriptor.isError && <Alert type="error" showIcon
+      {!!loadError && <Alert type="error" showIcon
         title={t('app.runtime.loadFailed', '应用页面加载失败')}
-        description={resolveApiErrorMessage(descriptor.error, t('app.runtime.loadFailed', '应用页面加载失败'))}
+        description={resolveApiErrorMessage(loadError, t('app.runtime.loadFailed', '应用页面加载失败'))}
         action={<TableActions selectedKeys={[]} selectedRows={[]}
           buttons={[{key: 'retry', sort: 0, text: t('app.retry', '重试')}]}
-          onButtonEvents={{retry: () => void descriptor.refetch()}}/>}/>}
-      {descriptor.data && <RuntimeWorkspace descriptor={descriptor.data}
-        available={!descriptor.isError}/>}
+          onButtonEvents={{retry: () => void retry()}}/>}/>}
+      {descriptor.data && !denied && <RuntimeWorkspace descriptor={descriptor.data}
+        available={!descriptor.isError} onReadAccessDenied={setReadAccessError}/>}
   </section>;
 }
 
-function RuntimeWorkspace({descriptor, available}: {
-  descriptor: ApplicationFormRuntimeView; available: boolean;
+function RuntimeWorkspace({descriptor, available, onReadAccessDenied}: {
+  descriptor: ApplicationFormRuntimeView; available: boolean; onReadAccessDenied: (error: unknown) => void;
 }) {
   const {t} = useI18n();
   const {modal} = App.useApp();
@@ -68,7 +75,8 @@ function RuntimeWorkspace({descriptor, available}: {
         })}}/>}/>}
     <div style={{flex: 1, minHeight: 0}}>
       <PageSection selected={available}>
-        <RecordTable key={runtimeDescriptorKey(current)} descriptor={current} available={!changed} onInteractionLockChange={setLocked}/>
+        <RecordTable key={runtimeDescriptorKey(current)} descriptor={current} available={!changed}
+          onReadAccessDenied={onReadAccessDenied} onInteractionLockChange={setLocked}/>
       </PageSection>
     </div>
   </>;

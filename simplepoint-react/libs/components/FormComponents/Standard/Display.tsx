@@ -1,10 +1,11 @@
+import {asyncComponent} from '../../AsyncComponent';
 import './style.css';
 import {Alert, Divider, Image, Progress, Typography} from 'antd';
-import {lazy, Suspense} from 'react';
+import {Suspense} from 'react';
 import {createIcon} from '@simplepoint/shared/types/icon';
 import type {FormComponentDefinition} from '../../FormRuntime/contracts';
 import {displayText, safeDisplayUrl} from './model';
-const Markdown = lazy(() => import('./Markdown'));
+const Markdown = asyncComponent(() => import('./Markdown'));
 /** Display primitives have no platform CRUD interaction; all content remains declarative. */
 export default function StandardDisplay({node}: {node: FormComponentDefinition}) {
   const text = (key: string, fallback = '') => displayText(node, key, fallback);

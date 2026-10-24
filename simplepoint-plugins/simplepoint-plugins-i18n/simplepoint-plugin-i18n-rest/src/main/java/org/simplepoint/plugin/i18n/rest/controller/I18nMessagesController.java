@@ -7,8 +7,8 @@ import java.util.Set;
 import org.simplepoint.core.base.controller.BaseController;
 import org.simplepoint.core.entity.Message;
 import org.simplepoint.core.http.Response;
-import org.simplepoint.core.locale.I18nMessageService;
 import org.simplepoint.core.utils.StringUtil;
+import org.simplepoint.plugin.i18n.api.service.I18nMessageManagementService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,14 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/i18n/messages")
 @Tag(name = "i18n消息管理", description = "用于管理系统中的国际化消息配置")
-public class I18nMessagesController extends BaseController<I18nMessageService, Message, String> {
+public class I18nMessagesController extends BaseController<I18nMessageManagementService, Message, String> {
   /**
    * Constructor initializing the controller with a service instance. 使用服务实例初始化控制器的构造函数
    *
    * @param service the service instance
    *                服务实例
    */
-  public I18nMessagesController(I18nMessageService service) {
+  public I18nMessagesController(I18nMessageManagementService service) {
     super(service);
   }
 

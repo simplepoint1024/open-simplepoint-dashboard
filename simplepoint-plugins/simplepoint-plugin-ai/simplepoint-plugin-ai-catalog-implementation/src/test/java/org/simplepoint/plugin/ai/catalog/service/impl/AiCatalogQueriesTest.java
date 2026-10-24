@@ -224,7 +224,7 @@ class AiCatalogQueriesTest {
       assertThatThrownBy(() -> queries.page(Map.of(field, "like:x"), PageRequest.of(0, 20)))
           .isInstanceOf(InvalidQueryException.class);
     }
-    assertThatThrownBy(() -> queries.page(Map.of(), PageRequest.of(0, 101)))
+    assertThatThrownBy(() -> queries.page(Map.of(), PageRequest.of(0, 501)))
         .isInstanceOf(InvalidQueryException.class);
     assertThatThrownBy(() -> queries.page(Map.of("query", "search"), PageRequest.of(0, 20)))
         .isInstanceOf(InvalidQueryException.class);

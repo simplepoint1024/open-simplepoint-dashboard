@@ -24,19 +24,23 @@ class EntityFieldsTest {
   }
 
   @Test
-  void resourceDeclaration_toResourceCopiesFields() {
+  void resourceDeclaration_containsOnlyDeclarativeState() throws Exception {
     ResourceDeclaration declaration = new ResourceDeclaration();
     declaration.setName("Users");
     declaration.setCode("users.view");
     declaration.setDescription("User resource");
     declaration.setType(ResourceType.PAGE);
 
-    Resource resource = declaration.toResource();
-
-    assertThat(resource.getName()).isEqualTo("Users");
-    assertThat(resource.getDescription()).isEqualTo("User resource");
-    assertThat(resource.getCode()).isEqualTo("users.view");
-    assertThat(resource.getType()).isEqualTo(ResourceType.PAGE);
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var json = mapper.readTree(mapper.writeValueAsBytes(declaration));
+    assertThat(json.get("name").asText()).isEqualTo("Users");
+    assertThat(json.get("description").asText()).isEqualTo("User resource");
+    assertThat(json.get("code").asText()).isEqualTo("users.view");
+    assertThat(json.get("type").asText()).isEqualTo("PAGE");
+    assertThat(json.has("id")).isFalse();
+    assertThat(json.has("createdAt")).isFalse();
+    assertThat(json.has("deletedAt")).isFalse();
+    assertThat(Resource.class.isAssignableFrom(ResourceDeclaration.class)).isFalse();
   }
 
   @Test

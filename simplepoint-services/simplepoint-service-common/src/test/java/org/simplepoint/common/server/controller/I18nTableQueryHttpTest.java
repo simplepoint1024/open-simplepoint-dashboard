@@ -179,10 +179,10 @@ class I18nTableQueryHttpTest {
               .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
           .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUERY"));
     }
-    mvc.perform(get(path).param("size", "200")
+    mvc.perform(get(path).param("size", "500")
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3));
-    mvc.perform(get(path).param("size", "201")
+    mvc.perform(get(path).param("size", "501")
             .requestAttr(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context))
         .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUERY"));
     mvc.perform(get(path).param("sort", "createdBy,asc")

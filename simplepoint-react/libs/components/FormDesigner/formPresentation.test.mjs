@@ -15,6 +15,13 @@ test('list field defaults preserve canvas, filter transient fields and append ne
   assert.deepEqual(orderedListFields(doc).map(f => f.fieldId), ['b', 'a', 'c']);
   assert.deepEqual(doc, before);
 });
+test('calculated fields support list ordering while legacy computed placeholders remain excluded', () => {
+  const total = {...field, fieldId: 'total', storageMode: 'COMPUTED', calculation: {languageVersion: '1', expression: '=1'}};
+  const doc = {...document(), fields: [field, total, {...field, fieldId: 'legacy', storageMode: 'COMPUTED'}], presentation: {listFieldOrder: ['total']}};
+  assert.deepEqual(orderedListFields(doc).map(item => item.fieldId), ['total', 'a']);
+  assert.equal(fieldWriteAllowed({...total, calculated: true, access: {create: 'WRITE', edit: 'WRITE'}}), false);
+  assert.equal(fieldOperationHidden({...total, access: {create: 'HIDDEN'} }), true);
+});
 test('operation policy intersects state rules and readonly, hidden edit never becomes editable', () => {
   const access = {create: 'WRITE', edit: 'HIDDEN'};
   assert.equal(fieldWriteAllowed({...field, access}), true);

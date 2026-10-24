@@ -27,6 +27,7 @@ import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelVersionEntity;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelBindingRepository;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelRepository;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelVersionRepository;
+import org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec.EncodedSchema;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaValidator;
@@ -45,6 +46,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private static final Set<PhysicalModelStatus> VERSIONABLE_STATES =
       Set.of(PhysicalModelStatus.DRAFT, PhysicalModelStatus.ACTIVE, PhysicalModelStatus.FAILED);
 
+  private final RecordMaintenanceControl maintenance;
   private final PhysicalModelRepository modelRepository;
   private final PhysicalModelBindingRepository bindingRepository;
   private final PhysicalModelVersionRepository versionRepository;
@@ -65,7 +67,9 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final PhysicalSchemaCodec schemaCodec,
       final PhysicalSchemaValidator schemaValidator,
       final RuntimeRequestContext requestContext,
-      final DnaRuntimeAuditPublisher auditPublisher) {
+      final DnaRuntimeAuditPublisher auditPublisher,
+      final RecordMaintenanceControl maintenance) {
+    this.maintenance = maintenance;
     this.modelRepository = modelRepository;
     this.bindingRepository = bindingRepository;
     this.versionRepository = versionRepository;
@@ -144,7 +148,8 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
     if (owner == null) {
       return;
     }
-    var parent = requireModel(actor.tenantId(), owner.parentModelId(), false);
+    var parent = requireModel(actor.tenantId(), owner.parentModelId(), true);
+    maintenance.requireAvailable(actor.tenantId(), parent);
     var binding = requireBinding(actor.tenantId(), parent.getId());
     var schema =
         schemaCodec.decode(
@@ -217,6 +222,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
           DnaRuntimeErrorCode.PHYSICAL_MODEL_STATE_CONFLICT,
           "A schema version cannot be created while the model is " + model.getStatus());
     }
+    maintenance.requireAvailable(actor.tenantId(), model);
     if (model.getStatus() != PhysicalModelStatus.DRAFT) {
       PhysicalModelTransitions.requireTransition(model.getStatus(), PhysicalModelStatus.DRAFT);
       model.setStatus(PhysicalModelStatus.DRAFT);
@@ -262,9 +268,10 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private PhysicalModelEntity requireModel(
       final String tenantId, final String modelId, final boolean forUpdate) {
     try {
-      return (forUpdate
-              ? modelRepository.findActiveByIdForUpdate(tenantId, modelId)
-              : modelRepository.findActiveById(tenantId, modelId))
+      if (forUpdate) {
+        return maintenance.lockModels(tenantId, java.util.List.of(modelId)).get(modelId);
+      }
+      return modelRepository.findActiveById(tenantId, modelId)
           .orElseThrow(
               () ->
                   new DnaRuntimeException(

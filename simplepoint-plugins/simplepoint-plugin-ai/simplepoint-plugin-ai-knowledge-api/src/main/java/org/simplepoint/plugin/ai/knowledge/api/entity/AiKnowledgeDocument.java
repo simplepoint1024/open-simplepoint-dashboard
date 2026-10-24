@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentSourceType;
 import org.simplepoint.plugin.ai.knowledge.api.model.AiKnowledgeDocumentStatus;
@@ -46,7 +47,7 @@ import org.springframework.core.annotation.Order;
       @org.simplepoint.core.query.QueryField("createdAt"),
       @org.simplepoint.core.query.QueryField("processedAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class AiKnowledgeDocument extends BaseEntityImpl<String> {
 
   @Order(0)

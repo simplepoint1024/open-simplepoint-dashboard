@@ -33,19 +33,20 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
-import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantDirectory;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
-import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract.Variable;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract.Binding;
+import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract.Variable;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PublishDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.UpdateDraftCommand;
-import org.simplepoint.plugin.workflow.api.model.WorkflowModels.StartProcessCommand;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionVersionEntity;
 
-/** Real persistence for draft/version boundaries; only the external engine deployment is stubbed. */
+/**
+ * Real persistence for draft/version boundaries; only the external engine deployment is stubbed.
+ */
 class WorkflowVersionContractTest {
 
   private SessionFactory factory;
@@ -55,17 +56,27 @@ class WorkflowVersionContractTest {
 
   @BeforeEach
   void setup() {
-    factory = new MetadataSources(new StandardServiceRegistryBuilder()
-        .applySetting("hibernate.connection.url", "jdbc:h2:mem:workflow-contract-" + UUID.randomUUID())
-        .applySetting("hibernate.hbm2ddl.halt_on_error", "true")
-        .applySetting("hibernate.generate_statistics", "true")
-        .applySetting("hibernate.session_factory.statement_inspector", (org.hibernate.resource.jdbc.spi.StatementInspector) statement -> {
-          statements.add(statement);
-          return statement;
-        })
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop").build())
-        .addAnnotatedClass(WorkflowDefinitionEntity.class)
-        .addAnnotatedClass(WorkflowDefinitionVersionEntity.class).buildMetadata().buildSessionFactory();
+    factory =
+        new MetadataSources(
+                new StandardServiceRegistryBuilder()
+                    .applySetting(
+                        "hibernate.connection.url",
+                        "jdbc:h2:mem:workflow-contract-" + UUID.randomUUID())
+                    .applySetting("hibernate.hbm2ddl.halt_on_error", "true")
+                    .applySetting("hibernate.generate_statistics", "true")
+                    .applySetting(
+                        "hibernate.session_factory.statement_inspector",
+                        (org.hibernate.resource.jdbc.spi.StatementInspector)
+                            statement -> {
+                              statements.add(statement);
+                              return statement;
+                            })
+                    .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+                    .build())
+            .addAnnotatedClass(WorkflowDefinitionEntity.class)
+            .addAnnotatedClass(WorkflowDefinitionVersionEntity.class)
+            .buildMetadata()
+            .buildSessionFactory();
     session = factory.openSession();
     session.beginTransaction();
     AuthorizationContext context = new AuthorizationContext();
@@ -79,21 +90,34 @@ class WorkflowVersionContractTest {
     ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class, RETURNS_SELF);
     AtomicInteger deployments = new AtomicInteger();
     when(repository.createDeployment()).thenReturn(builder);
-    when(builder.deploy()).thenAnswer(invocation -> {
-      Deployment deployment = mock(Deployment.class);
-      when(deployment.getId()).thenReturn("deployment-" + deployments.incrementAndGet());
-      return deployment;
-    });
+    when(builder.deploy())
+        .thenAnswer(
+            invocation -> {
+              Deployment deployment = mock(Deployment.class);
+              when(deployment.getId()).thenReturn("deployment-" + deployments.incrementAndGet());
+              return deployment;
+            });
     when(repository.createProcessDefinitionQuery()).thenReturn(query);
-    when(query.list()).thenAnswer(invocation -> {
-      ProcessDefinition process = mock(ProcessDefinition.class);
-      when(process.getKey()).thenReturn("approval");
-      when(process.getId()).thenReturn("process-" + deployments.get());
-      return List.of(process);
-    });
-    service = new WorkflowCenterServiceImpl(session, repository, mock(RuntimeService.class, RETURNS_DEEP_STUBS),
-        mock(TaskService.class, RETURNS_DEEP_STUBS), mock(HistoryService.class), new BpmnDefinitionValidator(),
-        new ObjectMapper(), mock(TenantService.class), List.of());
+    when(query.list())
+        .thenAnswer(
+            invocation -> {
+              ProcessDefinition process = mock(ProcessDefinition.class);
+              when(process.getKey()).thenReturn("approval");
+              when(process.getId()).thenReturn("process-" + deployments.get());
+              return List.of(process);
+            });
+    service =
+        new WorkflowCenterServiceImpl(
+            session,
+            repository,
+            mock(RuntimeService.class, RETURNS_DEEP_STUBS),
+            mock(TaskService.class, RETURNS_DEEP_STUBS),
+            mock(HistoryService.class),
+            new BpmnDefinitionValidator(),
+            new ObjectMapper(),
+            mock(TenantDirectory.class),
+            mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class),
+            List.of());
   }
 
   @AfterEach
@@ -110,7 +134,8 @@ class WorkflowVersionContractTest {
 
   @Test
   void historyProjectsAllVersionSummariesWithoutLoadingTheirBpmnOrFormSnapshots() {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "History", null, null));
+    var initial =
+        service.createDefinition(new CreateDefinitionCommand("approval", "History", null, null));
     String id = initial.definition().id();
     for (int number = 1; number <= 522; number++) {
       var version = new WorkflowDefinitionVersionEntity();
@@ -137,23 +162,51 @@ class WorkflowVersionContractTest {
     assertThat(history.getFirst().version()).isEqualTo(521);
     assertThat(history.getLast().version()).isEqualTo(1);
     assertThat(history.getFirst().comment()).isEqualTo("release-521");
-    assertThat(factory.getStatistics().getEntityStatistics(WorkflowDefinitionVersionEntity.class.getName()).getLoadCount()).isZero();
-    assertThat(statements.stream().filter(statement -> statement.startsWith("select")
-        && statement.contains("simpoint_workflow_definition_versions")).toList())
-        .hasSize(1).allSatisfy(statement -> assertThat(statement).doesNotContain("bpmn_xml", "form_contract", "definition_name"));
+    assertThat(
+            factory
+                .getStatistics()
+                .getEntityStatistics(WorkflowDefinitionVersionEntity.class.getName())
+                .getLoadCount())
+        .isZero();
+    assertThat(
+            statements.stream()
+                .filter(
+                    statement ->
+                        statement.startsWith("select")
+                            && statement.contains("simpoint_workflow_definition_versions"))
+                .toList())
+        .hasSize(1)
+        .allSatisfy(
+            statement ->
+                assertThat(statement)
+                    .doesNotContain("bpmn_xml", "form_contract", "definition_name"));
     assertThat(service.version(id, 1).bpmnXml()).startsWith(initial.bpmnXml());
-    assertThat(factory.getStatistics().getEntityStatistics(WorkflowDefinitionVersionEntity.class.getName()).getLoadCount()).isEqualTo(1);
+    assertThat(
+            factory
+                .getStatistics()
+                .getEntityStatistics(WorkflowDefinitionVersionEntity.class.getName())
+                .getLoadCount())
+        .isEqualTo(1);
   }
 
   @Test
   void publishesImmutableMetadataAndFormsEvenWhenBpmnDoesNotChange() {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "Old name", "old", "old description"));
+    var initial =
+        service.createDefinition(
+            new CreateDefinitionCommand("approval", "Old name", "old", "old description"));
     String id = initial.definition().id();
     var first = service.publish(id, new PublishDefinitionCommand(1, "first"));
-    var contract = new WorkflowFormContract(1,
-        List.of(new Variable("approver", "Approver", "user", "start", true, null)), null, Map.of());
-    var changed = service.updateDraft(id, new UpdateDraftCommand(1, "New name", "new", "new description",
-        initial.bpmnXml(), contract));
+    var contract =
+        new WorkflowFormContract(
+            1,
+            List.of(new Variable("approver", "Approver", "user", "start", true, null)),
+            null,
+            Map.of());
+    var changed =
+        service.updateDraft(
+            id,
+            new UpdateDraftCommand(
+                1, "New name", "new", "new description", initial.bpmnXml(), contract));
     assertThat(changed.definition().unpublishedChanges()).isTrue();
     var second = service.publish(id, new PublishDefinitionCommand(2, "second"));
     assertThat(second.version()).isEqualTo(2);
@@ -163,7 +216,8 @@ class WorkflowVersionContractTest {
     assertThat(service.startForm(id, 1).formContract().variables()).isEmpty();
     assertThat(service.startForm(id, 2).formContract().variables()).hasSize(1);
     assertThat(service.definition(id).definition().unpublishedChanges()).isFalse();
-    assertThat(service.publish(id, new PublishDefinitionCommand(2, "repeat")).id()).isEqualTo(second.id());
+    assertThat(service.publish(id, new PublishDefinitionCommand(2, "repeat")).id())
+        .isEqualTo(second.id());
     var copied = service.copyVersionToDraft(id, 1, 2);
     assertThat(copied.definition().name()).isEqualTo("Old name");
     assertThat(copied.definition().category()).isEqualTo("old");
@@ -172,45 +226,66 @@ class WorkflowVersionContractTest {
   }
 
   @Test
-  void metadataOnlyChangesCreateANewVersionAndStaleRevisionNeverOverwritesADraft() {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "Initial", null, null));
+  void metadataChangesCreateNewVersionsAndStaleRevisionsNeverOverwriteDrafts() {
+    var initial =
+        service.createDefinition(new CreateDefinitionCommand("approval", "Initial", null, null));
     String id = initial.definition().id();
     service.publish(id, new PublishDefinitionCommand(1, null));
-    service.updateDraft(id, new UpdateDraftCommand(1, "Renamed", null, null, initial.bpmnXml(), null));
+    service.updateDraft(
+        id, new UpdateDraftCommand(1, "Renamed", null, null, initial.bpmnXml(), null));
     assertThat(service.publish(id, new PublishDefinitionCommand(2, null)).version()).isEqualTo(2);
-    assertThatThrownBy(() -> service.updateDraft(id, new UpdateDraftCommand(1, "Stale", null, null,
-        initial.bpmnXml(), null))).isInstanceOf(WorkflowException.class).hasMessageContaining("刷新");
+    assertThatThrownBy(
+            () ->
+                service.updateDraft(
+                    id, new UpdateDraftCommand(1, "Stale", null, null, initial.bpmnXml(), null)))
+        .isInstanceOf(WorkflowException.class)
+        .hasMessageContaining("刷新");
     assertThat(service.definition(id).definition().name()).isEqualTo("Renamed");
   }
 
   @Test
   void anUnavailableFormProviderCannotBeBypassedByCallingTheStartApiDirectly() {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "Bound form", null, null));
+    var initial =
+        service.createDefinition(new CreateDefinitionCommand("approval", "Bound form", null, null));
     String id = initial.definition().id();
     var binding = new Binding("future-forms", "form1", 1, Map.of());
     var contract = new WorkflowFormContract(1, List.of(), binding, Map.of());
-    service.updateDraft(id, new UpdateDraftCommand(1, "Bound form", null, null, initial.bpmnXml(), contract));
+    service.updateDraft(
+        id, new UpdateDraftCommand(1, "Bound form", null, null, initial.bpmnXml(), contract));
     assertThatThrownBy(() -> service.publish(id, new PublishDefinitionCommand(2, null)))
-        .isInstanceOf(WorkflowException.class).hasMessageContaining("尚未接入");
+        .isInstanceOf(WorkflowException.class)
+        .hasMessageContaining("尚未接入");
   }
 
   @Test
   void taskBindingsMustReferToAnActualUserTaskInTheBpmnSnapshot() {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "Bound form", null, null));
-    var contract = new WorkflowFormContract(1, List.of(), null,
-        Map.of("deletedTask", new Binding("forms", "form1", 1, Map.of())));
-    assertThatThrownBy(() -> service.updateDraft(initial.definition().id(), new UpdateDraftCommand(
-        1, "Bound form", null, null, initial.bpmnXml(), contract)))
-        .isInstanceOf(WorkflowException.class).hasMessageContaining("不存在的用户任务");
+    var initial =
+        service.createDefinition(new CreateDefinitionCommand("approval", "Bound form", null, null));
+    var contract =
+        new WorkflowFormContract(
+            1, List.of(), null, Map.of("deletedTask", new Binding("forms", "form1", 1, Map.of())));
+    assertThatThrownBy(
+            () ->
+                service.updateDraft(
+                    initial.definition().id(),
+                    new UpdateDraftCommand(
+                        1, "Bound form", null, null, initial.bpmnXml(), contract)))
+        .isInstanceOf(WorkflowException.class)
+        .hasMessageContaining("不存在的用户任务");
   }
 
   @Test
   void legacyXmlChecksumsUpgradeWithoutInventingHistoricalMetadata() throws Exception {
-    var initial = service.createDefinition(new CreateDefinitionCommand("approval", "Legacy", null, null));
-    WorkflowDefinitionEntity definition = session.find(WorkflowDefinitionEntity.class, initial.definition().id());
+    var initial =
+        service.createDefinition(new CreateDefinitionCommand("approval", "Legacy", null, null));
+    WorkflowDefinitionEntity definition =
+        session.find(WorkflowDefinitionEntity.class, initial.definition().id());
     definition.setDraftFormContract(null);
-    String checksum = java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-        .digest(initial.bpmnXml().getBytes(StandardCharsets.UTF_8)));
+    String checksum =
+        java.util.HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(initial.bpmnXml().getBytes(StandardCharsets.UTF_8)));
     definition.setPublishedChecksum(checksum);
     definition.setLatestVersion(1);
     WorkflowDefinitionVersionEntity legacy = new WorkflowDefinitionVersionEntity();

@@ -109,7 +109,7 @@ export function createWorkflowFixture() {
     failCopy() {failCopy = true;}, failComplete() {personal.fail('complete');}, failCancel() {personal.fail('cancel');},
     async handle(req, url, respond, expectedFailure = () => {}) {
       const path = url.pathname;
-      if (!path.startsWith('/workflow/') && !path.startsWith('/common/tenant-directory/')) return false;
+      if (!path.startsWith('/workflow/') && !path.startsWith('/app/workflow/') && !path.startsWith('/common/tenant-directory/')) return false;
       if (path.startsWith('/workflow/mf/')) return false;
       requests.push({path, params: Object.fromEntries(url.searchParams), method: req.method});
       let data;

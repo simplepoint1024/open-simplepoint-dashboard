@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "wholeGoalComplete": false,
+  "status": "milestone_passed_not_final_acceptance",
+  "checks": {
+    "designer-inspectors": {
+      "passed": true,
+      "viewport": 1440,
+      "source": "real browser, actual persisted APP draft; no mocked HTTP responses"
+    },
+    "twelve-component-configuration": {
+      "passed": true,
+      "count": 12,
+      "restored": true,
+      "savedRevisions": [
+        10,
+        11,
+        12
+      ],
+      "checks": [
+        "typed properties",
+        "safe Markdown",
+        "runtime cascader/transfer/switch/rating values",
+        "icon tabs",
+        "field access matrix",
+        "keyboard list ordering",
+        "complete undo and original document equality"
+      ]
+    },
+    "designer-layout": {
+      "startedAt": "2026-10-19T05:06:28.605Z",
+      "passed": true,
+      "originalRevision": 12,
+      "restoredRevision": 12,
+      "designerViewports": [
+        1600,
+        1024
+      ],
+      "previewDevices": {
+        "PC": 1120,
+        "iPad": 768,
+        "Phone": 390
+      },
+      "completedAt": "2026-10-19T05:06:34.573Z"
+    },
+    "mq-recovery": {
+      "passed": true,
+      "transportGap": {
+        "pausedAt": "2026-10-19T05:05:08.636Z",
+        "durableOperation": "1f73e6d0-85b7-4c25-8edf-85fbb8b7e89c",
+        "state": "OFFLINING",
+        "readiness": {
+          "authorization": "passing",
+          "common": "passing",
+          "auditing": "passing",
+          "dna": "passing",
+          "ai": "passing",
+          "app": "passing",
+          "workflow": "passing",
+          "mcp-gateway": "passing",
+          "host": "passing"
+        },
+        "elapsedMs": 10953
+      },
+      "restoredAt": "2026-10-19T05:05:19.589Z",
+      "offline": {
+        "operationId": "1f73e6d0-85b7-4c25-8edf-85fbb8b7e89c",
+        "pageId": "20706f4d-c959-497b-b302-82657a83620a",
+        "generation": 9,
+        "state": "OFFLINE",
+        "unfinishedSubmissions": 0,
+        "requiredParticipants": [
+          "common",
+          "dna"
+        ],
+        "completedParticipants": [
+          "common",
+          "dna"
+        ]
+      },
+      "checks": [
+        {
+          "name": "durable offline completes all participants and revokes cached ordinary grants",
+          "operation": {
+            "operationId": "1f73e6d0-85b7-4c25-8edf-85fbb8b7e89c",
+            "pageId": "20706f4d-c959-497b-b302-82657a83620a",
+            "generation": 9,
+            "state": "OFFLINE",
+            "unfinishedSubmissions": 0,
+            "requiredParticipants": [
+              "common",
+              "dna"
+            ],
+            "completedParticipants": [
+              "common",
+              "dna"
+            ]
+          },
+          "deniedStatus": 409
+        },
+        {
+          "name": "re-online preserves data, fences the old generation and requires a new explicit grant",
+          "generation": 10,
+          "deniedStatus": 403
+        }
+      ],
+      "completedAt": "2026-10-19T05:05:33.398Z"
+    }
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/browser-components.json": "9881f2693678580bf55c02fdfcc825cdab237d85e1dda4f3fcd3e4bc46bf37ce",
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/browser-layout.json": "0732c3dd27ac8416b42a62f447573a449e2ba5fd0e7344db7341872c4b287783",
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/mq-recovery.json": "52de132773fee4b66693c9a24e1cdf30bf764c3ae7594c1e1bb8304d438b1a86"
+  },
+  "sourceFiles": {
+    "scripts/business/calculation-acceptance/browser-components.mjs": "ee298423f9b15923e12f964e743de873e8f49b3d4bb9c9f644fb49730afe52f5",
+    "scripts/business/calculation-acceptance/browser-layout.mjs": "823a9b2780200a641e228a62b47d004be2fd895aa0ce008083d0c0c78a4aaf26",
+    "scripts/business/calculation-acceptance/resource-lifecycle.mjs": "f08190fe14d6fcfd577255ac74c3ee6f16965fc519382f9424064a7f316bb494",
+    "simplepoint-react/scripts/smoke-form-standard-components.mjs": "c872f78b8b468cb488cdc54f49542af62eaac793c10286ac1f9bcc359109d3a5",
+    "simplepoint-react/scripts/smoke-form-designer-layout.mjs": "f96ad818a4ec58c7588ac6281c42f8211902a3f60a71af0f27cf3c06eb363ad8"
+  },
+  "limitations": [
+    "Component configuration/preview evidence does not yet complete every component publication/CRUD/workflow chain.",
+    "The initial synthetic context-menu test raced a closing popup; real pointer right-clicks and a completed-action wait passed.",
+    "The separate DNA outage found an unwrapped 500; its repair and redeployment are in progress."
+  ]
+}

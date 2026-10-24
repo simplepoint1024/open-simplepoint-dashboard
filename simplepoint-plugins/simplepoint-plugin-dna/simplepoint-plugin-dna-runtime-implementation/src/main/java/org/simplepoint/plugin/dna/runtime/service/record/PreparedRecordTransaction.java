@@ -6,6 +6,15 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordTransactionCommand;
 record PreparedRecordTransaction(
     RecordTransactionCommand command,
     RuntimeRecordModel model,
-    RecordAccessContext access
+    RecordAccessContext access,
+    RecordCalculationWriteSupport.Binding calculation,
+    java.util.Map<String, RecordCalculationWriteSupport.Scope> calculationChildren
 ) {
+  PreparedRecordTransaction(final RecordTransactionCommand command, final RuntimeRecordModel model, final RecordAccessContext access) {
+    this(command, model, access, null, java.util.Map.of());
+  }
+
+  PreparedRecordTransaction {
+    calculationChildren = java.util.Map.copyOf(calculationChildren);
+  }
 }

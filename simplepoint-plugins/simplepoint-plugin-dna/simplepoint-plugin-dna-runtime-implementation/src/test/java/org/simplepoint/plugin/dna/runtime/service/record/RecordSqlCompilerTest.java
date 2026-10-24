@@ -42,6 +42,18 @@ class RecordSqlCompilerTest {
   );
 
   @Test
+  void implicitProjectionOmitsHiddenFieldsButExplicitProjectionIsRejected() {
+    var permissions = access(Set.of("id", "record_version", "title"));
+    var implicit = compiler.page(model(), permissions,
+        new RecordPageQuery("model-1", SCHEMA, 0, 10, List.of(), null, List.of()));
+    assertThat(implicit.sql()).contains("\"title\"").doesNotContain("\"amount\"");
+    assertThatThrownBy(() -> compiler.page(model(), permissions,
+        new RecordPageQuery("model-1", SCHEMA, 0, 10, List.of("amount"), null, List.of())))
+        .isInstanceOfSatisfying(DnaRuntimeException.class,
+            failure -> assertThat(failure.errorCode()).isEqualTo(DnaRuntimeErrorCode.RECORD_ACCESS_DENIED));
+  }
+
+  @Test
   void compilesTenantScopeFilterProjectionAndStableSortWithBindings() {
     RuntimeRecordModel model = model();
     RecordAccessContext access = access(Set.of("id", "record_version", "title", "amount"));
@@ -278,6 +290,36 @@ class RecordSqlCompilerTest {
     assertThat(probe.sql()).contains("\"tenant_id\" = ?", "\"id\" = ?")
         .doesNotContain("\"deleted_at\" IS NULL", "\"created_by\" = ?");
     assertThat(probe.parameters()).containsExactly("tenant-a", recordId);
+  }
+
+  @Test
+  void bindsTrustedActiveDefaultsWithoutGrantingClientWritesOrReplacingExplicitNulls() {
+    var old = model();
+    var fields = new java.util.ArrayList<>(old.activeSchema().fields());
+    fields.set(1, new LogicalFieldDefinition("field-amount", "amount", "Amount", LogicalFieldType.DECIMAL, true,
+        null, 18, 2, new org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue(
+            org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind.DECIMAL, "5.00")));
+    fields.add(new LogicalFieldDefinition("enabled", "enabled", "Enabled", LogicalFieldType.BOOLEAN, false,
+        null, null, null, new org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue(
+            org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind.BOOLEAN, "true")));
+    fields.add(new LogicalFieldDefinition("rate", "rate", "Rate", LogicalFieldType.DECIMAL, false,
+        null, 24, 2, new org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue(
+            org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind.DECIMAL, "9007199254740993.01")));
+    var active = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, fields, List.of());
+    var historical = new RuntimeRecordModel(old.physicalModelId(), old.appId(), old.formId(), 2, active,
+        1, old.requestedSchema(), old.target());
+    var access = access(Set.of("title", "amount"));
+    var values = new java.util.LinkedHashMap<String, Object>();
+    values.put("title", "Default");
+    values.put("amount", null);
+    var insert = compiler.mutation(historical, access, new RecordCreateMutation("create", values), Instant.EPOCH);
+    assertThat(insert.sql()).contains("\"enabled\"", "\"rate\"");
+    assertThat(insert.parameters().subList(0, 4)).containsExactly("Default", null, true,
+        new java.math.BigDecimal("9007199254740993.01"));
+    var current = new RuntimeRecordModel(old.physicalModelId(), old.appId(), old.formId(), 2, active, old.target());
+    assertThatThrownBy(() -> compiler.mutation(current, access,
+        new RecordCreateMutation("forged", Map.of("title", "Default", "enabled", false)), Instant.EPOCH))
+        .isInstanceOf(DnaRuntimeException.class);
   }
 
   private static RuntimeRecordModel model() {

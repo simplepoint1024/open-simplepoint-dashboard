@@ -1,9 +1,12 @@
 package com.simplepoint.service.router.routing;
 
 import com.simplepoint.service.router.config.ServiceRouterProperties;
+import com.simplepoint.service.router.exception.AmbiguousServiceProviderException;
 import com.simplepoint.service.router.metadata.RoutedServiceMetadata;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.util.StringUtils;
@@ -39,8 +42,7 @@ public class DiscoveryClientServiceDiscovery implements ServiceDiscovery {
 
   @Override
   public List<ServiceRoute> discover(final RoutedServiceMetadata service) {
-    String serviceId = resolveServiceId(service);
-    return discoveryClient.getInstances(serviceId).stream()
+    return resolveInstances(service).stream()
         .filter(instance -> supports(instance, service))
         .map(instance -> new ServiceRoute(
             instance.getServiceId(),
@@ -51,48 +53,36 @@ public class DiscoveryClientServiceDiscovery implements ServiceDiscovery {
         .toList();
   }
 
-  private String resolveServiceId(final RoutedServiceMetadata service) {
+  private List<ServiceInstance> resolveInstances(final RoutedServiceMetadata service) {
     String serviceRouteKey = routeKey(service);
     String routeByVersion = properties.getRoutes().get(serviceRouteKey);
     if (routeByVersion != null && !routeByVersion.isBlank()) {
-      return routeByVersion;
+      return discoveryClient.getInstances(routeByVersion);
     }
 
     String routeByService = properties.getRoutes().get(service.name());
     if (routeByService != null && !routeByService.isBlank()) {
-      return routeByService;
+      return discoveryClient.getInstances(routeByService);
     }
 
-    String autoMapped = discoverServiceIdFromMetadata(serviceRouteKey);
-    if (autoMapped != null) {
-      return autoMapped;
-    }
-
-    String capabilityMatched = discoverServiceIdByCapability(serviceRouteKey);
-    return capabilityMatched == null ? defaultServiceId(service.name()) : capabilityMatched;
-  }
-
-  private String discoverServiceIdFromMetadata(final String routeKey) {
-    for (String serviceId : discoveryClient.getServices()) {
-      for (ServiceInstance instance : discoveryClient.getInstances(serviceId)) {
-        Map<String, String> metadata = instance.getMetadata();
-        if (isMappedInstance(metadata, routeKey)) {
-          return serviceId;
-        }
+    Map<String, List<ServiceInstance>> candidates = new TreeMap<>();
+    // Inspect both advertisement forms together. A mapping must not silently hide another owner.
+    for (String serviceId : new TreeSet<>(discoveryClient.getServices())) {
+      List<ServiceInstance> instances = discoveryClient.getInstances(serviceId);
+      boolean advertised = instances.stream().anyMatch(instance -> supports(instance, service)
+          && (isMappedInstance(instance.getMetadata(), serviceRouteKey, serviceId)
+              || isCapableInstance(instance.getMetadata(), serviceRouteKey)));
+      if (advertised) {
+        candidates.put(serviceId, instances);
       }
     }
-    return null;
-  }
-
-  private String discoverServiceIdByCapability(final String routeKey) {
-    for (String serviceId : discoveryClient.getServices()) {
-      for (ServiceInstance instance : discoveryClient.getInstances(serviceId)) {
-        if (isCapableInstance(instance.getMetadata(), routeKey)) {
-          return serviceId;
-        }
-      }
+    if (candidates.size() > 1) {
+      throw new AmbiguousServiceProviderException(
+          service.name(), service.version(), candidates.keySet());
     }
-    return null;
+    return candidates.isEmpty()
+        ? discoveryClient.getInstances(defaultServiceId(service.name()))
+        : candidates.values().iterator().next();
   }
 
   private static boolean supports(final ServiceInstance instance, final RoutedServiceMetadata service) {
@@ -101,7 +91,7 @@ public class DiscoveryClientServiceDiscovery implements ServiceDiscovery {
       return true;
     }
     String capabilities = metadata.get(CAPABILITIES_METADATA);
-    if (StringUtils.isEmpty(capabilities)) {
+    if (!StringUtils.hasText(capabilities)) {
       return true;
     }
     String expected = service.name() + VERSION_SEPARATOR + service.version();
@@ -113,17 +103,19 @@ public class DiscoveryClientServiceDiscovery implements ServiceDiscovery {
     return false;
   }
 
-  private static boolean isMappedInstance(final Map<String, String> metadata, final String routeKey) {
+  private static boolean isMappedInstance(
+      final Map<String, String> metadata, final String routeKey, final String serviceId) {
     if (metadata == null) {
       return false;
     }
     String mappings = metadata.get(MAPPINGS_METADATA);
-    if (StringUtils.isEmpty(mappings)) {
+    if (!StringUtils.hasText(mappings)) {
       return false;
     }
     for (String mapping : mappings.split(",")) {
       String[] parts = mapping.split("=", 2);
-      if (parts.length == 2 && routeKey.equals(parts[0].trim())) {
+      if (parts.length == 2 && routeKey.equals(parts[0].trim())
+          && serviceId.equals(parts[1].trim())) {
         return true;
       }
     }
@@ -135,7 +127,7 @@ public class DiscoveryClientServiceDiscovery implements ServiceDiscovery {
       return false;
     }
     String capabilities = metadata.get(CAPABILITIES_METADATA);
-    if (StringUtils.isEmpty(capabilities)) {
+    if (!StringUtils.hasText(capabilities)) {
       return false;
     }
     for (String capability : capabilities.split(",")) {

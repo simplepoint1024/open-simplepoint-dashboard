@@ -14,6 +14,7 @@ export type FormRecord = {
   state: RecordState;
   values: Record<string, unknown>;
   systemValues?: Record<string, unknown>;
+  systemLabels?: Record<string, unknown>;
 };
 export type FormRecordMutation = {
   recordId: string;
@@ -65,6 +66,7 @@ export function recordPage(page: FormRecordPage): Page<RecordRow> {
     content: page.records.map(record => ({
       ...record.values,
       ...record.systemValues,
+      ...(record.systemLabels ? {$displayLabels: record.systemLabels} : {}),
       id: record.id,
       version: record.version,
       recordState: record.state,

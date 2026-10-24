@@ -8,6 +8,7 @@ import java.util.Set;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.AuthorizationScopeType;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.notification.api.entity.NotificationReceipt;
 import org.simplepoint.plugin.notification.api.model.NotificationAudienceType;
 import org.simplepoint.plugin.notification.api.model.NotificationChangeType;
@@ -28,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class NotificationInboxServiceImpl implements NotificationInboxService {
 
-  private static final int MAX_PAGE_SIZE = 100;
+  private static final int MAX_PAGE_SIZE = TablePagination.MAX_PAGE_SIZE;
 
   private static final int RECEIPT_BATCH_SIZE = 500;
 

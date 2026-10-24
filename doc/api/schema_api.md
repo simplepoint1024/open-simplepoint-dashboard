@@ -122,7 +122,8 @@ GET /schema
 
 | 键 | 含义 |
 | --- | --- |
-| `x-list-visible` | 是否在列表里默认显示 |
+| `x-list-visible` | 是否进入列表与列设置的可选字段集合；排除的字段不能由个人偏好恢复 |
+| `x-list-default-visible` | 可选字段是否默认显示（布尔值，缺省为 `true`）；用户可在列设置中调整，列表和卡片共用 |
 | `widget` | 前端控件类型，如 `select` |
 | `dictCode` / `dict-code` | 字典编码，前端会据此补查选项 |
 | `ui:options` | 传给前端控件的额外选项 |

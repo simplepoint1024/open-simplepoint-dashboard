@@ -1,4 +1,6 @@
 import {clearStorageKeepingWorkspaceChoices} from '../preferences/workspace.ts';
+import {getCsrfToken} from './csrf.ts';
+import {beginSessionExit} from './sessionLifecycle.ts';
 import {
   ensureContextId,
   getStoredContextId,
@@ -129,6 +131,7 @@ export function redirectToLogin() {
   if (loginRedirectPromise) {
     return loginRedirectPromise;
   }
+  beginSessionExit();
   const cleanup = clearClientCaches({ preserveSessionContext: false });
   try {
     window.location.assign('/login');
@@ -145,12 +148,19 @@ export function redirectToLogin() {
 }
 
 export async function redirectToLogout() {
+  const csrf = await getCsrfToken();
+  beginSessionExit();
   await clearBrowserCaches();
 
   const form = document.createElement('form');
   form.method = 'post';
   form.action = '/logout';
   form.style.display = 'none';
+  const token = document.createElement('input');
+  token.type = 'hidden';
+  token.name = csrf.parameterName;
+  token.value = csrf.token;
+  form.appendChild(token);
 
   try {
     (document.body ?? document.documentElement).appendChild(form);

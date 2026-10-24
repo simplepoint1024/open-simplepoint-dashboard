@@ -1,0 +1,1294 @@
+{
+  "date": "2026-10-21",
+  "scope": "APP and DNA optional HTTP adapters, domain ownership and original service distribution",
+  "deployment": false,
+  "modulesInVerifiedPlan": 28,
+  "tests": {
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation": [
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.catalog.service.WorkspaceApplicationCatalogTest",
+        "timestamp": "2026-10-21T09:11:06",
+        "sha256": "1d3e74ee7ab04df82237fc8e9f59f1d790b35befb8de2e4a8a97283d9459e616"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.catalog.service.WorkspaceApplicationQueriesTest",
+        "timestamp": "2026-10-21T09:11:13",
+        "sha256": "b81ffc730c2a734ef28f706e16b6e3aaa86b7ccc1fb2c0b17e8b186be771f01a"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.service.ApplicationFormReleaseCatalogTest",
+        "timestamp": "2026-10-21T09:11:15",
+        "sha256": "3223c14dc1adcb13ef0c6965263a6f1f3b66c62df341bb6133290eb21784ce12"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.service.ApplicationFormWorkflowCatalogTest",
+        "timestamp": "2026-10-21T09:11:16",
+        "sha256": "dfbdfe4451237b1f5f8595146a405de9b7011786df9cd2cb8ef14054010558c3"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.service.CurrentFormPublicationRecoveryAuthorityTest",
+        "timestamp": "2026-10-21T09:11:18",
+        "sha256": "c6fb95b27dfd64b668c7bb70df26d8780f2d41ebd1a9c05b307e44efe188cf52"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.service.WorkspaceApplicationPageAccessPortTest",
+        "timestamp": "2026-10-21T09:11:18",
+        "sha256": "3e9bc1930a4c7877295a6fed9a534cca581efca8389a2f3c0a34c8f5f553e789"
+      },
+      {
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateServiceTest",
+        "timestamp": "2026-10-21T09:11:18",
+        "sha256": "1611a13a7879024c26f0acf4efb38136634c6057820ae1e7c33a4876bd6c1fde"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormPostgresSchemaTest",
+        "timestamp": "2026-10-21T09:11:26",
+        "sha256": "f0fac10f97efa117db697cca5447f110b679aacce8fe4efa3a2e3f2845cede1d"
+      },
+      {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormPublicationServiceImplTest",
+        "timestamp": "2026-10-21T09:11:27",
+        "sha256": "fed6c8f7649ffd55aee378bab9b813bfe050baf44f54d931467e9f77947cb327"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormPublicationStateServiceTest",
+        "timestamp": "2026-10-21T09:11:28",
+        "sha256": "f6acaec55b97ea96359386cc33a1cab885e83208e82f6f8b2a43b5be4803b550"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordSchemaServiceImplTest",
+        "timestamp": "2026-10-21T09:11:28",
+        "sha256": "f98ae809bad522c6bb664522d2afc8e8150e4d70f9d64ed40bf96a259f10c23e"
+      },
+      {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormRecordServiceImplTest",
+        "timestamp": "2026-10-21T09:11:28",
+        "sha256": "cd93c7ebd07c6f5c8aeface2404a375958e93734e82a9fc3112388f344261c94"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormRuntimeServiceImplTest",
+        "timestamp": "2026-10-21T09:11:29",
+        "sha256": "f19670c47fc36422b6ac3416a15ce4e0bd53a57e6d7a9da8bb0c99adb812929d"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationFormServiceDatabaseTest",
+        "timestamp": "2026-10-21T09:11:29",
+        "sha256": "69c799808eb7a0abf7169b89699bff7ae7739f742b6f1d79e9d111d7c9df90e7"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.ApplicationResourceLifecycleTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "93718963752666aeac7b90c97394ccef7e612f1c5303c69014b1f22db7ba593e"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.DefaultFormComponentRegistryTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "60d1bfab8a8131f86fc847f889419036e9503829a79dd7f179dc32f943c500db"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.DnaInvocationContextFactoryTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "4c662ff33d94fe59fc35dd89e59f11b994e081d31074b077f6303fa52a1d1703"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormAggregateValidationTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "d4742cf127640905b4b0c13185c6031e3f517def606c31a332cbe23c593f3cb8"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormAttachmentReferenceValidatorTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "07a431d77ed176c2c5c93995afa3a42d00e77179683a8c528bc1f686dd54c6a1"
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationCompilerTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "fd1213cec5bf585300e99fe145b016c1facc05af75edbffde6dc1dd129fc7560"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationComponentConstraintsTest",
+        "timestamp": "2026-10-21T09:11:30",
+        "sha256": "710c1fc46980bc1890b8fd587c710b09b3d8f911a12dc22476e6ad40b6410fd2"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationDefinitionTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "6af929afa2b390beab3755d97a19da23b58fc85841466134320c6b47ea8dcf0e"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationInputValidationTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "9654b911115b265524191aaaae65269d48deb5f06bf43813e51102022a95b21b"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationPermissionsTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "c1ce903520a52bc390cde1c3a3caf0cac4c89901419c59d5afdaf460ef031d50"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationPublicationProjectionTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "68bf9e6e331b18af553cccf71f73ec00b1e035712289e4e6b965d2a815b03b98"
+      },
+      {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationRuntimeProjectionTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "3113113b1d11a60cf7deefc77027ea5fa153fdb18f013d9a665f47af4f452122"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationValidationProjectionTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "96e203a3b43a2fade792c581bb89ae2e6bb7daaedc07b5fda209d3c453952983"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormCalculationWriteProjectionTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "e5f153ab88e6856b8e5126823d742c993473d2a15a1e4587a97ec104f06e3d4a"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormChoiceValuesTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "3d4a5e789a2a839ca76d74a36a77491f4287fc79bf31108b904f1bc48cf09dab"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormDetailEngineTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "44a310481b8bd40aaf12609da7a97bdbab524cdb4c50113a8c9d7f2e14528f7f"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormDnaResourceBindingCoordinatorTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "88ca96ca4249f832ae6d688e0ec47e3a9d6472270f040292fd8dbe47d918bb5b"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinatorTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "fb3f53a9a90735e62f629b38d8d9d2c71e7717c6b6d833d0fe87cbf94590580b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormDocumentCodecTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "93d975f3b528860f98023dbb2172149335c81de7bc1a954c2da193a5e4fbfcdc"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormDocumentValidatorTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "663d5560a2142d7c714496fb7a0125a106a6913655dd3ba45e3573f18c7fe7d2"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormFieldValidationsTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "5ade5a7f485e220a9356d88670161cb390da09c93ee70ac164710d5fce60edaf"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormFieldWritePolicyTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "514da51ebb6de03a4f437efc3195e804d0d930afe6b6c542078a98530bcdc97c"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormJsonContractTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "d60da69d851a83b70e1d8ff42e8301c3b59727b20af213cf172cc3bb5a77f30f"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPageResourceCoordinatorTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "b3b8c36810e50e98e968bb812687258763cc3a8cf2f41f712180d35c0c5e181e"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPresentationAndAccessTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "e37df0e322305b3da83d71f6b6101d5c42860cb66af692bb869443dcf11a7228"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPublicationImpactServiceTest",
+        "timestamp": "2026-10-21T09:11:31",
+        "sha256": "1b9761f634be4ef43a3f76c54a2c896b29fdd05ba8319b1142066a8c466056f8"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPublicationProgressProjectionTest",
+        "timestamp": "2026-10-21T09:11:32",
+        "sha256": "d69c431dd25a48130e080cf4e49db0051f7e689d722673e8d223d8361b9bc9a0"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPublicationRecoveryTest",
+        "timestamp": "2026-10-21T09:11:32",
+        "sha256": "6e78705aefc843cb69ece043e39f25a9b142e8cd8b50c6b665886325dba040f9"
+      },
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPublicationRequirementsCompilerTest",
+        "timestamp": "2026-10-21T09:11:32",
+        "sha256": "ceae56e440d956ba39932be73872b5fc10ee3dfe260ba36d81a221ddc9e35b90"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormPublicationValidatorTest",
+        "timestamp": "2026-10-21T09:11:32",
+        "sha256": "f6eb6b3ed35e652748deb3ee3a958d6fb6ac9dbbfe4988d072f3c2342ca7f974"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRecordIdentityLabelsTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "c07985dca86e8184bd3df98c0d06e174d31b3a641b0534b8759f211937d9facc"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRecordInvariantValidatorTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "a60b1e08340990de7d4468e14391b91c8c0bf9c3ebb83c9e1f1edd358a2fe4f2"
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRecordPayloadCompilerTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "0c629f39f6b20e07a3c81dc61e381efa5cc48a612de7ee51182aabdf89fceac8"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRecordProjectionReadsTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "1181bf4fc09908ef731742a9e3e0695d43c4d54e872d8f001b8453d5dc6308ba"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRecordSystemFieldsTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "81f5d74bdde0e4395a500c721c8bf854a579d245b3168407502d8cb1e8c3d184"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormResubmissionModeTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "80e20878bfdbaa3e64dad0f2d95bb20f5abe3256c975682c6567a25804f1d734"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRuleEvaluatorTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "4fe8de308571b6b8f7233b504e5e837ff288c1e3772ba85035ecba1dd48d8d5e"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormRuntimeDocumentCompilerTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "4eb347d3feef0f96c94e4000adeb656c65adb5d4d50f80ea38eaa5e9524d44cf"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormSceneGraphValidatorTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "2d4dd837c09605eec03fecb0a7b82299e5b8e7d23cdb0fc17ad4f309fb26eb4d"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormStandardComponentsTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "6bb56af89304225e33f6e655580fbfbb63b3f5d5c09bcee211e41bde1bff15bf"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormStorageProjectionCompilerTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "71b6d5eae3bb841afd6cc562e8072d5769a14a12023f5d6a80708aea9b50c0e5"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormSubmissionRecoveryTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "766813adb858cb068db56a0f0e953da7cd5dd8172a1fea91f24c11852e888aa9"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormSubmissionRequirementsTest",
+        "timestamp": "2026-10-21T09:11:34",
+        "sha256": "55350e1fba6cfbd506202d6f5ddad79bbf27741d3072793676b6189b61d2bb0c"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormTemporalContractTest",
+        "timestamp": "2026-10-21T09:11:34",
+        "sha256": "1d6ed7ddfe536a7f410ced18783630264703360c6cf9c84f359631df93d2a24a"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormWritePolicyProjectionTest",
+        "timestamp": "2026-10-21T09:11:34",
+        "sha256": "22d5f3fe0fabc132a0f5fbda1b9ea5dcf565822ea561f2673f5e9f79d54cfc94"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationCoordinatorTest",
+        "timestamp": "2026-10-21T09:11:34",
+        "sha256": "6a5efeb2033ad76d3c5ee286d1ccbf50d38a9e18358ad9d784543ae9ac385cc5"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http": [
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationFormCalculationControllerTest",
+        "timestamp": "2026-10-21T09:10:49",
+        "sha256": "e4a711afbbc99cdbca3419b05405f189d9210e21d5b29bc61615eeee4913805f"
+      },
+      {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationFormControllerHttpTest",
+        "timestamp": "2026-10-21T09:10:57",
+        "sha256": "2fcc3c4798f0482034a5c5892d2f9704090cc20ef27f372701a77aa69f3370df"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationFormExceptionHandlerTest",
+        "timestamp": "2026-10-21T09:11:01",
+        "sha256": "6e909862cfdfefa1f078803e3c729fa79bef257c9baba9a90107ace20b7c49d3"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationFormRecordPreviewControllerTest",
+        "timestamp": "2026-10-21T09:11:01",
+        "sha256": "f1ec4008b923e7896c205c18efcaddedc5913a9932ffb280d28c373e6717c557"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationFormWorkflowHttpTest",
+        "timestamp": "2026-10-21T09:11:02",
+        "sha256": "d5596491d420264593017145b0568c061e79b302df56a0a1ad0da3a3aa6b9df4"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.form.controller.ApplicationResourceLifecycleSecurityTest",
+        "timestamp": "2026-10-21T09:11:03",
+        "sha256": "b4bc2f2bf752aff3e3a3e9000fa8fb3eddd8389fb6de23ed10f79b71fde8ee09"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.http.AppHttpCompositionTest",
+        "timestamp": "2026-10-21T09:11:05",
+        "sha256": "006f1f8f61094a332c98829adff41f12e8855c24cb8a4bfda94f9a82fde46936"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.app.http.AppResourceInitializationTest",
+        "timestamp": "2026-10-21T09:11:09",
+        "sha256": "c88d4e7e0317b82b45e1c9ad7488794495fb3a9a914ac9cb2a20b8cd9e7dcdfe"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation": [
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.model.service.DnaDataModelCatalogTest",
+        "timestamp": "2026-10-21T09:10:47",
+        "sha256": "350583e6568f464a3708e8e559bb5e039f0c5e38855e177450a0d9914531f61f"
+      },
+      {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.DataAssetServiceImplTest",
+        "timestamp": "2026-10-21T09:10:52",
+        "sha256": "85462acc8184f532ea05c5bdb308d9c02143a4ce88fd5b3829a09cdf8cd36d61"
+      },
+      {
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.DataQualityRuleServiceImplTest",
+        "timestamp": "2026-10-21T09:10:55",
+        "sha256": "cf41229d1f6da754a4f2985c2d3602f66b851146a63a61bc0944b0baf5cf5f90"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationCatalogServiceImplTest",
+        "timestamp": "2026-10-21T09:10:56",
+        "sha256": "5149324a54bcdb417775509a2fb1b996863e57b7aa7000833f8661a25eb7fd4f"
+      },
+      {
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationDdlStatementProcessorTest",
+        "timestamp": "2026-10-21T09:10:56",
+        "sha256": "41204a1554259efc9dd53ee3ca4ee06f586fc239deb3925d5bc60f07152a92ca"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationDmlStatementProcessorTest",
+        "timestamp": "2026-10-21T09:10:56",
+        "sha256": "e79f8ce8754e513c97b03d9fde35264c8d9ed2e6102bf0a2e587d1840794eee1"
+      },
+      {
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcConnectionUserServiceImplTest",
+        "timestamp": "2026-10-21T09:10:57",
+        "sha256": "53a9f971f5164b5dfe98be468c9856d285373bbd1709e2235ab7b2c7ea7a39ec"
+      },
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcDriverServiceImplTest",
+        "timestamp": "2026-10-21T09:10:58",
+        "sha256": "9b223ae1343717daee68dd47899351d848da6f546742f9941ee79e3d501af6f2"
+      },
+      {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationJdbcMetadataQueryServiceImplTest",
+        "timestamp": "2026-10-21T09:11:01",
+        "sha256": "1353064e278bd900d760d299ad75cbfd2d5f7da672661c8c9f4c886cebebdcca"
+      },
+      {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryPolicyServiceImplTest",
+        "timestamp": "2026-10-21T09:11:01",
+        "sha256": "80e493b68785e7e79314001ca18cd0f1a93a896ef61e77d058d93b0aa4548566"
+      },
+      {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationQueryTemplateServiceImplTest",
+        "timestamp": "2026-10-21T09:11:02",
+        "sha256": "73205e8d233d2cefb882dddf182575568581acb6572c56de6cd74666185bc354"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationSchemaServiceImplTest",
+        "timestamp": "2026-10-21T09:11:02",
+        "sha256": "0ffdd658183b5a655b43d8376778e777e3d0129bf0ff4b5802e76cc6a8e021af"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlAuditorTest",
+        "timestamp": "2026-10-21T09:11:03",
+        "sha256": "f75343a980633134105cfecebc66e75e3d746d6ae2c39524812f1bc5ea32df6f"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlCatalogScopeTest",
+        "timestamp": "2026-10-21T09:11:03",
+        "sha256": "201eb65824151c6ceda18100147803164e3789f65f068e3824b874963ca3bccf"
+      },
+      {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationSqlConsoleServiceImplTest",
+        "timestamp": "2026-10-21T09:11:03",
+        "sha256": "1f6ba9c95f57bd218396eaa65cec912ee499f02969b7d25efd4ea7267e5880f2"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.FederationViewServiceImplTest",
+        "timestamp": "2026-10-21T09:11:11",
+        "sha256": "b2d171e4058e664494fecd33063a2d794f93291241182546c0d80ec1260a3a13"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.impl.JdbcGrantPermissionsDatabaseTest",
+        "timestamp": "2026-10-21T09:11:12",
+        "sha256": "21cc2816a76f8ce4882a6205374278089fb1762bd654ca47e8de521a2bfe0881"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.support.FederationCalciteCatalogAssemblerTest",
+        "timestamp": "2026-10-21T09:11:13",
+        "sha256": "220e7e8e616aebf4c6d9a59954b9b01fc09ffb170f7f20377fb6f7460a630705"
+      },
+      {
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcMetadataSupportTest",
+        "timestamp": "2026-10-21T09:11:14",
+        "sha256": "afc3dada366dadbb3e7f62b00da0f0b7be08eb75e434c3c7a052ab3ada93fb5c"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.support.FederationJdbcSocketAuthenticationTest",
+        "timestamp": "2026-10-21T09:11:14",
+        "sha256": "ab01fe68f2105b856539360536b7161b847239f43a60d5b35dead89bb08ebe9c"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.support.FederationMetadataCacheServiceTest",
+        "timestamp": "2026-10-21T09:11:15",
+        "sha256": "063db4707792468d6e1911be8f15c484bad8b93040e11a352c2acd16debdf02e"
+      },
+      {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.service.support.FederationSqlIdentifierNormalizerTest",
+        "timestamp": "2026-10-21T09:11:15",
+        "sha256": "bab7d4c263108297d525d879d4055a3c8c2f40ed3f8df52d579dd5f33d9d0b9c"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation": [
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.runtime.service.RuntimeCalciteConfigurationTest",
+        "timestamp": "2026-10-21T09:04:59",
+        "sha256": "0d7a16f358d1169d588a229b5088b0ae1a432675e72ca633a6a5cdb7f731dde0"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.runtime.service.RuntimeGovernanceCatalogTest",
+        "timestamp": "2026-10-21T09:05:02",
+        "sha256": "2f8bda21d7d378674cd74d7f9cc52cf7e5bbe1f2fe13ae882844cf95ea69a28a"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.runtime.service.RuntimeSchemaReviewTest",
+        "timestamp": "2026-10-21T09:05:11",
+        "sha256": "d1c5c0db95e1d07e464e146f53a2bddabb3bcc0c6c3fbdaddf5b28b815d13c36"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http": [
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.http.DnaHttpCompositionTest",
+        "timestamp": "2026-10-21T09:08:05",
+        "sha256": "fe964c1dbed20c0781f387b45c59e73c483e063961786e2bfb5611dd67661a86"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.http.DnaJdbcSecurityCompositionTest",
+        "timestamp": "2026-10-21T09:08:12",
+        "sha256": "9af745e746919c87e011cd46a43764f24eb66a34d2eb260148f4a110f346ee00"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.http.DnaResourceInitializationTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "8d1d05e514c78970d67366860861f41bb3b55238f39f4711ed791b0316029221"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.model.controller.DnaDataModelControllerHttpTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "ebdb5b0784e083488cd545d9c93d77401f1c2de06409fd29d412f86b001d2cb9"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.model.controller.DnaModelExceptionHandlerTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "64a67e14294b273a131cbaeb3a55087cd187e8cc2c0acb15d587376d5ef9bb08"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.runtime.controller.RuntimeExceptionHandlerTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "515f31fb383a9787979146f5790fc1c673705f7bf6761dbc0bc52a4a8e2b60de"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.runtime.controller.RuntimeRecordControllerHttpTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "5ebca34a4876b1696361ba9bca88429af0d48fa27406b1dfac1b067a6ef8f77f"
+      },
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.dna.server.DnaTableQueryHttpTest",
+        "timestamp": "2026-10-21T09:08:13",
+        "sha256": "30b4eebe7aef8b0150396ede1005152c60893b8e8b96b62728bcdeed700f69a2"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.core.rest.controller.JdbcDialectPermissionsTest",
+        "timestamp": "2026-10-21T09:08:19",
+        "sha256": "d312830415d7ab457e4b5543e4d30fdc61a8a8569075f51af17ea757e171acb1"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.core.rest.controller.JdbcMetadataPermissionsTest",
+        "timestamp": "2026-10-21T09:08:19",
+        "sha256": "3dc93e4377246b87be8afbae617fefa2fd1c602d7a5d328f7797079a8ce9d7cf"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.rest.controller.DashboardControllerTest",
+        "timestamp": "2026-10-21T09:08:19",
+        "sha256": "1fed14aa8d8ce2c66d4fdde7f2cbcf43403dac28bd10b58fcf38b8480e27d6ff"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.rest.controller.FederationSqlConsoleControllerTest",
+        "timestamp": "2026-10-21T09:08:19",
+        "sha256": "f44c21f5a77b2d69d9ac340e455333cf2da8853d3d3e08120522091112356c16"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.dna.federation.rest.controller.SqlConsolePermissionsTest",
+        "timestamp": "2026-10-21T09:08:19",
+        "sha256": "2f8e615c41dc2cbffbaf8c5eef377abc31def1cb8cc2d7e9c6faf48963933d3f"
+      }
+    ],
+    "simplepoint-security/simplepoint-security-oauth2-resource": [
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest",
+        "timestamp": "2026-10-21T08:55:22",
+        "sha256": "ed33a2272da833417dcd75d4f980a0055d7c8ac8cf900c9887f51627644979a8"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest",
+        "timestamp": "2026-10-21T08:55:23",
+        "sha256": "3b8a09d9ac7cdc7d844e8c9728ef527ca86a8735698bad81afcc9cb1caaf3668"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfigurationTest",
+        "timestamp": "2026-10-21T08:55:25",
+        "sha256": "f4cab95d70b18e3dc84aecae3fe52a1dae5472f74e758cc7e101514ac0d0c1fd"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterBoundaryTest",
+        "timestamp": "2026-10-21T08:55:25",
+        "sha256": "e1ac825852fae9344d1235e13a4b01d499782b2df970760567d56a5ce4f55255"
+      },
+      {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptorTest",
+        "timestamp": "2026-10-21T08:55:26",
+        "sha256": "23d5605e79d9df56b45a4571bd97111e556eb89252b0d0f113323839ec5b0a0e"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.SelectedResourceScopeRegistryTest",
+        "timestamp": "2026-10-21T08:55:27",
+        "sha256": "734c10b38a2bcb6ab0525b76b6e1892ea9a4da48b543bbd0dbacf376350fe0cd"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.oauth2.resourceserver.scope.StandardResourcePermissionCatalogTest",
+        "timestamp": "2026-10-21T08:55:27",
+        "sha256": "f8617dee9107b6952a61c299f0bcd4f6eb84eda1c978f0f45b5ecb5fdead3bbc"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition-verification": [
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+        "timestamp": "2026-10-21T09:10:59",
+        "sha256": "4bd253532cb2af0955e8d56a19eb51515c23f1fe4f3edea75afca217a092434d"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+        "timestamp": "2026-10-21T09:11:18",
+        "sha256": "59699b0c172dc824900eb13c1fca2f18d898f03c9becc36635005266e72e7baa"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+        "timestamp": "2026-10-21T09:11:32",
+        "sha256": "e96b32c3b2ed472fa54c5cc57a9cec7ac9c8adeb7fd5b2600ab9ee81025dc403"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "9f2b3c89d7f3ba89c6db603656e49d21a9d157403ae918f6edad6f0b2e206cbc"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+        "timestamp": "2026-10-21T09:11:33",
+        "sha256": "7ac86f6b47f5bbe7cd59b19ff0322d60062ad90526c5c85cd293be4f9b8d9d76"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 806,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceSha256": {
+    "gradle/module-boundaries.gradle.kts": "e8983eef93581d909d77dc260fefecd43850eb2d23eded6679a8076bac248bdd",
+    "settings.gradle.kts": "256c5625ffb6e76e9bcf53a646a01e9780a91ea7488d308bbbdbbcf128262e16",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "bfcb5683c73660073026556a5292e1dc57eecd25f484d76dd9a4d79bcc122877",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java": "3399da08c9bbff2a0ec89821c24a1d00571b66e433c22189f64ac859759c252d",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "e213db543cf5c35ad28a24ee8a6d8611f991dc9ec5a8fb3bff29c372f7c7b2e9",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "10d8bb8444cbc63024cdeaab31333563c4a26664f232e3a1a40681a2c4f4dbb6",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalog.java": "26b57dafdd07bff5a07bc30b49ad4d606151d52a3b8be948b0ce75b8c9f40a50",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/entity/ApplicationFormReleaseReadModel.java": "b12b76cce0bd8a3bae5b4806d17b6d7cbc55a02c43bf447651c787be887f55c5",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/entity/ApplicationFormSubmissionReadModel.java": "ab31e54996855b3670a59b00387df790022480cbe87299d0f021c107be8c93d7",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/ApplicationFormReleaseCatalog.java": "1420ccbb43db271b9e4eea87e817a3214ee171ce65dea09426835aed8d22e482",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/ApplicationFormSubmissionCatalog.java": "79cb1232970e7df3e0757967ab2be81eeb1b35baf765db555e61010732c7e589",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalog.java": "b305475db37c913522e858d115ba3908480db186c8fed1694fd1fb8ab16d69fd",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/CurrentFormPublicationRecoveryAuthority.java": "f381eb7c6e3d73434e7f78402058043de72683933e34dd3d38b3d4062e8e7edd",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationAccessPort.java": "1948e79364e84cbafa75757c55c0a5a59267729f846510af82bb6d349d2bf7f3",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPort.java": "5a941694714904dadb6e570e575104d097824ad2b6ca8bd21eff7788cc969812",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/configuration/ApplicationFormConfiguration.java": "32406c6e870a197455fffd8c84b7167671c19fef1df4b6cec184a9e685436c79",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationCatalogTest.java": "55b42bfe0f1cf632312ee2d389f7e16fec5668057bd0b9e4c07b90af23a2569d",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/catalog/service/WorkspaceApplicationQueriesTest.java": "bad588381ff42f90722b912b086e317f0b77fbd75a5716f866d45876fcca26db",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/form/service/ApplicationFormReleaseCatalogTest.java": "6bbdbeb4b45cbff9cdd1a29adcc38fe6320c6120b721a5a227b2fe7311476087",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/form/service/ApplicationFormWorkflowCatalogTest.java": "44dcdfa1d57529ce8add32e2ff86fcc4374a1da3a20de99de55fcadc8bc6ba9b",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/form/service/CurrentFormPublicationRecoveryAuthorityTest.java": "03f015befddb0c87f6b59675a884e656506e5cc2b633d2a1377a4bf8841261b8",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/app/form/service/WorkspaceApplicationPageAccessPortTest.java": "767c0890c8732de26007dee584a1e1fde79495d0c5861ce8d0558686ab1b1c19",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/build.gradle.kts": "bb66befb2bc728e139f4bdf4a5dc9a4f7d46ee8ca2ec95133a677c571df24837",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/catalog/controller/WorkspaceApplicationController.java": "23b25d2c6c7ac65f13a60cca0cd9c740d941ae9d3143b1fc342931e4a066502b",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormCalculationController.java": "b176d20d32937f3aef8c9eed545551b9279adfec45fb974b18c8b949a7716240",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormCatalogController.java": "c99ea84d56a19bf26601a4a9f110241844a2167d76ddd755a94efbd96d27af5c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormController.java": "43bf01866fade2d3ffa8e51cf455eae4726ea3d8c543fe6ed047e0cbc822bd82",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormExceptionHandler.java": "11e100eb108f2ffa64c161ab633a178b7f25f786616857d306ce5ddd3644eca4",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormRecordController.java": "b41de26bc1c8743944e184dd14c6d35fdad469aaccf46e59a4a7bc3c69959605",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormReleaseController.java": "3c57ab0f70291c3fa9c4adc5a5e7f771aca7f7afa6edeb340584dd4ae0e5affd",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormRuntimeController.java": "8c0eddc43c1e1880f4dc3104eb76d466e9856c875b7de1a8b4b7a963d11faee9",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormSubmissionCatalogController.java": "353210bc61eee9715faa4a236ee6a840629174ad33a13214b83f85c86018b63b",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormSubmissionController.java": "f2564a4e4fe22045a6ba9c7755f8760fb5c0b9206117172ad68589a2832d1156",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormWorkflowCatalogController.java": "ac86536d20d44c4fdf81b275857f9e20d34bd8f35f99f9e4811ff1101662f7d7",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationFormWorkflowSnapshotController.java": "2c096029fb7f3a38ff3fe71950f440571b369fb4134dfd90cee8facaafb9b622",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/form/controller/ApplicationResourceLifecycleController.java": "e4f248f23b2a96f5af3fb186321d69b4de45e52a011bdce8f0b9cbfb3e57a163",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/http/AppHttpModule.java": "63b5de61c125e9dc61455da9057a37096e1edd21e17dc5f58b793d2b578c3604",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/resources/META-INF/simplepoint/modules.imports": "25d0e874496775c62bef3b1fe1bea810b379e5e1fd30e25470ec0d8d5e85068c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/resources/META-INF/simplepoint/modules/app-http/i18n.imports": "942a798b0c5d5afbb538f45527d27d1a52360868218f55ad7c738e34ef2e5598",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/resources/META-INF/simplepoint/modules/app-http/i18n/en-US/app-workbench.json": "d16b868d3108950c294a0e22d8ed626f853d5a59c6156b5a7a42a0ccb929e75c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/resources/META-INF/simplepoint/modules/app-http/i18n/zh-CN/app-workbench.json": "a84882001dafc8d8797ad39384f082bdfc21f2354e253347d7c13038429d6d92",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/resources/META-INF/simplepoint/modules/app-http/resources.json": "f99d18a69e886c825430d75607cbfe89b83296dac13682556369bcd609a16e22",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationFormCalculationControllerTest.java": "7913b2f996e8f90e86dd740e03d5c24203ea7694006a0f89fd9752d02c97c85b",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationFormControllerHttpTest.java": "852a45c6ebd98a005edd7240b5f64f8e07c2eb1db8c1d63de0cc535a1e63d515",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationFormExceptionHandlerTest.java": "f17126c4753feed07f625f07fff2f202f74c8f41eb6d91fd8935155603866599",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationFormRecordPreviewControllerTest.java": "872ca478337c2c0a58265e1bc4d300f003f6f40e5feb0a8441eabd910308d6f8",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationFormWorkflowHttpTest.java": "3d8cb11f377ab9aebd649fde9ac24a33969a1b136c9a8bad42b401f6dcb60814",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/form/controller/ApplicationResourceLifecycleSecurityTest.java": "3c9c673430c0fd456e7b15c4cb212ff6510ff87e4fb18ce41b3b7ec2ce583e33",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/http/AppHttpCompositionTest.java": "a27ea688855cf7ff09d4e0405bc481aed513b6c3869c4b79e18ad356c0f4e406",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/http/AppResourceInitializationTest.java": "e952fd8411b26f0b502fdccac3eb8befb38288dad4091fa3b39a72154b02cb3f",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-core-implementation/src/main/java/org/simplepoint/plugin/dna/core/configuration/DnaCoreModule.java": "b8a82d69e91109b7eecd6bd24c095ab2109c3454270b655c8cc528bee1a6a4cc",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api/src/main/java/org/simplepoint/plugin/dna/federation/api/error/DnaModelErrorCode.java": "4dd2fd04d88c6e7675099de081327765fb16d1d0731eaa3fcdb842211591a27c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-api/src/main/java/org/simplepoint/plugin/dna/federation/api/error/DnaModelException.java": "fc6e39bcdce9abb9527a4f9a7f52e25a992a671cb5e92d76c1fc79a208672849",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/dna/model/service/DnaDataModelCatalog.java": "9d17364c87d48c06aa1221dee61ff6de76b1f0aedd1f2ced0bb78ed3d31e75dd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/main/java/org/simplepoint/plugin/dna/federation/module/DnaFederationModule.java": "6a9e8c687d526f94b949249d0d448e747deb03471f88ce0a3842d4021e253e60",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-federation-implementation/src/test/java/org/simplepoint/dna/model/service/DnaDataModelCatalogTest.java": "11461d0b034ffd01b233cc3bce86207a76a4e72295e795749206be13610edf1d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/build.gradle.kts": "34f537faa5145076f908ec52385c1abc249f97a5b36f89b9eaf94b951a6491c5",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/http/DnaHttpModule.java": "450dc437542ae60d974e2d0a8265b10e0a8ee1d18bdd1b99befafe9f41a530f7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/model/controller/DnaDataModelController.java": "f290c12182d8293fc23c6e1e56947bfda722cd292a188d1d2baa78adcab0d429",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/model/controller/DnaModelExceptionHandler.java": "7259231186ac3bae35866a3e2c88184d8d3b028054a2c9032a37421c18f7a5d2",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/runtime/controller/RuntimeExceptionHandler.java": "257a4b81413d02d809fd7a9821e28e6f7e7bdee278cd2dda928e9ec6e3699fae",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/runtime/controller/RuntimeGovernanceController.java": "9f64300cc1530ce66028abfee669228e2447a3f8c2140fd8fce96b80d1ec0d75",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/runtime/controller/RuntimeModelController.java": "eb232d6ec2d62cc7c36519e8a2ebe73a5061935b556347746c552cc03b2359a3",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/runtime/controller/RuntimeRecordController.java": "4a6302d9b7a7036e110612333eeff92add9f7ee1fc9743eb79318dc454071a5c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcDataSourceDefinitionController.java": "35d67a6c2336779f0482271b43b77a6402bd3d99431d694f273b84ff43197c09",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcDialectManagementController.java": "ef478f53a74f8ba9c5bc95f6c0cba8fac5f2b85da6142c79789d82312bfbaea8",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcDriverDefinitionController.java": "7155430fb09c36ec49d70e463676f642deb2c6321726237d9100fd16ad261f64",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcMetadataManagementController.java": "2c4653a7046281a50a1f065320ea1a5ffbbc3d9ea8032c95b0b7298f48835cbc",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/config/DnaJdbcDriverSecurityConfiguration.java": "81ccd53aa99f3dae7a0fb03f65185c8edb599644ffc4637066260559675b8d19",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/DashboardController.java": "4c2a9d5970205cf92945cf4260686268bb374553c94b956567553875fa720951",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/DataAssetController.java": "ba94bbfb86f31e7d3dbe8806f39b08f984f22d4719b8cedcfae65da0132c5f5d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/DataQualityRuleController.java": "125d1f1955f13851077b48a8ad18b314ccca6096ebf53288621b5a60b51e2489",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationCatalogController.java": "d5c69f270e9eecdae18e6deac25dbac6a097fdc1154e591249920bfe1a068d99",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationJdbcConnectionUserController.java": "ae18ae30152c41d76824d53f51446277194b35ed3dae2c3863ea01da2395b782",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationQueryAuditController.java": "822cf2f682e8adc85a60388303c05bdc6a0edcba1b75ffc56c96c9d9d4da2e6b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationQueryPolicyController.java": "71d46d1759cdb0b5d2ed7fd9dd4ba5504ac89a26e51a97e6916db5e8a95e506b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationQueryTemplateController.java": "b8fdbc81d48aa3f6553971609326d3edb47b92d80c416cdc19cce4a69277818f",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationSchemaController.java": "96e9c814ee8747ed28a493ca8b1e5c2eadbafd09ae503fa3a4c7b2bfa0877428",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationSqlConsoleController.java": "04dea4051cdef43c25317ca5f067ac314abd2e42d64c0dbcfc90cac3343f91b7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationViewController.java": "77791d22e9926a16cf792de919e5ca98e7ca38376b14ac37cf8f8b00d26d803e",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules.imports": "fa8e65c623a4c43f7b4e4f968a6882c02e44a107cbafdfd1a12a2a5462f436a7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n.imports": "7cc33e3583208cf747a42ba3dae89e6aca46ad9c46566197139cc2d83c8496fd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-dashboard.json": "71a0d794bf59090f29acc4463ffed7db5a394f67f8c23a7096e7daead6e5bbf5",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-data-assets.json": "dbd659e0035c1aafdea8ab900bf4b634cdd11abf29c200b6fa6494ac46b694f5",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-data-models.json": "31e5d98e630ca14de89d659959458e6bf1d103f2fbeb0dd18407e17d40db4616",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-data-quality.json": "b49ff9665466606993094fe0f4ad1de30083ff3b79ecb456e7cfd9089444660c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-data-sources.json": "e660bcc06c9a4a3d10ddf30049d0160b755dfb10e295071d7f603c4eb413197b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-dialects.json": "78c12db64dfeab2c67d95f863d3235e9c388d218baabf1ccdcbea16ee6ac5183",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-drivers.json": "20a5cb667c3e908d0589ad071d87870e2ab50e2a08722f6dca3d71f8de68b471",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-errors.json": "dcf7284d259059c422a737c1fa32668e8b7c685880aba31704e0ff101ce620be",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-catalogs.json": "4f8e3ee0402a7b565c7a8802af94b494475eea26aff8b8cf91e4f52ad690a8be",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-jdbc-users.json": "6a31a8da0971ab8b6a52c88bfb2b976b680bcd7639123eedad818f371cec23c2",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-query-audits.json": "251d1b33063c9659dc543d987ff24c051b6cab2fc55cc5826a6c858b0fb8ed0d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-query-policies.json": "2e3c5d71b24b014ad4769b18110e3eb95bbb966088334c41eb2318789964ba78",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-query-templates.json": "b356c34ab33e2b97e024489e03832c12dc2704456e4adbbd3eae33e75530ed18",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-schemas.json": "77f1cda6ff1897802f0dd0966cdfe2ff4e66e906fa24b1e68d1c5f45b7f53df3",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-sql-console.json": "a58226bb20ef3852a363a5140296931f05bc26f5201b4e22118b4d390778683e",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-federation-views.json": "d1ec4d73182b3e5380e4ca68a4573969cea359f73b7a5832612e0196f2a0d40f",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-metadata.json": "dcb0068fccae1a61233fa191e4e0d10b7e54fff895216376fda3b7a55bc5af7d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/en-US/dna-runtime.json": "cc84ea809d74e6f6c641b383a01a511bd26d4678f98d8ae8767bc5f52084bede",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-dashboard.json": "9a42cf02461da211464efec806d9a5ab3960d555dd32846d9672daafcf8945a4",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-data-assets.json": "db747880e8efa827909abfcd1c7f3e56b3cd8ba10a499f6f0fe23f9ceebcc17b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-data-models.json": "2e2f1a645c72df43b7183726e108f17cefd47ed4351c3f7f825810f9118720a4",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-data-quality.json": "115de62a4f66be25d688d7f2551f8f7b7af1fd689bfe41b875753d4901bd1d0a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-data-sources.json": "0ae51a0b57f1ccb9d002a4e087ea66aa3bdaf4d2eaff05e771dc419453229ac0",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-dialects.json": "46aae32600239cb57a89349b2d83bda5bb07d99ab76c1e553777576495811eca",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-drivers.json": "2e34bcaf63a4e885bd9346bbf7e80fb51d9aa403d69062b5ed012811dc401338",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-errors.json": "7f9d70a48310902f1c3acee35d8eed0b71baff9ed1899d204b8738161a5f852d",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-catalogs.json": "44d60b18d1e45c7fca0b827862bf82008dfe5b6eb21780d5268a3f52e53cddab",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-jdbc-users.json": "ec4f14092ffd48eb86c0509d6d4ebe9419da79292e9f537757a3aef8d884aa2b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-query-audits.json": "d71b5532c44176c5d00ff1171d85e873eb5ece526c5e37dfc0ff780f07654cff",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-query-policies.json": "5733843bbb1d97413e0bb4ddbb071a7792adcdc4255afec6c6ced66f9be53e2b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-query-templates.json": "210132b60fdacbf7ecda35770d9dcf2807c9e9e232d60f98f5f2e584fc50e821",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-schemas.json": "9dd13b1820bd0d9bffe45d35e5ee8c32d8d6debe09c665b6a018a782797ce976",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-sql-console.json": "9946bd09780f2d12e44de50de6cb76b1d8f7963736935a270eac892be6f15a18",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-federation-views.json": "ac1565ce20e56806827e0f5634745efa94285476347dc679c8cc2956130e9d93",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-metadata.json": "121af2c8ead930c0601689493e0a00d32a5489bc0e9717b3669d33f3585ef03c",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/i18n/zh-CN/dna-runtime.json": "d24453876d72335ee0e7ccfd043ae9e22239f52afe86286e9e4959b9b4bde4cb",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/resources/META-INF/simplepoint/modules/dna-http/resources.json": "4598a9f364a73f226141b1a67ad353e7ccabb72514ef2406309a0012ccb0a873",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/http/DnaHttpCompositionTest.java": "1f8e8685c41f1176a44e470f794635323257eb221f0d2b66eeafe319cc3f3167",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/http/DnaJdbcSecurityCompositionTest.java": "fade480db24eb0bb2aedc7e1cd2b20e5e90bab929fc2769e7faeffde53f90041",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/http/DnaResourceInitializationTest.java": "0ccef07afdfd7a054068bc5563e7a5c8c507f4899f3ddbadabf7777458c60776",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/model/controller/DnaDataModelControllerHttpTest.java": "3baa10a0ab1b2330f0a2ac6fece5075979f93d4d26fbe2e6ae4bbaf48011c052",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/model/controller/DnaModelExceptionHandlerTest.java": "54213f04fa0dea9ba4d3be849f0a8900bb77b06e0d74b56467e80763627d0ecb",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/runtime/controller/RuntimeExceptionHandlerTest.java": "80ec3652eeae5305b0a15628eee3f93a3e7583e180cc72f224eb908577f80fa3",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/runtime/controller/RuntimeRecordControllerHttpTest.java": "465d2320c9fa28e5b68f44ada72154f6eced877f9e5dc1acf2e86bdbb2c74e80",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/server/DnaTableQueryHttpTest.java": "73ab16cd91a78f59907c4916b819b7bbe72e8284626803efa9a0dd4f7e6f8cd6",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcDialectPermissionsTest.java": "8ab527280aa8e4928426c73523aa580a914177f023c6f9169e8b9890e0c9c3f2",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/plugin/dna/core/rest/controller/JdbcMetadataPermissionsTest.java": "6562dbcb260a84eb65b72bc009a638c6e769cf137a9808502d06d81fafaec532",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/plugin/dna/federation/rest/controller/DashboardControllerTest.java": "9ff072c98b7fd19b9c93a2362eee7fbcf4d1648ccca184b767130965d1ff1be7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/plugin/dna/federation/rest/controller/FederationSqlConsoleControllerTest.java": "8af1fb540d736ade45b067bf526bf0d30f8638b08d0714acc1634aaa550590dd",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/plugin/dna/federation/rest/controller/SqlConsolePermissionsTest.java": "4d33c0c992d3f5a3b14b3c387307353a7a1e11c70d406cf29a431df64761b66a",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/dna/runtime/service/RuntimeGovernanceCatalog.java": "0a3023b47910484293c4f781323d8e589227749304c19f4ca0c7adc9639e4408",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/dna/runtime/service/RuntimeSchemaReview.java": "17945bb05d10c6cad9762b72438f8ba43b78d16d75c8fbbb2ef3e941023467ef",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/configuration/DnaRuntimeConfiguration.java": "4356d2b38e308eb47093de59c3164402a02816b9dd78dced6deb8f59a66396a7",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/dna/runtime/service/RuntimeCalciteConfigurationTest.java": "0e67dc29cfd68d12a06d7546a317f8d9673a12f95288075dce4229f50518bcb2",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/dna/runtime/service/RuntimeGovernanceCatalogTest.java": "5ad928ef9c9400e840b23b0fbc9f56a0ab06d98d751dc3d5de375f24505d69ae",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/dna/runtime/service/RuntimeSchemaReviewTest.java": "113ece1789b705ae8bbe6d45b34975be1467f29f62b3d8fa9d1312ba09833d3e",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/ResourceScopeCatalog.java": "eb478a9c551f2a1c1f7f1eea5134196662b6f513acd1fb36f4a58706daba8af7",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ClasspathResourceScopeRegistry.java": "161092800ecd71be2f701e7bed4c3dddeb26a0497349d399b9d455697e0f0322"
+  },
+  "artifacts": {
+    "app": {
+      "jars": 266,
+      "classes": {
+        "org/simplepoint/app/catalog/controller/WorkspaceApplicationController.class": [
+          "simplepoint-plugin-app-http.jar"
+        ],
+        "org/simplepoint/app/catalog/service/WorkspaceApplicationCatalog.class": [
+          "simplepoint-plugin-app-form-implementation.jar"
+        ],
+        "org/simplepoint/app/form/entity/ApplicationFormReleaseReadModel.class": [
+          "simplepoint-plugin-app-form-implementation.jar"
+        ]
+      },
+      "assets": {
+        "simplepoint-service-app.jar": {
+          "entries": [
+            "static/mf/mf-manifest.json"
+          ],
+          "files": 142,
+          "sha256": "e799588c85aa26fe53034c99bc6eef5e49a775b2867b5edecaa281e5e0378e58"
+        }
+      },
+      "resourceOwner": "app",
+      "resourceArtifact": "simplepoint-plugin-app-http.jar"
+    },
+    "dna": {
+      "jars": 299,
+      "classes": {
+        "org/simplepoint/dna/model/controller/DnaDataModelController.class": [
+          "simplepoint-plugin-dna-http.jar"
+        ],
+        "org/simplepoint/dna/model/service/DnaDataModelCatalog.class": [
+          "simplepoint-plugin-dna-federation-implementation.jar"
+        ],
+        "org/simplepoint/dna/runtime/service/RuntimeGovernanceCatalog.class": [
+          "simplepoint-plugin-dna-runtime-implementation.jar"
+        ],
+        "org/simplepoint/plugin/dna/core/rest/controller/JdbcDriverDefinitionController.class": [
+          "simplepoint-plugin-dna-http.jar"
+        ]
+      },
+      "assets": {
+        "simplepoint-service-dna.jar": {
+          "entries": [
+            "static/mf/mf-manifest.json"
+          ],
+          "files": 216,
+          "sha256": "52850e089518c95f53c0fa59973768256f41099facb645b872c515ea5887be53"
+        }
+      },
+      "resourceOwner": "dna",
+      "resourceArtifact": "simplepoint-plugin-dna-http.jar"
+    }
+  },
+  "validation": [
+    "Real PostgreSQL APP domain and migration tests; isolated temporary database, production unchanged",
+    "DNA HTTP/security tests and existing federation tests; runtime governance/review/Calcite tests use H2 or mocks",
+    "Legacy and modular actual MVC mappings, method permissions, workspace scopes, stable errors and registration declarations",
+    "Scoped Checkstyle, verifyModuleBoundaries, frontend-enabled APP and DNA installDist and verifyFrontendDistribution",
+    "No single JVM running or live topology parity claimed"
+  ]
+}

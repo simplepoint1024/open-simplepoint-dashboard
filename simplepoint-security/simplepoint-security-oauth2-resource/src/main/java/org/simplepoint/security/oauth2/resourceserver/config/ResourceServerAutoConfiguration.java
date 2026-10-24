@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import org.simplepoint.cache.CacheService;
 import org.simplepoint.core.AuthorizationGrantedAuthorityLoader;
+import org.simplepoint.core.security.ServiceClientIdentity;
 import org.simplepoint.security.context.AuthorizationContextResolver;
 import org.simplepoint.security.context.AuthorizationContextService;
 import org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilter;
@@ -26,6 +27,7 @@ import org.springframework.boot.security.oauth2.server.resource.autoconfigure.OA
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
@@ -42,8 +44,14 @@ public class ResourceServerAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ClasspathResourceScopeRegistry classpathResourceScopeRegistry(
-      final ObjectMapper objectMapper) throws IOException {
-    return new ClasspathResourceScopeRegistry(objectMapper);
+      final ObjectMapper objectMapper,
+      org.springframework.beans.factory.ObjectProvider<
+              org.simplepoint.platform.composition.ModulePlan>
+          modules,
+      org.springframework.core.io.ResourceLoader resources)
+      throws IOException {
+    return new ClasspathResourceScopeRegistry(
+        objectMapper, modules.getIfAvailable(), resources.getClassLoader());
   }
 
   /** Registers scope enforcement after handler mapping and before controller invocation. */
@@ -87,11 +95,21 @@ public class ResourceServerAutoConfiguration {
   public SecurityFilterChain securityWebFilterChain(
       HttpSecurity http,
       AuthorizationGrantedAuthorityLoader authorizationGrantedAuthorityLoader,
-      AuthorizationContextResolver authorizationContextResolver,
+      org.springframework.beans.factory.ObjectProvider<AuthorizationContextResolver> legacyResolver,
+      org.springframework.beans.factory.ObjectProvider<
+              org.simplepoint.security.oauth2.resourceserver.composition
+                  .ModuleAuthorizationContexts>
+          modularContexts,
       TokenRevocationService tokenRevocationService,
       Environment environment)
       throws Exception {
     http.csrf(AbstractHttpConfigurer::disable);
+    // Browser sessions require their own CSRF-protected adapter. They must not authenticate
+    // this stateless API boundary merely because authorization now shares the same JVM.
+    http.sessionManagement(
+        session ->
+            session.sessionCreationPolicy(
+                org.springframework.security.config.http.SessionCreationPolicy.STATELESS));
     final String serviceRouterMode =
         environment.getProperty("simplepoint.service-router.internal-auth.mode", "shared-token");
     final String serviceRouterToken =
@@ -108,8 +126,11 @@ public class ResourceServerAutoConfiguration {
         environment.getProperty(
             "simplepoint.service-router.internal-auth.oauth2.required-authority",
             "SCOPE_service-router.invoke");
+    var modular = modularContexts.getIfAvailable();
     http.addFilterAfter(
-        new AuthorizationContextFilter(authorizationContextResolver, serviceRouterExposePath),
+        modular != null
+            ? modular.filter()
+            : new AuthorizationContextFilter(legacyResolver.getObject(), serviceRouterExposePath),
         BearerTokenAuthenticationFilter.class);
     return http.authorizeHttpRequests(
             request -> {
@@ -130,7 +151,17 @@ public class ResourceServerAutoConfiguration {
               if ("oauth2".equalsIgnoreCase(serviceRouterMode)) {
                 request
                     .requestMatchers(new ServiceRouterPathRequestMatcher(serviceRouterExposePath))
-                    .hasAuthority(serviceRouterRequiredAuthority);
+                    .access(
+                        (authentication, context) -> {
+                          var caller = authentication.get();
+                          return new AuthorizationDecision(
+                              ServiceClientIdentity.authenticatedClientId(caller).isPresent()
+                                  && caller.getAuthorities().stream()
+                                      .anyMatch(
+                                          authority ->
+                                              serviceRouterRequiredAuthority.equals(
+                                                  authority.getAuthority())));
+                        });
               } else if ("shared-token".equalsIgnoreCase(serviceRouterMode)
                   && StringUtils.hasText(serviceRouterToken)) {
                 request
@@ -210,6 +241,26 @@ public class ResourceServerAutoConfiguration {
         .build();
   }
 
+  /**
+   * Module-bound clients are supplied by the framework initializer, never a shared host account.
+   */
+  @Bean
+  @org.springframework.boot.autoconfigure.condition.ConditionalOnBean(
+      org.simplepoint.platform.composition.ModulePlan.class)
+  public org.simplepoint.security.oauth2.resourceserver.composition.ModuleAuthorizationContexts
+      moduleAuthorizationContexts(
+          org.simplepoint.platform.composition.ModulePlan modules,
+          CacheService cache,
+          Environment environment) {
+    return new org.simplepoint.security.oauth2.resourceserver.composition
+        .ModuleAuthorizationContexts(
+        modules,
+        cache,
+        environment.getProperty(
+            "simplepoint.service-router.provider.expose-path",
+            "/_simplepoint/service-router/invoke"));
+  }
+
   record ServiceRouterPathRequestMatcher(String exposePath) implements RequestMatcher {
 
     @Override
@@ -280,6 +331,8 @@ public class ResourceServerAutoConfiguration {
    * @return an instance of AuthorizationContextResolver configured to use Redis for caching
    */
   @Bean
+  @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(
+      org.simplepoint.platform.composition.ModulePlan.class)
   public AuthorizationContextResolver authorizationContextResolver(
       CacheService cacheService,
       AuthorizationContextService authorizationContextService,

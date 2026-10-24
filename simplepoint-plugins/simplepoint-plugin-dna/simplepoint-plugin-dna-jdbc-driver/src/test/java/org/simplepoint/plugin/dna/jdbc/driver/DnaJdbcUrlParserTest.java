@@ -14,10 +14,10 @@ class DnaJdbcUrlParserTest {
     properties.setProperty("user", "alice@example.com");
     properties.setProperty("password", "secret");
 
-    DnaJdbcModels.ConnectionConfig config = DnaJdbcUrlParser.parse(
-        "jdbc:simplepoint:dna://dna.example.com:15432?catalogCode=analytics&tenantId=tenant-a&schema=reporting",
-        properties
-    );
+    DnaJdbcModels.ConnectionConfig config =
+        DnaJdbcUrlParser.parse(
+            "jdbc:simplepoint:dna://dna.example.com:15432?catalogCode=analytics&tenantId=tenant-a&schema=reporting",
+            properties);
 
     assertThat(config.baseUri()).hasToString("tcp://dna.example.com:15432");
     assertThat(config.loginSubject()).isEqualTo("alice@example.com");
@@ -34,10 +34,10 @@ class DnaJdbcUrlParserTest {
     properties.setProperty("password", "override-secret");
     properties.setProperty("catalogCode", "override-catalog");
 
-    DnaJdbcModels.ConnectionConfig config = DnaJdbcUrlParser.parse(
-        "jdbc:simplepoint:dna://dna.example.com:15432?user=demo&password=demo&catalogCode=query-catalog",
-        properties
-    );
+    DnaJdbcModels.ConnectionConfig config =
+        DnaJdbcUrlParser.parse(
+            "jdbc:simplepoint:dna://dna.example.com:15432?user=demo&password=demo&catalogCode=query-catalog",
+            properties);
 
     assertThat(config.loginSubject()).isEqualTo("override@example.com");
     assertThat(config.password()).isEqualTo("override-secret");
@@ -50,11 +50,30 @@ class DnaJdbcUrlParserTest {
     properties.setProperty("user", "alice@example.com");
     properties.setProperty("password", "secret");
 
-    DnaJdbcModels.ConnectionConfig config = DnaJdbcUrlParser.parse(
-        "jdbc:simplepoint:dna://dna.example.com:15432",
-        properties
-    );
+    DnaJdbcModels.ConnectionConfig config =
+        DnaJdbcUrlParser.parse("jdbc:simplepoint:dna://dna.example.com:15432", properties);
 
     assertThat(config.catalogCode()).isNull();
+  }
+
+  @Test
+  void preservesSecretWhitespaceAndRedactsConfigurationAndProtocolStrings() throws Exception {
+    var properties = new Properties();
+    properties.setProperty("user", "alice@example.com");
+    properties.setProperty("password", " secret ");
+    properties.setProperty("oneTimeCode", "012345");
+    var config =
+        DnaJdbcUrlParser.parse(
+            "jdbc:simplepoint:dna://localhost:15432?password=url-secret", properties);
+    assertThat(config.password()).isEqualTo(" secret ");
+    assertThat(config.properties().getProperty("oneTimeCode")).isEqualTo("012345");
+    assertThat(config.toString()).doesNotContain("secret", "012345", "alice", "url-secret");
+    var message =
+        DnaJdbcModels.SocketRequest.builder("CONNECT")
+            .password(config.password())
+            .oneTimeCode(config.properties().getProperty("oneTimeCode"))
+            .build();
+    assertThat(message.oneTimeCode()).isEqualTo("012345");
+    assertThat(message.toString()).doesNotContain("secret", "012345");
   }
 }

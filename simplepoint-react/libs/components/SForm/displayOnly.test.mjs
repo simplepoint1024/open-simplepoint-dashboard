@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {displayOnlyProjection, displayValue} from './displayOnly.ts';
+import {displayOnlyProjection, displaySelection, displayValue} from './displayOnly.ts';
+import {fieldSchema} from '../FormRuntime/fieldSchema.ts';
 
 test('explicit display values preserve data and bypass input constraints without weakening writable fields', () => {
   const source = {type: 'object', required: ['masked', 'editable'], properties: {
@@ -36,4 +37,24 @@ test('inline object and array projections preserve editable required fields and 
   assert.equal(projected.uiSchema.lines.items.previous['ui:field'], 'DisplayValue');
   assert.equal(projected.schema.properties.lines.items.properties.previous.properties, undefined);
   assert.deepEqual(source.properties.lines.items.required, ['name', 'previous']);
+});
+
+test('published selection labels survive read-only projection without querying identities or changing stored keys', () => {
+  const options = [{value: 'cn', label: '中国', children: [{value: 'jp', label: '日本語😀'}]}, {value: 'other', label: '其他'}];
+  const field = {type: 'JSON', label: '地区', choices: []};
+  for (const [componentType, expected] of [['field.cascader', '中国 / 日本語😀'], ['field.transfer', '中国、jp']]) {
+    const node = {componentType, properties: {options: {kind: 'JSON', value: JSON.stringify(options)}}};
+    const source = {...fieldSchema(field, node), 'x-display-only': true};
+    const before = structuredClone(source);
+    const projection = displayOnlyProjection(source).schema['x-display-selection'];
+    assert.equal(displaySelection('["cn","jp"]', projection), expected);
+    assert.equal(displaySelection('["missing","jp"]', projection), 'missing' + (componentType === 'field.cascader' ? ' / jp' : '、jp'));
+    assert.equal(displaySelection('[]', projection), '');
+    for (const masked of ['***', 'null', '{"key":"cn"}', '[1]', '["cn",null]']) {
+      assert.equal(displaySelection(masked, projection), undefined);
+      assert.equal(displayValue(masked), masked);
+    }
+    assert.equal(displaySelection(JSON.stringify(Array(201).fill('cn')), projection), undefined);
+    assert.deepEqual(source, before);
+  }
 });

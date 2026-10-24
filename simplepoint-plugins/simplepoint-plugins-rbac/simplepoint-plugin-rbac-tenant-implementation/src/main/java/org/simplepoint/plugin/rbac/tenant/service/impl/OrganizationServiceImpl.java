@@ -30,40 +30,81 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Tenant-scoped organization management service.
- */
+/** Tenant-scoped organization management service. */
 @Service
-public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationRepository, Organization, String>
+public class OrganizationServiceImpl
+    extends BaseServiceImpl<OrganizationRepository, Organization, String>
     implements OrganizationService {
 
   private final OrganizationRepository organizationRepository;
+  private final OrganizationLeaderPolicy leaders;
   private final DictionaryItemRepository dictionaryItemRepository;
   private final OrganizationSelectionQuery selectionQuery;
   private final OrganizationScopedReadQuery scopedReadQuery;
-  private final org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions;
+  private final org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService
+      authorizationVersions;
 
   /**
    * Creates the organization service.
    *
-   * @param repository               the organization repository
-   * @param detailsProviderService   the schema/details provider
+   * @param repository the organization repository
+   * @param detailsProviderService the schema/details provider
    * @param dictionaryItemRepository the dictionary item repository
    */
   public OrganizationServiceImpl(
       OrganizationRepository repository,
       DetailsProviderService detailsProviderService,
       DictionaryItemRepository dictionaryItemRepository,
-      org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions,
+      org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService
+          authorizationVersions,
       OrganizationSelectionQuery selectionQuery,
-      OrganizationScopedReadQuery scopedReadQuery
-  ) {
+      OrganizationScopedReadQuery scopedReadQuery, OrganizationLeaderPolicy leaders) {
     super(repository, detailsProviderService);
     this.organizationRepository = repository;
     this.dictionaryItemRepository = dictionaryItemRepository;
     this.authorizationVersions = authorizationVersions;
     this.selectionQuery = selectionQuery;
     this.scopedReadQuery = scopedReadQuery;
+    this.leaders = leaders;
+  }
+
+
+  @Override
+  @Transactional(readOnly = true)
+  public org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationDetails details(String id) {
+    String tenant = selectionTenant();
+    if (!QueryCapabilities.readable(Organization.class, "id")) throw new org.springframework.security.access.AccessDeniedException("Organization identity is unavailable");
+    var organization = super.findById(requireId(id))
+        .filter(row -> tenant.equals(row.getTenantId()))
+        .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("Organization is unavailable"));
+    Map<String, Object> values = new java.util.LinkedHashMap<>();
+    values.put("id", organization.getId());
+    values.put("name", organization.getName());
+    values.put("code", organization.getCode());
+    values.put("type", organization.getType());
+    values.put("parentId", organization.getParentId());
+    values.put("leaderId", organization.getLeaderId());
+    values.put("description", organization.getDescription());
+    values.put("sort", organization.getSort());
+    values.put("enabled", organization.getEnabled());
+    Map<String, Map<String, String>> references = new java.util.LinkedHashMap<>();
+    if (QueryCapabilities.readable(Organization.class, "leaderId") && organization.getLeaderId() != null) {
+      String label = leaders.label(tenant, organization.getLeaderId());
+      references.put("leaderId", reference(organization.getLeaderId(), label));
+    }
+    if (QueryCapabilities.readable(Organization.class, "parentId") && organization.getParentId() != null) {
+      String label = QueryCapabilities.readable(Organization.class, "name")
+          ? super.findById(organization.getParentId()).filter(row -> tenant.equals(row.getTenantId()))
+              .map(Organization::getName).orElse(null) : null;
+      references.put("parentId", reference(organization.getParentId(), label));
+    }
+    return new org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationDetails(
+        org.simplepoint.core.jackson.FieldPermissionPolicy.project(Organization.class, values), references);
+  }
+
+  private Map<String, String> reference(String id, String label) {
+    Map<String, String> value = new java.util.LinkedHashMap<>();
+    value.put("id", id); value.put("label", label); return value;
   }
 
   @Override
@@ -82,11 +123,21 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     DataScopeCondition scope = organizationScope();
     // A new organization has no id yet. SELF can own it; fixed organization sets
     // cannot contain the new id and must not silently create an invisible row.
-    if (scope == null || scope.isAllData() || scope.isSelf() || scope.isIncludeSelf()) return;
-    if (scope.getExpressions().stream().anyMatch(node -> org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
-        node, field -> permissionFieldValue(entity, field)))) return;
-    if ("DEPT_AND_BELOW".equals(scope.getScopeType()) && entity.getParentId() != null
-        && scope.getDeptIds().contains(entity.getParentId())) return;
+    if (scope == null || scope.isAllData() || scope.isSelf() || scope.isIncludeSelf()) {
+      return;
+    }
+    if (scope.getExpressions().stream()
+        .anyMatch(
+            node ->
+                org.simplepoint.core.permission.PermissionExpressionEvaluator.matches(
+                    node, field -> permissionFieldValue(entity, field)))) {
+      return;
+    }
+    if ("DEPT_AND_BELOW".equals(scope.getScopeType())
+        && entity.getParentId() != null
+        && scope.getDeptIds().contains(entity.getParentId())) {
+      return;
+    }
     throw new org.springframework.security.access.AccessDeniedException(
         "当前数据范围不允许创建新组织，请使用全部或仅本人范围");
   }
@@ -105,8 +156,10 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   @Override
   public Object selectionSchema() {
     selectionTenant();
-    return getTableSchemaProvider().schema(org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow.class,
-        getAuthorizationContext());
+    return getTableSchemaProvider()
+        .schema(
+            org.simplepoint.plugin.rbac.tenant.api.vo.OrganizationSelectionRow.class,
+            getAuthorizationContext());
   }
 
   private String selectionTenant() {
@@ -127,33 +180,57 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
 
   @Override
   @Transactional(readOnly = true)
-  public Page<OrganizationOptionVo> tree(String parentId, Map<String, String> filters, Pageable pageable) {
+  public Page<OrganizationOptionVo> tree(
+      String parentId, Map<String, String> filters, Pageable pageable) {
     String tenantId = currentTenantId(false);
     if (tenantId == null) {
       return Page.empty(pageable);
     }
     if (!QueryCapabilities.readable(Organization.class, "id")) {
-      if (trimToNull(parentId) != null)
+      if (trimToNull(parentId) != null) {
         throw new org.springframework.security.access.AccessDeniedException("当前字段权限不允许按组织标识浏览");
-      return scopedReadQuery.flat(tenantId, filters, pageable, organizationScope()).map(row ->
-          new OrganizationOptionVo(row.getId(), row.getName(), row.getCode(), row.getParentId(),
-              row.getType(), row.getDescription(), row.getSort(), !Boolean.FALSE.equals(row.getEnabled()), false));
+      }
+      return scopedReadQuery
+          .flat(tenantId, filters, pageable, organizationScope())
+          .map(
+              row ->
+                  new OrganizationOptionVo(
+                      row.getId(),
+                      row.getName(),
+                      row.getCode(),
+                      row.getParentId(),
+                      row.getType(),
+                      row.getDescription(),
+                      row.getSort(),
+                      !Boolean.FALSE.equals(row.getEnabled()),
+                      false));
     }
     String parent = trimToNull(parentId);
     if (pageable.isPaged() && pageable.getSort().isUnsorted()) {
-      var defaults = List.of("sort", "name", "code").stream()
-          .filter(field -> QueryCapabilities.readable(Organization.class, field))
-          .map(Sort.Order::asc).toList();
-      pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(defaults));
+      var defaults =
+          List.of("sort", "name", "code").stream()
+              .filter(field -> QueryCapabilities.readable(Organization.class, field))
+              .map(Sort.Order::asc)
+              .toList();
+      pageable =
+          PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(defaults));
     }
     DataScopeCondition scope = organizationScope();
-    Page<Organization> page = scope == null || scope.isAllData()
-        ? super.limitScoped(filters,
-            Map.of("tenantId", "equals:" + tenantId,
-                "parentId", parent == null ? "is:null" : "equals:" + parent), pageable)
-        : scopedReadQuery.tree(tenantId, parent, filters, pageable, scope);
-    var options = optionPage(page.getContent(), tenantId, page.getNumber(), page.getSize(), page.hasNext());
-    return new org.springframework.data.domain.PageImpl<>(options.content(), pageable, page.getTotalElements());
+    Page<Organization> page =
+        scope == null || scope.isAllData()
+            ? super.limitScoped(
+                filters,
+                Map.of(
+                    "tenantId",
+                    "equals:" + tenantId,
+                    "parentId",
+                    parent == null ? "is:null" : "equals:" + parent),
+                pageable)
+            : scopedReadQuery.tree(tenantId, parent, filters, pageable, scope);
+    var options =
+        optionPage(page.getContent(), tenantId, page.getNumber(), page.getSize(), page.hasNext());
+    return new org.springframework.data.domain.PageImpl<>(
+        options.content(), pageable, page.getTotalElements());
   }
 
   @Override
@@ -164,11 +241,14 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       String ids,
       String excludeId,
       boolean flat,
-      Pageable pageable
-  ) {
+      Pageable pageable) {
     String tenantId = currentTenantId(false);
-    int pageNumber = pageable != null && pageable.isPaged() ? Math.max(0, pageable.getPageNumber()) : 0;
-    int pageSize = pageable != null && pageable.isPaged() ? Math.min(100, Math.max(1, pageable.getPageSize())) : 30;
+    int pageNumber =
+        pageable != null && pageable.isPaged() ? Math.max(0, pageable.getPageNumber()) : 0;
+    int pageSize =
+        pageable != null && pageable.isPaged()
+            ? Math.min(100, Math.max(1, pageable.getPageSize()))
+            : 30;
     if (tenantId == null) {
       return new OrganizationOptionPage(List.of(), pageNumber, pageSize, false);
     }
@@ -180,55 +260,65 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     DataScopeCondition scope = organizationScope();
     Set<String> selectedIds = parseIds(ids);
     if (!selectedIds.isEmpty()) {
-      List<Organization> selected = (scope == null || scope.isAllData()
-          ? organizationRepository.findAllByIdsAndTenantId(selectedIds, tenantId)
-          : super.findAllByIds(selectedIds))
-          .stream()
-          .filter(organization -> !Objects.equals(organization.getId(), normalizedExcludeId))
-          .sorted(organizationComparator())
-          .toList();
+      List<Organization> selected =
+          (scope == null || scope.isAllData()
+                  ? organizationRepository.findAllByIdsAndTenantId(selectedIds, tenantId)
+                  : super.findAllByIds(selectedIds))
+              .stream()
+                  .filter(
+                      organization -> !Objects.equals(organization.getId(), normalizedExcludeId))
+                  .sorted(organizationComparator())
+                  .toList();
       return optionPage(selected, tenantId, pageNumber, pageSize, false);
     }
 
     Pageable optionPageable = PageRequest.of(pageNumber, pageSize);
     String normalizedKeyword = trimToNull(keyword);
     Slice<Organization> organizations;
-    boolean protectedSearch = normalizedKeyword != null
-        && (!QueryCapabilities.readable(Organization.class, "name")
-            || !QueryCapabilities.readable(Organization.class, "code"));
+    boolean protectedSearch =
+        normalizedKeyword != null
+            && (!QueryCapabilities.readable(Organization.class, "name")
+                || !QueryCapabilities.readable(Organization.class, "code"));
     if ((scope != null && !scope.isAllData()) || protectedSearch) {
-      organizations = scopedReadQuery.options(tenantId, normalizedKeyword, trimToNull(parentId),
-          normalizedExcludeId, flat, optionPageable, scope);
+      organizations =
+          scopedReadQuery.options(
+              tenantId,
+              normalizedKeyword,
+              trimToNull(parentId),
+              normalizedExcludeId,
+              flat,
+              optionPageable,
+              scope);
     } else if (normalizedKeyword != null) {
-      String foldedKeyword = normalizedKeyword.substring(0, Math.min(normalizedKeyword.length(), 128))
-          .toLowerCase(Locale.ROOT);
-      organizations = organizationRepository.searchOptions(
-          tenantId,
-          foldedKeyword,
-          "%" + foldedKeyword + "%",
-          normalizedExcludeId,
-          optionPageable
-      );
+      String foldedKeyword =
+          normalizedKeyword
+              .substring(0, Math.min(normalizedKeyword.length(), 128))
+              .toLowerCase(Locale.ROOT);
+      organizations =
+          organizationRepository.searchOptions(
+              tenantId,
+              foldedKeyword,
+              "%" + foldedKeyword + "%",
+              normalizedExcludeId,
+              optionPageable);
     } else if (flat) {
-      organizations = organizationRepository.findFlatOptions(tenantId, normalizedExcludeId, optionPageable);
+      organizations =
+          organizationRepository.findFlatOptions(tenantId, normalizedExcludeId, optionPageable);
     } else {
       String normalizedParentId = trimToNull(parentId);
-      organizations = normalizedParentId == null
-          ? organizationRepository.findRootOptions(tenantId, normalizedExcludeId, optionPageable)
-          : organizationRepository.findChildOptions(
-              tenantId,
-              normalizedParentId,
-              normalizedExcludeId,
-              optionPageable
-          );
+      organizations =
+          normalizedParentId == null
+              ? organizationRepository.findRootOptions(
+                  tenantId, normalizedExcludeId, optionPageable)
+              : organizationRepository.findChildOptions(
+                  tenantId, normalizedParentId, normalizedExcludeId, optionPageable);
     }
     return optionPage(
         organizations.getContent(),
         tenantId,
         organizations.getNumber(),
         organizations.getSize(),
-        organizations.hasNext()
-    );
+        organizations.hasNext());
   }
 
   @Override
@@ -238,6 +328,8 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     normalizeEntity(entity);
     validateUniqueCode(tenantId, entity.getCode(), null);
     validateParent(tenantId, entity.getParentId(), null);
+    if (!org.simplepoint.core.jackson.FieldPermissionPolicy.writable(Organization.class, "leaderId")) entity.setLeaderId(null);
+    if (entity.getLeaderId() != null) leaders.validate(tenantId, entity.getLeaderId());
     entity.setTenantId(tenantId);
     if (entity.getEnabled() == null) {
       entity.setEnabled(true);
@@ -257,8 +349,14 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   @Transactional(rollbackFor = Exception.class)
   public <S extends Organization> Organization modifyById(S entity) {
     String tenantId = currentTenantId(true);
-    Organization current = organizationRepository.findByIdAndTenantId(requireId(entity.getId()), tenantId)
-        .orElseThrow(() -> new IllegalArgumentException("组织机构不存在"));
+    Organization current =
+        organizationRepository
+            .findByIdAndTenantId(requireId(entity.getId()), tenantId)
+            .orElseThrow(() -> new IllegalArgumentException("组织机构不存在"));
+    assertAccessible(current);
+    if (!entity.hasLeaderIdInput() || !org.simplepoint.core.jackson.FieldPermissionPolicy.writable(Organization.class, "leaderId"))
+      entity.setLeaderId(current.getLeaderId());
+    if (!Objects.equals(entity.getLeaderId(), current.getLeaderId())) leaders.validate(tenantId, entity.getLeaderId());
     normalizeEntity(entity);
     validateUniqueCode(tenantId, entity.getCode(), current.getId());
     validateParent(tenantId, entity.getParentId(), current.getId());
@@ -290,11 +388,13 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       return;
     }
     String tenantId = currentTenantId(true);
-    Collection<Organization> organizations = organizationRepository.findAllByIdsAndTenantId(normalizedIds, tenantId);
+    Collection<Organization> organizations =
+        organizationRepository.findAllByIdsAndTenantId(normalizedIds, tenantId);
     if (organizations.size() != normalizedIds.size()) {
       throw new IllegalArgumentException("存在无权操作的组织机构或组织机构不存在");
     }
-    Set<String> childIds = new LinkedHashSet<>(organizationRepository.findIdsByParentIds(normalizedIds, tenantId));
+    Set<String> childIds =
+        new LinkedHashSet<>(organizationRepository.findIdsByParentIds(normalizedIds, tenantId));
     childIds.removeAll(normalizedIds);
     if (!childIds.isEmpty()) {
       throw new IllegalArgumentException("请先删除子组织机构后再删除当前组织");
@@ -308,37 +408,40 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       String tenantId,
       int pageNumber,
       int pageSize,
-      boolean hasNext
-  ) {
-    Set<String> organizationIds = organizations.stream()
-        .map(Organization::getId)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+      boolean hasNext) {
+    Set<String> organizationIds =
+        organizations.stream()
+            .map(Organization::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     DataScopeCondition scope = organizationScope();
-    Set<String> parentIds = organizationIds.isEmpty()
-        ? Set.of()
-        : scope == null || scope.isAllData()
-            ? new HashSet<>(organizationRepository.findParentIdsWithChildren(organizationIds, tenantId))
-            : scopedReadQuery.visibleParentsWithChildren(tenantId, organizationIds, scope);
-    List<OrganizationOptionVo> content = organizations.stream()
-        .map(organization -> new OrganizationOptionVo(
-            organization.getId(),
-            organization.getName(),
-            organization.getCode(),
-            organization.getParentId(),
-            organization.getType(),
-            organization.getDescription(),
-            organization.getSort(),
-            !Boolean.FALSE.equals(organization.getEnabled()),
-            parentIds.contains(organization.getId())
-        ))
-        .toList();
+    Set<String> parentIds =
+        organizationIds.isEmpty()
+            ? Set.of()
+            : scope == null || scope.isAllData()
+                ? new HashSet<>(
+                    organizationRepository.findParentIdsWithChildren(organizationIds, tenantId))
+                : scopedReadQuery.visibleParentsWithChildren(tenantId, organizationIds, scope);
+    List<OrganizationOptionVo> content =
+        organizations.stream()
+            .map(
+                organization ->
+                    new OrganizationOptionVo(
+                        organization.getId(),
+                        organization.getName(),
+                        organization.getCode(),
+                        organization.getParentId(),
+                        organization.getType(),
+                        organization.getDescription(),
+                        organization.getSort(),
+                        !Boolean.FALSE.equals(organization.getEnabled()),
+                        parentIds.contains(organization.getId())))
+            .toList();
     return new OrganizationOptionPage(content, pageNumber, pageSize, hasNext);
   }
 
   private static Comparator<Organization> organizationComparator() {
-    return Comparator
-        .comparing(Organization::getSort, Comparator.nullsLast(Integer::compareTo))
+    return Comparator.comparing(Organization::getSort, Comparator.nullsLast(Integer::compareTo))
         .thenComparing(Organization::getName, Comparator.nullsLast(String::compareTo))
         .thenComparing(Organization::getCode, Comparator.nullsLast(String::compareTo))
         .thenComparing(Organization::getId, Comparator.nullsLast(String::compareTo));
@@ -364,10 +467,10 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
 
   private String requireOrganizationType(String type) {
     String normalized = requireText(type, "组织类型不能为空");
-    boolean supported = dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE)
-        .stream()
-        .map(DictionaryOptionVo::value)
-        .anyMatch(normalized::equals);
+    boolean supported =
+        dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE).stream()
+            .map(DictionaryOptionVo::value)
+            .anyMatch(normalized::equals);
     if (!supported) {
       throw new IllegalArgumentException("组织类型无效");
     }
@@ -375,9 +478,10 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
   }
 
   private void validateUniqueCode(String tenantId, String code, String currentId) {
-    boolean exists = currentId == null
-        ? organizationRepository.existsByTenantIdAndCode(tenantId, code)
-        : organizationRepository.existsByTenantIdAndCodeAndIdNot(tenantId, code, currentId);
+    boolean exists =
+        currentId == null
+            ? organizationRepository.existsByTenantIdAndCode(tenantId, code)
+            : organizationRepository.existsByTenantIdAndCodeAndIdNot(tenantId, code, currentId);
     if (exists) {
       throw new IllegalArgumentException("当前租户下组织编码已存在");
     }
@@ -391,8 +495,10 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     if (Objects.equals(currentId, normalizedParentId)) {
       throw new IllegalArgumentException("上级组织不能选择自己");
     }
-    Organization parent = organizationRepository.findByIdAndTenantId(normalizedParentId, tenantId)
-        .orElseThrow(() -> new IllegalArgumentException("上级组织不存在"));
+    Organization parent =
+        organizationRepository
+            .findByIdAndTenantId(normalizedParentId, tenantId)
+            .orElseThrow(() -> new IllegalArgumentException("上级组织不存在"));
     if (isDataScopeApplicable() && super.findById(normalizedParentId).isEmpty()) {
       throw new org.springframework.security.access.AccessDeniedException("上级组织不在当前数据范围内");
     }
@@ -406,14 +512,19 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
       if (!visited.add(cursor)) {
         throw new IllegalArgumentException("组织层级数据异常，请检查上级组织配置");
       }
-      Organization current = organizationRepository.findByIdAndTenantId(cursor, tenantId)
-          .orElseThrow(() -> new IllegalArgumentException("组织层级数据异常，请检查上级组织配置"));
+      Organization current =
+          organizationRepository
+              .findByIdAndTenantId(cursor, tenantId)
+              .orElseThrow(() -> new IllegalArgumentException("组织层级数据异常，请检查上级组织配置"));
       cursor = trimToNull(current.getParentId());
     }
   }
 
   private String currentTenantId(boolean required) {
-    String tenantId = getAuthorizationContext() == null ? null : trimToNull(getAuthorizationContext().getAttribute("X-Tenant-Id"));
+    String tenantId =
+        getAuthorizationContext() == null
+            ? null
+            : trimToNull(getAuthorizationContext().getAttribute("X-Tenant-Id"));
     if (required && tenantId == null) {
       throw new IllegalArgumentException("请先选择租户");
     }
@@ -453,5 +564,4 @@ public class OrganizationServiceImpl extends BaseServiceImpl<OrganizationReposit
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
   }
-
 }

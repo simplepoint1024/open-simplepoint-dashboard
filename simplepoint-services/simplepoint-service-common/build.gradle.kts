@@ -47,6 +47,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-common-ui"))
     implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
     implementation(project(":simplepoint-core"))
     implementation(libs.swagger.annotations)
@@ -73,44 +74,26 @@ dependencies {
     implementation(project(":simplepoint-service-router:simplepoint-service-router-consul"))
     implementation(project(":simplepoint-data:simplepoint-data-json:simplepoint-data-json-schema"))
 
-    // 引入RBAC权限体系核心插件
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation"))
-    // 引入RBAC权限体路由插件
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation"))
+    // 可选浏览器适配器复用身份、租户、资源授权的统一领域组合。
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-http"))
+
     // 引入OIDC体系插件
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest"))
 
     // 引入国际化多语言插件
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-rest"))
-
-    // 引入租户管理插件
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation"))
 
     // 引入对象存储插件
     implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-implementation"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-storage:simplepoint-plugin-storage-http"))
 
     // 系统通知、用户收件箱与主动推送
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-implementation"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-rest"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-api"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-repository"))
-    implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-rest"))
 
     // 引入平台启动编排
     implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap-registry"))
 
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-monitor"))
 
@@ -118,6 +101,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(project(":simplepoint-platform:simplepoint-platform-http-servlet"))
     testImplementation("org.springframework.security:spring-security-oauth2-authorization-server")
     testRuntimeOnly("com.h2database:h2")
 }

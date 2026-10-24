@@ -1,0 +1,189 @@
+{
+  "verifiedAt": "2026-10-24T11:47:50.326163+00:00",
+  "scope": [
+    "Application, page, form-field and generated resource localization",
+    "Mount application under an available tenant directory",
+    "Nested application directories and stable page placement"
+  ],
+  "backend": {
+    "rootTest": "BUILD SUCCESSFUL",
+    "followUp": "Full app implementation and HTTP test suites passed after MVC-binding and detail-evolution fixes",
+    "reportTotals": {
+      "tests": 5105,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 142
+    },
+    "skipNote": "Existing environment-dependent tests remain skipped; real deployment scenarios listed separately."
+  },
+  "frontend": {
+    "workspaceTypecheck": "all 8 workspaces passed",
+    "targetedTests": 50,
+    "i18nAudit": "passed",
+    "uiAudit": {
+      "files": 166,
+      "reviewedNativeControls": 39,
+      "unreviewed": 0
+    }
+  },
+  "migrations": {
+    "app-form": "V2__application_navigation.sql",
+    "identity": "V19__managed_navigation.sql",
+    "restoredDatabaseRehearsal": {
+      "identityColumns": 3,
+      "appColumns": 4,
+      "pageColumns": 1,
+      "migrationAndRepeatVerified": true
+    },
+    "productionVerified": true
+  },
+  "images": [
+    {
+      "service": "standalone",
+      "image": "simplepoint-standalone:20261024-app-navigation-r4",
+      "imageId": "sha256:06c341bb1485fcfe66267c243eec59a3e7eec57f978af0ffd517d7816db89e12",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "common",
+      "image": "simplepoint203/common:20261024-app-navigation-r2",
+      "imageId": "sha256:fb11f72336af72487f3abeeb642fdeab31db19d7ad803749fd5f6fafd9798bff",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "authorization",
+      "image": "simplepoint203/authorization:20261024-app-navigation-r2",
+      "imageId": "sha256:8d05d85c667ebe92e770f9977f38bb472a800873d251e9a993b8ea3ec2da7e2e",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "host",
+      "image": "simplepoint203/host:20261024-app-navigation-r2",
+      "imageId": "sha256:325df8362656c89b5374c81093e08ec4653e3d9a389b9846e953f4de342f71c9",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "app",
+      "image": "simplepoint203/app:20261024-app-navigation-r4",
+      "imageId": "sha256:688c94543267a52edc4eac61a4d0444216f00248e368d7f72a71bda9be67b39a",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "dna",
+      "image": "simplepoint203/dna:20261024-app-navigation-r2",
+      "imageId": "sha256:f396928cef56610a109c05bdc441f968850320d8d000e05d7b3d59ffe57c0602",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "workflow",
+      "image": "simplepoint203/workflow:20261024-app-navigation-r2",
+      "imageId": "sha256:459dc22f313d7d0a88d2bc31a4732052028fa278e37b429495df563a1becd843",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "ai",
+      "image": "simplepoint203/ai:20261024-app-navigation-r2",
+      "imageId": "sha256:d37abfbdc39bad686338a7dbab05e0c2b95ab29379c67f9d016b1c9402580b73",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "auditing",
+      "image": "simplepoint203/auditing:20261024-app-navigation-r2",
+      "imageId": "sha256:5adf945313abc41c02329c61163c6f6d43bee26ad2091527cb322ca94e3dd9bc",
+      "completeManifestVerified": true
+    },
+    {
+      "service": "mcp-gateway",
+      "image": "simplepoint203/mcp-gateway:20261024-app-navigation-r2",
+      "imageId": "sha256:a8cb6da0f44ee9ee0ee39232aa47c2707783ea436a0478f2988fbdbaf79e2ef4",
+      "completeManifestVerified": true
+    }
+  ],
+  "environments": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T11:41:18.142Z",
+      "checks": [
+        "Tenant mount plus two internal directory levels applied; exact replay is idempotent; cyclic graph rejected atomically",
+        "Unavailable remote parent retains durable pending intent; fenced cancellation preserves the active layout",
+        "Ordinary/computed/detail/choice translations survive draft, immutable version and real publication; mismatched default rejected",
+        "Generated field-permission catalog retains published labels and stable field identities",
+        "Runtime, record schema and generated menu expose scoped translations on stable identities",
+        "Other workspace and ordinary employee cannot manage application navigation",
+        "Create/read/edit with owned detail rows preserves formula results after localized publication",
+        "Temporary acceptance record removed through owning record API"
+      ],
+      "browser": [
+        "Application name multilingual drawer and two-level internal directory configuration render through platform controls",
+        "Designer field properties expose the shared multilingual editor with published English/Japanese translations",
+        "Read-only published detail displays translated ordinary/computed/detail labels and bounded horizontal detail scrolling",
+        "Published list titles switch Chinese/English/Japanese and restore after browser reload without changing route identity"
+      ],
+      "navigationWrite": [
+        "Directory name edited through shared form; one aggregate command per save; original name restored"
+      ],
+      "assets": {
+        "federationVerified": true,
+        "hostJsCssFiles": 350
+      }
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T11:41:38.439Z",
+      "checks": [
+        "Generated field-permission catalog retains published labels and stable field identities",
+        "Runtime, record schema and generated menu expose scoped translations on stable identities",
+        "Other workspace and ordinary employee cannot manage application navigation",
+        "Create/read/edit with owned detail rows preserves formula results after localized publication",
+        "Temporary acceptance record removed through owning record API"
+      ],
+      "browser": [
+        "Application name multilingual drawer and two-level internal directory configuration render through platform controls",
+        "Designer field properties expose the shared multilingual editor with published English/Japanese translations",
+        "Read-only published detail displays translated ordinary/computed/detail labels and bounded horizontal detail scrolling",
+        "Published list titles switch Chinese/English/Japanese and restore after browser reload without changing route identity"
+      ],
+      "navigationWrite": [
+        "Directory name edited through shared form; one aggregate command per save; original name restored"
+      ],
+      "assets": {
+        "federationVerified": true,
+        "hostJsCssFiles": 350
+      }
+    }
+  ],
+  "finalState": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "navigationRevision": 6,
+      "pending": false,
+      "formVersion": 2,
+      "directorySearchResolved": true,
+      "staleWriteRejected": true
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "navigationRevision": 6,
+      "pending": false,
+      "formVersion": 2,
+      "directorySearchResolved": true,
+      "staleWriteRejected": true
+    }
+  ],
+  "regressionsFixed": [
+    "Explicit HTTP path/query argument names are tested without compiler parameter retention.",
+    "Presentation-only changes to owned detail labels and choice labels can publish without weakening storage/behavior compatibility checks."
+  ],
+  "fixture": {
+    "application": "Existing calculation-engine acceptance application",
+    "publishedFormVersion": 2,
+    "temporaryRecords": "Created/read/edited and removed through owning API on both origins",
+    "temporaryDirectoryNames": "Restored through UI save on each origin",
+    "existingBusinessApplication": "Human-resources application unchanged"
+  },
+  "limits": [
+    "Missing authored translations fall back to the default label; no automatic machine translation.",
+    "Internal directories: 99; internal depth: 7; pages per complete navigation snapshot: 500.",
+    "Pending navigation synchronization is durably retryable/cancellable from the owning editor."
+  ]
+}

@@ -8,9 +8,7 @@ import lombok.Data;
 import org.simplepoint.platform.bootstrap.BootstrapContribution;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * Platform bootstrap configuration properties.
- */
+/** Platform bootstrap configuration properties. */
 @Data
 @ConfigurationProperties(prefix = "simplepoint.platform.bootstrap")
 public class PlatformBootstrapProperties {
@@ -20,6 +18,14 @@ public class PlatformBootstrapProperties {
   private boolean failFast = true;
 
   private Set<String> services = new HashSet<>(Set.of("common"));
+
+  /** Optional module allowlist; empty means every selected module, independent of host names. */
+  private Set<String> modules = new HashSet<>();
+
+  /** Returns whether an explicitly selected module may apply its bootstrap contributions. */
+  public boolean isModuleEnabled(String moduleId) {
+    return modules == null || modules.isEmpty() || modules.contains(moduleId);
+  }
 
   private Map<String, BootstrapContributionSettings> contributions = new HashMap<>();
 
@@ -53,7 +59,10 @@ public class PlatformBootstrapProperties {
       return settings;
     }
     return contributions.get(
-        contribution.moduleCode() + ":" + contribution.contributionType() + ":" + contribution.contributionKey()
-    );
+        contribution.moduleCode()
+            + ":"
+            + contribution.contributionType()
+            + ":"
+            + contribution.contributionKey());
   }
 }

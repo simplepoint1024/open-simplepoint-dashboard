@@ -1,0 +1,890 @@
+{
+  "date": "2026-10-22",
+  "verifiedAt": "2026-10-22T02:48:55.349641+00:00",
+  "productionDomain": "https://single.simplepoint.online:8000",
+  "originalEntry": "https://home.simplepoint.online:8000",
+  "singleJvm": true,
+  "modules": 35,
+  "database": "original simplepoint database",
+  "sharedInfrastructure": [
+    "PostgreSQL",
+    "Redis database 0",
+    "RabbitMQ /simplepoint",
+    "MinIO original bucket",
+    "Consul",
+    "original signing and encryption keys",
+    "persistent original JDBC drivers"
+  ],
+  "migration": {
+    "tables": 178,
+    "rows": 31983,
+    "changedExistingData": []
+  },
+  "backup": {
+    "sha256": "24345cd967b866b535a76fd870d95f1c4b964296f5005c135489a7bb3483bd9f",
+    "bytes": 7513157,
+    "frozenWriters": true,
+    "archiveReadable": true
+  },
+  "runtime": {
+    "at": "2026-10-22T02:48:55.097846+00:00",
+    "services": [
+      {
+        "service": "standalone",
+        "container": "simplepoint-single",
+        "image": "simplepoint-standalone:20261022-production-r2",
+        "imageId": "sha256:bb578f9e852da2310a86eacc5b54a2f0fce381eebc88aa97b2000e546de009d1",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-implementation.jar",
+            "sha256": "3150b94b4395cbfd785d215ac013ebc50557d91b8665b3f2e3790dec474056cf"
+          },
+          {
+            "jar": "simplepoint-plugin-rbac-tenant-implementation.jar",
+            "sha256": "b48ebb1c7717d6de9d304c6bfa10d962e4a57c0c2e5be7305ecef55bc1f27e19"
+          }
+        ]
+      },
+      {
+        "service": "authorization",
+        "container": "simplepoint203-authorization-1",
+        "image": "simplepoint203/authorization:20261022-production-r2",
+        "imageId": "sha256:8dbd9192951a3dce48779f64b96ec6be05819bc65a6eba25c8b7d25b8586877c",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          },
+          {
+            "jar": "simplepoint-plugin-rbac-tenant-implementation.jar",
+            "sha256": "b48ebb1c7717d6de9d304c6bfa10d962e4a57c0c2e5be7305ecef55bc1f27e19"
+          }
+        ]
+      },
+      {
+        "service": "common",
+        "container": "simplepoint203-common-1",
+        "image": "simplepoint203/common:20261022-production-r2",
+        "imageId": "sha256:e93f3ead2f94e399ba42072d15af89bafdf5e16f372deb96522973f8fa34d796",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          },
+          {
+            "jar": "simplepoint-plugin-rbac-tenant-implementation.jar",
+            "sha256": "b48ebb1c7717d6de9d304c6bfa10d962e4a57c0c2e5be7305ecef55bc1f27e19"
+          }
+        ]
+      },
+      {
+        "service": "auditing",
+        "container": "simplepoint203-auditing-1",
+        "image": "simplepoint203/auditing:20261022-production-r2",
+        "imageId": "sha256:85023293e55eabad662a71959e5d60384b425fc6eaf6af915759cb9075416f12",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-implementation.jar",
+            "sha256": "3150b94b4395cbfd785d215ac013ebc50557d91b8665b3f2e3790dec474056cf"
+          }
+        ]
+      },
+      {
+        "service": "dna",
+        "container": "simplepoint203-dna-1",
+        "image": "simplepoint203/dna:20261022-production-r2",
+        "imageId": "sha256:8db0884dd38e4c13af1d8d75614bee87e7ea43a772ec74b277b90a2f41df351c",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          },
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          }
+        ]
+      },
+      {
+        "service": "app",
+        "container": "simplepoint203-app-1",
+        "image": "simplepoint203/app:20261022-production-r2",
+        "imageId": "sha256:ac9526202ce52ce869e0788478c476fe80b35074d73ac20b2d82b3da0e00a24a",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          }
+        ]
+      },
+      {
+        "service": "workflow",
+        "container": "simplepoint203-workflow-1",
+        "image": "simplepoint203/workflow:20261022-production-r2",
+        "imageId": "sha256:a8d36f655527246a04d932950c22b6c52452d844dd0950eb06672283269ab168",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-events-jdbc.jar",
+            "sha256": "63583296dd1d291985fca281a9580114b4c667dc5ed0a1fd2f1bade752f233ee"
+          }
+        ]
+      },
+      {
+        "service": "ai",
+        "container": "simplepoint203-ai-1",
+        "image": "simplepoint203/ai:20261022-production-r2",
+        "imageId": "sha256:5a4ac09e9dd028e999e5528ae97a962adc8a7f303eeac1c6fc56342101fb59ac",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          }
+        ]
+      },
+      {
+        "service": "mcp-gateway",
+        "container": "simplepoint203-mcp-gateway-1",
+        "image": "simplepoint203/mcp-gateway:20261022-production-r2",
+        "imageId": "sha256:e0e620cb2fa9b203764d6e4ed8c2d29860694a2fd3d8d5822c8a1a8cdb36227f",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": []
+      },
+      {
+        "service": "host",
+        "container": "simplepoint203-host-1",
+        "image": "simplepoint203/host:20261022-production-r2",
+        "imageId": "sha256:6932fbcca2e08aeea97adaac49220ac958a7ac5b3c66d9c780e864f52059a5e6",
+        "health": "healthy",
+        "restartPolicy": "unless-stopped",
+        "changedLibraries": [
+          {
+            "jar": "simplepoint-plugin-auditing-logging-api.jar",
+            "sha256": "d7d50832cf1332fe799874f02cbede3f14e988443eea082ff2aa1f3a194e70fc"
+          }
+        ]
+      }
+    ],
+    "queues": [
+      {
+        "name": "sp.events.auditing.credential-audit",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.common.resource-offline.grants",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.dna.resource-offline.projection",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.auditing.login-audit",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.workflow.member-labels.refresh",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.app.resource-offline.common",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      },
+      {
+        "name": "sp.events.app.resource-offline.dna",
+        "messages_unacknowledged": 0,
+        "consumers": 2,
+        "messages_ready": 0
+      }
+    ],
+    "ledger": [
+      {
+        "owner": "app",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 94
+      },
+      {
+        "owner": "app",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 47
+      },
+      {
+        "owner": "auditing",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 29
+      },
+      {
+        "owner": "authorization",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 29
+      },
+      {
+        "owner": "common",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 47
+      },
+      {
+        "owner": "common",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 72
+      },
+      {
+        "owner": "dna",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 47
+      },
+      {
+        "owner": "dna",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 47
+      },
+      {
+        "owner": "workflow",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 25
+      }
+    ],
+    "quarantine": 0
+  },
+  "consul": {
+    "date": "2026-10-22",
+    "service": "simplepoint-standalone",
+    "instance": "simplepoint-standalone-production",
+    "registration": "application-owned automatic registration",
+    "directReadiness": "UP",
+    "agentHealth": "passing",
+    "serviceHealth": "passing",
+    "checkStatuses": [
+      "passing",
+      "passing"
+    ],
+    "legacyRegistrationsUnchanged": 9,
+    "configKeysUnchanged": 20,
+    "dedicatedTokenAdminAccessStatus": 403,
+    "deployment": "shared-production",
+    "productionDomainSwitched": true
+  },
+  "registration": {
+    "at": "2026-10-22T02:33:55.443Z",
+    "checks": [
+      {
+        "name": "registration and first login creates personal workspace",
+        "passed": true
+      },
+      {
+        "path": "/common/tenants/current",
+        "status": 200
+      },
+      {
+        "path": "/userinfo",
+        "status": 200
+      },
+      {
+        "name": "second login retains same personal workspace",
+        "passed": true
+      }
+    ]
+  },
+  "businessValidation": {
+    "officeFlowCases": [
+      {
+        "form": "office_meeting_room",
+        "status": "COMPLETED"
+      },
+      {
+        "form": "office_daily_report",
+        "status": "COMPLETED"
+      },
+      {
+        "form": "office_expense_claim",
+        "status": "COMPLETED"
+      },
+      {
+        "form": "office_expense_claim",
+        "status": "COMPLETED"
+      },
+      {
+        "form": "office_expense_claim",
+        "status": "REJECTED"
+      },
+      {
+        "form": "office_expense_claim",
+        "status": "COMPLETED"
+      }
+    ],
+    "officeChecks": [
+      {
+        "name": "meeting end must follow start",
+        "at": "2026-10-22T02:04:41.236Z"
+      },
+      {
+        "name": "daily report requires detail rows",
+        "at": "2026-10-22T02:04:41.273Z"
+      },
+      {
+        "name": "daily hours must equal exact detail sum",
+        "at": "2026-10-22T02:04:41.314Z"
+      },
+      {
+        "name": "expense cannot tamper with routing amount",
+        "at": "2026-10-22T02:04:41.364Z"
+      },
+      {
+        "name": "expense requires attachments",
+        "at": "2026-10-22T02:04:41.405Z"
+      },
+      {
+        "name": "expense rejects forged storage reference",
+        "at": "2026-10-22T02:04:41.451Z"
+      },
+      {
+        "name": "meeting: employee → administration → completed, immutable record",
+        "at": "2026-10-22T02:05:05.114Z"
+      },
+      {
+        "name": "daily: parent + two detail rows → manager → completed",
+        "at": "2026-10-22T02:05:27.954Z"
+      },
+      {
+        "name": "expense <= 5000: manager → finance, attachment bytes verified",
+        "at": "2026-10-22T02:05:50.519Z"
+      },
+      {
+        "name": "expense > 5000: manager → director → finance, exact amount routing",
+        "at": "2026-10-22T02:06:13.362Z"
+      },
+      {
+        "name": "rejection → linked new revision → completed; original business evidence preserved",
+        "at": "2026-10-22T02:07:00.752Z"
+      },
+      {
+        "name": "administration cannot access financial form; applicant cannot approve any stage",
+        "at": "2026-10-22T02:07:00.771Z"
+      }
+    ],
+    "calculationChecks": [
+      "detail-edit",
+      "detail-add",
+      "root-recalculates-all-owned-rows",
+      "detail-remove",
+      "draft-may-clear-detail-and-recalculate-empty-sum",
+      "detail-readd-after-clear",
+      "submission-requires-detail-rows",
+      "invalid-submission-range-rolls-back-child-calculations",
+      "invalid-child-type-rolls-back-aggregate",
+      "computed-child-value-cannot-be-forged",
+      "concurrent-partial-edits-have-one-winner-and-no-lost-owned-rows",
+      "same-idempotency-key-with-changed-body-is-rejected",
+      "aggregate-delete-and-retry-remove-the-parent-and-owned-detail-projection"
+    ],
+    "coldStartChecks": [
+      {
+        "page": "差旅及费用报销验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "差旅及费用报销验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "差旅及费用报销验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "query",
+        "status": 200
+      }
+    ],
+    "finalPageChecks": [
+      {
+        "page": "差旅及费用报销验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "差旅及费用报销验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "差旅及费用报销验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "项目工作日报验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "项目交付验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "采购与资产领用验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "公式与发布运维验收台账",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "发布恢复与权限验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "组件交付验收",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "会议室申请",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "日报填写",
+        "check": "query",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "runtime",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "schema",
+        "status": 200
+      },
+      {
+        "page": "财务报销",
+        "check": "query",
+        "status": 200
+      }
+    ],
+    "restart": {
+      "passed": true,
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_daily_report",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "status": "REJECTED"
+        },
+        {
+          "code": "office_expense_claim",
+          "status": "COMPLETED"
+        }
+      ],
+      "at": "2026-10-22T02:33:53.403Z"
+    },
+    "sameRecordsOnMicroservices": {
+      "at": "2026-10-22T02:48:19.687Z",
+      "checks": [
+        {
+          "case": "office_meeting_room",
+          "sharedRecordVisible": true
+        },
+        {
+          "case": "office_daily_report",
+          "sharedRecordVisible": true
+        },
+        {
+          "case": "office_expense_claim",
+          "sharedRecordVisible": true
+        },
+        {
+          "case": "office_expense_claim",
+          "sharedRecordVisible": true
+        },
+        {
+          "case": "office_expense_claim",
+          "sharedRecordVisible": true
+        },
+        {
+          "case": "office_expense_claim",
+          "sharedRecordVisible": true
+        }
+      ]
+    },
+    "newAttachmentUploadAndByteVerification": {
+      "passed": true,
+      "sha256": "4a6e757ca79ab7002ab43c442dc7dabee52bc0af9abbb4504be0bdbbe3b2ef27"
+    },
+    "browser": {
+      "single": {
+        "routes": 4,
+        "javascriptErrors": 0,
+        "httpFailures": 0
+      },
+      "microservices": {
+        "routes": 4,
+        "javascriptErrors": 0,
+        "httpFailures": 0
+      }
+    },
+    "assets": [
+      {
+        "module": "common",
+        "declaredAssets": 103
+      },
+      {
+        "module": "audit",
+        "declaredAssets": 45
+      },
+      {
+        "module": "dna",
+        "declaredAssets": 76
+      },
+      {
+        "module": "ai",
+        "declaredAssets": 49
+      },
+      {
+        "module": "app",
+        "declaredAssets": 54
+      },
+      {
+        "module": "workflow",
+        "declaredAssets": 54
+      }
+    ]
+  },
+  "auditRecovery": {
+    "backlog": 18,
+    "done": 18,
+    "matchingAuditRecords": 18,
+    "recovery": "normal scheduled retry; no ledger reset or event deletion"
+  },
+  "regressions": {
+    "auditAndEvents": [
+      {
+        "module": "simplepoint-events-jdbc",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-auditing-logging-api",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugin-auditing-logging-implementation",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "ownerConditionalTests": 3,
+    "checkstyle": "passed",
+    "allTenInstallDistributions": "passed with frontend verification enabled"
+  },
+  "knownBoundaries": [
+    "TLS reuses existing private CA and wildcard certificate; clients must trust the same CA as home. HTTP verification used CA validation; browser harness pins the certificate public key.",
+    "No production broker outage was injected. Normal production delivery, pending audit recovery and restart were checked; broker failure scenarios remain backed by prior isolated rehearsal.",
+    "This is functional deployment acceptance, not a concurrent capacity, disaster recovery or all external AI/MCP provider certification.",
+    "Shared mechanical-disk contention during image builds caused one slow cold start and a 30-second first-query timeout; builds were serialized and final UI acceptance rerun after builds. This deployment has no concurrency/capacity guarantee.",
+    "General installer CLI recovery for uncertain RUNNING operations remains a separate unfinished architecture item. No uncertain installation operation was bypassed for this deployment."
+  ],
+  "privateEvidenceDirectory": ".simplepoint/single/formal-20261022",
+  "sourceCommitted": false
+}

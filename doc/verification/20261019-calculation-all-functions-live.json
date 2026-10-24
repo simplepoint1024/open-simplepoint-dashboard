@@ -1,0 +1,1792 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T04:32:58.791923+00:00",
+  "scope": "63 individually configured and published function cases, actual standard UI create/edit, authoritative persistence, real approvals and frozen history",
+  "unit": {
+    "suite": "org.simplepoint.calculation.StandardFunctionsTest",
+    "tests": 65,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "reportSha256": "8363602a77ba5278343e55515bf8b3499f193e6381f0b1656525f30050c05af6",
+    "coversEveryRegisteredFunctionArity": true
+  },
+  "sources": {
+    "simplepoint-calculation/src/test/resources/function-acceptance.tsv": "688b7ac9fdd59136d11210b7f07a59b041f0313acab506211f398176a14b5e87",
+    "simplepoint-calculation/src/test/java/org/simplepoint/calculation/StandardFunctionsTest.java": "3c78ee639d4a1ed61fc82e2ccb3cc348bdc40c9de218afe6d5fc5a5eea14c958",
+    "scripts/business/calculation-acceptance/browser-functions.mjs": "d5de54da55c5745baff59dee856c21f6b0c28e5ac48f64fa15246228174201df",
+    "scripts/business/calculation-acceptance/verify-workflows.mjs": "9d0294e08004586322949a7c81be9b659c3e61581b9ec91195fc2c0ac3a1865d"
+  },
+  "privateArtifacts": {
+    "browser-functions.json": "5e7ec89a915254eedf310eab4749d86a881ca6a98a3ac4111b793fd9ac84a74e",
+    "function-workflows.json": "5c104009c371f8b9bf2b3b47415aca59884607cf74117d17ed3680fe4674e761"
+  },
+  "functions": {
+    "IF": {
+      "passed": true,
+      "ui": {
+        "recordId": "a8b2d9b3-e5c6-5f51-a050-c9c14cd26ded",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "yes",
+        "editedActual": "yes",
+        "creationWindow": [
+          1792383922548,
+          1792383923214
+        ],
+        "editWindow": [
+          1792383923483,
+          1792383924214
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "1a48c107825b8bd13a9e4a23b4d263621c51fe58f514e859e7cf55eec61ffeae",
+        "processInstanceId": "d2312daf-cb70-11f1-b1c6-ca62369a9387",
+        "status": "COMPLETED",
+        "snapshotActual": "yes",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "IFERROR": {
+      "passed": true,
+      "ui": {
+        "recordId": "18fee5a6-5829-5b5c-8858-4eff218f9c4e",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "fallback",
+        "editedActual": "fallback",
+        "creationWindow": [
+          1792384003155,
+          1792384003725
+        ],
+        "editWindow": [
+          1792384004027,
+          1792384004707
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "3f343053dfcc8e862e8cdc799637def6bf73d33b9de1b4896d81a95591005fe9",
+        "processInstanceId": "e1171cf0-cb70-11f1-b1c6-ca62369a9387",
+        "status": "COMPLETED",
+        "snapshotActual": "fallback",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "AND": {
+      "passed": true,
+      "ui": {
+        "recordId": "8f94152e-1716-5458-bb7a-1491d2b93620",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "FALSE",
+        "editedActual": "FALSE",
+        "creationWindow": [
+          1792384005508,
+          1792384006053
+        ],
+        "editWindow": [
+          1792384006330,
+          1792384006977
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "b043089676dbe41bf6ae8b41b587eda3afafeef84ad15be1e020ad6a7fd3c88c",
+        "processInstanceId": "f0252da1-cb70-11f1-b1c6-ca62369a9387",
+        "status": "COMPLETED",
+        "snapshotActual": "FALSE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "OR": {
+      "passed": true,
+      "ui": {
+        "recordId": "9cae27e5-cf76-5f1c-99f2-eeb8a002d40f",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "TRUE",
+        "editedActual": "TRUE",
+        "creationWindow": [
+          1792384007742,
+          1792384008267
+        ],
+        "editWindow": [
+          1792384008519,
+          1792384009007
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "bd6325b94dc2c6efb7d84664e402e61b03152aa14251ad17a8ff719ba6f84d28",
+        "processInstanceId": "fed91062-cb70-11f1-b1c6-ca62369a9387",
+        "status": "COMPLETED",
+        "snapshotActual": "TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "NOT": {
+      "passed": true,
+      "ui": {
+        "recordId": "b1aca63c-74b6-5ffa-b2e1-478173d5402a",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "TRUE",
+        "editedActual": "TRUE",
+        "creationWindow": [
+          1792384009814,
+          1792384010426
+        ],
+        "editWindow": [
+          1792384010686,
+          1792384011140
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "ada7216e8ec31fecdc56b553c42c2e91a6bd6f9e09bd49c5cbb1e35e63485564",
+        "processInstanceId": "94c7903b-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ISBLANK": {
+      "passed": true,
+      "ui": {
+        "recordId": "e7f7a6a0-dd31-5fe0-a1cc-e6cf2a49d7fe",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "TRUE",
+        "editedActual": "TRUE",
+        "creationWindow": [
+          1792384011951,
+          1792384012608
+        ],
+        "editWindow": [
+          1792384012970,
+          1792384013729
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "9db982cbcd9fc70bdd2c7ec3bbefdd0d2cfe3854c45b09af484f21a9522e1ecc",
+        "processInstanceId": "94902c75-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ISNUMBER": {
+      "passed": true,
+      "ui": {
+        "recordId": "c9e41faa-c8d5-5ece-ad2b-1f2559c4e555",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "FALSE",
+        "editedActual": "FALSE",
+        "creationWindow": [
+          1792384014761,
+          1792384015394
+        ],
+        "editWindow": [
+          1792384015625,
+          1792384016167
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "546793d22fc8137c91c624a1ede3cf96de7601431f50f061b2d5814f08ca7b39",
+        "processInstanceId": "94a7fa40-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "FALSE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ISTEXT": {
+      "passed": true,
+      "ui": {
+        "recordId": "e0f039ec-3bb4-5906-84bd-9f990d1a7988",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "TRUE",
+        "editedActual": "TRUE",
+        "creationWindow": [
+          1792384016978,
+          1792384017553
+        ],
+        "editWindow": [
+          1792384017818,
+          1792384018293
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "08be48ee8c61a66027e777197b221321436788116d44575a5c8e28e6b7bc9f6b",
+        "processInstanceId": "a30d6ef8-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "COALESCE": {
+      "passed": true,
+      "ui": {
+        "recordId": "48ffb6ac-26f5-5324-ae67-bf77a00769b2",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "available",
+        "editedActual": "available",
+        "creationWindow": [
+          1792384019112,
+          1792384019712
+        ],
+        "editWindow": [
+          1792384019960,
+          1792384020427
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "f8ea617fd8464b7cf205fd348d6f5d5e8af9a6c3199cb84764c4314d4e04024e",
+        "processInstanceId": "a3258ae3-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "available",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SUM": {
+      "passed": true,
+      "ui": {
+        "recordId": "6f414037-ea84-5b07-8f09-1cf53d923449",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "6",
+        "editedActual": "6",
+        "creationWindow": [
+          1792384116150,
+          1792384116767
+        ],
+        "editWindow": [
+          1792384117040,
+          1792384117610
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "c0b30fbae90ef9fb3ae42eba4e3a6c120133d1a9e85dc489580887edb54e0978",
+        "processInstanceId": "a32f27de-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "6",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "AVERAGE": {
+      "passed": true,
+      "ui": {
+        "recordId": "368dcd89-3fdc-5d2b-87cb-503ebfd3c237",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384118453,
+          1792384119070
+        ],
+        "editWindow": [
+          1792384119338,
+          1792384119887
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "1dd1bbc7d3fa6402598d8a4c542481ce6bc2afc3977765116da60666c03dc39e",
+        "processInstanceId": "b21f9e7b-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "MIN": {
+      "passed": true,
+      "ui": {
+        "recordId": "d8b5c96d-1b09-57a5-8e5f-e86f0014b91f",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-2",
+        "editedActual": "-2",
+        "creationWindow": [
+          1792384120780,
+          1792384121353
+        ],
+        "editWindow": [
+          1792384121621,
+          1792384122120
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "e224db21a9e42243c562e2afacc87991f2e561a980c543c5e9a7bdf7d8243e8f",
+        "processInstanceId": "b2459d16-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "MAX": {
+      "passed": true,
+      "ui": {
+        "recordId": "b261b6c8-3cfd-51de-9623-2f560df835ff",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3",
+        "editedActual": "3",
+        "creationWindow": [
+          1792384123003,
+          1792384123551
+        ],
+        "editWindow": [
+          1792384123865,
+          1792384124707
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "d8141e575bacbdcaca3244ce4e87eb2f6f58c5395e9d9d0af7d775f3aeb2932d",
+        "processInstanceId": "b27537a7-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "COUNT": {
+      "passed": true,
+      "ui": {
+        "recordId": "8454c75f-b4cc-5955-9bab-e19fbea3ed0d",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384125746,
+          1792384126588
+        ],
+        "editWindow": [
+          1792384126917,
+          1792384127613
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "b0bbe01c88b62eec4c28ea9b19516b2190820dc445300be602baf7281e93aef3",
+        "processInstanceId": "c0e7f2be-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "COUNTA": {
+      "passed": true,
+      "ui": {
+        "recordId": "c6dc7e03-008f-544a-81e4-6562e41f3dd6",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384128499,
+          1792384129130
+        ],
+        "editWindow": [
+          1792384129389,
+          1792384129881
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "7ac4404c1e77d33a3c74f564c615793c0463ce54e177d1e69d854bda3cb12268",
+        "processInstanceId": "c10fc624-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "PRODUCT": {
+      "passed": true,
+      "ui": {
+        "recordId": "9ed96b56-5c51-5722-94d8-2aedba83e0ff",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3.6",
+        "editedActual": "3.6",
+        "creationWindow": [
+          1792384130745,
+          1792384131312
+        ],
+        "editWindow": [
+          1792384131686,
+          1792384132324
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "e5207669e0d89db4b42bd3342e97a3ddeda123a23242fbf0d902abdc788bb5c9",
+        "processInstanceId": "c1089a29-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3.6",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ABS": {
+      "passed": true,
+      "ui": {
+        "recordId": "f9de3cf4-1ef5-50bb-88f3-503e08f805cf",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1.25",
+        "editedActual": "1.25",
+        "creationWindow": [
+          1792384133261,
+          1792384133834
+        ],
+        "editWindow": [
+          1792384134181,
+          1792384134818
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "dad07ffad382743805d43de32612e2f80ff30c259035d0d1ec74f8b7fe97ee2d",
+        "processInstanceId": "d0f59941-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1.25",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SIGN": {
+      "passed": true,
+      "ui": {
+        "recordId": "db6c7f4b-add8-57bb-92a3-98da1906b0bd",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-1",
+        "editedActual": "-1",
+        "creationWindow": [
+          1792384135634,
+          1792384136514
+        ],
+        "editWindow": [
+          1792384136981,
+          1792384137734
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "0c36e89af107ace5b4f99b77efa3b6ccc407cf3542a599816b1cffe2dd107f5e",
+        "processInstanceId": "d109214c-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "INT": {
+      "passed": true,
+      "ui": {
+        "recordId": "9f11067e-1dd1-5e84-92a7-cf3eb43c6ae9",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-2",
+        "editedActual": "-2",
+        "creationWindow": [
+          1792384138518,
+          1792384139036
+        ],
+        "editWindow": [
+          1792384139305,
+          1792384139753
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "09b900a7481c8e92a7ecb9aa29061263adc2454c9ad62d1623b2bd003e7b92c7",
+        "processInstanceId": "d1216447-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ROUND": {
+      "passed": true,
+      "ui": {
+        "recordId": "8e0e0145-9e6f-5a50-9020-2a6fb1024ea1",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1.24",
+        "editedActual": "1.24",
+        "creationWindow": [
+          1792384140609,
+          1792384141131
+        ],
+        "editWindow": [
+          1792384141440,
+          1792384141893
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "bb2b22b86c104839a4b8a094913340bb90d6435cc4e945cbd3331a6039c71d03",
+        "processInstanceId": "decc1474-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1.24",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ROUNDUP": {
+      "passed": true,
+      "ui": {
+        "recordId": "0c20ed20-b95c-5716-9464-49b72efdd76b",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-1.24",
+        "editedActual": "-1.24",
+        "creationWindow": [
+          1792384142715,
+          1792384143512
+        ],
+        "editWindow": [
+          1792384144120,
+          1792384144571
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "81ff8dbcf18cf9e737778070ac9513201622f5ae46da0162e3fb06111e7de2a6",
+        "processInstanceId": "deef2cdf-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-1.24",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "ROUNDDOWN": {
+      "passed": true,
+      "ui": {
+        "recordId": "4771dfbb-8dea-5a99-befd-f0a97877b24c",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-1.23",
+        "editedActual": "-1.23",
+        "creationWindow": [
+          1792384145442,
+          1792384146002
+        ],
+        "editWindow": [
+          1792384146273,
+          1792384146779
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "bbef40953fdb83be00917088990fad1a58961c0b65230be22c10e1494c5bad15",
+        "processInstanceId": "df0a7d20-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-1.23",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TRUNC": {
+      "passed": true,
+      "ui": {
+        "recordId": "ae4930c8-7eda-5784-b565-b2af248a353c",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "-1",
+        "editedActual": "-1",
+        "creationWindow": [
+          1792384147809,
+          1792384148575
+        ],
+        "editWindow": [
+          1792384149155,
+          1792384149913
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "2d2d43905d005a5a388d688b506e0d92cbe3ab788e1affee599885d84593ab4d",
+        "processInstanceId": "edd01327-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "-1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "MOD": {
+      "passed": true,
+      "ui": {
+        "recordId": "e5df250c-8e74-5a8f-bb0c-978dfa93444c",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1",
+        "editedActual": "1",
+        "creationWindow": [
+          1792384150946,
+          1792384151469
+        ],
+        "editWindow": [
+          1792384151732,
+          1792384152370
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "b93daaf82c16bf439d8d6a607ea5184f9b72d9c737e9aeb543cd1f8c6ab257a0",
+        "processInstanceId": "edd9b022-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "POWER": {
+      "passed": true,
+      "ui": {
+        "recordId": "0cbafab7-88cc-5bda-be38-7041372108cc",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "0.125",
+        "editedActual": "0.125",
+        "creationWindow": [
+          1792384153160,
+          1792384153713
+        ],
+        "editWindow": [
+          1792384153989,
+          1792384154444
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "3247977ea54cb6df6b35d731a2f152c3b1e685d3eaf776ee18d8f750a6d01da9",
+        "processInstanceId": "edecc2fd-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "0.125",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SQRT": {
+      "passed": true,
+      "ui": {
+        "recordId": "db2c2775-6cc0-5c06-90d7-e87ded25114d",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3",
+        "editedActual": "3",
+        "creationWindow": [
+          1792384155293,
+          1792384155908
+        ],
+        "editWindow": [
+          1792384156176,
+          1792384156656
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "9e847f01df65fa5201b94d73138e5bed78c504c9a454cd33fb4f62f4abd178e5",
+        "processInstanceId": "fca81fda-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "PI": {
+      "passed": true,
+      "ui": {
+        "recordId": "fb724fb0-7a0e-5cdc-8189-0b86533cd587",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3.1415926535897932384626433832795028842",
+        "editedActual": "3.1415926535897932384626433832795028842",
+        "creationWindow": [
+          1792384157530,
+          1792384158178
+        ],
+        "editWindow": [
+          1792384158415,
+          1792384158924
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "939c3ad8d304a1b75d69dae86956eaa72cba9d5ba874ebf1460bb8ed72f68c5d",
+        "processInstanceId": "fcee28a6-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3.1415926535897932384626433832795028842",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SIN": {
+      "passed": true,
+      "ui": {
+        "recordId": "5f7ab387-ff6a-56ea-9f16-0b572984b713",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "0",
+        "editedActual": "0",
+        "creationWindow": [
+          1792384159912,
+          1792384160674
+        ],
+        "editWindow": [
+          1792384161001,
+          1792384161674
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "47cef1f5659c0e50b75e5e15acfddd72f913270ff9067b1b52543411a679e1e4",
+        "processInstanceId": "fce8844b-cb73-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "0",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "COS": {
+      "passed": true,
+      "ui": {
+        "recordId": "a891d18c-7545-5da3-8888-68b75ee3819a",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1",
+        "editedActual": "1",
+        "creationWindow": [
+          1792384162583,
+          1792384163210
+        ],
+        "editWindow": [
+          1792384163476,
+          1792384163910
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "2a3152925457550693c8a2728f01060eedea060a9fe03f2ed967e621a468cd74",
+        "processInstanceId": "0b9f2548-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TAN": {
+      "passed": true,
+      "ui": {
+        "recordId": "fa7b3861-35bb-5c9a-a35a-3902eb9258ad",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "0",
+        "editedActual": "0",
+        "creationWindow": [
+          1792384164794,
+          1792384165318
+        ],
+        "editWindow": [
+          1792384165568,
+          1792384166030
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "25553297f0ecb44d2813ce0887d21a77e3b7e149c6ce848f642ab17e1b72c4e3",
+        "processInstanceId": "0b98958d-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "0",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "EXP": {
+      "passed": true,
+      "ui": {
+        "recordId": "9e6a8a8e-58d4-5b5c-84fe-ac4eea4b5162",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1",
+        "editedActual": "1",
+        "creationWindow": [
+          1792384167033,
+          1792384167581
+        ],
+        "editWindow": [
+          1792384167830,
+          1792384168280
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "661eaf17adc35c3f388ac5bfb8ceb57086325107e5fe4e0d33fd09bd00979531",
+        "processInstanceId": "0ba93773-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "LN": {
+      "passed": true,
+      "ui": {
+        "recordId": "d0dcb004-8465-5ffd-8ef5-6503ad358fa5",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "0",
+        "editedActual": "0",
+        "creationWindow": [
+          1792384169143,
+          1792384169651
+        ],
+        "editWindow": [
+          1792384169913,
+          1792384170398
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "8de611a34ea1a12226a44d908292b4835ebda10439cab55d5b51c3ba916f3f17",
+        "processInstanceId": "1a962bab-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "0",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "LOG10": {
+      "passed": true,
+      "ui": {
+        "recordId": "4353d828-b446-5eef-9847-23e32cea59be",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384171234,
+          1792384171842
+        ],
+        "editWindow": [
+          1792384172181,
+          1792384172862
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "77a867307a763decab2fe247c884a35ca6755ffc7b87ef7fbc7375d0c9c7db73",
+        "processInstanceId": "1a90d470-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "VALUE": {
+      "passed": true,
+      "ui": {
+        "recordId": "69956021-20e8-5984-b27a-fdd5d151ebfe",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1.25",
+        "editedActual": "1.25",
+        "creationWindow": [
+          1792384173694,
+          1792384174228
+        ],
+        "editWindow": [
+          1792384174553,
+          1792384175211
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "98e4a48ffd7de49b9bb15e171c7cfc90f5b958dc9e4432190082c0a3fca70673",
+        "processInstanceId": "1aa34b16-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1.25",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "NUMBER": {
+      "passed": true,
+      "ui": {
+        "recordId": "5f7cf652-dae4-53ec-847b-d168ad19d93f",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "1",
+        "editedActual": "1",
+        "creationWindow": [
+          1792384176090,
+          1792384176643
+        ],
+        "editWindow": [
+          1792384176989,
+          1792384177643
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "0c8061a886e7ac0715492f701df791787b544a9fb1e3810273c56bbb26e24b49",
+        "processInstanceId": "29839513-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "1",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "BOOLEAN": {
+      "passed": true,
+      "ui": {
+        "recordId": "969c6550-714c-5cce-8420-8a5913ec2f52",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "FALSE",
+        "editedActual": "FALSE",
+        "creationWindow": [
+          1792384178542,
+          1792384179052
+        ],
+        "editWindow": [
+          1792384179357,
+          1792384179793
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "6a854b0c47506e03987137bb546de0769bad956c676d4aa51ba93135b7bc885d",
+        "processInstanceId": "2989d6ae-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "FALSE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "STRING": {
+      "passed": true,
+      "ui": {
+        "recordId": "7f1d8e9b-2815-5715-afba-3a265061a855",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "TRUE",
+        "editedActual": "TRUE",
+        "creationWindow": [
+          1792384180623,
+          1792384181189
+        ],
+        "editWindow": [
+          1792384181435,
+          1792384181919
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "2e0be6d31ba5a7fb6d3591035e642873e4006ff51eeb3552d0c634a7dda9b74d",
+        "processInstanceId": "29a6ad89-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TEXT": {
+      "passed": true,
+      "ui": {
+        "recordId": "8697db53-fdd0-5f3a-9d05-c9a2832d93d3",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "12.5%",
+        "editedActual": "12.5%",
+        "creationWindow": [
+          1792384182741,
+          1792384183284
+        ],
+        "editWindow": [
+          1792384183658,
+          1792384184135
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "6c2ab382e6fdc8a1d65fb361179906eed303364c09936c68d5fbaac17c7f4f0b",
+        "processInstanceId": "38828ab6-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "12.5%",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "LEN": {
+      "passed": true,
+      "ui": {
+        "recordId": "090c193f-9f09-5720-99dc-d40f3793240a",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3",
+        "editedActual": "3",
+        "creationWindow": [
+          1792384184981,
+          1792384185493
+        ],
+        "editWindow": [
+          1792384185762,
+          1792384186201
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "e4be5f38ca38aac528a211be5e6144f9403289e18dd600f04b7f38c0d8eea7e2",
+        "processInstanceId": "3887e1f1-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "LOWER": {
+      "passed": true,
+      "ui": {
+        "recordId": "f35f1723-a562-5d4e-929b-09a53b5a1b3a",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "abc汉",
+        "editedActual": "abc汉",
+        "creationWindow": [
+          1792384187009,
+          1792384187596
+        ],
+        "editWindow": [
+          1792384187846,
+          1792384188307
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "144959cd4e023ca606baf864f357add1efb00c8e4fffce15d72d39bdf996f034",
+        "processInstanceId": "389ffddc-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "abc汉",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "UPPER": {
+      "passed": true,
+      "ui": {
+        "recordId": "cbf6793e-a235-5040-9a35-9ba59e1a7d2b",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "ABC汉",
+        "editedActual": "ABC汉",
+        "creationWindow": [
+          1792384189124,
+          1792384189748
+        ],
+        "editWindow": [
+          1792384190001,
+          1792384190483
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "904963de0ef59ab770ebde2bcf08c4edcbf81d32ee365136865090268c60473e",
+        "processInstanceId": "474b7c39-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "ABC汉",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TRIM": {
+      "passed": true,
+      "ui": {
+        "recordId": "11eaaa0b-7e8d-5e4e-87e7-b25c1725658b",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "a b",
+        "editedActual": "a b",
+        "creationWindow": [
+          1792384191337,
+          1792384191780
+        ],
+        "editWindow": [
+          1792384192092,
+          1792384192523
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "84b4ea574a20319ba52b2acb44f52dd4f06a93ecae65af25e6de10fa9026cba1",
+        "processInstanceId": "47944425-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "a b",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "CLEAN": {
+      "passed": true,
+      "ui": {
+        "recordId": "63e4e9d0-b757-5b79-9696-e412baead628",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "ab",
+        "editedActual": "ab",
+        "creationWindow": [
+          1792384193354,
+          1792384193787
+        ],
+        "editWindow": [
+          1792384194065,
+          1792384194512
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "182eb977c3bb7fc1852eaa1bad34750da6e7f3adbda85fe68ae45a130d00606a",
+        "processInstanceId": "478d8e5a-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "ab",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "EXACT": {
+      "passed": true,
+      "ui": {
+        "recordId": "60f33a59-7053-5b8a-97f1-4196f348c3b3",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "FALSE",
+        "editedActual": "FALSE",
+        "creationWindow": [
+          1792384195337,
+          1792384195912
+        ],
+        "editWindow": [
+          1792384196188,
+          1792384196656
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "7c3e42938004a382f505c89d396b67f2d69e5d2dc4a16745ce36e55f1eb985c4",
+        "processInstanceId": "5664135c-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "FALSE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "CONCAT": {
+      "passed": true,
+      "ui": {
+        "recordId": "6d028343-1177-51ee-ac8a-8489d60f15e3",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "a1TRUE",
+        "editedActual": "a1TRUE",
+        "creationWindow": [
+          1792384197526,
+          1792384198109
+        ],
+        "editWindow": [
+          1792384198368,
+          1792384199002
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "073f749ba22f8b50e5c19804acd5f1a294bac907178800b115c4c154fb34d3b4",
+        "processInstanceId": "567837a7-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "a1TRUE",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "CONCATENATE": {
+      "passed": true,
+      "ui": {
+        "recordId": "220952db-9194-5aca-b911-88ae32764ae2",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "ab",
+        "editedActual": "ab",
+        "creationWindow": [
+          1792384199780,
+          1792384200383
+        ],
+        "editWindow": [
+          1792384200734,
+          1792384201430
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "3413812bf0c669865681bbaf0da7916c562924a516a4edb993bc18ddd4aed165",
+        "processInstanceId": "5690a1b2-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "ab",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TEXTJOIN": {
+      "passed": true,
+      "ui": {
+        "recordId": "095c322b-73db-5475-ad3e-8f5fe988c7bd",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "a,b",
+        "editedActual": "a,b",
+        "creationWindow": [
+          1792384202185,
+          1792384202789
+        ],
+        "editWindow": [
+          1792384203036,
+          1792384203655
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "fe520166fd22ac703b07204b99047d30cd1536488b2e4c952046f1619ef4dbb4",
+        "processInstanceId": "654791bf-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "a,b",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "LEFT": {
+      "passed": true,
+      "ui": {
+        "recordId": "2b641aa9-2a2a-51b2-9d88-e61ef641c637",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "😀汉",
+        "editedActual": "😀汉",
+        "creationWindow": [
+          1792384204862,
+          1792384205489
+        ],
+        "editWindow": [
+          1792384205782,
+          1792384206564
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "72f117baeac9cf4ecfc11d7561f35fd2540419457e867ce75fc9bd03d6cf86b7",
+        "processInstanceId": "6561f79a-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "😀汉",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "RIGHT": {
+      "passed": true,
+      "ui": {
+        "recordId": "4de62708-e02f-5387-91d4-291bdc67dc7c",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "😀",
+        "editedActual": "😀",
+        "creationWindow": [
+          1792384207457,
+          1792384208326
+        ],
+        "editWindow": [
+          1792384208716,
+          1792384209494
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "2a9576a52308317468307dc96d00e241ffcc6a197bddbd29dc3c6494879811e3",
+        "processInstanceId": "656f8c38-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "😀",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "MID": {
+      "passed": true,
+      "ui": {
+        "recordId": "2fed826a-863b-5578-98a8-a47f7781d10f",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "😀",
+        "editedActual": "😀",
+        "creationWindow": [
+          1792384210742,
+          1792384211357
+        ],
+        "editWindow": [
+          1792384211710,
+          1792384212428
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "75f854dff72f031bde50398c55a831f650e9435f39c2332f6886305d0add0361",
+        "processInstanceId": "74089402-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "😀",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "REPT": {
+      "passed": true,
+      "ui": {
+        "recordId": "fb8fede2-df2b-5065-a2d2-2f796532a8b0",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "汉汉汉",
+        "editedActual": "汉汉汉",
+        "creationWindow": [
+          1792384213402,
+          1792384214235
+        ],
+        "editWindow": [
+          1792384214649,
+          1792384215705
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "f3dd3149579797d8f36f4c48b34a51880f8d7ad4a9ca4997bce4dc9cac108298",
+        "processInstanceId": "740deb3d-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "汉汉汉",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SUBSTITUTE": {
+      "passed": true,
+      "ui": {
+        "recordId": "fb6a7d21-ebc3-5f6a-8f74-4e41a1f8584f",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "a-b-x",
+        "editedActual": "a-b-x",
+        "creationWindow": [
+          1792384216896,
+          1792384217534
+        ],
+        "editWindow": [
+          1792384217858,
+          1792384218543
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "64c3ee25572d8fefb03c75ef7f7f4833f2ef50dcd9a5c19493c8a4cd1fe2b2c9",
+        "processInstanceId": "74466074-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "a-b-x",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "REPLACE": {
+      "passed": true,
+      "ui": {
+        "recordId": "a3332813-137e-528a-af33-347bdb635027",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "汉字日",
+        "editedActual": "汉字日",
+        "creationWindow": [
+          1792384219434,
+          1792384220088
+        ],
+        "editWindow": [
+          1792384220417,
+          1792384221044
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "e3329320a78f3cea419deeeb891af4aba993e26febd7b24782b92ff84a76f75a",
+        "processInstanceId": "83201ab5-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "汉字日",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "FIND": {
+      "passed": true,
+      "ui": {
+        "recordId": "c5ec89b4-3924-54bd-9266-025fd3ed86ca",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3",
+        "editedActual": "3",
+        "creationWindow": [
+          1792384221819,
+          1792384222388
+        ],
+        "editWindow": [
+          1792384222653,
+          1792384223095
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "8cb4abbd618044e72f6406ace4b177c37be9b192d16e318f7d1e99c341eb51da",
+        "processInstanceId": "8339e450-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "SEARCH": {
+      "passed": true,
+      "ui": {
+        "recordId": "a9cc97ac-0102-539b-aa4f-dedfd6a588de",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "3",
+        "editedActual": "3",
+        "creationWindow": [
+          1792384223946,
+          1792384224533
+        ],
+        "editWindow": [
+          1792384224795,
+          1792384225268
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "72aeddffa7a368166f8681d207ec17a5ed1c332074afe9dc2e15ffb5f86ac8e1",
+        "processInstanceId": "835115db-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "3",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "DATE": {
+      "passed": true,
+      "ui": {
+        "recordId": "3152d117-bbcd-50a2-af30-ddebc7d2b148",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2024-03-01",
+        "editedActual": "2024-03-01",
+        "creationWindow": [
+          1792384226142,
+          1792384226644
+        ],
+        "editWindow": [
+          1792384226910,
+          1792384227446
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "69046cebfc9e6168902307ff1f9cf9097de6926910ce2a6313d537c6804ca8d6",
+        "processInstanceId": "9208c938-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2024-03-01",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "DATEVALUE": {
+      "passed": true,
+      "ui": {
+        "recordId": "4f0906c6-dce6-591f-ac0c-427b896597f0",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2024-02-29",
+        "editedActual": "2024-02-29",
+        "creationWindow": [
+          1792384228490,
+          1792384229011
+        ],
+        "editWindow": [
+          1792384229410,
+          1792384229841
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "0624bb1265edf0cb5a505e0cf376875b47d9e5396ade1bc65e791eb2ca645fcc",
+        "processInstanceId": "922af743-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2024-02-29",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "TODAY": {
+      "passed": true,
+      "ui": {
+        "recordId": "1c7b79e9-9203-5687-a43c-708b4e404ba3",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2026-10-19",
+        "editedActual": "2026-10-19",
+        "creationWindow": [
+          1792384230707,
+          1792384231392
+        ],
+        "editWindow": [
+          1792384231743,
+          1792384232224
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "84b302d0450e0f052b6fef0539a004113d8a104fb6f4d8ebd0440370d3d0256a",
+        "processInstanceId": "9257d2b2-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2026-10-19",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "NOW": {
+      "passed": true,
+      "ui": {
+        "recordId": "374bc558-4de9-5114-893d-04c969ff22fa",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2026-10-19T04:30:33.218937",
+        "editedActual": "2026-10-19T04:30:34.144034",
+        "creationWindow": [
+          1792384233089,
+          1792384233621
+        ],
+        "editWindow": [
+          1792384233916,
+          1792384234368
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "64f6a5ee5eb55e68e48959a0567edb174a3ced5a1bffd23e8a5b49cd07846a86",
+        "processInstanceId": "a0d8496b-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2026-10-19T04:21:59.884084",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "YEAR": {
+      "passed": true,
+      "ui": {
+        "recordId": "6803dbaf-6ad7-57c8-afe7-f66dd7ba4800",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2024",
+        "editedActual": "2024",
+        "creationWindow": [
+          1792384235237,
+          1792384235802
+        ],
+        "editWindow": [
+          1792384236084,
+          1792384236535
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "8ba90293fc105e166d1eb4abb6eb772a254f235bf02304a2ea02f811b5f9f0fa",
+        "processInstanceId": "a1257f1c-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2024",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "MONTH": {
+      "passed": true,
+      "ui": {
+        "recordId": "e1704f13-2ec9-5f78-9ba2-381106b4a79b",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384237319,
+          1792384237899
+        ],
+        "editWindow": [
+          1792384238144,
+          1792384238677
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "e8b61b769dc6c58f18f23b8797d539720e2df8009a2a801df3f0a5428ee40184",
+        "processInstanceId": "a13c3b77-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "DAY": {
+      "passed": true,
+      "ui": {
+        "recordId": "e7ada719-450b-53b8-baed-f838ce3f9e3d",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "29",
+        "editedActual": "29",
+        "creationWindow": [
+          1792384239672,
+          1792384240224
+        ],
+        "editWindow": [
+          1792384240475,
+          1792384240904
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "c6720f0c8f4b5471818f9227c8d2f4e4941b34dbd18481cf9a2078158c7a38ae",
+        "processInstanceId": "afbd004e-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "29",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    },
+    "DAYS": {
+      "passed": true,
+      "ui": {
+        "recordId": "32f28b8c-6731-58cf-9ad4-1ed6c31ca8ae",
+        "createdVersion": 0,
+        "editedVersion": 1,
+        "createdActual": "2",
+        "editedActual": "2",
+        "creationWindow": [
+          1792384241764,
+          1792384242177
+        ],
+        "editWindow": [
+          1792384242436,
+          1792384242880
+        ],
+        "submittedComputedOutputs": false
+      },
+      "workflow": {
+        "submissionId": "4c821de33b59f0b7c52b6ea85a672f44a0fe7a3794fc6940b7bc4f2a0323cf94",
+        "processInstanceId": "b0044289-cb74-11f1-bd32-166ff1d6ba7b",
+        "status": "COMPLETED",
+        "snapshotActual": "2",
+        "claimApprovalAndReplayPassed": true,
+        "historyUnchanged": true
+      },
+      "arityNegative": "StandardFunctionsTest.everyRegisteredFunctionRejectsCallsOutsideItsArityContract"
+    }
+  }
+}

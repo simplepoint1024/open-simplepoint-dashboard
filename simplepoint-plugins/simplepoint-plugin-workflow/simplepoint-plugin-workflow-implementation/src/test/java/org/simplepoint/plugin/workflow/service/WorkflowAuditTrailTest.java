@@ -102,6 +102,26 @@ class WorkflowAuditTrailTest extends WorkflowDirectoryFixture {
         .isInstanceOf(WorkflowException.class);
   }
 
+  @Test
+  void auditUsesRemoteLabelsAndRejectsResponsesForAnotherTenant() {
+    var source = transaction.execute(status -> service.start(publish("actor", null), command()));
+    org.mockito.Mockito.doReturn(
+            new org.simplepoint.plugin.rbac.tenant.api.vo.AuditIdentityLabels(
+                "tenant", null, Map.of("actor", "目录中的员工"), Map.of()))
+        .when(auditIdentities)
+        .resolve(org.mockito.ArgumentMatchers.any());
+    var result = transaction.execute(status -> service.auditTrail(source.id(), 0, 20));
+    assertThat(result.events().content())
+        .allSatisfy(event -> assertThat(event.actorName()).isEqualTo("目录中的员工"));
+    org.mockito.Mockito.doReturn(
+            new org.simplepoint.plugin.rbac.tenant.api.vo.AuditIdentityLabels(
+                "foreign", null, Map.of("actor", "Foreign employee"), Map.of()))
+        .when(auditIdentities)
+        .resolve(org.mockito.ArgumentMatchers.any());
+    assertThatThrownBy(() -> transaction.execute(status -> service.auditTrail(source.id(), 0, 20)))
+        .isInstanceOf(WorkflowException.class);
+  }
+
   private StartProcessCommand command() {
     return new StartProcessCommand(1, null, "Audit", Map.of(), List.of());
   }

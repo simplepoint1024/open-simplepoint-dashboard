@@ -2,6 +2,7 @@ package org.simplepoint.plugin.dna.runtime.service.remote;
 
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand;
+import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordPreview;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCommandResult;
@@ -31,6 +32,11 @@ public class DnaOwnedRecordServiceImpl implements DnaOwnedRecordService {
   @Override
   public OwnedRecordView get(DnaInvocationContext context, OwnedRecordQuery query) {
     return invocations.invoke(context, true, () -> records.get(query));
+  }
+
+  @Override
+  public OwnedRecordPreview preview(DnaInvocationContext context, OwnedRecordCommand command) {
+    return invocations.invoke(context, true, () -> records.preview(command));
   }
 
   @Override

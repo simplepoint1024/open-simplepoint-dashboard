@@ -156,8 +156,10 @@ test('record mutations and table forms lock business fields using the original r
 test('base metadata is displayed in the list but never joins writable business values', () => {
   const record = recordPage({page: 0, size: 10, total: 1, records: [{id: 'record', version: 1, state: 'DRAFT',
     values: {title: 'business'}, systemValues: {createdBy: 'actor', createOrgDeptId: 'department'},
+    systemLabels: {createdBy: {id: 'actor', label: '员工'}},
   }]}).content[0];
   assert.equal(record.createdBy, 'actor');
   assert.equal(record.createOrgDeptId, 'department');
+  assert.deepEqual(record.$displayLabels, {createdBy: {id: 'actor', label: '员工'}});
   assert.deepEqual(editableValues(record, new Set(['title'])), {title: 'business'});
 });

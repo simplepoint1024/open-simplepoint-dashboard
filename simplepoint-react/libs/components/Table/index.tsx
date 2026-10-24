@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {TableRowSelection} from 'antd/es/table/interface';
 import {App as AntApp, Button, Col, Row, Space, Table as AntTable, Tag, Tooltip, type ButtonProps, type TableProps as AntTableProps} from 'antd';
@@ -22,13 +23,15 @@ import {isRowSelectionClick} from './rowClickSelection';
 import {usePreference, preferenceUser} from '@simplepoint/shared/preferences/usePreference';
 import PreferenceFeedback from './PreferenceFeedback';
 import {formatTemporal} from '@simplepoint/shared/format/temporal';
+import ReferenceLabel from '../ReferenceLabel';
+import {referenceLabelFor} from '../ReferenceLabel/model.ts';
 import TableActions from './Actions';
 export {default as TableActions} from './Actions';
 import ColumnFilter, {ColumnFilterType} from './ColumnFilter';
 import {parseColumnFilter} from './filters';
 import QueryTools from './QueryTools';
 import {pageSizeOptions} from './pagination';
-import {visibleKeySignature} from './visibleKeys';
+import {isListColumnVisible, visibleKeySignature} from './visibleKeys';
 import {encodeDocument, readDocument, validateView, type QueryContract} from './query';
 import {
   ColumnFixed,
@@ -64,6 +67,8 @@ export type TableButtonProps = ButtonProps & {
 
 export interface TableProps<T> {
   cards?: CardViewConfig | false;
+  /** Render schema-declared single-record actions in a fixed trailing column. */
+  rowActions?: boolean;
   refresh: () => void;
   pageable: Page<T>;
   schema: RJSFSchema | any[];
@@ -84,6 +89,8 @@ export interface TableProps<T> {
   onRowDoubleClick?: (record: T, key: React.Key) => void;
   onRowClick?: (record: T, key: React.Key) => void;
   onButtonEvents?: Record<string, (selectedRowKeys: React.Key[], selectedRows: T[], props: TableButtonProps) => void>;
+  /** Optional server-capability projection; never grants an action absent from buttons. */
+  isButtonVisible?: (button: TableButtonProps, selectedRows: T[]) => boolean;
   isButtonDisabled?: (
     button: TableButtonProps,
     selectedRowKeys: React.Key[],
@@ -235,22 +242,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   const toolbarRef   = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState<number>(400);
 
-  useLayoutEffect(() => {
-    const update = () => {
-      const ct = containerRef.current;
-      const tb = toolbarRef.current;
-      if (!ct) return;
-      const containerH = ct.getBoundingClientRect().height;
-      const toolbarH   = tb ? tb.getBoundingClientRect().height + 16 /* margin-bottom */ : 54;
-      // AntD table: thead ≈ 39px；pagination bar ≈ 56px (32px + 24px margin)
-      setScrollY(Math.max(160, containerH - toolbarH - 39 - 56));
-    };
-    const ro = new ResizeObserver(update);
-    if (containerRef.current) ro.observe(containerRef.current);
-    if (toolbarRef.current) ro.observe(toolbarRef.current);
-    update();
-    return () => ro.disconnect();
-  }, []);
+
 
   useEffect(() => {
     setFilters(props.filters ?? {});
@@ -295,6 +287,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
   const {value: colConfigs, setValue: setColConfigs} = columnsPreference;
   const {value: colWidths, setValue: setColWidths} = widthsPreference;
   const {value: displaySettings, setValue: setDisplaySettings} = displayPreference;
+
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -312,7 +306,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
       return {
         key,
         label: resolveI18nLabel(rawLabel),
-        visible: cfg?.visible ?? true,
+        visible: isListColumnVisible(true, sd, cfg?.visible),
         fixed: hasStoredFixed ? (cfg?.fixed ?? undefined) : defaultFixed,
         width: colWidths[key],
         _order: typeof cfg?.order === 'number' ? cfg.order : schemaIdx,
@@ -359,13 +353,25 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     }
   }, []);
 
+  const anonKeyMapRef = useRef(new WeakMap<object, number>());
+  const anonKeySeqRef = useRef(1);
+  const keyOfRecord = useCallback((record: T): React.Key => {
+    const anyRec: any = record as any;
+    const k = anyRec.id ?? anyRec.key;
+    if (k !== undefined && k !== null) return k as React.Key;
+    const map = anonKeyMapRef.current;
+    let n = map.get(anyRec as object);
+    if (!n) {
+      n = anonKeySeqRef.current++;
+      map.set(anyRec as object, n);
+    }
+    return `~${n}`;
+  }, []);
+
   const columns = useMemo<ColumnsType<T>>(() => {
     const entries = Object.entries(properties);
     const generated: Array<{ order: number; column: ColumnType<T> }> = entries
-      .filter(([key]) => {
-        const cfg = colConfigs[key];
-        return cfg ? cfg.visible : visibleKeys.includes(key);
-      })
+      .filter(([key, schemaDef]) => isListColumnVisible(visibleKeys.includes(key), schemaDef, colConfigs[key]?.visible))
       .map(([key, schemaDef]) => {
         const baseTitle = (schemaDef as any)?.title ?? key;
         const scalarType = schemaScalarType(schemaDef);
@@ -503,7 +509,10 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           column.filterDropdown = undefined;
           column.filterIcon = undefined;
         }
-        column.render = (renderCell ?? textEllipsisRender) as ColumnType<T>['render'];
+        column.render = typeof (schemaDef as any)['x-reference-labels'] === 'string'
+          ? (value, record) => <ReferenceLabel value={value}
+            projection={referenceLabelFor(record, (schemaDef as any)['x-reference-labels'], key)}/>
+          : (renderCell ?? textEllipsisRender) as ColumnType<T>['render'];
 
         const override = props.columnOverrides?.[key] as (Partial<ColumnType<T>> & { order?: number }) | undefined;
         const {order: overrideOrder, ...overrideRest} = override || {};
@@ -542,7 +551,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
         };
       });
 
-    return generated
+    const result = generated
       .sort((left, right) => {
         const fixedRank = (fixed: ColumnType<T>['fixed']) => (
           fixed === true || fixed === 'left' ? 0 : fixed === 'right' ? 2 : 1
@@ -566,28 +575,46 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           return wrap(rendered as React.ReactNode);
         }};
       });
-  }, [properties, colConfigs, visibleKeys, filters, contract, sortList, colWidths, displaySettings.wrapText, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, props.rowLeadingExtra, t, locale])
-
-  const anonKeyMapRef = useRef(new WeakMap<object, number>());
-  const anonKeySeqRef = useRef(1);
-  const keyOfRecord = useCallback((record: T): React.Key => {
-    const anyRec: any = record as any;
-    const k = anyRec.id ?? anyRec.key;
-    if (k !== undefined && k !== null) return k as React.Key;
-    const map = anonKeyMapRef.current;
-    let n = map.get(anyRec as object);
-    if (!n) {
-      n = anonKeySeqRef.current++;
-      map.set(anyRec as object, n);
-    }
-    return `~${n}`;
-  }, []);
+    const rowButtons = props.buttons?.filter(button => button.argumentMinSize === 1
+      && (button.argumentMaxSize == null || button.argumentMaxSize >= 1));
+    if (props.rowActions && rowButtons?.length) result.push({
+      key: '__platform_row_actions__', title: t('table.actions', '操作'), fixed: 'right', width: 240,
+      render: (_value, record) => <TableActions appearance="row" buttons={rowButtons}
+        selectedKeys={[keyOfRecord(record)]} selectedRows={[record]}
+        onButtonEvents={props.onButtonEvents} isButtonDisabled={props.isButtonDisabled} isButtonVisible={props.isButtonVisible}/>,
+    });
+    return result;
+  }, [props.rowActions, props.buttons, props.onButtonEvents, props.isButtonDisabled, props.isButtonVisible, keyOfRecord, properties, colConfigs, visibleKeys, filters, contract, sortList, colWidths, displaySettings.wrapText, handleResize, props.onFilterChange, props.refresh, props.columnOverrides, props.rowLeadingExtra, t, locale])
 
   const rawDataSource = props.pageable?.content ?? [];
   const dataSource = useMemo(
     () => props.expandable ? rawDataSource : normalizeTreeRows(rawDataSource),
     [props.expandable, rawDataSource],
   );
+  useLayoutEffect(() => {
+    const update = () => {
+      const ct = containerRef.current;
+      const tb = toolbarRef.current;
+      if (!ct) return;
+      const stage = ct.querySelector('.sp-table-stage');
+      const header = ct.querySelector('.ant-table-header');
+      const pagination = ct.querySelector('.ant-pagination');
+      const margins = pagination ? getComputedStyle(pagination) : undefined;
+      // Only virtual rows need a pixel viewport; ordinary tables fill their bounded flex body.
+      setScrollY(Math.max(40, (stage?.getBoundingClientRect().height ?? ct.clientHeight - (tb?.clientHeight ?? 0))
+        - (header?.getBoundingClientRect().height ?? 40) - (pagination?.getBoundingClientRect().height ?? 0)
+        - (parseFloat(margins?.marginTop ?? '') || 0) - (parseFloat(margins?.marginBottom ?? '') || 0) - 2));
+    };
+    const ro = new ResizeObserver(update);
+    if (containerRef.current) ro.observe(containerRef.current);
+    if (toolbarRef.current) ro.observe(toolbarRef.current);
+    containerRef.current?.querySelectorAll('.sp-table-stage, .ant-table-header, .ant-pagination')
+      .forEach(element => ro.observe(element));
+    update();
+    return () => ro.disconnect();
+  }, [displaySettings.size, displaySettings.viewMode, displaySettings.showSizeChanger, displaySettings.showQuickJumper,
+    props.virtual, dataSource.length >= 100]);
+
   const rowByKey = useMemo(() => {
     const rowsByKey = new Map<React.Key, T>();
     const visit = (rows: T[]) => {
@@ -672,7 +699,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
     props.onChange?.({current, pageSize}, {}, undefined, {action: 'paginate'});
   };
   const cardLayout = useCardLayout(containerRef, viewMode, cardsSupported, displaySettings.cardRows,
-    pagination.current ?? 1, pagination.pageSize ?? 10, pagination.total ?? 0, changeCardPage,
+    pagination.current ?? 1, pagination.pageSize ?? DEFAULT_TABLE_PAGE_SIZE, pagination.total ?? 0, changeCardPage,
     contract?.maxPageSize, props.cards ? props.cards.minWidth : undefined);
 
   return (
@@ -682,7 +709,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           <Col className="sp-table-toolbar-main">
             <Space className="sp-table-button-group" size={[8, 8]} wrap>
               <TableActions buttons={props.buttons} selectedKeys={selectedRowKeys} selectedRows={getSelectedRowsForEvent()}
-                onButtonEvents={props.onButtonEvents} isButtonDisabled={props.isButtonDisabled} />
+                onButtonEvents={props.onButtonEvents} isButtonDisabled={props.isButtonDisabled} isButtonVisible={props.isButtonVisible} />
               {selectedRowKeys.length > 0 && (
                 <Tag
                   className="sp-table-selected-tag"
@@ -751,8 +778,8 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           </Col>
         </Row>
       </div>
-      <div style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column'}}>
-        {viewMode === 'cards' ? <CardView<T> data={dataSource} columns={columns}
+      <div className="sp-table-stage" style={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+        {viewMode === 'cards' ? <CardView<T> data={dataSource} columns={columns.filter(column => column.key !== '__platform_row_actions__')}
           columnsCount={cardLayout.columns} config={props.cards || undefined} rowKey={keyOfRecord}
           selection={rowSelection} loading={props.loading} emptyText={emptyText}
           pagination={{...pagination, onChange: changeCardPage}}
@@ -770,7 +797,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           actions={record => <TableActions appearance="row" buttons={props.buttons?.filter(button => (button.argumentMinSize ?? 0) === 1
             && (button.argumentMaxSize == null || button.argumentMaxSize >= 1))}
             selectedKeys={[keyOfRecord(record)]} selectedRows={[record]} onButtonEvents={props.onButtonEvents}
-            isButtonDisabled={props.isButtonDisabled} />}
+            isButtonDisabled={props.isButtonDisabled} isButtonVisible={props.isButtonVisible} />}
         /> : <AntTable<T>
           className={[
             'sp-table-fill',
@@ -810,7 +837,7 @@ const App = <T extends object = any>(props: TableProps<T>) => {
           })}
           rowSelection={rowSelection}
           virtual={props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100}
-          scroll={{y: scrollY, x: props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100
+          scroll={{y: props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100 ? scrollY : '100%', x: props.virtual === true && !props.expandable && !displaySettings.wrapText && dataSource.length >= 100
             ? columns.reduce((width, column) => width + (typeof column.width === 'number' ? column.width : 150), 48) : 'max-content'}}
           locale={{emptyText}}
           components={{header: {cell: ResizableTitle}}}

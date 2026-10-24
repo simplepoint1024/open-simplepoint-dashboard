@@ -13,10 +13,10 @@ export default function PolicySelect({roleId, resourceCode, kind, value, disable
   roleId: string; resourceCode: string; kind: 'data' | 'field'; value?: string | null;
   disabled: boolean; revision: number; onChange: (value?: string) => void;
 }) {
-  const {t} = useI18n();
+  const {t, locale} = useI18n();
   const endpoint = api['rbac-role-resource-configuration'].baseUrl + '/roles/' + encodeURIComponent(roleId) + '/policy-options';
   const source = useMemo<EntitySelectSource>(() => {
-    const labels = permissionLabels(t);
+    const labels = permissionLabels(t, undefined, locale);
     const option = (row: Record<string, unknown>) => typeof row.id === 'string' && row.id !== '***'
       ? {value: row.id, label: resolveResourceLabel(typeof row.name === 'string' ? row.name : undefined,
         t('permissions.unavailable', '名称暂不可用'), t)
@@ -34,7 +34,7 @@ export default function PolicySelect({roleId, resourceCode, kind, value, disable
         return options;
       },
     };
-  }, [roleId, resourceCode, kind, revision, endpoint, t]);
+  }, [roleId, resourceCode, kind, revision, endpoint, t, locale]);
   return <EntitySelect endpoint={endpoint} source={source} value={value} disabled={disabled}
     ariaLabel={kind === 'data' ? t('roles.resourceConfig.dataScope', '数据权限') : t('roles.resourceConfig.fieldScope', '字段权限')}
     className="role-resource-policy-select" placeholder={kind === 'data'

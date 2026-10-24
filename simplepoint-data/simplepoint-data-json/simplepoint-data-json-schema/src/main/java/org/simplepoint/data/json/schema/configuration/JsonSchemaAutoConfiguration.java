@@ -11,8 +11,10 @@ import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidatio
 import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationOption;
 import java.util.Set;
 import org.simplepoint.api.security.generator.JsonSchemaGenerator;
+import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.data.json.schema.generator.DefaultJsonSchemaGenerator;
 import org.simplepoint.data.json.schema.module.OpenApiModule;
+import org.simplepoint.data.json.schema.service.DefaultJsonSchemaDetailsService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,13 @@ public class JsonSchemaAutoConfiguration {
    */
   public JsonSchemaAutoConfiguration(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
+  }
+
+  /** Registers the shared dialect without relying on a host-wide component or JPA scan. */
+  @Bean
+  @ConditionalOnMissingBean(JsonSchemaDetailsService.class)
+  public JsonSchemaDetailsService jsonSchemaDetailsService() {
+    return new DefaultJsonSchemaDetailsService();
   }
 
   /**

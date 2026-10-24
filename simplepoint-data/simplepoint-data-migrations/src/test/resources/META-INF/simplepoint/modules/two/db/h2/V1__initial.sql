@@ -1,0 +1,1 @@
+CREATE TABLE fixture_two (id BIGINT PRIMARY KEY, label VARCHAR(40));

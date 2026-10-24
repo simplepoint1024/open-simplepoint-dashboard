@@ -7,4 +7,9 @@ dependencies {
     api(project(":simplepoint-remoting:simplepoint-remoting-core"))
     compileOnly("jakarta.servlet:jakarta.servlet-api")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework:spring-webmvc")
+    testImplementation("org.springframework:spring-webflux")
+    testImplementation("org.springframework:spring-jdbc")
+    testRuntimeOnly("com.h2database:h2")
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
 }

@@ -32,6 +32,10 @@
                     <button type="submit">开始配置</button>
                 </form>
                 <form th:if="${twoFactorEnabled}" th:action="${twoFactorDisableUrl}" method="post">
+                    <label for="confirmation-password">当前密码</label>
+                    <input id="confirmation-password" type="password" name="password" autocomplete="current-password" required/>
+                    <label for="confirmation-code">动态验证码</label>
+                    <input id="confirmation-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required/>
                     <button class="danger" type="submit">关闭两步验证</button>
                 </form>
                 <button type="button" class="secondary" onclick="window.close()">关闭页面</button>

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.simplepoint.service.router.annotation.RoutedService;
 import com.simplepoint.service.router.config.ServiceRouterProperties;
+import com.simplepoint.service.router.exception.AmbiguousServiceProviderException;
 import com.simplepoint.service.router.exception.ServiceRouterException;
 import com.simplepoint.service.router.invocation.RemoteResponse;
 import com.simplepoint.service.router.invocation.ServiceInvocationDispatcher;
@@ -84,6 +85,29 @@ class RemoteBusinessErrorRoutingTest {
           new Class<?>[] {UnknownService.class}, handler);
       assertThatThrownBy(proxy::write).isInstanceOf(ServiceRouterException.class)
           .hasMessage("foreign.Code: rejected");
+    }
+  }
+
+  @Test
+  void ambiguousHostSelectionNeverRetriesOrUsesBusinessFallback() {
+    var discoveries = new AtomicInteger();
+    var fallbackCalls = new AtomicInteger();
+    var metadata = RoutedServiceMetadataResolver.resolve(WriteService.class).orElseThrow();
+    try (var context = new StaticApplicationContext()) {
+      context.getBeanFactory().registerSingleton("fallback", new WriteFallback(fallbackCalls));
+      var handler = new ServiceRouterInvocationHandler(WriteService.class, metadata,
+          new Registry(null), ignored -> {
+            discoveries.incrementAndGet();
+            throw new AmbiguousServiceProviderException("write", "1", List.of("one", "two"));
+          }, new RoundRobinLoadBalancer(), (route, request) -> {
+            throw new AssertionError("Ambiguous binding must not invoke a provider");
+          }, new ObjectMapper(), new ServiceRouterProperties(), context);
+      var proxy = (WriteService) Proxy.newProxyInstance(getClass().getClassLoader(),
+          new Class<?>[] {WriteService.class}, handler);
+
+      assertThatThrownBy(proxy::write).isInstanceOf(AmbiguousServiceProviderException.class);
+      assertThat(discoveries).hasValue(1);
+      assertThat(fallbackCalls).hasValue(0);
     }
   }
 

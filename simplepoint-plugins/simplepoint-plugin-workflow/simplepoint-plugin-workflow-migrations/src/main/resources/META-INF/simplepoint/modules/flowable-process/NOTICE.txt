@@ -1,0 +1,7 @@
+Flowable PostgreSQL schema assets
+
+This artifact includes unmodified SQL assets from Flowable 8.0.0,
+published under the Apache License 2.0 by the Flowable project contributors.
+Upstream project: https://github.com/flowable/flowable-engine
+The source artifact coordinates, paths and SHA-256 digests are in db/sources.json.
+The platform adds only a wrapper header and source markers to assemble the baseline.

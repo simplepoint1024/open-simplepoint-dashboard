@@ -1,6 +1,8 @@
 package org.simplepoint.plugin.app.form.service;
 
 import java.util.Objects;
+import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormChoiceOption;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
@@ -26,7 +28,8 @@ final class FormDetailEvolutionPolicy {
               .compileDetail(old, "owner")
               .checksum()
               .equals(compiler.compileDetail(replacement.get(), "owner").checksum())
-          || !old.fields().equals(replacement.get().fields())) {
+          || !old.fields().stream().map(FormDetailEvolutionPolicy::withoutPresentation).toList()
+              .equals(replacement.get().fields().stream().map(FormDetailEvolutionPolicy::withoutPresentation).toList())) {
         throw new ApplicationFormException(
             ApplicationFormErrorCode.PUBLICATION_REVIEW_REQUIRED,
             "Existing detail definitions must remain unchanged; add a new collection for a new"
@@ -34,4 +37,14 @@ final class FormDetailEvolutionPolicy {
       }
     }
   }
+
+  /** Display labels do not migrate owned rows; every storage, value and behavioral property still participates. */
+  private static FormFieldDefinition withoutPresentation(FormFieldDefinition field) {
+    return new FormFieldDefinition(field.fieldId(), field.storageCode(), field.storageLabel(),
+        field.storageLabel(), field.type(), field.storageMode(), field.submitRequired(),
+        field.storageRequired(), field.length(), field.precision(), field.scale(), field.defaultValue(),
+        field.choices().stream().map(choice -> new FormChoiceOption(choice.value(), "")).toList(),
+        field.writePolicy(), field.validation(), field.access(), field.calculation(), null);
+  }
+
 }

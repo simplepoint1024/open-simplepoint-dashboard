@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import {useCallback, useEffect, useState} from 'react';
 import type {ColumnsType, DataTableProps, QuerySchema, TableQueryState} from './index';
 import {transportFilters} from '../Table/query';
@@ -10,7 +11,7 @@ export function useRemoteList<T extends object, Wire extends object = T>(endpoin
   const schemaResult = useSchema(endpoint, {enabled: active, retry: false});
   const schema = schemaResult.data?.schema?.['x-query'] ? schemaResult.data.schema as unknown as QuerySchema : undefined;
   const [state, setState] = useState<TableQueryState>({filters: {}});
-  const [pagination, setPagination] = useState({page: 0, size: 20});
+  const [pagination, setPagination] = useState({page: 0, size: DEFAULT_TABLE_PAGE_SIZE});
   const result = usePage<T>([endpoint, state, pagination], async ({signal}) => {
     const response = normalizePage(await get<RawPage<Wire>>(endpoint, {
     ...transportFilters(state.filters), ...pagination, ...(state.sort ? {sort: state.sort} : {}),

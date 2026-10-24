@@ -23,6 +23,7 @@ import org.simplepoint.plugin.app.form.api.ApplicationFormApiVersion;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormPageBindingStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationStatus;
 import org.simplepoint.plugin.app.form.api.model.CreateApplicationFormCommand;
 import org.simplepoint.plugin.app.form.api.model.FormComponentDefinition;
@@ -38,6 +39,7 @@ import org.simplepoint.plugin.app.form.configuration.ApplicationFormPublicationP
 import org.simplepoint.plugin.app.form.entity.ApplicationFormDraftEntity;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormEntity;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormPublicationEntity;
+import org.simplepoint.plugin.app.form.entity.ApplicationFormPageBindingEntity;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormVersionEntity;
 import org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinator.PreparedDnaSchema;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus;
@@ -64,6 +66,7 @@ class ApplicationFormPublicationStateServiceTest {
         .addAnnotatedClass(ApplicationFormDraftEntity.class)
         .addAnnotatedClass(ApplicationFormVersionEntity.class)
         .addAnnotatedClass(ApplicationFormPublicationEntity.class)
+        .addAnnotatedClass(ApplicationFormPageBindingEntity.class)
         .buildMetadata()
         .buildSessionFactory();
     session = sessionFactory.openSession();
@@ -236,6 +239,61 @@ class ApplicationFormPublicationStateServiceTest {
         Clock.fixed(instant, ZoneOffset.UTC),
         properties
     );
+  }
+
+  @Test
+  void cancelledPageReleasesDoNotPermanentlyBlockTheNextSchemaVersion() {
+    var state = stateAt(START);
+    var first = inTransaction(() -> state.claim("app-a", formId, new PrepareApplicationFormDataCommand(1, "initial")));
+    inTransaction(() -> state.completeData(first.work().publicationId(), first.work().executionToken(),
+        new PreparedDnaSchema("model-a", 1, "migration-a", SchemaMigrationStatus.ACTIVE)));
+    assertNextVersionBlocked(state);
+    // A cancellation from another tenant cannot relax this tenant's data preparation lock.
+    inTransaction(() -> persistBinding("foreign", "tenant-b", ApplicationFormPageBindingStatus.CANCELLED));
+    assertNextVersionBlocked(state);
+    inTransaction(() -> persistBinding("cancelled", "tenant-a", ApplicationFormPageBindingStatus.CANCELLED));
+    inTransaction(() -> persistBinding("still-running", "tenant-a", ApplicationFormPageBindingStatus.RESOURCE_READY));
+    assertNextVersionBlocked(state);
+    inTransaction(() -> session.find(ApplicationFormPageBindingEntity.class, "still-running")
+        .setStatus(ApplicationFormPageBindingStatus.CANCELLED));
+    var next = inTransaction(() -> state.claim("app-a", formId, new PrepareApplicationFormDataCommand(2, "next")));
+    assertThat(next.execute()).isTrue();
+    var old = inTransaction(() -> state.claim("app-a", formId, new PrepareApplicationFormDataCommand(1, "initial")));
+    assertThat(old.execute()).isFalse();
+    assertThat(old.view().status()).isEqualTo(ApplicationFormPublicationStatus.DATA_READY);
+    assertThat(old.view().id()).isEqualTo(first.view().id());
+  }
+
+  @Test
+  void cancelledBindingDoesNotReleaseAnUnfinishedPhysicalSchemaPreparation() {
+    var state = stateAt(START);
+    inTransaction(() -> state.claim("app-a", formId, new PrepareApplicationFormDataCommand(1, "initial")));
+    inTransaction(() -> persistBinding("cancelled", "tenant-a", ApplicationFormPageBindingStatus.CANCELLED));
+    assertNextVersionBlocked(state);
+  }
+
+  private void assertNextVersionBlocked(final ApplicationFormPublicationStateService state) {
+    assertThatThrownBy(() -> inTransaction(() -> state.claim("app-a", formId,
+        new PrepareApplicationFormDataCommand(2, "next"))))
+        .isInstanceOfSatisfying(ApplicationFormException.class,
+            error -> assertThat(error.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
+  }
+
+  private void persistBinding(final String id, final String tenant, final ApplicationFormPageBindingStatus status) {
+    var binding = new ApplicationFormPageBindingEntity();
+    binding.setId(id);
+    binding.setTenantId(tenant);
+    binding.setApplicationId("app-a");
+    binding.setPageId(id);
+    binding.setFormId(formId);
+    binding.setFormVersion(1);
+    binding.setSceneId("main");
+    binding.setIdempotencyKey(id);
+    binding.setResourceManagedKey("page:" + id);
+    binding.setStatus(status);
+    binding.setCreatedAt(START);
+    binding.setUpdatedAt(START);
+    session.persist(binding);
   }
 
   private <T> T inTransaction(final java.util.concurrent.Callable<T> work) {

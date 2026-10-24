@@ -6,11 +6,13 @@ import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {serverViolations} from '@simplepoint/shared/validation/server';
 import {publishIntent, releaseIsActive, releaseIsCancelled, releaseIsBlocked, type PublicationIntent, type FormRelease, type FormVersion} from './publication';
+import {mergeReleaseProgress} from './publicationProgress';
 
 export default function useFormPublication(baseUrl: string, enabled: boolean, visible: boolean) {
   const {t} = useI18n(), operation = useOperationScope(baseUrl);
   const intent = useRef<PublicationIntent | undefined>(undefined);
   const [release, setRelease] = useState<FormRelease>(), [error, setError] = useState('');
+  const releaseRef = useRef(release); releaseRef.current = release;
   const [pending, setPending] = useState(false);
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
   usePageRetention(!operation.busy && !pending, operation.busy || pending);
@@ -31,7 +33,8 @@ export default function useFormPublication(baseUrl: string, enabled: boolean, vi
         mayReconcile: cause => !isHttpError(cause) || cause.status === 0 || cause.status === 409 || cause.status >= 500,
       });
       if (!operation.current(controller.signal)) return;
-      setRelease(result);
+      const next = mergeReleaseProgress(releaseRef.current, result);
+      releaseRef.current = next; setRelease(next);
       const cancelled = releaseIsCancelled(result);
       const blocked = releaseIsBlocked(result);
       const failed = !cancelled && !blocked && (result.dataPublication?.status === 'FAILED' || result.pageBinding?.status === 'FAILED'
@@ -58,5 +61,5 @@ export default function useFormPublication(baseUrl: string, enabled: boolean, vi
     return () => clearTimeout(timer);
   }, [pending, operation.busy, operation.selected, visible, enabled]);
   return {release, error, invalidFields, pending, busy: operation.busy, intent: intent.current, active: releaseIsActive(release), cancelled: releaseIsCancelled(release), run,
-    reset: () => {if (!operation.isBusy() && !pending) {intent.current = undefined; setRelease(undefined); setError('');}}};
+    reset: () => {if (!operation.isBusy() && !pending) {intent.current = undefined; releaseRef.current = undefined; setRelease(undefined); setError('');}}};
 }

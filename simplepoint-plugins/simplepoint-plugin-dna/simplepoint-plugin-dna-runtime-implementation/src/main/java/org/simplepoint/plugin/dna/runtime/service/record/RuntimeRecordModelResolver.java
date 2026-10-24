@@ -46,6 +46,18 @@ public class RuntimeRecordModelResolver {
       final String modelId,
       final RecordSchemaReference schemaReference
   ) {
+    return resolveMetadata(actor, modelId, schemaReference, true);
+  }
+
+  /** Cancellation authenticates the historical reference but cannot require it to write current business fields. */
+  @Transactional(readOnly = true)
+  RuntimeRecordModel resolveForCancellation(final RuntimeActor actor, final String modelId,
+      final RecordSchemaReference schemaReference) {
+    return resolveMetadata(actor, modelId, schemaReference, false);
+  }
+
+  private RuntimeRecordModel resolveMetadata(final RuntimeActor actor, final String modelId,
+      final RecordSchemaReference schemaReference, final boolean requireWriteCompatibility) {
     PhysicalModelEntity model = modelRepository.findActiveById(actor.tenantId(), modelId)
         .orElseThrow(RuntimeRecordModelResolver::notFound);
     if (model.getStatus() != PhysicalModelStatus.ACTIVE || model.getActiveVersion() == null) {
@@ -75,7 +87,11 @@ public class RuntimeRecordModelResolver {
     }
     var activeSchema = schemaCodec.decode(activeVersion.getSchemaJson());
     var requestedSchema = schemaCodec.decode(requestedVersion.getSchemaJson());
-    RecordSchemaCompatibility.requireCompatible(requestedSchema, activeSchema);
+    if (requireWriteCompatibility) {
+      RecordSchemaCompatibility.requireCompatible(requestedSchema, activeSchema);
+    } else if (!java.util.Objects.equals(requestedSchema.owner(), activeSchema.owner())) {
+      throw incompatible();
+    }
     return new RuntimeRecordModel(
         model.getId(),
         model.getAppId(),

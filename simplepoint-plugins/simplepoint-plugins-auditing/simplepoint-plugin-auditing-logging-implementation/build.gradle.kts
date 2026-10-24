@@ -1,4 +1,7 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
+
+    implementation(project(":simplepoint-events:simplepoint-events-api"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     implementation(project(":simplepoint-core"))

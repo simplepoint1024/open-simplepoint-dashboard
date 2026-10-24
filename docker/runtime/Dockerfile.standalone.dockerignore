@@ -1,0 +1,10 @@
+**
+!docker/
+!docker/runtime/
+!docker/runtime/docker-entrypoint.sh
+!simplepoint-services/
+!simplepoint-services/simplepoint-service-standalone/
+!simplepoint-services/simplepoint-service-standalone/build/
+!simplepoint-services/simplepoint-service-standalone/build/install/
+!simplepoint-services/simplepoint-service-standalone/build/install/simplepoint-service-standalone/
+!simplepoint-services/simplepoint-service-standalone/build/install/simplepoint-service-standalone/**

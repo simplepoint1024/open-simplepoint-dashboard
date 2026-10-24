@@ -1,4 +1,8 @@
 dependencies {
+    runtimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
+
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
+
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-api"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
@@ -15,7 +19,5 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("com.h2database:h2")
     compileOnly("jakarta.servlet:jakarta.servlet-api")
-    implementation("org.springframework.security:spring-security-config")
-    implementation("org.springframework.security:spring-security-web")
     implementation(libs.swagger.annotations)
 }

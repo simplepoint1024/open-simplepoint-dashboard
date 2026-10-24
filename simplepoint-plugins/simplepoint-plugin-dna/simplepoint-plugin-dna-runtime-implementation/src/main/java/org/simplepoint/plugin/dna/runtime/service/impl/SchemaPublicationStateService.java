@@ -30,6 +30,7 @@ import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelRepository;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelVersionRepository;
 import org.simplepoint.plugin.dna.runtime.repository.SchemaMigrationRepository;
 import org.simplepoint.plugin.dna.runtime.repository.SchemaMigrationStepRepository;
+import org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl;
 import org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PlannedSchemaStep;
@@ -44,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SchemaPublicationStateService {
 
+  private final RecordMaintenanceControl maintenance;
   private final PhysicalModelRepository modelRepository;
   private final PhysicalModelBindingRepository bindingRepository;
   private final PhysicalModelVersionRepository versionRepository;
@@ -60,8 +62,10 @@ public class SchemaPublicationStateService {
       final SchemaMigrationRepository migrationRepository,
       final SchemaMigrationStepRepository stepRepository,
       final PhysicalSchemaCodec schemaCodec,
-      final DnaRuntimeAuditPublisher auditPublisher
+      final DnaRuntimeAuditPublisher auditPublisher,
+      final RecordMaintenanceControl maintenance
   ) {
+    this.maintenance = maintenance;
     this.modelRepository = modelRepository;
     this.bindingRepository = bindingRepository;
     this.versionRepository = versionRepository;
@@ -117,6 +121,7 @@ public class SchemaPublicationStateService {
     migration.setStartedAt(Instant.now());
     migration.setCreatedBy(actor.actorId());
     migration.setUpdatedBy(actor.actorId());
+    maintenance.requireAvailable(actor.tenantId(), model);
     transition(model, PhysicalModelStatus.VALIDATING, actor.actorId());
     try {
       migrationRepository.saveAndFlush(migration);
@@ -160,6 +165,7 @@ public class SchemaPublicationStateService {
         .ifPresent(value -> {
           throw conflict("Another schema publication is already active for this model");
         });
+    maintenance.requireAvailable(actor.tenantId(), model);
     transition(model, PhysicalModelStatus.VALIDATING, actor.actorId());
     migration.setStatus(SchemaMigrationStatus.VALIDATING);
     migration.setExecutionToken(UUID.randomUUID().toString());
@@ -666,11 +672,7 @@ public class SchemaPublicationStateService {
   }
 
   private PhysicalModelEntity requireLockedModel(final String tenantId, final String modelId) {
-    return modelRepository.findActiveByIdForUpdate(tenantId, modelId)
-        .orElseThrow(() -> new DnaRuntimeException(
-            DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
-            "Physical model was not found in the active tenant"
-        ));
+    return maintenance.lockModels(tenantId, java.util.List.of(modelId)).get(modelId);
   }
 
   private SchemaMigrationEntity requireLockedMigration(

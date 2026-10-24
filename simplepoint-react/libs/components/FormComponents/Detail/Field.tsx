@@ -6,7 +6,7 @@ import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import DataTable from '../../DataTable';
 import TableActions from '../../Table/Actions';
-import {displayValue} from '../../SForm/displayOnly';
+import {displayOnlyProjection, displayValue} from '../../SForm/displayOnly';
 import {schemaUi} from '../../SForm/schemaUi';
 import type {FormDetailDefinition} from '../../FormRuntime/contracts';
 import type {RecordState} from '../../FormRuntime/recordTableModel';
@@ -42,11 +42,13 @@ export default function DetailRows({schema, formData, uiSchema, disabled, readon
     const issue = errorSchema?.[index]?.values?.[field.fieldId];
     if (!viewOnly && (editing === keys[index] || issue?.__errors?.length)) {
       const definition = detailRowSchema(detail, row.id ? options.recordState : undefined, false);
-      const fieldSchema = definition.properties![field.fieldId] as RJSFSchema;
+      const source = definition.properties![field.fieldId] as RJSFSchema;
+      const projection = displayOnlyProjection(source, {...schemaUi(source), 'ui:label': false});
+      const fieldSchema = projection.schema as RJSFSchema;
       const path = [index, 'values', field.fieldId].reduce((parent, key) => toFieldPathId(key, registry.globalFormOptions, parent), fieldPathId);
       return <div className="sp-form-detail-cell">
         <SchemaField name={field.fieldId} schema={fieldSchema} registry={registry} fieldPathId={path}
-          uiSchema={{...schemaUi(fieldSchema), 'ui:label': false}} formData={row.values[field.fieldId]}
+          uiSchema={projection.uiSchema} formData={row.values[field.fieldId]}
           errorSchema={issue} required={required.includes(field.fieldId) || definition.required?.includes(field.fieldId)}
           disabled={locked} readonly={Boolean(fieldSchema.readOnly)} onBlur={onBlur} onFocus={onFocus}
           onChange={value => write(rows.map((item, rowIndex) => rowIndex === index

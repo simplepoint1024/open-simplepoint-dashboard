@@ -1,0 +1,9 @@
+.sp-entity-list {display: flex; flex-direction: column; gap: 10px; min-width: 0;}
+.sp-entity-list-options {max-height: min(360px, 50vh); min-height: 100px; overflow-y: auto; overscroll-behavior: contain;}
+.sp-entity-list-options > button {display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 10px; margin-block: 3px; border: 0; border-radius: 8px; background: transparent; text-align: left; color: var(--ant-color-text); cursor: pointer; font: inherit;}
+.sp-entity-list-options > button > span:first-child {flex: 1; min-width: 0;}
+.sp-entity-list-options > button:hover {background: var(--ant-color-fill-tertiary);}
+.sp-entity-list-options > button[aria-selected="true"] {color: var(--ant-color-primary); background: var(--ant-color-primary-bg);}
+.sp-entity-list-options > button:focus-visible {outline: 2px solid var(--ant-color-primary); outline-offset: -2px;}
+.sp-entity-list-options > button:disabled {opacity: .5; cursor: not-allowed;}
+.sp-entity-list-state {display: grid; min-height: 120px; place-items: center; color: var(--ant-color-text-secondary);}

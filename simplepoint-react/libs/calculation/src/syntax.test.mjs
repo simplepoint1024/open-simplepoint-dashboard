@@ -1,7 +1,28 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseFormula, printFormula, formulaReferences, node, replaceFormulaNode, validateFormula} from '../.test-dist/index.js';
+import {displayFormula, parseFormula, printFormula, formulaReferences, node, replaceFormulaNode, validateFormula} from '../.test-dist/index.js';
 const error = code => failure => failure.code === code;
+test('display names never rewrite stable references or bracket-like string literals', () => {
+  const expression = '[field-id]&"[field-id]"';
+  const tree = parseFormula(expression);
+  assert.equal(displayFormula(tree, [{id: 'field-id', label: '名字😀', type: 'STRING'}]), '([名字😀] & "[field-id]")');
+  assert.deepEqual([...formulaReferences(tree)], ['field-id']);
+  assert.deepEqual(parseFormula(printFormula(tree)), parseFormula(expression));
+  assert.equal(displayFormula(parseFormula('[a]+[b]'), [{id: 'a', label: '金额', type: 'DECIMAL'}, {id: 'b', label: '金额', type: 'DECIMAL'}]),
+    '([金额 · a] + [金额 · b])');
+});
+test('semantic errors include exact AST paths and source coordinates without changing AST JSON', () => {
+  const tree = parseFormula('=1+\n MISSING(2)');
+  const before = JSON.stringify(tree);
+  assert.throws(() => validateFormula(tree, [], []), failure => {
+    assert.equal(failure.code, 'UNKNOWN_FUNCTION'); assert.equal(failure.line, 2); assert.equal(failure.column, 1);
+    assert.deepEqual(failure.path, [1]); return true;
+  });
+  assert.equal(JSON.stringify(tree), before);
+  assert.throws(() => validateFormula(parseFormula('=[a]+[gone]'), [{id: 'a'}], []), failure => {
+    assert.equal(failure.column, 5); assert.deepEqual(failure.path, [1]); return true;
+  });
+});
 test('ANTLR parses Unicode references, escaped strings and fields with lossless decimal literals', () => {
   const ast = parseFormula('=IF([日本語]>0.123456789012345678901234567890,"a""b",[费用]]项目])');
   assert.deepEqual(formulaReferences(ast), new Set(['费用]项目', '日本語']));
@@ -41,4 +62,18 @@ test('Java and browser share canonical expression fixtures', async () => {
     assert.equal(printFormula(tree), expected, expression);
     assert.deepEqual(parseFormula(expected), tree, expression);
   }
+});
+
+test('every function null/type/boundary expression round-trips through the browser grammar', async () => {
+  const {readFile} = await import('node:fs/promises');
+  const fixtures = await readFile(new URL('../../../../simplepoint-calculation/src/test/resources/function-boundaries.tsv', import.meta.url), 'utf8');
+  const coverage = new Map();
+  for (const line of fixtures.split('\n').filter(line => line && !line.startsWith('#'))) {
+    const [name, kind, expression] = line.split('\t');
+    const tree = parseFormula(expression);
+    assert.deepEqual(parseFormula(printFormula(tree)), tree, name + ':' + kind);
+    coverage.set(name, [...(coverage.get(name) ?? []), kind]);
+  }
+  assert.equal(coverage.size, 63);
+  for (const kinds of coverage.values()) assert.deepEqual(kinds, ['null', 'type', 'boundary']);
 });

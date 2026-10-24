@@ -66,7 +66,7 @@ public class ApplicationFormSubmissionService {
     if (existing == null) {
       ApplicationFormRuntimeIdentity.requireCurrent(
           command.runtime(), form.formId(), form.formVersion());
-      var authority = contexts.forResource(form.resourceCode());
+      var authority = contexts.forForm(form);
       var workflowAuthority = FormSubmissionAuthorization.workflowContext();
       var runtime =
           workflow.startForm(
@@ -105,7 +105,8 @@ public class ApplicationFormSubmissionService {
           id,
           fingerprint,
           new AcceptedFormSubmission(
-              form, command, authority, workflowAuthority, validated, previousInstance));
+              form, command, authority, workflowAuthority, validated, previousInstance,
+              FormSubmissionMapping.captureRequirements(form, validated)));
     }
     processor.advance(id);
     return journal.getOwned(id, actor.tenantId(), actor.actorId());

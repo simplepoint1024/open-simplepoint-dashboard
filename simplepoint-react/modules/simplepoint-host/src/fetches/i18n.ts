@@ -1,5 +1,7 @@
 import fetches from '@/fetches';
 import { get } from '@simplepoint/shared/api/methods';
+import {isHttpError} from '@simplepoint/shared/api/client';
+import {loadMessageBundle} from './messageLoader';
 
 export type Language = {
   code: string;   // 例如 zh-CN / en-US
@@ -65,12 +67,8 @@ export async function fetchMessages(locale: string, namespaces?: string[]): Prom
     params.ns = namespaces.join(',');
   }
 
-  try {
-    const data = await get<Messages>(url, params);
-    if (data && typeof data === 'object') return data;
-  } catch (err) {
-    console.warn(`[fetchMessages] Failed to fetch messages for ${locale}:`, err);
-  }
-
-  return {};
+  return loadMessageBundle(
+    () => get<Messages>(url, params),
+    error => isHttpError(error) && (error.kind === 'network' || error.kind === 'timeout'),
+  );
 }

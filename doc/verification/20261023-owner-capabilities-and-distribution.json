@@ -1,0 +1,181 @@
+{
+  "date": "2026-10-23",
+  "scope": "tenant-owner-capabilities-and-application-distribution",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Owner-only package/resource capabilities require the authenticated current tenant owner; ordinary roles, administrator flags, public flags and aliases cannot delegate them. Navigation rechecks ownership; context cache namespace advanced.",
+    "Role and field permission candidates exclude owner-only capabilities and their dependency aliases. Tenant owner still requires entitlement and valid dependency graph.",
+    "Application distribution is a separate platform-administrator contract accepting enabled TENANT/PERSONAL executable resources, including non-grantable private hosts. It does not alter role delegation.",
+    "Application transfer requests DISTRIBUTION explicitly; server-derived delivery flags are protected by source field permissions. Complete subtree and assigned pagination remain bounded. Unavailable assignments stay visible for exact removal.",
+    "Explicit HTTP parameter names preserve binding without compiler parameter metadata. Browser fixtures come from actual current HTTP projections."
+  ],
+  "validation": {
+    "finalJvm": [
+      {
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "tests": "56",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:00:35",
+        "hostname": "arch",
+        "time": "23.139",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "sha256": "a35afe9966a65b0cc21a57148027b710f3cbd1e7a5c527dbb13d440f92888d80"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "tests": "23",
+        "skipped": "1",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:00:38",
+        "hostname": "arch",
+        "time": "8.111",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "sha256": "df1aa21ab2f4dd8ee0b3ecaa6255fd4a248c49926b3e957076631d334a094376"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest",
+        "tests": "16",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:00:33",
+        "hostname": "arch",
+        "time": "4.689",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest.xml",
+        "sha256": "4d0150a05d6ebe033139ea4c63e428bafc029b0dfeca8a0d6a414c13e0f6e2e4"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImplTest",
+        "tests": "31",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:00:32",
+        "hostname": "arch",
+        "time": "5.001",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImplTest.xml",
+        "sha256": "026ec507b93852387e3a6844416482e1ff12b29f8aa414a42944e181fb04aeba"
+      },
+      {
+        "name": "org.simplepoint.security.context.AuthorizationContextCacheSecurityTest",
+        "tests": "13",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:00:30",
+        "hostname": "arch",
+        "time": "0.406",
+        "report": "simplepoint-security/simplepoint-security-core/build/test-results/test/TEST-org.simplepoint.security.context.AuthorizationContextCacheSecurityTest.xml",
+        "sha256": "d5a33f7f3652fed40dc9a01c46deef6b4f95894ec2b6e5e3052b9c45589d18b4"
+      }
+    ],
+    "earlierRoleFieldRegression": [
+      {
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest",
+        "tests": "21",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:47:50",
+        "hostname": "arch",
+        "time": "9.328",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest.xml",
+        "sha256": "4b3d27d0130f4618368cc4a89e1486572897e9313a03ff755443b74ca051fa69"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest",
+        "tests": "20",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:48:00",
+        "hostname": "arch",
+        "time": "0.978",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest.xml",
+        "sha256": "e9a331747bcca1f65a3240d3935189f0f6ee877468dc4878b5e0ec6ccbb33751"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.RoleScopeBindingServiceTest",
+        "tests": "5",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:48:00",
+        "hostname": "arch",
+        "time": "0.151",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.RoleScopeBindingServiceTest.xml",
+        "sha256": "a2aa18b2fb27fc5af74c5ad6e4d4883ceb94649fb3be0da523a0d1a604591a8f"
+      }
+    ],
+    "earlierOwnerPostgresqlAndHttp": [
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "tests": "23",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:42:53",
+        "hostname": "arch",
+        "time": "12.49",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "sha256": "0fd8ab59ff3ee8598644cd042f644fae9601059d444fe495a431975ff9548f16"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "tests": "52",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:43:18",
+        "hostname": "arch",
+        "time": "17.497",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "sha256": "a1d42170464ee6be44cc8e7d0ebd71cd4d49ecc4b26e8e5af381989931da09d6"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+        "tests": "26",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T09:43:03",
+        "hostname": "arch",
+        "time": "12.721",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+        "sha256": "ad7a6a342ade3efca1bcc8d025f2e2dc2d41d10778f36f5c16c29ca1e74ad269"
+      }
+    ],
+    "earlierDatabaseScope": "Only TenantResourceCatalogReadTest (23) ran on isolated PostgreSQL 17; HTTP suites used H2. No deployed environment assertions.",
+    "frontend": "Eight TypeScript checks passed; common production build passed; targeted application resource browser passed including non-grantable host beyond 500, subtree, failure/retry, selection fencing and masked metadata.",
+    "gates": "20-file scoped Checkstyle; one overload-order warning fixed and affected gate rerun; module boundary check and strict UI audit passed (162 files, 40 reviewed, 0 unreviewed)."
+  },
+  "sourceSha256": {
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextCacheSecurityTest.java": "7c0b40a9d8c7ce0da4653e6d884a5c8fad3b90450e773884f60d6794293c0708",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceService.java": "f20207a71d54ae03667a22123e52945e98529dfff31485aa0bbfbdf9df37224c",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/ResourceDistributionPolicy.java": "3815d881d3f35816bb5c10e2bc435ec583c96aaeacdb2fc1ffc87aedf8163ffd",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/ResourceDirectoryPurpose.java": "c2c4e1a7168280dd82b2cf8573f9f9df44465dd9238d8cff05b9f2bf157ce80a",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java": "e05e85e0da8b53e4fe7b262e9ac29d7e612c2d5ffb7b7c608a3379fed773e488",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/resource/rest/endpoint/ResourcesController.java": "b4c7b90b73e71541b1f71870838ddc04cf3f13bf0989c89da1d0065742a32cdd",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextResolver.java": "83eae8df85886521ad883ab03a8c6194094e220cac99548674aabe0cd9113258",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/entity/ResourceNode.java": "31ab075b70f30efd9b9d958847a90e1fa6cc9334a9bbb9f74a291e61b4818228",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "033d16700a5ea102eb51c015f97c084c689e581f84e8d68327e5b9e3b1b712d9",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRuntimeQuery.java": "eee0c837ba576a30c89eaa4db2658ffb79650aa1157ae60d8a4abb9d5c91ddfc",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceDirectoryQuery.java": "ae3a113d54224ea9a185ef5052ea55d4d3cc642bf4cfbd80c48671c7aec581b2",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImpl.java": "46ea40af1477a54037cb2d1042b375832990fcd617b3de0b9fe871ef278c2b8b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImplTest.java": "390bd0f7c5385b07487e0d9af717d8380b7fa7562806332f82c480459ca881b0",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/ApplicationServiceImplTest.java": "b04df2a273cb5ddcbd9b3d11c4c5ec4216a0a42ea88a3348a18a3e6faa05c478",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "c4498071be50e1462fbc31a7528a8dd84652a668a04575ae164c9e6bc25ff345",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/constants/TenantOwnerCapabilities.java": "fa26e41fcf1f9d7c2ef0b3df910fa7942fdc824df1d7d02ca4c7c73048d4ff45",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java": "d35d36539ed47c5f7675ed98dccddf8b3c7f3f1cbcb40a37e0868c13443149f1",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "ade24164bf93e757a78c7c00dc4f5456d84ce960407691edf50f0931fa876289",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ApplicationServiceImpl.java": "0605234b0f91843fca0294e0f4417e122a0de3bc189ae6f258c43b600bc96b86",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "a7c7b44f661dd57a2d3bd376192a35c893f6b4d3f51999d0e059c78b0da76b72"
+  },
+  "notYetVerified": [
+    "Existing environment has not been deployed or migrated.",
+    "Platform critical change propagation, tenant availability presentation, full adoption and live dual-topology/MQ acceptance remain."
+  ]
+}

@@ -1,3 +1,4 @@
+import {asyncComponent} from '../AsyncComponent';
 import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import DataTable from '../DataTable';
 import SForm from '../SForm/Lazy';
@@ -5,8 +6,8 @@ import TableActions from '../Table/Actions';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {Alert, App, Descriptions, Drawer, Modal, Segmented, Space, Spin, Tag} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
-import {type ComponentProps, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useData} from '@simplepoint/shared/api/methods';
+import {type ComponentProps, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {type WorkflowInboxItem, workflowApi} from '@simplepoint/shared/workflow/api';
 import {useRemoteList} from '../DataTable/useRemoteList';
@@ -25,7 +26,7 @@ type CompleteValues = {comment?: string};
 type TaskView = 'pending' | 'completed';
 type FormSchema = ComponentProps<typeof SForm>['schema'];
 
-const VariablesEditor = lazy(() => import('../WorkflowForms/VariablesEditor'));
+const VariablesEditor = asyncComponent(() => import('../WorkflowForms/VariablesEditor'));
 
 export default function WorkflowInbox() {
   const scope = useQueryScope();
@@ -56,6 +57,10 @@ function TasksSession() {
   const targetRef = useRef<WorkflowInboxItem | undefined>(undefined);
   const locked = submitting || !!completeTarget || !!diagramId || discardOpen;
   usePageRetention(!locked, locked);
+  const requestedView = params.get('view') === 'completed' ? 'completed' : 'pending';
+  useEffect(() => {
+    if (mutation.selected && !locked) setView(requestedView);
+  }, [requestedView, mutation.selected, locked]);
 
   useEffect(() => { void ensure(['workflow']); }, [ensure, locale]);
   // Preserve each tab's query/page state, but never across authorization scopes.
@@ -64,14 +69,17 @@ function TasksSession() {
   const tasks = view === 'pending' ? pending : completed;
   const linkedTask = params.get('task'), linkedInstance = params.get('instance');
   useEffect(() => {if (!linkedTask && !linkedInstance) handledLink.current = undefined;}, [linkedTask, linkedInstance]);
-  const linkedItem = useData(['workflow', 'inbox-entry', linkedTask], ({signal}) => workflowApi.inboxItem(linkedTask!, signal),
+  const linkedItem = useOwnedData(['workflow', 'inbox-entry', linkedTask], ({signal}) => workflowApi.inboxItem(linkedTask!, signal),
     {enabled: Boolean(linkedTask) && mutation.selected, retry: false});
-  const clearLink = () => {const next = new URLSearchParams(params); next.delete('task'); next.delete('instance'); setParams(next, {replace: true});};
+  const clearLink = () => {
+    handledLink.current = undefined;
+    const next = new URLSearchParams(params); next.delete('task'); next.delete('instance'); setParams(next, {replace: true});
+  };
   useEffect(() => {
     if (!mutation.selected || targetRef.current || diagramId || submittingRef.current) return;
     const key = linkedTask ? `task:${linkedTask}` : linkedInstance ? `instance:${linkedInstance}` : undefined;
     if (!key || handledLink.current === key) return;
-    if (linkedTask && linkedItem.data?.taskId === linkedTask) {
+    if (linkedTask && linkedItem.data?.taskId === linkedTask && !linkedItem.isFetching && !linkedItem.isError) {
       handledLink.current = key;
       if (linkedItem.data.actionable) {
         targetRef.current = linkedItem.data; setCompleteTarget(linkedItem.data); setFormSession(value => value + 1);
@@ -80,8 +88,8 @@ function TasksSession() {
     } else if (linkedInstance && (!linkedTask || linkedItem.isError)) {
       handledLink.current = key; setDiagramId(linkedInstance);
     }
-  }, [linkedTask, linkedInstance, linkedItem.data, linkedItem.isError, diagramId, mutation.selected]);
-  const taskForm = useData(['workflow', 'task-form', completeTarget?.id, formSession],
+  }, [linkedTask, linkedInstance, linkedItem.data, linkedItem.isFetching, linkedItem.isError, diagramId, mutation.selected, submitting]);
+  const taskForm = useOwnedData(['workflow', 'task-form', completeTarget?.id, formSession],
     ({signal}) => workflowApi.taskForm(completeTarget!.taskId!, signal),
     {enabled: Boolean(completeTarget?.taskId), retry: false, staleTime: Infinity, gcTime: 120_000,
       refetchOnWindowFocus: false, refetchOnReconnect: false});
@@ -110,7 +118,7 @@ function TasksSession() {
       || uncertain?.action === 'reject') return;
     let currentVariables: Record<string, unknown>;
     try {
-      if (!variablesEditorRef.current) return;
+      if (!variablesEditorRef.current) {setError(t('workflow.form.notReady', '业务表单尚未就绪，请加载完成后重试。')); return;}
       currentVariables = uncertain?.action === 'complete' ? uncertain.command.variables : variablesEditorRef.current.getValues(taskForm.data);
     } catch (reason) {setError((reason as Error).message); return;}
     const request = mutation.begin(); if (!request) return;
@@ -193,12 +201,12 @@ function TasksSession() {
     {title: t('workflow.actions', '操作'), key: 'actions', width: view === 'pending' ? 230 : 100,
       fixed: 'right', render: (_, row) => <TableActions selectedKeys={[row.id]} selectedRows={[row]}
         buttons={[
-          {key: 'diagram', sort: 10, text: t('workflow.action.diagram', '进度'), type: 'link',
+          {key: 'diagram', sort: 10, icon: view === 'completed' ? 'FileSearchOutlined' : 'ApartmentOutlined', text: view === 'completed' ? t('workflow.action.view', '查看') : t('workflow.action.diagram', '进度'), type: 'link',
             argumentMinSize: 1, argumentMaxSize: 1},
-          ...(view === 'pending' && row.claimable ? [{key: 'claim', sort: 20,
+          ...(view === 'pending' && row.claimable ? [{key: 'claim', sort: 20, icon: 'UserAddOutlined',
             text: t('workflow.action.claim', '认领'), type: 'link' as const,
             loading: submitting, argumentMinSize: 1, argumentMaxSize: 1}] : []),
-          ...(view === 'pending' && row.actionable ? [{key: 'complete', sort: 30,
+          ...(view === 'pending' && row.actionable ? [{key: 'complete', sort: 30, icon: 'AuditOutlined',
             text: t('workflow.action.complete', '办理'), type: 'link' as const,
             argumentMinSize: 1, argumentMaxSize: 1}] : []),
         ]} isButtonDisabled={() => locked || !mutation.selected} onButtonEvents={{
@@ -228,7 +236,8 @@ function TasksSession() {
           ]} onChange={value => {setView(value as TaskView); const next = new URLSearchParams(params); next.set('view', String(value)); setParams(next, {replace: true});}}/>
         </Space>}/>
 
-    <Drawer rootClassName="workflow-task-editor" title={completeTarget?.title} open={Boolean(completeTarget) && mutation.selected} width={640}
+    <Drawer rootClassName="workflow-task-editor" title={completeTarget?.title} open={Boolean(completeTarget) && mutation.selected}
+      width={taskForm.data?.binding ? 'min(1200px, 96vw)' : 'min(640px, 96vw)'}
       destroyOnHidden={!completeTarget} closable={!submitting && !uncertain} maskClosable={false} keyboard={!submitting && !uncertain} onClose={close}>
       {error && <Alert type="error" showIcon title={error}/>}
       {completeTarget && <Descriptions size="small" column={2} items={[

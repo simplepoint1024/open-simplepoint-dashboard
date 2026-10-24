@@ -225,7 +225,7 @@ class PersonalServiceImplTest {
     action(item, "CANCEL");
     assertThat(service.overview().activeItems()).isEqualTo(1);
     assertThat(service.items(null, null, null, null, "OVERDUE", PageRequest.of(0, 1000)).getSize())
-        .isEqualTo(100);
+        .isEqualTo(500);
   }
 
   @Test

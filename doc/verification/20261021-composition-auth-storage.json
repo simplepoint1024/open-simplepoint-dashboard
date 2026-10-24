@@ -1,0 +1,572 @@
+{
+  "date": "2026-10-21",
+  "scope": "Identity MFA ownership and actual OIDC adapter transactions, client V2 migration",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    "./gradlew -I /tmp/simplepoint-auth-storage-checkstyle.gradle verifyAuthStorageStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition-verification:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-authentication:test :simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service:test :simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest:test :simplepoint-security:simplepoint-security-oauth2-server:test :simplepoint-security:simplepoint-security-core:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew :simplepoint-platform:simplepoint-platform-composition-verification:test --tests \"*AuthenticationStoragePostgresTest\" -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "gates": [
+      "SP_MIGRATIONS_POSTGRES_URL",
+      "SP_MIGRATIONS_POSTGRES_USER",
+      "SP_MIGRATIONS_POSTGRES_PASSWORD"
+    ],
+    "database": {
+      "version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+      "image": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+      "oomKilled": false,
+      "remainingTestSchemas": 0,
+      "topology": "One isolated PostgreSQL instance, independent schemas and DataSource objects"
+    }
+  },
+  "totals": {
+    "tests": 263,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "executedDuringIncrementTests": 221,
+  "retainedUpToDateTests": 42,
+  "executionNotes": [
+    "First command found missing test-only compile dependencies and five scoped Checkstyle warnings; corrected. Authentication 35, OIDC service 80 and OIDC rest 1 had already completed successfully in that invocation.",
+    "The initial full successful suite did not assert caller-supplied client IDs. Adding that contract assertion reproduced the existing defect in both shared and split configurations (two failures).",
+    "Fixed initial ID preservation and repeat-registration audit metadata; added conflict rejection, clear-secret, stable-ID and audit assertions. The final full command reran composition 34, OIDC service 80 and OAuth 71 successfully.",
+    "Unchanged security-core 42 tests remained UP-TO-DATE throughout. Final authentication 35 and OIDC rest 1 also reused valid results from the initial invocation. Totals describe latest suite results, not 263 fresh cases in the final command."
+  ],
+  "testProjects": [
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "finalTaskState": "EXECUTED",
+      "executedDuringIncrement": true,
+      "totals": {
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AuthenticationStoragePostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.OidcClientMigrationPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-authentication",
+      "finalTaskState": "UP-TO-DATE",
+      "executedDuringIncrement": true,
+      "totals": {
+        "tests": 35,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.AccountCredentialVerifierTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.AuthenticationModuleBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.LoginProtectionTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.MfaVerificationServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.TotpServiceTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.rbac.authentication.mfa.TwoFactorSetupServiceImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service",
+      "finalTaskState": "EXECUTED",
+      "executedDuringIncrement": true,
+      "totals": {
+        "tests": 80,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.initialize.ClientRegistrationInitializeTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.initialize.Oauth2ClientInitializePropertiesTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.repository.impl.RegisteredClientRepositoryImplTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderCredentialCipherTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.security.ExternalIdentityProviderUrlValidatorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcAuthorizationConsentServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcAuthorizationServiceImplTest",
+          "tests": 37,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-rest",
+      "finalTaskState": "UP-TO-DATE",
+      "executedDuringIncrement": true,
+      "totals": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.oidc.rest.controller.OidcClientControllerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-security:simplepoint-security-oauth2-server",
+      "finalTaskState": "EXECUTED",
+      "executedDuringIncrement": true,
+      "totals": {
+        "tests": 71,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.ClientIdMetadataDocumentRegisteredClientRepositoryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationConverterTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationProviderTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.ExternalIdentityAccountLinkerTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.ExternalIdentityLinkFlowTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.client.GithubEmailAttributeEnricherTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.configuration.AuthenticationBoundaryHttpTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.configuration.AuthorizationServerConfigurationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.configuration.GatewayAwareLoginAuthenticationEntryPointTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.configuration.LocalJwkConfigurationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.configuration.OidcConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.controller.TwoFactorControllerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.controller.TwoFactorSetupControllerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisherTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandlerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.handler.RecoveringOidcLogoutFailureHandlerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthenticationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.cloud.oauth.server.unit.test.GenerateJwkTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-security:simplepoint-security-core",
+      "finalTaskState": "UP-TO-DATE",
+      "executedDuringIncrement": false,
+      "totals": {
+        "tests": 42,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.security.ResourceScopePolicyTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.authentication.AuthenticationSecretCipherTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextCacheSecurityTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextRejectionTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.context.AuthorizationContextResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.EntityFieldsTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.ResourceScopeTypesConverterTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.entity.UserTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.security.identity.UserDisplayNameTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "scopedStyleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/authStorage.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/build/reports/checkstyle/authStorage.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/build/reports/checkstyle/authStorage.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build/reports/checkstyle/authStorage.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-server/build/reports/checkstyle/authStorage.xml",
+      "violations": 0
+    }
+  ],
+  "styleFiles": [
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupServiceImplTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupService.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupServiceImpl.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupControllerTest.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupController.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/repository/impl/RegisteredClientRepositoryImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/service/impl/OidcAuthorizationServiceImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/service/impl/OidcAuthorizationConsentServiceImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/src/main/java/org/simplepoint/plugin/oidc/api/entity/Client.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AuthenticationStoragePostgresTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/OidcClientMigrationPostgresTest.java"
+  ],
+  "boundaryGate": "verifyModuleBoundaries passed",
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupServiceImplTest.java": "a08d00108ddf631c3eecc516ca131da8eecdd31142617a04872f4b66a19b007a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupService.java": "4b295264eb715b6814adfc501cbdf91646a281097ffa741c5f2cbdc5dbefe5be",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/mfa/TwoFactorSetupServiceImpl.java": "8b8d4d4e235ee3f8e2c0d059e632311dd24b07bc59dd28f37e6546fd8b6157a1",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupControllerTest.java": "e2fb2514300b99c368246bef66c56de7a6b1de8e727d69c2d1140806dfc5650f",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/controller/TwoFactorSetupController.java": "00ce87dd9d2525f72e2eab7463f3bf8ada0371d460b4d75a1c41884c5874f4ff",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/repository/impl/RegisteredClientRepositoryImpl.java": "b55d2a1c6cc2880f0aab5d96aef3189ee59ea4202d93393201b0d18f52889a0f",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/service/impl/OidcAuthorizationServiceImpl.java": "b2365664e1427b0b439b9202d98dbfdeec3cc1fcca806104d2a07b1cd5fc3cb2",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-service/src/main/java/org/simplepoint/plugin/oidc/service/service/impl/OidcAuthorizationConsentServiceImpl.java": "e29950896e88a8ed83561fbffdf207fb5213ba767347eb4294f3bbd0af1cc3ac",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-api/src/main/java/org/simplepoint/plugin/oidc/api/entity/Client.java": "c1144169aa3985c8bdd3c87fb41fd4ecdf66cb1b6042e32ff8d4f8edacfa2414",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AuthenticationStoragePostgresTest.java": "e87c6ee302e6d259468ced25248111c39f3e1f41129d85cf9642a637a6e22994",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/OidcClientMigrationPostgresTest.java": "522693fbf4998f01e11bde17b7398f269670cb6f288e9f2ab927c3719e4f63e9",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/build.gradle.kts": "198eddacf509b7e096f4830a62b97c51fe6d17b1edf4d211d66be4fa542b8f93",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/README.md": "b20b1fdee7f5d94ef151894acdbbe7176a05e5422ab61c5487c12aa15a760e58",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "d8245a2b597817fe844a46d1bb2c7f8ae04fa0d0958f271272f6e2da32652c74",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/README.md": "ecaee9de7cadefdcefc0cb9281f2df04219446e223c0082c8464913febba4e9f",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules/oidc/db/manifest.properties": "3eb97debc26b63a53c2f524dc88238d57a3ef1bc1b084902ef676cf4c700c930",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules/oidc/db/postgresql/V1__oidc_foundation.sql": "5c43f623f7efe2afc7cbe877ef95b9b926609c2420de8f60ba5cd5509d3d3004",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-module/src/main/resources/META-INF/simplepoint/modules/oidc/db/postgresql/V2__client_registration_constraints.sql": "c0f2a03396de642a493e04b8c0dd1fd856bfa08d44434080cec0bd60a7ff7134",
+    "simplepoint-data/simplepoint-data-jpa-composition/README.md": "de648734eeff26e7d1cc96135bd281806a343bd056289db478aeabc231074250",
+    "doc/design/modular_service_composition_plan.md": "38b98fbf224ca4ee37b892caa1009b2a1327ceafc68306c4b09237055aa25fe9"
+  },
+  "deletedAfterMove": [
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/TwoFactorSetupService.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/service/TwoFactorSetupServiceImpl.java",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/service/TwoFactorSetupServiceImplTest.java"
+  ],
+  "cleanup": {
+    "containerAndAnonymousVolumesRemoved": true,
+    "temporaryCredentialFileRemoved": true,
+    "businessDatabaseModified": false
+  },
+  "limitations": [
+    "Enrollment storage tests use real JPA/transactions/cipher/BCrypt, with TOTP and LoginProtection mocks. Separate authentication tests include actual isolated Redis; this is not full HTTP login acceptance.",
+    "Independent stores were separate schemas in one PostgreSQL instance, not separate hosts.",
+    "ExternalIdentityAccountLinker and ExternalIdentityAccountManager still require domain-owned transaction extraction and conflict recovery verification.",
+    "Other module migrations, native Flowable/event schema integration, verified legacy adoption, installer ordering, HTTP/frontend extraction, standalone service and complete deployment topologies remain pending.",
+    "OIDC V2 does not automatically adopt an unmanaged legacy database. Existing service environments were not migrated or deployed.",
+    "No frontend changes or browser verification in this increment; no commit or push."
+  ]
+}

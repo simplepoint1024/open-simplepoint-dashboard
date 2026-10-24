@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createCalculationRuntimeFixture} from './calculation-runtime-fixture.mjs';
 import {fixturePage, fixtureSchema} from './query-fixture.mjs';
 
 /** Independent publication and record state, fed only by the browser's saved design. */
@@ -6,8 +7,10 @@ export function createFormPublicationFixture(forms, drafts) {
   let applications, loseFreeze = false, losePublication = false, failPreparation = false, cancelPublication = false;
   const requestIntents = new Map();
   const recordReceipts = new Map();
+  const calculations = createCalculationRuntimeFixture();
   let blockPublication = false;
   let loseRecord = false;
+  let progress;
   const versions = new Map(), releases = new Map(), records = new Map(), writes = [], receipts = new Map(), intents = new Map();
   const read = async req => {let raw = ''; for await (const chunk of req) raw += chunk; return raw ? JSON.parse(raw) : {};};
   const activate = intent => {
@@ -23,7 +26,8 @@ export function createFormPublicationFixture(forms, drafts) {
     form.status = 'PUBLISHED'; form.publishedVersion = intent.formVersion;
     return release;
   };
-  return {versions, releases, records, writes, intents, enable(value) {applications = value;},
+  return {versions, releases, records, writes, intents, calculations, enable(value) {applications = value;},
+    stagePublication(phase) {progress = phase ? {contractVersion: 1, phase, sequence: phase === 'STAGING' ? '1' : '2', completedRecords: '10', totalRecords: '10'} : undefined;},
     blockNextPublication() {blockPublication = true;},
     loseRecordResponse() {loseRecord = true;},
     loseResponses() {loseFreeze = true; losePublication = true;},
@@ -115,6 +119,11 @@ export function createFormPublicationFixture(forms, drafts) {
             issues: [{id: 'required', kind: 'REQUIRED', fields: ['客户姓名'], count: '9007199254740993'}]};
           return respond({pageBinding: {...intent}, inspection: intent.inspection}), true;
         }
+        if (progress) {
+          intent.status = 'ACTIVATING';
+          return respond({dataPublication: {id: 'publication-' + intent.id, formId: id, formVersion: Number(number), status: 'DATA_READY'},
+            pageBinding: {...intent}, progress}), true;
+        }
         const release = releases.get(key) ?? activate(intent);
         if (losePublication) {losePublication = false; expectedFailure(503); return respond({message: '发布响应丢失（测试）'}, 503), true;}
         return respond(release), true;
@@ -126,7 +135,7 @@ export function createFormPublicationFixture(forms, drafts) {
       const version = versions.get(page.formId).find(item => item.version === page.formVersion), document = version.document;
       if (path === '') return respond({applicationId: appId, pageId, pageName: page.name, formId: page.formId,
         formName: '客户登记', formVersion: page.formVersion, sceneId: document.scenes.find(item => item.type === 'MAIN').sceneId,
-        document, capabilities: {canCreate: !readonly, canEdit: !readonly, canDelete: !readonly, canStartProcess: false}}), true;
+        document: calculations.document(document), capabilities: {canCreate: !readonly, canEdit: !readonly, canDelete: !readonly, canStartProcess: false}}), true;
       if (path === '/records/schema') {
         // Runtime uses stable field identities (including UUIDs), not local-table property aliases.
         const schema = {schema: {type: 'object', properties: Object.fromEntries(document.fields.map(field =>
@@ -140,9 +149,14 @@ export function createFormPublicationFixture(forms, drafts) {
       }
       if (req.method === 'GET' && path.startsWith('/records/')) {
         const record = records.get(path.split('/').at(-1)); assert.ok(record);
-        return respond(structuredClone(record)), true;
+        const result = structuredClone(record);
+        for (const detail of document.details ?? []) for (const row of result.values[detail.detailId] ?? []) {
+          row.systemValues = {createdBy: 'fixture-author', createdAt: '2026-10-19T00:00:00Z', tenantId: 'fixture-tenant'};
+        }
+        return respond(result), true;
       }
       const data = await read(req);
+      if (path === '/records/preview') return respond(await calculations.preview(data)), true;
       // Lists omit child collections; editing must load the aggregate before opening the form.
       if (path === '/records/query') return respond({page: data.page, size: data.size, total: records.size,
         records: [...records.values()].map(record => ({...record, values: Object.fromEntries(
@@ -174,14 +188,15 @@ export function createFormPublicationFixture(forms, drafts) {
       assert.deepEqual(data.runtime, {formId: page.formId, formVersion: page.formVersion});
       for (const field of document.fields) if (field.submitRequired) assert.ok(data.values[field.fieldId]?.trim());
       let record;
-      if (req.method === 'POST') {record = {id: 'published-record-' + (records.size + 1), version: 0, state: data.state, values: data.values}; records.set(record.id, record);}
+      if (req.method === 'POST') {record = {id: 'published-record-' + (records.size + 1), version: 0, state: data.state, values: structuredClone(data.values)}; records.set(record.id, record);}
       else {record = records.get(path.split('/').at(-1)); assert.ok(record); assert.equal(data.expectedVersion, record.version);
         for (const field of document.fields) {
           if (field.writePolicy === 'CREATE_ONLY' || field.writePolicy === 'UNTIL_SUBMITTED' && record.state === 'SUBMITTED') {
             assert.ok(!Object.hasOwn(data.values, field.fieldId), 'business-locked fields must be omitted from updates');
           }
         }
-        record.version++; Object.assign(record.values, data.values);}
+        record.version++; Object.assign(record.values, structuredClone(data.values));}
+      calculations.committed(record, data);
       return acknowledge({recordId: record.id, version: record.version, state: record.state, currentRecord: structuredClone(record)});
     }};
 }

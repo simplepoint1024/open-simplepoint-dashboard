@@ -30,12 +30,12 @@
     "test:query-scope": "node --experimental-strip-types --test libs/shared/api/queryScope.test.mjs",
     "test:components": "node --experimental-strip-types --test libs/components/SimpleTable/errorMessage.test.mjs libs/components/SimpleTable/recordIdentity.test.mjs libs/components/Table/settings.test.mjs libs/components/Table/filters.test.mjs libs/components/Table/tableStyles.test.mjs libs/components/LoadingFeedback/state.test.mjs",
     "i18n:sync": "node scripts/sync-i18n-bundles.mjs",
-    "i18n:test": "node --test scripts/i18n/check-usage.test.mjs",
+    "i18n:test": "node --test scripts/i18n/check-usage.test.mjs scripts/i18n/backend-resources.test.mjs",
     "i18n:check": "pnpm run i18n:test && node scripts/sync-i18n-bundles.mjs --check",
     "build": "pnpm --filter './modules/*' --if-present run build",
     "check:bundles": "node scripts/check-mf-entry-sizes.mjs",
     "check:frontend": "node scripts/verify-frontend.mjs",
-    "test:mf": "node --experimental-strip-types --test modules/simplepoint-host/src/utils/mfPreload.test.mjs modules/simplepoint-host/src/utils/prefetchScheduler.test.mjs libs/shared/types/module.exposes.test.mjs",
+    "test:mf": "node --experimental-strip-types --test modules/simplepoint-host/src/utils/mfPreload.test.mjs modules/simplepoint-host/src/utils/hostComponent.test.mjs modules/simplepoint-host/src/store/routes/visibility.test.mjs modules/simplepoint-host/src/utils/prefetchScheduler.test.mjs libs/shared/types/module.exposes.test.mjs",
     "test:mf:browser": "node scripts/smoke-mf.mjs"
   },
   "dependencies": {

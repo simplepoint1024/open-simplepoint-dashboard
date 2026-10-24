@@ -56,7 +56,7 @@ class McpCatalogServiceTest {
     for (var request :
         List.of(
             org.springframework.data.domain.Pageable.unpaged(),
-            PageRequest.of(0, 101),
+            PageRequest.of(0, 501),
             PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("credentialCiphertext")),
             PageRequest.of(Integer.MAX_VALUE, 20))) {
       assertThatThrownBy(() -> service.findCatalog(null, request))

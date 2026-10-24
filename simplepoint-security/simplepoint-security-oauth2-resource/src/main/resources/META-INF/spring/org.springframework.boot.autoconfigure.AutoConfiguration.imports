@@ -1,1 +1,2 @@
 org.simplepoint.security.oauth2.resourceserver.config.ResourceServerAutoConfiguration
+org.simplepoint.security.oauth2.resourceserver.config.ServiceRouterLocalSecurityAutoConfiguration

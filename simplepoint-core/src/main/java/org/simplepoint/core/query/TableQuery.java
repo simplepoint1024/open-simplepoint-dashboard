@@ -19,5 +19,5 @@ public @interface TableQuery {
   QueryRelation[] relations() default {};
 
   /** Endpoint-specific maximum page size, advertised to clients and enforced by repositories. */
-  int maxPageSize() default 200;
+  int maxPageSize() default TablePagination.MAX_PAGE_SIZE;
 }

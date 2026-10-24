@@ -194,6 +194,25 @@ public class JdbcDataSourceDefinitionServiceImpl
     }
   }
 
+  /** Releases owned pools and driver class loaders when the module stops. */
+  @jakarta.annotation.PreDestroy
+  public void closeRuntimeDataSources() {
+    RuntimeException failure = null;
+    for (String id : List.copyOf(runtimeDataSources.keySet())) {
+      try {
+        disconnect(id);
+      } catch (RuntimeException exception) {
+        if (failure == null) {
+          failure = new IllegalStateException("Failed to close managed JDBC pools");
+        }
+        failure.addSuppressed(exception);
+      }
+    }
+    if (failure != null) {
+      throw failure;
+    }
+  }
+
   /** {@inheritDoc} */
   @Override
   public void disconnectByDriverId(final String driverId) {

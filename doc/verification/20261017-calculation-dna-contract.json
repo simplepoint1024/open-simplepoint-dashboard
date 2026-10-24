@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-17T12:05:02.453175+00:00",
+  "scope": "P0 acceptance plan and inventory; P1 DNA calculation publication contract/schema compiler; reusable engine function acceptance examples",
+  "wholeGoalComplete": false,
+  "deployed": false,
+  "plan": "../design/form_calculation_delivery_plan.md",
+  "matrix": "form-calculation-acceptance-matrix.json",
+  "results": {
+    "calculation": {
+      "totals": {
+        "tests": 79,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.calculation.FormulaAggregatePlanTest",
+          "tests": 6,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.calculation.FormulaEngineTest",
+          "tests": 7,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.calculation.FormulaSyntaxContractTest",
+          "tests": 1,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.calculation.StandardFunctionsTest",
+          "tests": 65,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        }
+      ]
+    },
+    "dnaApi": {
+      "totals": {
+        "tests": 35,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventTest",
+          "tests": 1,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContextTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.dialect.DialectCapabilityDescriptorTest",
+          "tests": 3,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorDecoderTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelTransitionsTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinitionTest",
+          "tests": 4,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordCompletenessQueryTest",
+          "tests": 4,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommandTest",
+          "tests": 1,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModelTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationTest",
+          "tests": 5,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyVersionTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValuesTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinitionTest",
+          "tests": 3,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        }
+      ]
+    },
+    "dnaImplementationSelected": {
+      "totals": {
+        "tests": 25,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationCompilerTest",
+          "tests": 6,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.service.record.RecordCalculationPublicationGuardTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.service.record.RecordRequestFingerprintTest",
+          "tests": 8,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.service.record.RecordSqlCompilerTest",
+          "tests": 7,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFenceDatabaseTest",
+          "tests": 2,
+          "skipped": 0,
+          "failures": 0,
+          "errors": 0
+        }
+      ]
+    }
+  },
+  "gates": {
+    "apiCheckstyleMain": "passed",
+    "implementationCheckstyleMain": "passed",
+    "calculationCheck": "passed, including authored main/test style, standalone runtime dependency isolation and generated TypeScript grammar",
+    "coverageStructure": "passed: 175 planned cases",
+    "completeAcceptance": "rejected as expected: 175 cases still lack final business evidence"
+  },
+  "databases": {
+    "postgresql": "17 disposable tmpfs container",
+    "mysql": "8.4 disposable tmpfs container",
+    "existingBusinessDataTouched": false,
+    "temporaryContainersRemoved": true,
+    "tests": "RecordWriteFenceDatabaseTest: two real database tests, including concurrent writers/publication, cancellation races, retries, rollback and lock timeout"
+  },
+  "checks": [
+    "Old publication JSON omits calculations and preserves pinned pre-existing SHA-256 fingerprint",
+    "Explicit empty definition differs from omitted definition; cancellation and publication include expression/model/schema changes",
+    "Bounded immutable formula/scopes contract rejects duplicate aliases, reserved parent and unbounded total work",
+    "Trusted schema graph checks child ownership, datasource/namespace, schema versions/checksum, stable IDs and renamed physical columns",
+    "Conditional cycles, unknown fields, server ownership/order columns and calculated defaults rejected",
+    "63 function fixtures execute with exact typed expectations and fixed time; all registry names and arity boundaries covered",
+    "Publication and cancellation with calculation metadata remain rejected before any persistence until transactional activation is implemented"
+  ],
+  "remaining": [
+    "Typed DNA execution and protected definition installation",
+    "Atomic main/detail reads, computation, persistence, receipt and snapshot",
+    "Backfill/recovery/activation, direct DNA authorization and query inference boundaries",
+    "Designer/runtime integration and published business acceptance matrix"
+  ],
+  "logs": [
+    {
+      "path": "/tmp/sp-calculation-p1.log",
+      "sha256": "4360ab1c572c4484e69286901b2b786c2a671fd143e605ae4c9da2c7a18ec76a"
+    },
+    {
+      "path": "/tmp/sp-calculation-catalog-quality.log",
+      "sha256": "88edab61a7fb8659c500ff81547ad040213814399e2eeb69652c0aafd52a9d81"
+    },
+    {
+      "path": "/tmp/sp-calculation-p1-realdb.log",
+      "sha256": "7957309845b34239d47d9d2604d9cc32db5a9df4f3645128b8bca74d5d9c0573"
+    },
+    {
+      "path": "/tmp/sp-calculation-matrix-audit.log",
+      "sha256": "3e5a21b6acd2fa475d79e21450f6998a1e5ca38540e897575d22e94e6b6257a2"
+    },
+    {
+      "path": "/tmp/sp-calculation-matrix-incomplete.log",
+      "sha256": "aa965d398f3b059fcd15eadfa3fb61daa320c273672227eb716a2dec3bef63bb"
+    }
+  ]
+}

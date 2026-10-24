@@ -16,8 +16,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares a transport-neutral remoting contract.
- * Interfaces annotated with this contract can be backed by a local provider or a remote proxy.
+ * Declares a transport-neutral remoting contract. Interfaces annotated with this contract can be
+ * backed by a local provider or a remote proxy.
  */
 @Inherited
 @Documented
@@ -40,10 +40,18 @@ public @interface RemoteContract {
   String version() default "1";
 
   /**
-   * Contract-owned, stateless decoder with a public no-argument constructor.
-   * Remote responses cannot choose which Java class is instantiated.
+   * Contract-owned, stateless decoder with a public no-argument constructor. Remote responses
+   * cannot choose which Java class is instantiated.
    *
    * @return the decoder for declared business errors
    */
   Class<? extends RemoteErrorDecoder> errorDecoder() default NoRemoteErrorDecoder.class;
+
+  /**
+   * Requires the transport's isolated local boundary even in a legacy host. Provider-side
+   * authentication and authorization remain mandatory; this flag does not grant any authority.
+   *
+   * @return whether local invocation must have the same isolated boundary as remote invocation
+   */
+  boolean isolateLocalCalls() default false;
 }

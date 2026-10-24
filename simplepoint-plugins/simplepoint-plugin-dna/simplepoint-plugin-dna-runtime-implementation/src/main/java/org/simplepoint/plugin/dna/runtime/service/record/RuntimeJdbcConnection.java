@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.calcite.avatica.util.ByteString;
 import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 
 /** Keeps every JDBC back-reference inside the borrowed connection boundary used by Calcite. */
@@ -74,6 +75,13 @@ final class RuntimeJdbcConnection {
           }
           if (wrapperMethod(method)) {
             return wrapper(proxy, method, arguments);
+          }
+          if (delegate instanceof PreparedStatement && method.getName().equals("setObject")
+              && arguments != null && arguments.length >= 2 && arguments[1] instanceof ByteString binary) {
+            // Never let a driver reject or Java-serialize Calcite's internal binary wrapper.
+            Object[] jdbcArguments = arguments.clone();
+            jdbcArguments[1] = binary.getBytes();
+            return invoke(delegate, method, jdbcArguments);
           }
           Object result = invoke(delegate, method, arguments);
           return result instanceof ResultSet rows ? resultSet(rows, (Statement) proxy) : result;

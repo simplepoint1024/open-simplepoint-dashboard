@@ -9,52 +9,66 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Package;
 import org.simplepoint.plugin.rbac.tenant.api.entity.PackageApplicationRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.PackageApplicationsRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.PackageService;
-import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Package service implementation.
- */
+/** Package service implementation. */
 @Service
-public class PackageServiceImpl
-    extends BaseServiceImpl<PackageRepository, Package, String>
+public class PackageServiceImpl extends BaseServiceImpl<PackageRepository, Package, String>
     implements PackageService {
 
   private final PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
-  private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
-  private final TenantRepository tenantRepository;
-  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
-  /**
-   * Package Service Impl.
-   */
+  /** Package Service Impl. */
   public PackageServiceImpl(
       PackageRepository repository,
       DetailsProviderService detailsProviderService,
-      PackageApplicationRelevanceRepository packageApplicationRelevanceRepository,
-      TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
-      TenantRepository tenantRepository,
-      ResourceAuthorizationVersionService resourceAuthorizationVersionService
-  ) {
+      PackageApplicationRelevanceRepository packageApplicationRelevanceRepository) {
     super(repository, detailsProviderService);
     this.packageApplicationRelevanceRepository = packageApplicationRelevanceRepository;
-    this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
-    this.tenantRepository = tenantRepository;
-    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
+  }
+
+  @Override
+  public Map<String, Object> schema() {
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.schema();
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public <S extends Package> S create(S entity) {
+    requirePlatformAdministrator();
+    return super.create(entity);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public List<Package> create(Collection<Package> entities) {
+    requirePlatformAdministrator();
+    return super.create(entities);
+  }
+
+  @Override
+  public List<Package> findAllByIds(Iterable<String> ids) {
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.findAllByIds(ids);
+  }
+
+  @Override
+  protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<Package> domainClass) {
+    return org.simplepoint.core.AuthorizationScopeGuards.isPlatformAdministrator(
+            getAuthorizationContext())
+        ? super.getButtonDeclarationsSchema(domainClass)
+        : Set.of();
   }
 
   @Override
@@ -64,47 +78,34 @@ public class PackageServiceImpl
 
   @Override
   public <S extends Package> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return super.limit(attributes, pageable);
-    }
-    Collection<String> packageCodes = tenantPackageRelevanceRepository.authorized(resolveTenantScope());
-    return super.limitInScope(attributes, "code", packageCodes, pageable);
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.limit(attributes, pageable);
   }
 
   @Override
-  public Page<Package> assignmentItems(String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
-    // Tenant package assignment is a platform-admin operation, as are its existing read/write endpoints.
-    requirePlatformAdministrator();
-    String tenantId = requireCode(parent, "租户不能为空");
-    tenantRepository.findById(tenantId).filter(tenant -> tenant.getDeletedAt() == null)
-        .orElseThrow(() -> new IllegalArgumentException("租户不存在"));
-    var membership = new org.simplepoint.api.base.QueryMembership("code",
-        tenantPackageRelevanceRepository.authorized(tenantId).stream().toList(), selected);
-    return super.limitMemberships(filters, List.of(membership), pageable);
+  public Page<Package> assignmentItems(
+      String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
+    throw new org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException(
+        org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException.Code
+            .LEGACY_ASSIGNMENT_RETIRED);
   }
 
   @Override
   public Optional<Package> findById(String id) {
-    Optional<Package> pkg = super.findById(id);
-    if (pkg.isEmpty() || AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return pkg;
-    }
-    Collection<String> packageCodes = tenantPackageRelevanceRepository.authorized(resolveTenantScope());
-    return packageCodes.contains(pkg.get().getCode()) ? pkg : Optional.empty();
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.findById(id);
   }
 
   @Override
   public Collection<String> authorizedApplications(String packageCode) {
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
-        && !tenantPackageRelevanceRepository.authorized(resolveTenantScope()).contains(packageCode)) {
-      throw new IllegalArgumentException("套餐不存在或不属于当前租户");
-    }
+    PlatformTemplateBoundary.read(getAuthorizationContext());
     return packageApplicationRelevanceRepository.authorized(requireCode(packageCode, "套餐编码不能为空"));
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<PackageApplicationRelevance> authorizeApplications(PackageApplicationsRelevanceDto dto) {
+  public Collection<PackageApplicationRelevance> authorizeApplications(
+      PackageApplicationsRelevanceDto dto) {
     requirePlatformAdministrator();
     String packageCode = requireCode(dto.getPackageCode(), "套餐编码不能为空");
     Set<String> applicationCodes = normalizeCodes(dto.getApplicationCodes());
@@ -120,8 +121,8 @@ public class PackageServiceImpl
       relations.add(relevance);
     }
 
-    Collection<PackageApplicationRelevance> saved = packageApplicationRelevanceRepository.saveAll(relations);
-    resourceAuthorizationVersionService.refreshByPackageCodes(Set.of(packageCode));
+    Collection<PackageApplicationRelevance> saved =
+        packageApplicationRelevanceRepository.saveAll(relations);
     return saved;
   }
 
@@ -134,22 +135,20 @@ public class PackageServiceImpl
       return;
     }
     String requiredPackageCode = requireCode(packageCode, "套餐编码不能为空");
-    packageApplicationRelevanceRepository.unauthorized(requiredPackageCode, normalizedApplicationCodes);
-    resourceAuthorizationVersionService.refreshByPackageCodes(Set.of(requiredPackageCode));
+    packageApplicationRelevanceRepository.unauthorized(
+        requiredPackageCode, normalizedApplicationCodes);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends Package> Package modifyById(S entity) {
     requirePlatformAdministrator();
-    Package current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("套餐不存在"));
+    Package current =
+        findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("套餐不存在"));
     String oldCode = current.getCode();
-    Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByPackageCodes(Set.of(oldCode));
     Package updated = (Package) super.modifyById(entity);
     if (!Objects.equals(oldCode, updated.getCode())) {
       packageApplicationRelevanceRepository.updatePackageCode(oldCode, updated.getCode());
-      tenantPackageRelevanceRepository.updatePackageCode(oldCode, updated.getCode());
-      resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
     }
     return updated;
   }
@@ -162,20 +161,18 @@ public class PackageServiceImpl
       return;
     }
 
-    Set<String> packageCodes = findAllByIds(ids).stream()
-        .map(Package::getCode)
-        .filter(code -> code != null && !code.isBlank())
-        .collect(Collectors.toSet());
+    Set<String> packageCodes =
+        findAllByIds(ids).stream()
+            .map(Package::getCode)
+            .filter(code -> code != null && !code.isBlank())
+            .collect(Collectors.toSet());
     if (packageCodes.isEmpty()) {
       super.removeByIds(ids);
       return;
     }
 
-    final Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByPackageCodes(packageCodes);
     packageApplicationRelevanceRepository.deleteAllByPackageCodes(packageCodes);
-    tenantPackageRelevanceRepository.deleteAllByPackageCodes(packageCodes);
     super.removeByIds(ids);
-    resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
   }
 
   private static Set<String> normalizeCodes(Collection<String> codes) {
@@ -195,21 +192,6 @@ public class PackageServiceImpl
   }
 
   private void requirePlatformAdministrator() {
-    AuthorizationScopeGuards.requirePlatformAdministrator(getAuthorizationContext());
-  }
-
-  private String resolveTenantScope() {
-    String tenantId = currentTenantId();
-    if (tenantId != null && !tenantId.isBlank()) {
-      return tenantId;
-    }
-    var ctx = getAuthorizationContext();
-    String userId = ctx != null ? ctx.getUserId() : null;
-    if (userId == null || userId.isBlank()) {
-      throw new IllegalStateException("Tenant context is required");
-    }
-    return tenantRepository.findPersonalTenantByOwnerId(userId)
-        .map(Tenant::getId)
-        .orElseThrow(() -> new IllegalStateException("Tenant context is required"));
+    PlatformTemplateBoundary.write(getAuthorizationContext());
   }
 }

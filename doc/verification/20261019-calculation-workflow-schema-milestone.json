@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T04:40:45.984044+00:00",
+  "checks": {
+    "parallel-multi-instance": {
+      "passed": true,
+      "definitionId": "0237cabc-4e2e-45f6-a25a-8e58d0be6063",
+      "version": 1,
+      "instanceId": "75d4d303-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "3418bd9a622c830c9f02630c77bcd767b3eec248bd4803252d7aef8647842ff3",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "75d7e054-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        },
+        {
+          "actor": "manager",
+          "taskId": "75d7e058-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "sequential-multi-instance": {
+      "passed": true,
+      "definitionId": "0e84fafd-8751-4c0c-8d1b-a36760ef98e4",
+      "version": 1,
+      "instanceId": "8383c8f9-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "b7f25c470ff1c0901b95e080de983095bc83129b1b5731e0b652a8e1f74f7225",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "8383c909-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        },
+        {
+          "actor": "manager",
+          "taskId": "839f8e71-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "standard-loop-before": {
+      "passed": true,
+      "definitionId": "4cf3fd62-7772-41ae-9ee3-2fe76140c854",
+      "version": 1,
+      "instanceId": "92c1753d-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "15234b41ab0bc78f4e21f343998a6a79fa4053a3121f5e3d250c45f9355984b1",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "92c1ea7d-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        },
+        {
+          "actor": "manager",
+          "taskId": "92fbe645-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "standard-loop-after": {
+      "passed": true,
+      "definitionId": "e31408a2-fb86-4b2c-ad12-e77cd9a74a87",
+      "version": 1,
+      "instanceId": "a1786551-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "c616fd160e605e2007fc831a4d0b1acf3519974feb012d94d3df17441ed28974",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "a1788c71-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        },
+        {
+          "actor": "manager",
+          "taskId": "a19451d9-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "nested-subprocess": {
+      "passed": true,
+      "definitionId": "45337c4d-758e-4fda-a17a-4e46d75b634e",
+      "version": 1,
+      "instanceId": "b0f64de4-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "0a6b3d9448fd0173d785471f8e3bb8b3cd94ba314bcab4e1d8d87ce4866c9e36",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "b0f67508-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "inclusive-gateway": {
+      "passed": true,
+      "definitionId": "8a928795-85ef-4181-8e85-f34757907b8e",
+      "version": 1,
+      "instanceId": "bf5978a9-cb75-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "d2c8482b60bb7b6d93bb7d503d4d40d0a06abf1f192e6ae2f467ef920a28682f",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "bf708327-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        },
+        {
+          "actor": "finance",
+          "taskId": "bf70aa3a-cb75-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "descriptive-diagram": {
+      "passed": true,
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "version": 1,
+      "instanceId": "0ce7e737-cb76-11f1-bd32-166ff1d6ba7b",
+      "submissionId": "8d6efc139b3145d3b263637007afd22175411a1023b4b649fccacbeaf54ed37c",
+      "status": "COMPLETED",
+      "score": "86",
+      "tasks": [
+        {
+          "actor": "manager",
+          "taskId": "0ce7e741-cb76-11f1-bd32-166ff1d6ba7b",
+          "completed": true
+        }
+      ],
+      "authoredDiagramPreserved": true
+    },
+    "reject-scriptTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-serviceTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-businessRuleTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-sendTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-receiveTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-callActivity": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-manualTask": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.error.VALIDATION",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-participantMultiplicity": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.modeling.diagramCollaboration",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "reject-messageFlow": {
+      "passed": true,
+      "status": 400,
+      "code": "WORKFLOW_VALIDATION",
+      "messageKey": "workflow.modeling.diagramCollaboration",
+      "definitionId": "07b3f11f-4af0-4dfc-be66-6563c864a09d",
+      "preservedVersion": 1
+    },
+    "lifecycle-reject": {
+      "passed": true,
+      "submissionId": "229dfd4def73cfdf1c6add05e8ca302fc9ecf29a290fbda9317afe7802be44fa",
+      "instanceId": "ad6039c9-cb76-11f1-bd32-166ff1d6ba7b",
+      "originalHours": "7",
+      "originalStatus": "REJECTED",
+      "resubmissionId": "d572af6d07ab9b41a9a3b5029c536f81665e44b90c2025ab63ad5daad66896cd",
+      "resubmissionInstance": "e0daefd9-cb76-11f1-bd32-166ff1d6ba7b",
+      "revisedHours": "8",
+      "newStatus": "COMPLETED",
+      "originalHistoryUnchanged": true,
+      "copiedHistoryAuthorized": true,
+      "denied": {
+        "status": 403,
+        "boundary": "platform-authorization"
+      }
+    },
+    "lifecycle-withdraw": {
+      "passed": true,
+      "submissionId": "650d29d5f11db73e03d42ccabd82e66001b352d2193cc201b8734175c495948a",
+      "instanceId": "ef892d4d-cb76-11f1-bd32-166ff1d6ba7b",
+      "originalHours": "7",
+      "originalStatus": "WITHDRAWN",
+      "resubmissionId": "c3320472e50516b2b2a8ae093804cc7a66e64525ed3e557dd670616cec91fb90",
+      "resubmissionInstance": "fe984f69-cb76-11f1-bd32-166ff1d6ba7b",
+      "revisedHours": "8",
+      "newStatus": "COMPLETED",
+      "originalHistoryUnchanged": true,
+      "copiedHistoryAuthorized": true,
+      "denied": {
+        "status": 403,
+        "code": "WORKFLOW_FORBIDDEN"
+      }
+    },
+    "lifecycle-cancel": {
+      "passed": true,
+      "submissionId": "ad05f44f868baa0d39bd194284b697e1a83f25f0f261cfd7747ded2d68624493",
+      "instanceId": "0d53d34d-cb77-11f1-bd32-166ff1d6ba7b",
+      "originalHours": "7",
+      "originalStatus": "CANCELED",
+      "resubmissionId": "23d4a47cf50021e4d118c5ba129286b4ef997a412c71ab25c28176d23bd366ae",
+      "resubmissionInstance": "1c620b09-cb77-11f1-bd32-166ff1d6ba7b",
+      "revisedHours": "8",
+      "newStatus": "COMPLETED",
+      "originalHistoryUnchanged": true,
+      "copiedHistoryAuthorized": true,
+      "denied": {
+        "status": 403,
+        "boundary": "platform-authorization"
+      }
+    }
+  },
+  "privateArtifacts": {
+    "workflow-capabilities": "9c0503334118506db4ed36c3c4a1bdf346f498e0a49c42078a9e59dba9c222ca",
+    "workflow-negative": "d2752ea43cdd9e5ff2e710ec37daa6e06d6f8e676fccbb705a1e0585cf7e4954",
+    "workflow-lifecycle": "347e687ad6ba75b93458f22c090ac75a404d1a4dd0f1f305b5fc9271e023323b",
+    "schema-evolution": "dedd495f974bbd8399311fb7aa093446aa231514168044e5fdc91cbd3b1791cb"
+  },
+  "schemaEvolution": {
+    "modelId": "5e5ac7f0-89c4-4436-b6a9-a02bf581ae25",
+    "sourceCount": 65,
+    "nullableVersion": 6,
+    "requiredVersion": 7,
+    "checks": [
+      {
+        "name": "new computed column backfills every existing aggregate before activation"
+      },
+      {
+        "name": "NOT NULL tightening requires explicit migration review"
+      },
+      {
+        "name": "authorized frozen review executes through standard DNA migration",
+        "migrationId": "b9a6d132-9c9e-4f9c-83c7-14b295574330"
+      },
+      {
+        "name": "APP publication resumes original intent and activates required computed schema"
+      },
+      {
+        "name": "new record omits computed values and satisfies physical NOT NULL"
+      },
+      {
+        "name": "APP publication resumes original intent and activates required computed schema"
+      },
+      {
+        "name": "new record omits computed values and satisfies physical NOT NULL"
+      }
+    ],
+    "physicalPlan": {
+      "physicalModelId": "5e5ac7f0-89c4-4436-b6a9-a02bf581ae25",
+      "targetVersion": 3,
+      "dialectId": "postgresql",
+      "actualChecksum": "53e5cdc97893ed48aab05f33f5e825f8cc48d7caf6ef40d36f38179e485dba08",
+      "targetChecksum": "53e5cdc97893ed48aab05f33f5e825f8cc48d7caf6ef40d36f38179e485dba08",
+      "risk": "SAFE",
+      "steps": []
+    }
+  },
+  "databaseTests": {
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation": {
+      "dialect": "PostgreSQL 17, isolated schema per test",
+      "tests": 372,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "simplepoint-services/simplepoint-service-workflow": {
+      "dialect": "PostgreSQL 17, isolated schema per test",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}

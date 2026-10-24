@@ -8,14 +8,18 @@ import org.springframework.stereotype.Component;
 /** Tenant and lifecycle validation shared by role-policy assignment entry points. */
 @Component
 public class ScopePolicyValidator {
-  @jakarta.persistence.PersistenceContext
-  private jakarta.persistence.EntityManager entityManager;
+  private final jakarta.persistence.EntityManager entityManager;
   private final DataScopeRepository dataScopes;
   private final FieldScopeRepository fieldScopes;
 
-  public ScopePolicyValidator(DataScopeRepository dataScopes, FieldScopeRepository fieldScopes) {
+  /** Validates policies using the identity module persistence context. */
+  public ScopePolicyValidator(
+      DataScopeRepository dataScopes,
+      FieldScopeRepository fieldScopes,
+      final jakarta.persistence.EntityManager entityManager) {
     this.dataScopes = dataScopes;
     this.fieldScopes = fieldScopes;
+    this.entityManager = entityManager;
   }
 
   public void validate(String tenantId, String dataScopeId, String fieldScopeId) {

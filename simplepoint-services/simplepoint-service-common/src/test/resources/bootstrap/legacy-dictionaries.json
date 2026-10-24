@@ -1,0 +1,225 @@
+[ {
+  "moduleCode" : "oidc",
+  "contributionKey" : "external-identity-provider-dictionaries",
+  "version" : "1",
+  "order" : 320,
+  "checksum" : "oidc:dictionary:external-identity-provider-dictionaries:1",
+  "dictionaries" : [ {
+    "code" : "oidc.external-provider.preset",
+    "sort" : 70,
+    "name" : "身份提供商模板",
+    "description" : "常用外部身份平台的标准配置模板",
+    "items" : [ {
+      "value" : "CUSTOM",
+      "i18nKey" : "external-idp.option.preset.CUSTOM",
+      "sort" : 10,
+      "name" : "自定义",
+      "description" : "身份提供商模板：自定义"
+    }, {
+      "value" : "GOOGLE",
+      "i18nKey" : "external-idp.option.preset.GOOGLE",
+      "sort" : 20,
+      "name" : "Google",
+      "description" : "身份提供商模板：Google"
+    }, {
+      "value" : "GITHUB",
+      "i18nKey" : "external-idp.option.preset.GITHUB",
+      "sort" : 30,
+      "name" : "GitHub",
+      "description" : "身份提供商模板：GitHub"
+    }, {
+      "value" : "APPLE",
+      "i18nKey" : "external-idp.option.preset.APPLE",
+      "sort" : 40,
+      "name" : "Apple",
+      "description" : "身份提供商模板：Apple"
+    }, {
+      "value" : "MICROSOFT",
+      "i18nKey" : "external-idp.option.preset.MICROSOFT",
+      "sort" : 50,
+      "name" : "Microsoft",
+      "description" : "身份提供商模板：Microsoft"
+    } ]
+  }, {
+    "code" : "oidc.external-provider.protocol",
+    "sort" : 71,
+    "name" : "身份协议",
+    "description" : "外部身份提供商采用的标准协议",
+    "items" : [ {
+      "value" : "OIDC",
+      "i18nKey" : "external-idp.option.protocol.OIDC",
+      "sort" : 10,
+      "name" : "OpenID Connect",
+      "description" : "身份协议：OpenID Connect"
+    }, {
+      "value" : "OAUTH2",
+      "i18nKey" : "external-idp.option.protocol.OAUTH2",
+      "sort" : 20,
+      "name" : "OAuth 2.0",
+      "description" : "身份协议：OAuth 2.0"
+    } ]
+  }, {
+    "code" : "oidc.external-provider.client-authentication-method",
+    "sort" : 72,
+    "name" : "客户端认证方式",
+    "description" : "调用身份提供商 Token Endpoint 时的客户端认证方式",
+    "items" : [ {
+      "value" : "client_secret_basic",
+      "i18nKey" : "external-idp.option.clientAuthenticationMethod.client_secret_basic",
+      "sort" : 10,
+      "name" : "Client Secret Basic",
+      "description" : "客户端认证方式：Client Secret Basic"
+    }, {
+      "value" : "client_secret_post",
+      "i18nKey" : "external-idp.option.clientAuthenticationMethod.client_secret_post",
+      "sort" : 20,
+      "name" : "Client Secret Post",
+      "description" : "客户端认证方式：Client Secret Post"
+    }, {
+      "value" : "none",
+      "i18nKey" : "external-idp.option.clientAuthenticationMethod.none",
+      "sort" : 30,
+      "name" : "公开客户端（无密钥）",
+      "description" : "客户端认证方式：公开客户端（无密钥）"
+    } ]
+  }, {
+    "code" : "oidc.external-provider.match-strategy",
+    "sort" : 73,
+    "name" : "账号匹配策略",
+    "description" : "首次外部登录时绑定本地账号的安全策略",
+    "items" : [ {
+      "value" : "VERIFIED_EMAIL",
+      "i18nKey" : "external-idp.option.matchStrategy.VERIFIED_EMAIL",
+      "sort" : 10,
+      "name" : "已验证邮箱",
+      "description" : "账号匹配策略：已验证邮箱"
+    }, {
+      "value" : "USER_ID",
+      "i18nKey" : "external-idp.option.matchStrategy.USER_ID",
+      "sort" : 20,
+      "name" : "本地用户 ID",
+      "description" : "账号匹配策略：本地用户 ID"
+    } ]
+  } ]
+}, {
+  "moduleCode" : "notification",
+  "contributionKey" : "system-notification-dictionaries",
+  "version" : "1",
+  "order" : 310,
+  "checksum" : "notification:dictionary:system-notification-dictionaries:1",
+  "dictionaries" : [ {
+    "code" : "notification.category",
+    "sort" : 60,
+    "name" : "通知分类",
+    "description" : "系统通知的业务内容分类",
+    "items" : [ {
+      "value" : "ANNOUNCEMENT",
+      "i18nKey" : "notifications.category.ANNOUNCEMENT",
+      "sort" : 10,
+      "name" : "公告",
+      "description" : "通知分类：公告"
+    }, {
+      "value" : "SYSTEM",
+      "i18nKey" : "notifications.category.SYSTEM",
+      "sort" : 20,
+      "name" : "系统",
+      "description" : "通知分类：系统"
+    }, {
+      "value" : "MAINTENANCE",
+      "i18nKey" : "notifications.category.MAINTENANCE",
+      "sort" : 30,
+      "name" : "维护",
+      "description" : "通知分类：维护"
+    }, {
+      "value" : "SECURITY",
+      "i18nKey" : "notifications.category.SECURITY",
+      "sort" : 40,
+      "name" : "安全",
+      "description" : "通知分类：安全"
+    } ]
+  }, {
+    "code" : "notification.priority",
+    "sort" : 61,
+    "name" : "通知优先级",
+    "description" : "系统通知的展示与处理优先级",
+    "items" : [ {
+      "value" : "LOW",
+      "i18nKey" : "notifications.priority.LOW",
+      "sort" : 10,
+      "name" : "低",
+      "description" : "通知优先级：低"
+    }, {
+      "value" : "NORMAL",
+      "i18nKey" : "notifications.priority.NORMAL",
+      "sort" : 20,
+      "name" : "普通",
+      "description" : "通知优先级：普通"
+    }, {
+      "value" : "HIGH",
+      "i18nKey" : "notifications.priority.HIGH",
+      "sort" : 30,
+      "name" : "高",
+      "description" : "通知优先级：高"
+    }, {
+      "value" : "URGENT",
+      "i18nKey" : "notifications.priority.URGENT",
+      "sort" : 40,
+      "name" : "紧急",
+      "description" : "通知优先级：紧急"
+    } ]
+  }, {
+    "code" : "notification.audience-type",
+    "sort" : 62,
+    "name" : "通知目标类型",
+    "description" : "系统通知的目标用户选择方式",
+    "items" : [ {
+      "value" : "ALL",
+      "i18nKey" : "notifications.audience.ALL",
+      "sort" : 10,
+      "name" : "全部用户",
+      "description" : "通知目标类型：全部用户"
+    }, {
+      "value" : "PLATFORM",
+      "i18nKey" : "notifications.audience.PLATFORM",
+      "sort" : 20,
+      "name" : "平台工作区",
+      "description" : "通知目标类型：平台工作区"
+    }, {
+      "value" : "TENANT",
+      "i18nKey" : "notifications.audience.TENANT",
+      "sort" : 30,
+      "name" : "指定租户",
+      "description" : "通知目标类型：指定租户"
+    }, {
+      "value" : "USER",
+      "i18nKey" : "notifications.audience.USER",
+      "sort" : 40,
+      "name" : "指定用户",
+      "description" : "通知目标类型：指定用户"
+    } ]
+  }, {
+    "code" : "notification.status",
+    "sort" : 63,
+    "name" : "通知状态",
+    "description" : "系统通知的生命周期状态",
+    "items" : [ {
+      "value" : "DRAFT",
+      "i18nKey" : "notifications.status.DRAFT",
+      "sort" : 10,
+      "name" : "草稿",
+      "description" : "通知状态：草稿"
+    }, {
+      "value" : "PUBLISHED",
+      "i18nKey" : "notifications.status.PUBLISHED",
+      "sort" : 20,
+      "name" : "已发布",
+      "description" : "通知状态：已发布"
+    }, {
+      "value" : "REVOKED",
+      "i18nKey" : "notifications.status.REVOKED",
+      "sort" : 30,
+      "name" : "已撤回",
+      "description" : "通知状态：已撤回"
+    } ]
+  } ]
+} ]

@@ -1,0 +1,2107 @@
+{
+  "date": "2026-10-21",
+  "status": "dictionary atomic writes and shared catalog boundary verified; remote registration and full composition remain incomplete",
+  "counts": {
+    "backendTests": 671,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "h2TargetedTests": 90,
+    "focusedCommonRerun": 51,
+    "postgresDictionaryTransactions": 9,
+    "postgresIdentityMigrationTests": 6,
+    "styleFiles": 19,
+    "styleReports": 7,
+    "installedJars": 329,
+    "declaredFrontendAssets": 101,
+    "frontendTypecheckProjects": 8,
+    "frontendI18nTests": 3
+  },
+  "projects": [
+    {
+      "name": "tenant",
+      "tests": 201,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.ResourceAuthorizationVersionServiceTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.ResourceAuthorizationVersionServiceTest.xml",
+          "sha256": "76991a47938a34e307f1cd49f8439e8c15f8f23acdb6b465917e50b750f0e907",
+          "cases": [
+            "refreshByApplicationCodes_refreshesResolvedTenantIds()",
+            "findAffectedTenantIdsByResourceCodes_mergesRoleGrantsAndPackageResources()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest.xml",
+          "sha256": "33f6570ccad988ec20f0673368045bc0dbcf3104ffd957640f528854787e0bb9",
+          "cases": [
+            "authorizeResources_rejectsTenantContext()",
+            "authorizeResources_savesRelationsAndRefreshTenants()",
+            "authorizedResources_throwsWhenCodeIsBlank()",
+            "unauthorizedResources_returnsEarlyWhenResourceCodesIsEmpty()",
+            "authorizeResources_returnsEmptyWhenResourceCodesIsNull()",
+            "authorizeResources_throwsWhenApplicationCodeIsBlank()",
+            "authorizeResources_returnsEmptyWhenResourceCodesIsEmpty()",
+            "unauthorizedResources_returnsEarlyWhenResourceCodesIsNull()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "authorizedResources_throwsWhenCodeIsNull()",
+            "unauthorizedResources_throwsWhenApplicationCodeIsBlankAfterNormalize()",
+            "authorizedResources_delegatesToRepository()",
+            "modifyById_throwsWhenApplicationNotFound()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.AuditIdentityDirectoryTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.AuditIdentityDirectoryTest.xml",
+          "sha256": "f49cc48af145b5b335878aa3fc2f284ab5a33586af1ff0a81c6fd79f5dfd5020",
+          "cases": [
+            "excessiveDuplicateAuthorityRowsFailInsteadOfReturningPartialLabels()",
+            "versionTwoIsRegisteredAndReturnsTypedLabelsThroughTheWireCodec()",
+            "labelsFollowSharedNamesAndRolesRemainInsideTheTenant()",
+            "missingDeletedAndOtherTenantsDoNotResolveForeignReferences()",
+            "endUserGrantWithServiceScopeStillCannotReadLabels()",
+            "refusesOrdinaryAndAdministratorTokensBeforeReadingTheDirectory()",
+            "returnsOnlyRequestedActiveTenantIdentitiesWithExplicitDeletionChecks()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.BuiltInTenantProvisionerImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.BuiltInTenantProvisionerImplTest.xml",
+          "sha256": "9a4e4f8dcc79dc73840869b692952abada4556c227655b822d03d0c8eafd4e6a",
+          "cases": [
+            "existingApplicationResourcesAreNotDuplicated()",
+            "commonCatalogIsSplitBetweenCoreAndStorageApplications()",
+            "applicationWorkbenchResourcesBelongToTheirOwnApplication()",
+            "personalPackageAssignmentIsIdempotent()",
+            "dnaRuntimeResourcesBelongToTheApplicationWorkbench()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest.xml",
+          "sha256": "200b8f75f92ad104f084e6d61cbc02e1273509d85522f45a5492af7616f84e00",
+          "cases": [
+            "renameUpdatesChildCodesAndSingleDeleteRemovesChildren()",
+            "missingRevisionRowFailsClosedBeforeBusinessWrites()",
+            "deleteAllUsesSameAggregateCleanup()",
+            "nontransactionalReadonlyAndPreloadedContextsAreRejected()",
+            "repeatedDeclarationRetainsIdsAndEntersOncePerTransaction()",
+            "bulkDictionaryDefaultsAndItemSingleDeleteCannotBypassBoundary()",
+            "anotherWriterWaitsForCommitAndReadsCommittedMetadata()",
+            "batchCreateValidatesItemsAndRollsBackEarlierRows()",
+            "lateDatabaseFailureRollsBackEntireBatchAndRevision()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest.xml",
+          "sha256": "2d743cb5c072ae2878362f2748662dc359a4e661a7306751a1f1852866772ed6",
+          "cases": [
+            "create_throwsWhenDictionaryDoesNotExist()",
+            "create_throwsWhenDictionaryCodeIsNull()",
+            "modifyById_throwsWhenItemNotFound()",
+            "create_throwsWhenValueIsNull()",
+            "create_throwsWhenDictionaryCodeIsBlank()",
+            "create_throwsWhenNameIsNull()",
+            "modifyById_throwsDictionaryNotExistWhenCodeInheritedFromCurrentIsInvalid()",
+            "create_keepsExplicitEnabledFalse()",
+            "create_setsEnabledTrueWhenNullAndNoCurrent()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest.xml",
+          "sha256": "9f2d30ec7b8d0c0346362082dc10c6bf4f16cbbc80b3383f12073def3974802a",
+          "cases": [
+            "create_setsEnabledTrueWhenNull()",
+            "options_throwsWhenCodeIsBlank()",
+            "removeByIds_deletesDictionaryItemsBeforeDictionaries()",
+            "options_delegatesToItemRepository()",
+            "options_throwsWhenCodeIsNull()",
+            "create_keepsExistingEnabledTrue()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "modifyById_throwsWhenDictionaryNotFound()",
+            "create_keepsExistingEnabledFalse()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceCallerGuardTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceCallerGuardTest.xml",
+          "sha256": "b5a2c8e1572df621aa19fb8be5c6dad5066e131ab410fc6c67919b8c11fb5ca6",
+          "cases": [
+            "failsClosedWhenNoCallerMappingExists()",
+            "ordinaryUserCannotImpersonateConfiguredServiceByName()",
+            "mapsAuthenticatedServiceIdentityToOwnedNamespace()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceProviderBoundaryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceProviderBoundaryTest.xml",
+          "sha256": "dfbc32d34d38adc0ae07dabf9b94378a10530a23ad38f1e34122104e9f321859",
+          "cases": [
+            "importingTenantImplementationDoesNotExportManagedResourceWrites()",
+            "owningServiceExplicitlyEnablesTheProvider()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest.xml",
+          "sha256": "c42119256b4b7f97e9ee2c39224e286c52a7663a3f5d6d7a964293550abd84eb",
+          "cases": [
+            "preparesDisabledStableTreeThenActivatesAndDeactivatesItAtomically()",
+            "formalOfflineRevokesGrantsAndFencesOldEventsAcrossReonline()",
+            "legacyRefreshCannotMigrateADisabledRootOrAnAdvancedDescendant()",
+            "permissionMetadataActivatesAtomicallyAndStaleGenerationsCannotReplaceIt()",
+            "legacyCatalogRefreshAdoptsTheActiveGenerationOnceWithoutChangingVisibilityOrGrants()",
+            "rejectsStableIdentityRebindingAndAnotherOwnerCannotResolveIt()",
+            "rejectsCallerCodesOutsideItsNamespaceAndUntrustedHosts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationServiceImplTest",
+          "tests": 28,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.OrganizationServiceImplTest.xml",
+          "sha256": "694a44a07d0c76b4f927cbb53921192817909cd283315cf8f77814078470b612",
+          "cases": [
+            "removeByIds_success()",
+            "create_throwsWhenNoTenantInContext()",
+            "create_throwsWhenCodeIsBlank()",
+            "modifyById_throwsWhenParentIsSelf()",
+            "options_usesCountFreeSearchSlice()",
+            "limit_delegatesToSuperWhenTenantPresent()",
+            "modifyById_throwsWhenCodeDuplicateForOtherOrg()",
+            "removeByIds_returnsEarlyForBlankOnlyIds()",
+            "create_throwsWhenTypeIsInvalid()",
+            "descendantRuleCanCreateChildUnderVisibleParent()",
+            "modifyById_throwsWhenIdIsBlank()",
+            "create_throwsWhenNameIsBlank()",
+            "limit_returnsEmptyPageWhenNoTenantInContext()",
+            "create_throwsWhenCodeAlreadyExists()",
+            "modifyById_throwsWhenOrgNotFound()",
+            "removeByIds_throwsWhenOrgNotBelongToTenant()",
+            "options_loadsOnlyRootsAndMarksNodesWithChildren()",
+            "pageDataRuleRejectsOutOfScopeDetailDeleteAndInvisibleCreate()",
+            "create_successWithValidParent()",
+            "removeByIds_throwsWhenHasChildOrgs()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "create_throwsWhenParentNotFound()",
+            "modifyById_throwsWhenNoTenantInContext()",
+            "options_returnsEmptyPageWhenNoTenantInContext()",
+            "modifyById_success()",
+            "create_successWithNoParent()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()",
+            "removeByIds_throwsWhenNoTenantInContext()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.PackageServiceImplTest",
+          "tests": 14,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.PackageServiceImplTest.xml",
+          "sha256": "dd17b61b5517d159a30f8b77140ec35ed257acd7bb7e6e9e86732e930bded833",
+          "cases": [
+            "authorizedApplications_throwsWhenCodeIsBlank()",
+            "authorizeApplications_returnsEmptyWhenApplicationCodesIsNull()",
+            "unauthorizedApplications_returnsEarlyWhenApplicationCodesIsEmpty()",
+            "modifyById_throwsWhenPackageNotFound()",
+            "authorizedApplications_throwsWhenCodeIsNull()",
+            "authorizeApplications_savesRelationsAndRefreshTenants()",
+            "authorizeApplications_throwsWhenPackageCodeIsBlank()",
+            "unauthorizedApplications_throwsWhenPackageCodeIsBlankAfterNormalize()",
+            "authorizeApplications_rejectsTenantContext()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "authorizedApplications_delegatesToRepository()",
+            "unauthorizedApplications_returnsEarlyWhenApplicationCodesIsNull()",
+            "authorizeApplications_returnsEmptyWhenApplicationCodesIsEmpty()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantDirectoryBoundaryTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantDirectoryBoundaryTest.xml",
+          "sha256": "c7312ef54ea9219be8152dd2cfcbf5dca298862cf91b7939e9e9dd6ac70b8df8",
+          "cases": [
+            "ordinaryAndUserGrantTokensCannotImpersonateServices()",
+            "authenticatedDirectoryUsesTheDomainAndDoesNotExportManagementOperations()",
+            "rejectsUnboundedBatchesBeforeCallingTheDomain()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantMemberRepositoryTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantMemberRepositoryTest.xml",
+          "sha256": "4ebfb4cbd13873a7b9c23e22ea5ab7d65b059d62bc213cd3877aead4f8fb3be2",
+          "cases": [
+            "legacyRemovalDeletesOnlyMatchingTenantRolesBeforeMembership()",
+            "emptyRemovalDoesNotIssueUnboundedDeletes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest.xml",
+          "sha256": "6ce18c96a506f2b70be3c13698d5672a600dca00c46c90127520f16f2a147fdc",
+          "cases": [
+            "regularUpdatePreservesLocalDisableWhileOverwriteResetsIt()",
+            "resourceHeadersFilterAndSortBeforePagingWithinTenantAndParent()",
+            "pickerUsesLiveSqlEligibilityBeforePaginationAndSelectedLookup()",
+            "parentPickerHonorsChildTypeExclusionAndBounds()",
+            "ordinaryTenantMemberCannotChangeModeOrManageCatalog()",
+            "aliasesFollowRetiredPagesWithoutLosingTheirNamePathOrAuthorizationCodes()",
+            "platformRevocationStopsRoleGrantBeforeCatalogRefresh()",
+            "incrementalRefreshImportsNewGrantAndDeactivatesRevokedPageAlias()",
+            "resourcePickerNeverAllowsAnOrdinaryMemberToBrowseManagerChoices()",
+            "deletingTenantPageRetiresItsRoleGrants()",
+            "resourceQueryNeverAcceptsInternalFieldsOrHiddenDerivedOrigin()",
+            "firstEnableImportsOnlyEntitledResourceAndItsStructuralParentWithExactIds()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+          "sha256": "db7ee7b4244433f951076b5b73190cc85e717c79eac7727ee71df0c8fe68077a",
+          "cases": [
+            "narrowAuthorizationReadsOnlySelectedStructureAndEmptyNavigationNeverLoadsTheDirectory()",
+            "longCompleteAncestryIsValidatedOnceInsteadOfLoadingEachNode()",
+            "nativeLegacyScopeConversionAndNonDisplayCodesDoNotDependOnAnInitializedRequestContext()",
+            "selectedNavigationPreservesFiveHundredAliasesAndSuppressesTheirBackingPageWithoutReadingTheWholeCatalog()",
+            "explicitAuthorizationPreservesMoreThanFiveHundredAliasesWithoutPresentationOrWholeLicenseReads()",
+            "actualLicenseRevocationIsEffectiveBeforeSnapshotSynchronization()",
+            "disabledCyclesMissingTargetsAndOtherNamespacesCannotGrantAliases()",
+            "modeIsAnActualScalarAndEmptyNamespaceInputsExecuteNoSql()",
+            "managedResourcesRemainTenantScopedAndDoNotDependOnPlatformCatalogModeOrLicenseRows()",
+            "completeActiveProjectionPreservesAllRowsAndFieldsButRejectsBrokenAncestryWithoutEntityLoads()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantRoleRecipientsDatabaseTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantRoleRecipientsDatabaseTest.xml",
+          "sha256": "61ebce3506ea5c60296bc38e5fd9f19df31eb42a04c78adcc9e416e5677dcf44",
+          "cases": [
+            "legacyNullEnabledUsesTheSameActiveSemanticsAsMembershipValidation()",
+            "recipientSetIsTenantSafeActiveDeduplicatedAndKeysetPaged()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantServiceImplTest",
+          "tests": 55,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantServiceImplTest.xml",
+          "sha256": "dc8ea3fcaaa0c5df51e8be7326a83b74c57ea967486432f5994a81a76880489b",
+          "cases": [
+            "userItems_withKeywordSearchesGlobalCandidatesAfterTenantValidation()",
+            "getTenantsByUserId_delegatesToRepository()",
+            "resolveActiveMemberIds_allowsServiceRouterAndFiltersMemberships()",
+            "modifyById_throwsWhenNotAuthenticated()",
+            "calculateAuthorizationContextId_withNonDefaultTenantAndVersion()",
+            "removeByIds_cleansPackagesAndUsersBeforeDelete()",
+            "unauthorizedUsers_returnsEarlyWhenUserIdsIsEmpty()",
+            "getCurrentUserRoles_returnsTenantAndGlobalRoles()",
+            "authorizedPackages_throwsWhenTenantIdIsBlank()",
+            "unauthorizedUsers_throwsWhenNotAuthenticated()",
+            "calculateAuthorizationContextId_throwsWhenNotAuthenticated()",
+            "create_throwsWhenOwnerDoesNotExist()",
+            "unauthorizedUsers_removesUsersAndRefreshesVersion()",
+            "calculateAuthorizationContextId_withNullAuthorizationVersion()",
+            "unauthorizedPackages_returnsEarlyWhenPackageCodesIsEmpty()",
+            "roleNotificationRecipientsRequireInternalAuthorityAndUseBoundedKeysetPaging()",
+            "getCurrentUserTenants_missingPersonalTenant_createsIt()",
+            "authorizePackages_throwsWhenTenantIdIsBlank()",
+            "authorizeUsers_savesNewUsersAndRefreshesVersion()",
+            "authorizeUsers_returnsEmptyWhenUserIdsEmpty()",
+            "authorizedPackages_throwsWhenTenantIdIsNull()",
+            "updateCurrentTenantProfile_rejectsInlineImageData()",
+            "authorizedUsers_throwsAccessDeniedForNonOwnerNonAdmin()",
+            "resolveActiveMemberIds_rejectsHumanOutsideTenant()",
+            "modifyById_throwsWhenTenantNotFound()",
+            "unauthorizedPackages_callsRepositoryAndRefreshesVersion()",
+            "authorizePackages_returnsEmptyWhenPackageCodesIsNull()",
+            "ownerItems_delegatesToRepository()",
+            "create_throwsWhenNotAuthenticated()",
+            "unauthorizedPackages_returnsEarlyWhenPackageCodesIsNull()",
+            "authorizePackages_returnsEmptyWhenPackageCodesIsEmpty()",
+            "authorizedPackages_delegatesToRepository()",
+            "getCurrentUserTenants_addsSyntheticPlatformContextForAdministrator()",
+            "authorizeUsers_returnsEmptyWhenAllUsersAlreadyMembers()",
+            "calculateAuthorizationContextId_throwsWhenSelectedRoleNotOwned()",
+            "calculateAuthorizationContextId_throwsWhenUserNotInTenant()",
+            "create_setsOwnerFromAuthenticationAndSaves()",
+            "getCurrentUserTenants_throwsWhenNotAuthenticated()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "calculateAuthorizationContextId_usesDefaultContextWhenBlankTenantId()",
+            "modifyById_preservesAuthorizationVersionFromCurrentWhenNull()",
+            "userItems_validatesTenantButReturnsGlobalUserCandidates()",
+            "resolveActiveRoleAuthorities_isTenantScopedBoundedAndRequiresAnAuthorizedCaller()",
+            "authorizedPackages_throwsAccessDeniedForNonOwnerNonAdmin()",
+            "updateCurrentTenantProfile_updatesOssBrandingAndDecoratesOwner()",
+            "ownerItems_withKeywordUsesPagedRepositorySearch()",
+            "getCurrentUserTenants_delegatesToRepositoryForAuthenticatedUser()",
+            "authorizedUsers_includesOwnerAndRelevanceUsers()",
+            "calculateAuthorizationContextId_usesPersonalTenantWhenTenantIdBlankString()",
+            "unauthorizedUsers_throwsWhenOwnerIsInUserIds()",
+            "unauthorizedPackages_throwsWhenTenantIdIsBlankAfterNormalize()",
+            "calculateAuthorizationContextId_includesSelectedRoleInHash()",
+            "authorizePackages_savesRelationsAndRefreshesTenant()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()",
+            "calculateAuthorizationContextId_returnsHashForDefaultTenant()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest.xml",
+          "sha256": "d2345c3a4f3a0116c3d7458e5c620ecb0849a5ddbcd9a9ce7e639bdd90fba394",
+          "cases": [
+            "bootstrapContribution_existingDictionary_modifiesInsteadOfCreate()",
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_existingDictionaryItem_modifiesInsteadOfCreate()",
+            "bootstrapContribution_noExistingData_createsDictionaryAndItems()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest.xml",
+          "sha256": "1460fc62f5146c9e003c57fdbca8fa8c6d5f1c7a3bb147a221368bd80ade322e",
+          "cases": [
+            "registersBothInternationalizedModes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest.xml",
+          "sha256": "027008fcce47021412ca1108cee3429162841a79e689794e9dccdf7cafac3ef8",
+          "cases": [
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_createsDictionaryAndAllTenantTypes()"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resource",
+      "tests": 72,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest.xml",
+          "sha256": "70bc4df790292fe147d10471f6d9e4db82337328c9ede76cc8502f8515a50073",
+          "cases": [
+            "platformModeMergesHeldManagedPageUnderItsPlatformAncestor()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImplTest.xml",
+          "sha256": "4627d85c280fa76bee66e1d58a9092b5cffdd5a183fd1f384db19eb7222d1821",
+          "cases": [
+            "loadApps_mapsRegisteredRemoteModules()",
+            "loadApps_returnsEmptySet()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest.xml",
+          "sha256": "1654c48c7ec905bc256a6b542032025c533a6857154350f526c07cf2ef0c8a48",
+          "cases": [
+            "[1] false",
+            "[2] true",
+            "missingRevisionOrReadOnlyOrAbsentTransactionNeverSilentlyDisablesLocking()",
+            "ownerUninstallProtectsForeignDescendantsEvenWithMissingClosure()",
+            "pluginInstallAndUninstallSerializeWithRegistrationAndRetainOuterRollback()",
+            "joinedOperationsReuseLockAndRollbackTogether()",
+            "[1] batch-create",
+            "[2] remove-one",
+            "[3] remove-all",
+            "[4] remove-owner",
+            "failedWriterReleasesLockWithoutCommittingItsRevisionOrResources()",
+            "olderRepeatableReadSnapshotCannotRegisterAfterAnotherWriterCommits()",
+            "[1] false",
+            "[2] true",
+            "competingOwnersCannotClaimSamePathAfterWaiting()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest.xml",
+          "sha256": "30b5ed9096b30931af299fbf0321b76775ff3ddd8a5c69583630aebee4d74725",
+          "cases": [
+            "batchRetryCannotAddDropOrReplaceOwnersButMayChangeInputOrder()",
+            "conflictingBatchAndRolledBackActivationLeaveAllOwnersUnchanged()",
+            "activationFencesLegacyAndOlderClientsWhileRetainingResourceIdentity()",
+            "malformedAndSharedClientsCannotBecomeAuthority()",
+            "retirementCannotRestoreLegacyOrLocalPluginAuthorityAndPreservesData()",
+            "retriesAreExactAndHistoricalOperationsCannotReactivateSupersededClients()",
+            "activationWaitsForInFlightSnapshotAndFencesAllSubsequentOldWrites()",
+            "absentGenerationSchemaNeverFallsBackToLegacyPolicy()",
+            "competingInstallersCannotBothAdvanceAnExpectedGeneration()",
+            "jsonProviderPreservesGenerationFailureAndExportsNeitherOldProtocolNorAdministration()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest.xml",
+          "sha256": "e4f7709e6cc0341eafbfaeacfd6748b1ca70fe42cbb27e32373807d158d01773",
+          "cases": [
+            "physicalParentReferencesMustBeOwnedRetainedAndAcyclic()",
+            "malformedAndOversizedDeclarationsFailWithBoundedTraversal()",
+            "cannotOverrideOwnerInsideNestedDeclarations()",
+            "duplicateCodesOrPathsAreRejectedAcrossTheWholeTree()",
+            "retirementCannotCascadeIntoForeignDescendantsEvenWithoutClosureRows()",
+            "sameOwnerRenameRetainsIdentityAndPermissionMetadataWithoutMutatingInputs()",
+            "checksBothIdentitiesEvenWhenCodeAlreadyMatchesTheOwner()",
+            "foreignDescendantsPreventIndirectReparentingAndScopeChanges()",
+            "[1] null",
+            "[2] ",
+            "[3] other",
+            "[4]  other ",
+            "retirementOnlySelectsUnmatchedOwnedRecordsAndRetainedNodesCanBeMoved()",
+            "inheritedScopesAndNestedParentsArePreparedBeforePersistence()",
+            "cannotClaimOneStoredRecordTwiceUsingItsCodeAndItsPath()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest.xml",
+          "sha256": "658c134e3256a8bf00961221a0a321dea85993dc53f01864c9ba8561593edf3b",
+          "cases": [
+            "exactBoundPolicyWorksAndMissingOrWildcardPoliciesNeverGrantAccess()",
+            "verifiedClientIdentityIsPassedToTheTransactionalDomainWithoutAnOwnerClaimFromInput()",
+            "usersDisplayNamesAndMissingScopeCannotReachDomainWrites()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest.xml",
+          "sha256": "1b39fe834033b14fd01b50cc94b29372c8cb89a35db9526172c5effcd93eab21",
+          "cases": [
+            "missingLocalAuthenticationContributionFailsClosedEvenWithCallerServiceContext()",
+            "legacyHostCannotDisableContractIsolationOrBorrowBrowserAuthority()",
+            "inboundJsonUsesTheSameOwnerPolicyAndDoesNotExportLocalManagement()",
+            "signatureGrantScopeAudienceAndRevocationFailuresNeverReachDomainWrites()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest.xml",
+          "sha256": "b2dbc7b31c5eda2c466a086aeab9e68803dfed5003909625c0d563323c1a2c9c",
+          "cases": [
+            "registrationRenameAndRetirementRetainIdentityAndCleanAncestorRows()",
+            "lateClosureConflictRollsBackEarlierResourceAndAncestorWrites()",
+            "foreignPathCollisionLeavesPersistedCatalogUnchanged()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest.xml",
+          "sha256": "51b425d28e89b68893c81c3a2d89f08c2bae5e09375f53e806dad7c71655b1db",
+          "cases": [
+            "tenantPageAliasReplacesItsPlatformPageInRoutes()",
+            "completeSnapshotIsValidatedBeforeAnyResourceOrGrantMutation()",
+            "syncPersistsHierarchyWithoutMutatingCallerDeclarations()",
+            "staleClosureCannotDeleteRetainedOrForeignRecords()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "syncRetiresResourcesNoLongerDeclaredByTheOwner()",
+            "limitTreeRejectsMissingAuthorizationWithoutFallingBackToUnscopedRepositories()",
+            "tenantCustomRoutesUseTenantCatalogAndPreserveItsHierarchy()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.plugin.PluginResourceContributionHandlerTest.xml",
+          "sha256": "bfc6ee72fbf4acfe7e0cfa8b718589a43b45b47af3e01d4cf81746e1dfde93eb",
+          "cases": [
+            "validateBatch_rejectsDuplicateRemoteAcrossPluginCandidates()",
+            "validateBatch_rejectsDuplicateResourceCodeAcrossPluginCandidates()",
+            "installed_registersRemoteAndSynchronizesResources()",
+            "validate_rejectsRemoteOwnedByAnotherPlugin()",
+            "validate_acceptsResourceManifestWithoutWritingResources()",
+            "uninstalling_removesOwnedResourcesAndRemotes()",
+            "validate_rejectsResourceOwnedByAnotherPlugin()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.support.RemoteEntryVersionerTest.xml",
+          "sha256": "e29c1a9607bae13b0f08be2134d1090596e7924edb068273d37f0a7972464983",
+          "cases": [
+            "versioned_preservesExistingQueryAndFragmentAndReplacesManagedParams()",
+            "versioned_returnsCanonicalEntryForPlatformRemote()",
+            "versioned_addsPluginVersionToken()"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "architecture",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest.xml",
+          "sha256": "1348b7ed42d1592d620159191b6f117ba817e7400a3314cdc8e68571dfb46096",
+          "cases": [
+            "identityBaselineRetainsProductionGuardsDefaultsAndAuthenticationColumns()",
+            "[1] 3",
+            "[2] 4",
+            "[3] 5",
+            "[1] false",
+            "[2] true"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+          "sha256": "8d5026f13608212d5b1d3be59392c69dffdb659c368d66870c91d3f3680fe763",
+          "cases": [
+            "actualRepositoriesAndMappingsCanUseIndependentStorageGroups()",
+            "actualDomainPersistenceIsOwnedAndOnlySelectedModulesAreScanned()",
+            "storageInheritsIdentityStoreAndConflictingAssignmentsAreRejected()",
+            "everyActualModuleDeclaresItsMigrationOwnership()",
+            "actualRepositoriesAndMappingsStartTogetherInOnePersistenceUnit()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+          "sha256": "d69f594b86ae9f867d2b3fe4527b751ee1c2e085076649d3e3dd6bcfd0a22897",
+          "cases": [
+            "domainAssembliesDoNotImportRunnableServiceApplications()",
+            "localClosureIncludesPublicationCacheBridgeAndManagedRuntime()",
+            "optionalCommonHttpAdaptersOwnDisjointSubtreesAndNoDomainControllers()",
+            "declarationsCoverEveryPackagedRemoteContractAndOneRealComponentProvider()",
+            "actualDomainsHaveEquivalentCapabilitySetsAcrossThreeTopologies()",
+            "splittingAnActualLocalDependencyAcrossServicesIsRejected()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+          "sha256": "05069fd8086bc1484b4c0b2cc502ba4b59ba65360154d14f9931d1a46e3ceef1",
+          "cases": [
+            "publicCapabilitiesContainNoEntitiesOrInternalCrud()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+          "sha256": "5466166f15ab5eccb59be2b0f88f498a4272975e61f245914be9d9618a011ebe",
+          "cases": [
+            "referencesToAnotherDomainRepositoryRequireItsLocalDependencyClosure()"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "common-full",
+      "tests": 379,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.CommonHttpRoutePlanningTest.xml",
+          "sha256": "cb869c5c353b4cde06839a3a50d462a0c0972a774f0223a8eb76e7788af958fb",
+          "cases": [
+            "realIdentityOidcAndLocaleControllersCanShareCommonWithoutOwningEachOthersPaths()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest",
+          "tests": 36,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.CommonMainTableQueryHttpTest.xml",
+          "sha256": "0dc1592f2a61ae68eb42b5a5e68e98dc967b7405f30307e7885ae272237c9c68",
+          "cases": [
+            "[1] Endpoint[entityName=org.simplepoint.security.entity.DataScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.DataScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.DataScopeController, label=name, order=description]",
+            "[2] Endpoint[entityName=org.simplepoint.security.entity.FieldScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.FieldScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.FieldScopeController, label=name, order=description]",
+            "providerPageNeverSerializesStoredCredentials()",
+            "[1] Endpoint[entityName=org.simplepoint.security.entity.Role, serviceName=org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.RoleController, label=roleName, order=authority]",
+            "[2] Endpoint[entityName=org.simplepoint.security.entity.DataScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.DataScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.DataScopeController, label=name, order=description]",
+            "[3] Endpoint[entityName=org.simplepoint.security.entity.FieldScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.FieldScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.FieldScopeController, label=name, order=description]",
+            "[4] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryController, label=name, order=code]",
+            "[5] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryItemController, label=name, order=value]",
+            "[6] Endpoint[entityName=org.simplepoint.security.entity.MicroModule, serviceName=org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImpl, controllerName=org.simplepoint.plugin.rbac.resource.rest.endpoint.MicroAppController, label=displayName, order=serviceName]",
+            "[7] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.ExternalIdentityProvider, serviceName=org.simplepoint.plugin.oidc.service.service.impl.ExternalIdentityProviderServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.ExternalIdentityProviderController, label=displayName, order=registrationId]",
+            "[8] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.Client, serviceName=org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.OidcClientController, label=clientName, order=clientId]",
+            "[9] Endpoint[entityName=org.simplepoint.plugin.notification.api.entity.SystemNotification, serviceName=org.simplepoint.plugin.notification.service.impl.NotificationManagementServiceImpl, controllerName=org.simplepoint.plugin.notification.rest.controller.NotificationManagementController, label=title, order=content]",
+            "[1] Endpoint[entityName=org.simplepoint.security.entity.DataScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.DataScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.DataScopeController, label=name, order=description]",
+            "[2] Endpoint[entityName=org.simplepoint.security.entity.FieldScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.FieldScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.FieldScopeController, label=name, order=description]",
+            "notificationLegacyTextAndStructuredHeadersAreNotRewrittenIntoEachOther()",
+            "oauthReadResponsesNeverReturnSecretsAndInputStillAcceptsSecretUpdates()",
+            "dictionaryParentCannotBeRemovedByViewsOrConflictingUserConditions()",
+            "textLobQueriesUseWholeContentAndContentOrderRatherThanObjectIdentifiers()",
+            "[1] Endpoint[entityName=org.simplepoint.security.entity.Role, serviceName=org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.RoleController, label=roleName, order=authority]",
+            "[2] Endpoint[entityName=org.simplepoint.security.entity.DataScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.DataScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.DataScopeController, label=name, order=description]",
+            "[3] Endpoint[entityName=org.simplepoint.security.entity.FieldScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.FieldScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.FieldScopeController, label=name, order=description]",
+            "[4] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryController, label=name, order=code]",
+            "[5] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryItemController, label=name, order=value]",
+            "[6] Endpoint[entityName=org.simplepoint.security.entity.MicroModule, serviceName=org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImpl, controllerName=org.simplepoint.plugin.rbac.resource.rest.endpoint.MicroAppController, label=displayName, order=serviceName]",
+            "[7] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.ExternalIdentityProvider, serviceName=org.simplepoint.plugin.oidc.service.service.impl.ExternalIdentityProviderServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.ExternalIdentityProviderController, label=displayName, order=registrationId]",
+            "[8] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.Client, serviceName=org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.OidcClientController, label=clientName, order=clientId]",
+            "[9] Endpoint[entityName=org.simplepoint.plugin.notification.api.entity.SystemNotification, serviceName=org.simplepoint.plugin.notification.service.impl.NotificationManagementServiceImpl, controllerName=org.simplepoint.plugin.notification.rest.controller.NotificationManagementController, label=title, order=content]",
+            "[1] Endpoint[entityName=org.simplepoint.security.entity.Role, serviceName=org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.RoleController, label=roleName, order=authority]",
+            "[2] Endpoint[entityName=org.simplepoint.security.entity.DataScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.DataScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.DataScopeController, label=name, order=description]",
+            "[3] Endpoint[entityName=org.simplepoint.security.entity.FieldScope, serviceName=org.simplepoint.plugin.rbac.core.service.impl.FieldScopeServiceImpl, controllerName=org.simplepoint.plugin.rbac.core.rest.controller.FieldScopeController, label=name, order=description]",
+            "[4] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.Dictionary, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryController, label=name, order=code]",
+            "[5] Endpoint[entityName=org.simplepoint.plugin.rbac.tenant.api.entity.DictionaryItem, serviceName=org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImpl, controllerName=org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryItemController, label=name, order=value]",
+            "[6] Endpoint[entityName=org.simplepoint.security.entity.MicroModule, serviceName=org.simplepoint.plugin.rbac.resource.service.impl.RemoteModuleServiceImpl, controllerName=org.simplepoint.plugin.rbac.resource.rest.endpoint.MicroAppController, label=displayName, order=serviceName]",
+            "[7] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.ExternalIdentityProvider, serviceName=org.simplepoint.plugin.oidc.service.service.impl.ExternalIdentityProviderServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.ExternalIdentityProviderController, label=displayName, order=registrationId]",
+            "[8] Endpoint[entityName=org.simplepoint.plugin.oidc.api.entity.Client, serviceName=org.simplepoint.plugin.oidc.service.service.impl.OidcClientServiceImpl, controllerName=org.simplepoint.plugin.oidc.rest.controller.OidcClientController, label=clientName, order=clientId]",
+            "[9] Endpoint[entityName=org.simplepoint.plugin.notification.api.entity.SystemNotification, serviceName=org.simplepoint.plugin.notification.service.impl.NotificationManagementServiceImpl, controllerName=org.simplepoint.plugin.notification.rest.controller.NotificationManagementController, label=title, order=content]"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentDirectoryHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.CurrentDirectoryHttpTest.xml",
+          "sha256": "f5867b9c34498a834644a6ec5ff72a82a7e6af2569a63fa57dc1072c5b687fcc",
+          "cases": [
+            "localizedPersonalAliasUsesBoundedSearchWithoutRenamingStoredIdentities()",
+            "platformContextCannotSelectRolesBelongingToAnOrganization()",
+            "invalidBudgetsAndAnonymousQueriesFailClosed()",
+            "actualHttpErrorsUseSafeLocalizedClientStatuses()",
+            "rolesArePagedDeduplicatedAssignedIdsAndNeverForeignAuthorities()",
+            "tenantPresentationIsIdenticalInSearchAndHydrationWithoutExposingOtherFields()",
+            "roleReadsRejectForeignOrMissingWorkspacesAndUnauthorizedPlatform()",
+            "ownerAndActiveMembershipAreRequiredEvenForAdministrators()",
+            "virtualPlatformPaginationHasNoSkippedOrDuplicatedDatabaseRows()",
+            "literalSearchAndStableOrderDoNotTreatWildcardsAsCatalogRequests()",
+            "pagesBeyondFirstHundredAndHydratesOnlyRequestedIdentities()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+          "sha256": "eebd6d5c131dadcb5daee8a222c088d3c37ba5475e9e26848285e25afd640cdb",
+          "cases": [
+            "hiddenAliasesNamesAndDirectoriesCannotLeakThroughKeywordMatches()",
+            "narrowCustomPageReadDoesNotHydrateUnrelatedPresentationOrRepeatedCompleteDirectories()",
+            "browserProfileContractsUseActualReadableAndProtectedHttpRows()",
+            "platformDetailPreservesAllOperationsWithoutFullEntitiesOrLargeMembershipBindings()",
+            "globalResourceNamePolicyCannotHideActualTenantPageNames()",
+            "actualCustomAliasRetainsBackingOperationsButNotAnotherPagesSubtree()",
+            "platformAndUnauthenticatedOrganizationRequestsDoNotReadTenantData()",
+            "[1] DISABLED",
+            "[2] DELETED",
+            "[3] FOREIGN",
+            "[4] MISSING",
+            "[5] CYCLE",
+            "overBudgetDetailStopsAfterTheFirstOverflowNodeWithoutReadingAllSiblings()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "ownedRolePreviewSeparatesNativeAvailableRowsFromCurrentEffectiveGrants()",
+            "protectedTypeCannotBeUsedAsAnUndisclosedFilter()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "organizationPathKeepsExistingTwentyNodeBound()",
+            "browserOrganizationContractsUseActualReadableProtectedAndUnassignedSelfRows()",
+            "organizationRemainsLimitedToActiveOwnMembershipAndSameTenantNodes()",
+            "foreignRoleAndBlankCallerFailBeforeCatalogRead()",
+            "hiddenOrganizationIdentityDoesNotReplaceLeafNameWithItsParentAndOtherModelsCannotHideNames()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+          "sha256": "78cf423210343b261b03126f80ee6b72059743cd893b67a3e943a2d58aeb2674",
+          "cases": [
+            "completePresentationRulesAndCollectionEdgesRemainBoundedBeyondFiveHundred()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "createCannotSmuggleProtectedRequiredFieldsAndUnknownUpdatesCannotWrite()",
+            "[1] MASKED",
+            "[2] VISIBLE",
+            "protectedRequiredAndExpressionFieldsAreRestoredBeforePolicyValidation()",
+            "invalidWritablePolicyNeverReachesSqlOrAuthorizationRefresh()",
+            "presentationUsesTheSharedRealNameRuleWithoutProtectedSourceLeakage()",
+            "actualPreviewCatalogAndFormContractsComeFromCurrentCallerOnly()",
+            "protectedDependenciesCannotBeReinterpretedByChangingTheirDiscriminator()",
+            "expressionAndProjectedRowsAreRealBrowserContracts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.DictionaryWriteHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.DictionaryWriteHttpTest.xml",
+          "sha256": "baf7d33202024e295ed09e36b462454b454b502d410867d8dfb0caf2981dbfec",
+          "cases": [
+            "[1] CONTEXT_CONFLICT",
+            "[2] UNAVAILABLE"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.ExternalIdentityProviderLifecycleHttpTest.xml",
+          "sha256": "5466d87b2036713892197955e6187946612ed48724b317ea591f0eb630746c3d",
+          "cases": [
+            "blankSecretPreservesCiphertextAndFalseValuesAndRegistrationIsImmutable()",
+            "directServiceCannotDeriveNewCiphertextFromNonWritableClientSecret()",
+            "probeProjectionHonorsSourceEndpointAndRegistrationFieldPolicies()",
+            "directCreateCannotBypassSecretPolicyThroughDerivedCiphertext()",
+            "httpProtectedSecretIsRejectedBeforeCredentialDerivation()",
+            "callbackUsesServerIssuerFallbackOrExplicitRelativePathNeverRequestHost()",
+            "oidcProbeActuallyReadsLocalDiscoveryWithoutTokenOrUserInfoExchange()",
+            "allowedRotationEncryptsActualInputWithoutReturningCredentials()",
+            "presetCannotValidateOneProtocolThenPersistAnotherProtectedProtocol()",
+            "publicClientCreationDoesNotRequirePermissionToWriteAnAbsentSecret()",
+            "metadataEditRestoresOmittedProtectedRequiredFieldsBeforeDomainValidation()",
+            "canonicalEditablePolicyCannotWeakenLegacyMaskedSecretPolicy()",
+            "readOnlyOauth2ProbeAllowsDisabledProviderAndReportsItsActualValidationDepth()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.FieldScopeConfigurationHttpTest.xml",
+          "sha256": "18e4efddf1dacec8b5d8d644755d440b8be6c7098839c8390862cd416bd49c05",
+          "cases": [
+            "configurationBindsQueryIdAndNestedEntriesWithProductionJsonConverter()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+          "tests": 38,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+          "sha256": "cfaf1cd16bae1262cbb53a163e0891e4d71d2a607f9f48456cde9bac65c2bdeb",
+          "cases": [
+            "browserFieldMetadataMatchesTheActualAuthorizedRegisteredModelAndHttpProjection()",
+            "retainedUnavailableEntriesCanBeRemovedWithoutReloadingEitherCatalogButAccessChangesRemainDenied()",
+            "actualSchemaAndConfigurationPersistCanonicalFieldsAndServerOwnedIdentityWithOneMetadataQuery()",
+            "foreignPolicyAndCallerPageAliasesCannotUseGlobalRegistrationsToBypassConfigurationGrants()",
+            "actualNestedReadonlyCollectionPoliciesDenyChangesBeforeWritingMetadata()",
+            "updateReusesExistingRowsAndPreflightFailuresDoNotChangeSqlOrAuthorizationVersion()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "[1] alias, MASKED",
+            "[2] alias, HIDDEN",
+            "[3] title, MASKED",
+            "[4] title, HIDDEN",
+            "[5] name, MASKED",
+            "[6] name, HIDDEN",
+            "[7] label, MASKED",
+            "[8] label, HIDDEN",
+            "browserDirectoryPagesMatchActualHttpAndAllExpandedMembershipBindsAreBounded()",
+            "createCannotSmuggleAProtectedRequiredNameAndFailsBeforeAnySqlInsertOrRefresh()",
+            "legacyEntriesCanUseCanonicalLocalFieldsWithoutReadingUnrelatedRemoteRegistry()",
+            "[1] VISIBLE",
+            "[2] MASKED",
+            "[3] HIDDEN",
+            "[1] hidden-name",
+            "[2] masked-name",
+            "[3] hidden-entries",
+            "[4] masked-entries",
+            "[5] masked-child",
+            "[6] hidden-description",
+            "[7] masked-description",
+            "protectedDescriptionIsRestoredBeforeLengthValidationAndForeignMetadataCannotBeUpdated()",
+            "[1] VISIBLE",
+            "[2] MASKED",
+            "[3] HIDDEN",
+            "genericMetadataWriterNeverAcceptsRuleInjectionOrChangesEntriesOnAnInvalidMetadataRequest()",
+            "[1] VISIBLE",
+            "[2] MASKED",
+            "[3] HIDDEN",
+            "[4] MASKED_CHILD"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.I18nTableQueryHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.I18nTableQueryHttpTest.xml",
+          "sha256": "95e85d25aba4a5993ab88cf6d765a19e99bf97c4b5ec31fb18144e4a4f8d7a2f",
+          "cases": [
+            "[1] Endpoint[name=Countries, controller=Countries, field=defaultTimezone, orderField=isoCode2]",
+            "[2] Endpoint[name=Language, controller=Languages, field=nameEnglish, orderField=code]",
+            "[3] Endpoint[name=Region, controller=Regions, field=nameEnglish, orderField=code]",
+            "[4] Endpoint[name=TimeZone, controller=TimeZones, field=nameEnglish, orderField=code]",
+            "[5] Endpoint[name=Namespace, controller=Namespace, field=name, orderField=code]",
+            "[6] Endpoint[name=Message, controller=Messages, field=message, orderField=code]",
+            "[1] Endpoint[name=Countries, controller=Countries, field=defaultTimezone, orderField=isoCode2]",
+            "[2] Endpoint[name=Language, controller=Languages, field=nameEnglish, orderField=code]",
+            "[3] Endpoint[name=Region, controller=Regions, field=nameEnglish, orderField=code]",
+            "[4] Endpoint[name=TimeZone, controller=TimeZones, field=nameEnglish, orderField=code]",
+            "[5] Endpoint[name=Namespace, controller=Namespace, field=name, orderField=code]",
+            "[6] Endpoint[name=Message, controller=Messages, field=message, orderField=code]"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.MultipartUploadLimitTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.MultipartUploadLimitTest.xml",
+          "sha256": "9932999b5275977d4e596b0ee62626b44e9d788f4ad288548d3b3a19f0fde901",
+          "cases": [
+            "configuredLimitsAcceptWidgetsAndRejectOversizedFiles()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.ObjectStoragePermissionHttpTest.xml",
+          "sha256": "eb6501b9070e85a16f07390873cb076a34c5fdffb95d1898b2b47c61c4017ffa",
+          "cases": [
+            "sharedDetailAndDownloadCannotBypassTheAdminPagePolicy()",
+            "ownMetadataUsesPageFieldPermissionsWithoutRequiringAnAdminMenuGrant()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.OptionalCommonHttpAssemblyTest.xml",
+          "sha256": "6e31b7c2d65fc19b063ffb5ceaccb050e2712494c2dead55fcda86faa7375e07",
+          "cases": [
+            "domainOnlySelectionOwnsNoControllersAndExposesNoBrowserRoutes()",
+            "identityAdapterRetainsPreferencePathsAndMemberMethodAuthorization()",
+            "oauthClientOperationsRequireTheirOwnGrantBeforeReachingTheDomain()",
+            "selectingOnlyOidcKeepsLocaleAbsentAndPreservesMethodAuthorization()",
+            "selectedRealAdaptersPreserveEveryLegacyMappingWithOneLogicalPrefix()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.OrganizationSelectionHttpTest",
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+          "sha256": "21eff0b36a2a36348e9336ac3d325f78faf91060ad39eb6e36f5b8c03503473f",
+          "cases": [
+            "calculatedOwnerContextRetainsTreeIdentifiersAndEditableFields()",
+            "missingTenantCannotQuerySchemaOrEitherSide()",
+            "bothSidesHaveRealCountsAndPaginationBeyondOneHundred()",
+            "advancedBooleanAndHeaderFiltersIntersectDraftMembership()",
+            "actualSchemaIsExportedForBrowserContractTests()",
+            "hiddenIdentifierUsesFlatScopedReadWithoutLeakingNavigationKeys()",
+            "selectedOptionsResolveExactHistoricalIdsWithoutBypassingTenantDataOrFieldPermissions()",
+            "pageDataRuleScopesSelectionTreePickerAndCountsWithOneOrmPredicate()",
+            "directChildOptionsRemainCountFreeAndScopedBeyondOneHundred()",
+            "hiddenAndMaskedFieldsAreNotQueryOrOutputSideChannels()",
+            "draftBudgetDoesNotExpandPublicInFilterBudgetAndErrorsRemainSafeThroughRepositoryProxy()",
+            "clientIdentifiersCannotAuthorizeForeignOrDeletedRowsAndAnEmptyDraftIsValid()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+          "sha256": "8db8229da42c04058f0061656fe2091580142d6bd9d1611d70e1d1291743c3f9",
+          "cases": [
+            "targetedMetadataHttpUsesTheExactGrantedPageWithoutEnumeratingItsNeighbors()",
+            "unknownPageAndInjectedSyntaxAreRejectedBeforeSql()",
+            "textAndVisualRoundTripThroughProductionJsonConverter()",
+            "unknownOrEmptyTargetHttpCannotFallBackToTheWholeCatalogOrImpersonateAGrant()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountBindingTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.PlatformAccountBindingTest.xml",
+          "sha256": "82c3d858a5abf053d2f11c2e4341a149647a6df3942ee57c7c77bf9cc8613dfa",
+          "cases": [
+            "accountFiltersBindAsNamedAttributeMap()",
+            "accountAndIdentityUpdatesBindExplicitUserId()",
+            "memberUpdateAndRemovalBindExplicitUserId()",
+            "accountAndAuditSchemasUseDedicatedRoutes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.PlatformAccountQueryHttpTest.xml",
+          "sha256": "6cca9639628110fdefec628bc432ec14e2cdfde44c8389d4091330fe277df83e",
+          "cases": [
+            "auditAdvancedTimeWindowsAndSortShareTheCount()",
+            "schemaContractsAreGeneratedForBrowserRegression()",
+            "scalarNullEmptyAndEscapedTextHaveConsistentSemantics()",
+            "everyDeclaredScalarCompilesAgainstItsActualPersistedType()",
+            "sourcePermissionsConstrainSchemaQueryAndActualResponse()",
+            "structuredBooleanAndHeaderQueriesRunBeforeAccountPagingAndCount()",
+            "rolesAreLoadedInOneBoundedPageBatchAndAccountsAreNotHydrated()",
+            "onlyPersistedPlatformIdentityAuthorizesReadsAndRevocationIsImmediate()",
+            "invalidFieldsTypesOperatorsAndBudgetsFailSafely()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+          "tests": 51,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+          "sha256": "bd6d65cd7e0b0987f9e9a33b36975a9563f89804b2e30b269fa5cf9c841bd6ac",
+          "cases": [
+            "authoringSnapshotsDoNotExpandTheExistingRuntimeScopeOfInternalResourceConsumers()",
+            "assignedUnreadableSortAndOversizedPageAreRejectedBeforeAnySql()",
+            "searchAndHasChildrenCannotRevealForeignOrDeletedPermissions()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "platformRuntimeRoutesExcludeDeletedDisabledAndOtherScopesWithoutLoadingInternalMetadata()",
+            "managementBrowserContractsUseActualSchemaMetadataAndRootPages()",
+            "subtreeCodeCollectionIsCompleteBeyondFiveHundredWithoutWholeIdBindsOrEntityLoads()",
+            "browserResourceManagementRouteMatchesActualRuntimeProjectionIncludingClearedIdentifiers()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "platformResourceFieldPolicyCannotAccidentallyGovernActualCustomTenantNavigation()",
+            "assignedCompositeCursorsMatchNativeNullOrderingAndMixedDirections()",
+            "assignedProtectedLabelsAndAncestorMembershipKeepTheirActualSourceBoundaries()",
+            "managementInaccessibleIntermediateNodesCannotPromoteDescendantsIntoUnpagedRoots()",
+            "customRuntimeRoutesPreserveLargeAliasNavigationWithoutEntityOrUnheldCatalogReads()",
+            "runtimeScalarScopesFollowTheActualConverterForLegacyEmptyAndNoncanonicalEnumSets()",
+            "byCodeSnapshotsRejectBlankCallerIdentityBeforeAnySql()",
+            "routeAncestorsCannotReintroduceDeletedOrForeignScopeNodes()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "literalKeywordsAndExplicitDescendingSortAreAppliedInsideTheVisibleSqlPage()",
+            "byCodeLicenseQueriesCannotReturnRevokedDeletedDisabledOrForeignResources()",
+            "assignedAncestorClosureBeyondOneHundredRetainsEveryLevelAndUsesTheSmallCurrentLevelPath()",
+            "scopeAndRevokedLicenseLinksAreEnforcedEvenWhenNamesMatchTheSearch()",
+            "managementHiddenParentDoesNotRejectServerOwnedRootConstraintAndBadQueriesIssueNoSql()",
+            "assignedPagesApplyActualTenantLicensesBeforePagingAndKeepOnlySelectedChildFlags()",
+            "completeCatalogRetainsReadableAdministratorDisabledSettingsButNeverDeletedOrForeignScopeRows()",
+            "limitTreeExposesTheDirectParentScopeBoundaryForEditing()",
+            "byCodeManagementSnapshotsAreCompleteAcrossScopesWithoutInternalMetadataOrUnboundedBinds()",
+            "managementRootAndDescendantLicensesRemainOutsideAdvancedOrAndHeaderQueries()",
+            "assignedStringCursorsFollowActualCaseInsensitiveDatabaseCollation()",
+            "routesRejectBlankIdentityBeforeAnySql()",
+            "invalidCallerAndPageBudgetsFailBeforeAnySql()",
+            "completeRoutesRetainHeldAndPublicPagesNotEveryLicensedPageAndNeverBindTheWholeClosure()",
+            "applicationResourceBrowserContractsUseActualDirectoryPagesAndSubtreeCodes()",
+            "tenantLicensesAreFilteredBeforeCountAndPaginationWithoutRequiringExistingCallerGrants()",
+            "platformSubtreesRetainCrossScopeAssignmentAndProtectedCodesCannotEscapeAsStrings()",
+            "tenantResourceBrowserNavigationMatchesActualScopedSourceProjection()",
+            "managementCompleteSubtreesKeepRealEditableFieldsWithoutEntityOrPermissionMetadataLoads()",
+            "completeLicensedCatalogPreservesAncestorsAndEveryResourceWithoutWholeEntityOrMembershipReads()",
+            "protectedFieldSearchCannotLeakRawNamesOrCodesThroughMembershipAndSorting()",
+            "platformAssignedPagesKeepAllScopesAndNativeDescendingOrderWithBoundedBinds()",
+            "publicExecutionCodesCannotResurrectDeletedOrDisabledResources()",
+            "requiredAncestorsAreVisibleButAnUnlicensedPageAncestorIsNotDirectlyGrantable()",
+            "managementTwoHundredRowContractRetainsNativeRootOrderAndBoundedProjectionBatches()",
+            "platformAuthoringRetainsCrossScopeResourcesAndReadableDisabledRows()",
+            "runtimeCodeQueriesWorkBeforeContextConstructionAndReadOnlyBoundedActualScalars()",
+            "[1] MASKED",
+            "[2] HIDDEN",
+            "licenseAndAncestorIndexesExistWithProductionSnakeCaseColumnNaming()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+          "sha256": "d996f56725ce60811f7b91e21c30d841097a70b222028d1c72e63ed9251c398e",
+          "cases": [
+            "inheritedParentScopeProjectionAndBothJsonConvertersRespectTheResourcePolicy()",
+            "resourceAdvancedSearchWithDescendingSortReturnsMatchingRoots()",
+            "numericSortFilterAndMultipleSortOrdersRemainIndependent()",
+            "invalidResourceQueryReturnsTheSafeValidationCode()",
+            "resourceTreeNodesUseTheOwningResourceFieldPolicyInsteadOfExposingProtectedValues()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest",
+          "tests": 23,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+          "sha256": "7e8ad631c69685dbddd321e4bbd97548d7a691a1c8e6369281079ebc11185d11",
+          "cases": [
+            "paginatesBeforeLoadingAndProjectsReservedSlots()",
+            "loadsOnlyOneTreeLevelAndProjectsResourceIcon()",
+            "hiddenGrantStateCannotBeInferredThroughCountsOrWrites()",
+            "customCatalogIsTheOnlySourceForRoleEditorAndSave()",
+            "fieldPolicyOptionsAndAssignmentStayWithinThePageModel()",
+            "directoryCheckboxCanStageEveryUnloadedDescendantAndSaveAtomically()",
+            "previewContextIsBoundedAndPreservesVisibilityAndRoleIsolation()",
+            "subtreeChangeIncludesUnloadedDescendantsAndRejectsStalePreview()",
+            "packagePagesKeepUnpackagedDirectoriesNavigableWithoutExpandingGrants()",
+            "legacyPoliciesCannotDisappearWhenTheirResourceIsRevoked()",
+            "savesOnlyExplicitChangesAndRejectsConflictBeforeAnyWrite()",
+            "organizationDataRuleCanBeListedBoundAndClearedOnlyWithinTenant()",
+            "omittedGrantDecisionAndDuplicateOrOversizedChangesCannotRevokeAnything()",
+            "httpPatchUsesRevisionAndDoesNotAcceptFullReplacement()",
+            "platformCatalogIncludesAndSavesTenantManagedPageResources()",
+            "dataAssetsAreNotAdvertisedBeforeTenantPageCoverageExists()",
+            "managementRevocationStopsBothReadsAndSaves()",
+            "policyDirectoryPaginatesBeyondFiveHundredAndHydratesOnlyAnEligibleExactId()",
+            "packageMembershipAndScopeSetsAreFilteredBeforeCounting()",
+            "filtersInSqlAndKeepsTenantAndRoleBoundary()",
+            "subtreeRevocationPreservesLegacyScopePolicy()",
+            "navigationTreeExcludesActionsAndApisWithoutHidingTheirGrants()",
+            "hiddenResourceFieldsAreExcludedFromHttpAndSearch()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.StorageTableQueryHttpTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.StorageTableQueryHttpTest.xml",
+          "sha256": "4eb244f66fd644f1484cc4ed8be3f12df5d653aee2950cd6e7ff04f5ac6b0aa1",
+          "cases": [
+            "usageProjectionFlushesPendingChangesAndDoesNotRetainStaleEntityValues()",
+            "quotaAggregateFiltersCountBeforePaginationAndHandleUnlimitedAndOverused()",
+            "inlineReadModelIsDiscoveredByTheProductionEntityScanPattern()",
+            "credentialStateIsQueryableButCredentialContentsNeverAre()",
+            "objectsRemainScopedAndGlobalQuotaUsageIsNotDistortedByAmbientTenantFilter()",
+            "[1] provider-configs",
+            "[2] objects",
+            "[3] quotas",
+            "aggregateBooleanTreeIntersectsHeadersAndUsesTheSameCount()",
+            "[1] provider-configs",
+            "[2] objects",
+            "[3] quotas",
+            "[1] provider-configs",
+            "[2] objects",
+            "[3] quotas",
+            "derivedValuesInheritFieldRestrictionsInQueriesSchemasAndHttp()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+          "sha256": "acbf225a54f58becad595f5515798eb6d8e7ce089dc526c152d24c2e5bbf97c0",
+          "cases": [
+            "tenantOwnerReadOnlySchemaPreservesTheRealPickerAndIndependentEditGrant()",
+            "packagePriceWritesRejectDatabaseRoundingButProtectedPricesSurviveMetadataEdits()",
+            "omittedReadOnlyTenantOwnerSurvivesActualMetadataHttpWrites()",
+            "[1] Application",
+            "[2] Package",
+            "organizationTreeCountsRootsAndPagesAllChildrenInsideMandatoryParentAndTenant()",
+            "packagePriceSchemaAndHttpQueryKeepTheExactDatabaseBoundary()",
+            "[1] Application",
+            "[2] Package",
+            "[3] Tenant",
+            "[4] Organization",
+            "tenantIdentityLookupDoesNotBypassAuthorizedMemberships()",
+            "organizationTreeProjectionAndDefaultOrderRespectFieldPolicies()",
+            "[1] Tenant",
+            "[2] Package",
+            "[3] Application",
+            "[1] Application",
+            "[2] Package",
+            "tenantApplicationsIntersectAssignmentAndCandidateScopes()",
+            "[1] Application",
+            "[2] Package",
+            "[3] Tenant",
+            "[4] Organization",
+            "[1] Application",
+            "[2] Package",
+            "applicationResourceBrowserUsesTheActualConfigurationActionContract()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantConfigurationAuthorizationTest.xml",
+          "sha256": "e7250d5e96a8d7fdc40b4046c71419f1cde93f601fee8fc780f48d95400e31f1",
+          "cases": [
+            "anonymousCannotProbeCapabilitiesAndAuthenticatedReadersStillReceiveTheServicePolicy()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantDirectoryHttpTest",
+          "tests": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantDirectoryHttpTest.xml",
+          "sha256": "208c82528ed57b103cb13aebeaae361cc89247404cacb41243ff66e65a847474",
+          "cases": [
+            "roleSelectionUsesAuthoritiesAndNeverLeaksAnotherTenant()",
+            "deniesForeignActorAndMissingOperationCapability()",
+            "pagesActiveTenantMembersAndIncludesOwnerWithoutMembership()",
+            "rejectsUnboundedPagingSortsAndHydration()",
+            "selectedUsersShareTenantAndActiveAccountBoundary()",
+            "runtimeMemberValidationUsesTheSameActiveAccountAndMembershipBoundary()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantMemberQueryHttpTest",
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantMemberQueryHttpTest.xml",
+          "sha256": "d2d186b74272a5ea28fda83cad7f9ed5e291a2fc04904675b56f18b136c77617",
+          "cases": [
+            "managerStillNeedsExplicitRemovalAuthority()",
+            "userTypeUpdateIsValidatedAndVisibleInOrganizationPage()",
+            "tenantMemberRemovalDeletesOnlyCurrentMembershipAndTenantRolesNotGlobalAccountOrOtherTenants()",
+            "organizationPageRuleFiltersMemberPageCountAndCandidateRowsThroughCriteria()",
+            "removalFromParentDetachesChildMemberAndRetainsTenantAccountAndRoles()",
+            "memberRoleCapabilityRequiresBothTenantManagementAndActualAssignmentAuthority()",
+            "memberEditRetainsReadonlyOrganizationAndRejectsCapturedStaleRevision()",
+            "organizationHeadersFilterAndSortAcrossPagesAndKeepSubtreeAndCandidateBoundaries()",
+            "readAuthorityRemainsMandatoryForRowsAndSchema()",
+            "removalRejectsStaleRevisionForeignMembershipAndOutOfScopeSource()",
+            "expressionFieldsSupportHeaderAndBooleanGroupsBeforePaging()",
+            "countedJoinExcludesDeletedAccountsMembershipsAndOtherTenants()",
+            "explicitMemberPolicyFiltersRowsAndCountEvenForAdministrator()",
+            "organizationSchemaMatchesFieldDenialsAndIgnoresNoUnknownFilters()",
+            "organizationQueriesPageDescendantsAndExcludeOtherTenants()",
+            "pagesBeyondOneHundredRemainQueryableWithoutLoadingAllRows()",
+            "generatedSchemaIsSerializableByTheProductionJsonConverter()",
+            "memberExpressionUsesTheSameProjectionForRowsAndCounts()",
+            "schemaFiltersAndProjectionInheritSourceFieldPermissions()",
+            "genericUserIdentifiersAreQueryableThroughTheStringProjection()",
+            "organizationFieldPolicyControlsSchemaProjectionUpdatesAndRemovalWithoutContextBleed()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+          "sha256": "be9c02eb7106b3889a992279b1fb8e3bcd1d47566abebc1f8b1cb1dce397c5b9",
+          "cases": [
+            "pickerAndCompatibilityEndpointsBindTheirExplicitNames()",
+            "realQueryBindingPreservesFixedParentHeaderConditionsAndRepeatedSorts()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.TenantUserAssignmentHttpTest.xml",
+          "sha256": "53cd82054a75f9d93bd920735044cd56655ca8688eb0c76b04e6605755cb8242",
+          "cases": [
+            "bothSidesAreSqlPagedBeyondOneHundredAndOwnerIsImplicitlyAssigned()",
+            "advancedConditionsHeadersAndLegacyKeywordIntersectTheSelectedSide()",
+            "tenantAdminCannotQuerySchemaOrRowsForAnotherContext()",
+            "deletedMembersAndOtherTenantAssignmentsDoNotHideAvailableUsers()",
+            "selectedTenantCapabilityUsesTheActualWriteGuardWithoutInventingAResourceGrant()",
+            "fieldPermissionsApplyToSchemaQueryAndExplicitJsonProjection()",
+            "assignmentRestoresDeletedRelationAndRemovalCannotRemoveOwner()",
+            "actualSchemaIsExportedForBrowserContractTests()",
+            "protectedIdentifiersAndOversizedMutationBatchesAreRejected()",
+            "assigningAndRemovingFreshUserOnlyChangesTheTargetTenantAndItsRoles()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPickerHttpTest",
+          "tests": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.UserPickerHttpTest.xml",
+          "sha256": "38bdd3a515dd2ea3087a8cc9b5597d11cdf7b7084718011c437dca668e01c043",
+          "cases": [
+            "absentSearchFieldsAndProtectedIdentityFailClosedBeforeDatabaseQueries()",
+            "selectedValuesKeepRequestedOrderAndDisabledHistoryButNeverDeletedAccounts()",
+            "actualMultiplePickerSchemaRetainsTheExistingRemoteProtocol()",
+            "fullHundredIdHydrationUsesOneScalarQueryAndPreservesEveryCsvEntry()",
+            "nativeHqlCriteriaAndJavaLabelsAgreeForLegacyNamesAndEmailFallback()",
+            "countedPagesBeyondFiveHundredUseOnlyLightweightProjectionAndPreserveGlobalAccountSelection()",
+            "unreadableFallbackFieldsAreNotSelectedSearchedOrSortedButReadableNamesStillWork()",
+            "legacyRepositoryProjectionAlsoExcludesDeletedRowsAndTreatsPrefixesLiterally()",
+            "malformedHttpRequestsReturnBadRequestBeforeAnySqlRatherThanInternalErrors()",
+            "literalWildcardPrefixesCannotTurnThePickerIntoABroadSearch()",
+            "malformedPagingSortAndHydrationDoNotBecomeUnboundedDatabaseReads()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureAuthorizationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.UserPictureAuthorizationTest.xml",
+          "sha256": "570214628503f4822a94094f90d9e564fa5e56f31bc7399bbc06cb8405e2a5e5",
+          "cases": [
+            "anonymousCannotWriteButAuthenticatedAccountsCanWriteOnlyThemselves()",
+            "pickerRequiresItsRealIndependentCapabilityAndDeniesAnonymousBeforeTheService()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserPictureHttpTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.UserPictureHttpTest.xml",
+          "sha256": "27cf0bbe8365d3a52c19168d497af432438620d46b771b2887b1d6d6d4b67292",
+          "cases": [
+            "pictureUpdatePreservesConcurrentProfileFieldsAndIgnoresMassAssignment()",
+            "pictureRemovalIsFieldOnlyAndDeletedAccountsCannotBeUpdated()",
+            "endpointRequiresAuthenticationAndDerivesItsTargetFromThePrincipal()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.controller.UserRoleAssignmentHttpTest.xml",
+          "sha256": "cd895e9bced0f231e25879533af14e05b9dca034ebec85752c69e3c75fc134cc",
+          "cases": [
+            "assignmentRestoresDeletedRowsAndDuplicateSubmissionDoesNotDuplicateGrants()",
+            "selectedAndAvailablePagesAreCountedInSqlBeyondOneHundred()",
+            "schemaAndRowsRejectOutsidersDeletedMembersAndPersonalContexts()",
+            "mutationsRejectForeignDeletedRolesOversizedBatchesAndForeignMembers()",
+            "ownerWithoutMembershipCanBeQueriedButNonManagerCannotReadTheCatalog()",
+            "actualSchemaIsExportedForBrowserContractTests()",
+            "invalidAndUnauthorizedFieldsAndUnboundedPagesAreRejected()",
+            "advancedHeadersAndKeywordIntersectWithoutEscapingTheAssignmentSide()",
+            "deletedAssignmentsAndForeignAssignmentsDoNotHideAvailableRoles()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.i18n.CommonI18nMessagesTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.i18n.CommonI18nMessagesTest.xml",
+          "sha256": "319b1768a6555d45935c482399a09422b21707dbc9ba36d14b554628c02d0dd7",
+          "cases": [
+            "commonMessagesIncludeAuthorizationScopeLabelsForSupportedLocales()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.initialize.DictionaryDeclarationCompatibilityTest.xml",
+          "sha256": "870d85f09b0d8a3447fc5ad7d01a0892127b841ef341370184b54b01f09f2d78",
+          "cases": [
+            "createAndRefreshRetainAllLegacyMetadataAndBootstrapKeys()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-full-common-results/TEST-org.simplepoint.common.server.initialize.NotificationDictionaryInitializerTest.xml",
+          "sha256": "e00d3aa0cfaf6c73fb6de8dd4d1168209c040666134944dee9055cfb4a0a38a3",
+          "cases": [
+            "contributionHasStableMetadata()",
+            "contributionCreatesAllNotificationDictionariesAndItems()"
+          ]
+        }
+      ]
+    }
+  ],
+  "focusedCommonRerun": {
+    "name": "resource-directory-http",
+    "tests": 51,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "sha256": "0dec06478b6c7dcea9d4a8fc2a352c58528d3058719af24ed27c25be2bfbefbe",
+        "cases": [
+          "authoringSnapshotsDoNotExpandTheExistingRuntimeScopeOfInternalResourceConsumers()",
+          "assignedUnreadableSortAndOversizedPageAreRejectedBeforeAnySql()",
+          "searchAndHasChildrenCannotRevealForeignOrDeletedPermissions()",
+          "[1] MASKED",
+          "[2] HIDDEN",
+          "platformRuntimeRoutesExcludeDeletedDisabledAndOtherScopesWithoutLoadingInternalMetadata()",
+          "managementBrowserContractsUseActualSchemaMetadataAndRootPages()",
+          "subtreeCodeCollectionIsCompleteBeyondFiveHundredWithoutWholeIdBindsOrEntityLoads()",
+          "browserResourceManagementRouteMatchesActualRuntimeProjectionIncludingClearedIdentifiers()",
+          "[1] MASKED",
+          "[2] HIDDEN",
+          "platformResourceFieldPolicyCannotAccidentallyGovernActualCustomTenantNavigation()",
+          "assignedCompositeCursorsMatchNativeNullOrderingAndMixedDirections()",
+          "assignedProtectedLabelsAndAncestorMembershipKeepTheirActualSourceBoundaries()",
+          "managementInaccessibleIntermediateNodesCannotPromoteDescendantsIntoUnpagedRoots()",
+          "customRuntimeRoutesPreserveLargeAliasNavigationWithoutEntityOrUnheldCatalogReads()",
+          "runtimeScalarScopesFollowTheActualConverterForLegacyEmptyAndNoncanonicalEnumSets()",
+          "byCodeSnapshotsRejectBlankCallerIdentityBeforeAnySql()",
+          "routeAncestorsCannotReintroduceDeletedOrForeignScopeNodes()",
+          "[1] MASKED",
+          "[2] HIDDEN",
+          "literalKeywordsAndExplicitDescendingSortAreAppliedInsideTheVisibleSqlPage()",
+          "byCodeLicenseQueriesCannotReturnRevokedDeletedDisabledOrForeignResources()",
+          "assignedAncestorClosureBeyondOneHundredRetainsEveryLevelAndUsesTheSmallCurrentLevelPath()",
+          "scopeAndRevokedLicenseLinksAreEnforcedEvenWhenNamesMatchTheSearch()",
+          "managementHiddenParentDoesNotRejectServerOwnedRootConstraintAndBadQueriesIssueNoSql()",
+          "assignedPagesApplyActualTenantLicensesBeforePagingAndKeepOnlySelectedChildFlags()",
+          "completeCatalogRetainsReadableAdministratorDisabledSettingsButNeverDeletedOrForeignScopeRows()",
+          "limitTreeExposesTheDirectParentScopeBoundaryForEditing()",
+          "byCodeManagementSnapshotsAreCompleteAcrossScopesWithoutInternalMetadataOrUnboundedBinds()",
+          "managementRootAndDescendantLicensesRemainOutsideAdvancedOrAndHeaderQueries()",
+          "assignedStringCursorsFollowActualCaseInsensitiveDatabaseCollation()",
+          "routesRejectBlankIdentityBeforeAnySql()",
+          "invalidCallerAndPageBudgetsFailBeforeAnySql()",
+          "completeRoutesRetainHeldAndPublicPagesNotEveryLicensedPageAndNeverBindTheWholeClosure()",
+          "applicationResourceBrowserContractsUseActualDirectoryPagesAndSubtreeCodes()",
+          "tenantLicensesAreFilteredBeforeCountAndPaginationWithoutRequiringExistingCallerGrants()",
+          "platformSubtreesRetainCrossScopeAssignmentAndProtectedCodesCannotEscapeAsStrings()",
+          "tenantResourceBrowserNavigationMatchesActualScopedSourceProjection()",
+          "managementCompleteSubtreesKeepRealEditableFieldsWithoutEntityOrPermissionMetadataLoads()",
+          "completeLicensedCatalogPreservesAncestorsAndEveryResourceWithoutWholeEntityOrMembershipReads()",
+          "protectedFieldSearchCannotLeakRawNamesOrCodesThroughMembershipAndSorting()",
+          "platformAssignedPagesKeepAllScopesAndNativeDescendingOrderWithBoundedBinds()",
+          "publicExecutionCodesCannotResurrectDeletedOrDisabledResources()",
+          "requiredAncestorsAreVisibleButAnUnlicensedPageAncestorIsNotDirectlyGrantable()",
+          "managementTwoHundredRowContractRetainsNativeRootOrderAndBoundedProjectionBatches()",
+          "platformAuthoringRetainsCrossScopeResourcesAndReadableDisabledRows()",
+          "runtimeCodeQueriesWorkBeforeContextConstructionAndReadOnlyBoundedActualScalars()",
+          "[1] MASKED",
+          "[2] HIDDEN",
+          "licenseAndAncestorIndexesExistWithProductionSnakeCaseColumnNaming()"
+        ]
+      }
+    ]
+  },
+  "h2TargetedSummary": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation": {
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation": {
+      "tests": 50,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "simplepoint-services/simplepoint-service-common": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "h2Archived": [
+    {
+      "name": "simplepoint-plugin-rbac-tenant-implementation",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryCatalogTransactionTest.xml",
+          "sha256": "211663e78d9279ef5ebb4f05113fe950870db8a2eb91beb5e92b9f293e950857",
+          "cases": [
+            "renameUpdatesChildCodesAndSingleDeleteRemovesChildren()",
+            "missingRevisionRowFailsClosedBeforeBusinessWrites()",
+            "deleteAllUsesSameAggregateCleanup()",
+            "nontransactionalReadonlyAndPreloadedContextsAreRejected()",
+            "repeatedDeclarationRetainsIdsAndEntersOncePerTransaction()",
+            "bulkDictionaryDefaultsAndItemSingleDeleteCannotBypassBoundary()",
+            "anotherWriterWaitsForCommitAndReadsCommittedMetadata()",
+            "batchCreateValidatesItemsAndRollsBackEarlierRows()",
+            "lateDatabaseFailureRollsBackEntireBatchAndRevision()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryItemServiceImplTest.xml",
+          "sha256": "d219b365f74c864644d4735b2e0054a60c905719dfaadeb1cb3190cfbadf4ec1",
+          "cases": [
+            "create_throwsWhenDictionaryDoesNotExist()",
+            "create_throwsWhenDictionaryCodeIsNull()",
+            "modifyById_throwsWhenItemNotFound()",
+            "create_throwsWhenValueIsNull()",
+            "create_throwsWhenDictionaryCodeIsBlank()",
+            "create_throwsWhenNameIsNull()",
+            "modifyById_throwsDictionaryNotExistWhenCodeInheritedFromCurrentIsInvalid()",
+            "create_keepsExplicitEnabledFalse()",
+            "create_setsEnabledTrueWhenNullAndNoCurrent()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.DictionaryServiceImplTest.xml",
+          "sha256": "f86c1650cc279d9d01f29abf28828ddfd472cfd02ff572fd07d4c4c842263639",
+          "cases": [
+            "create_setsEnabledTrueWhenNull()",
+            "options_throwsWhenCodeIsBlank()",
+            "removeByIds_deletesDictionaryItemsBeforeDictionaries()",
+            "options_delegatesToItemRepository()",
+            "options_throwsWhenCodeIsNull()",
+            "create_keepsExistingEnabledTrue()",
+            "removeByIds_returnsEarlyWhenIdsIsNull()",
+            "modifyById_throwsWhenDictionaryNotFound()",
+            "create_keepsExistingEnabledFalse()",
+            "removeByIds_returnsEarlyWhenIdsIsEmpty()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.OrganizationTypeDictionaryInitializerTest.xml",
+          "sha256": "71cb473b8dc82b222a2da523b684e4caacf5124fd9e2dad82bf8d42ba0d5680f",
+          "cases": [
+            "bootstrapContribution_existingDictionary_modifiesInsteadOfCreate()",
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_existingDictionaryItem_modifiesInsteadOfCreate()",
+            "bootstrapContribution_noExistingData_createsDictionaryAndItems()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantResourceModeDictionaryInitializerTest.xml",
+          "sha256": "0c1f48f7738025e9509da8feac0690a4211ab6d4ef528fc8f1c1573400bd5b73",
+          "cases": [
+            "registersBothInternationalizedModes()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-tenant-implementation/TEST-org.simplepoint.plugin.rbac.tenant.service.initialize.TenantTypeDictionaryInitializerTest.xml",
+          "sha256": "fec017a652bad0b0882eabe3c15c8755bbf2465b44b8157349202cfb6548ab32",
+          "cases": [
+            "contribution_hasStableMetadata()",
+            "bootstrapContribution_createsDictionaryAndAllTenantTypes()"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "simplepoint-plugin-rbac-router-implementation",
+      "tests": 50,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest.xml",
+          "sha256": "7751411afcc89a55386cd2281bccb2515ebd733960a3e1ec4c647a30e6a10f76",
+          "cases": [
+            "[1] false",
+            "[2] true",
+            "missingRevisionOrReadOnlyOrAbsentTransactionNeverSilentlyDisablesLocking()",
+            "ownerUninstallProtectsForeignDescendantsEvenWithMissingClosure()",
+            "pluginInstallAndUninstallSerializeWithRegistrationAndRetainOuterRollback()",
+            "joinedOperationsReuseLockAndRollbackTogether()",
+            "[1] batch-create",
+            "[2] remove-one",
+            "[3] remove-all",
+            "[4] remove-owner",
+            "failedWriterReleasesLockWithoutCommittingItsRevisionOrResources()",
+            "olderRepeatableReadSnapshotCannotRegisterAfterAnotherWriterCommits()",
+            "[1] false",
+            "[2] true",
+            "competingOwnersCannotClaimSamePathAfterWaiting()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest",
+          "tests": 10,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationDeploymentTest.xml",
+          "sha256": "cbfc7e03bc46e5d62e8168620a205aa3ad11c1ef3c9fd62ebc46a3d74225eeb4",
+          "cases": [
+            "batchRetryCannotAddDropOrReplaceOwnersButMayChangeInputOrder()",
+            "conflictingBatchAndRolledBackActivationLeaveAllOwnersUnchanged()",
+            "activationFencesLegacyAndOlderClientsWhileRetainingResourceIdentity()",
+            "malformedAndSharedClientsCannotBecomeAuthority()",
+            "retirementCannotRestoreLegacyOrLocalPluginAuthorityAndPreservesData()",
+            "retriesAreExactAndHistoricalOperationsCannotReactivateSupersededClients()",
+            "activationWaitsForInFlightSnapshotAndFencesAllSubsequentOldWrites()",
+            "absentGenerationSchemaNeverFallsBackToLegacyPolicy()",
+            "competingInstallersCannotBothAdvanceAnExpectedGeneration()",
+            "jsonProviderPreservesGenerationFailureAndExportsNeitherOldProtocolNorAdministration()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationPlanTest.xml",
+          "sha256": "715fc30bc3f7841e158dadbed7320b7e2bbd26a114f31e99876bcd346e60e26a",
+          "cases": [
+            "physicalParentReferencesMustBeOwnedRetainedAndAcyclic()",
+            "malformedAndOversizedDeclarationsFailWithBoundedTraversal()",
+            "cannotOverrideOwnerInsideNestedDeclarations()",
+            "duplicateCodesOrPathsAreRejectedAcrossTheWholeTree()",
+            "retirementCannotCascadeIntoForeignDescendantsEvenWithoutClosureRows()",
+            "sameOwnerRenameRetainsIdentityAndPermissionMetadataWithoutMutatingInputs()",
+            "checksBothIdentitiesEvenWhenCodeAlreadyMatchesTheOwner()",
+            "foreignDescendantsPreventIndirectReparentingAndScopeChanges()",
+            "[1] null",
+            "[2] ",
+            "[3] other",
+            "[4]  other ",
+            "retirementOnlySelectsUnmatchedOwnedRecordsAndRetainedNodesCanBeMoved()",
+            "inheritedScopesAndNestedParentsArePreparedBeforePersistence()",
+            "cannotClaimOneStoredRecordTwiceUsingItsCodeAndItsPath()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationProviderTest.xml",
+          "sha256": "2bfef14e3325be92106c3930e61befab23014d408491a69ba438b990c651f8ee",
+          "cases": [
+            "exactBoundPolicyWorksAndMissingOrWildcardPoliciesNeverGrantAccess()",
+            "verifiedClientIdentityIsPassedToTheTransactionalDomainWithoutAnOwnerClaimFromInput()",
+            "usersDisplayNamesAndMissingScopeCannotReachDomainWrites()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationSecurityTest.xml",
+          "sha256": "fb8422ae3eb3fc40625d49838a4632d74d5640935f1e22fbecaa2bd4ab2d804b",
+          "cases": [
+            "missingLocalAuthenticationContributionFailsClosedEvenWithCallerServiceContext()",
+            "legacyHostCannotDisableContractIsolationOrBorrowBrowserAuthority()",
+            "inboundJsonUsesTheSameOwnerPolicyAndDoesNotExportLocalManagement()",
+            "signatureGrantScopeAudienceAndRevocationFailuresNeverReachDomainWrites()"
+          ]
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "report": "/tmp/simplepoint-dictionary-tx-h2/simplepoint-plugin-rbac-router-implementation/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceRegistrationTransactionTest.xml",
+          "sha256": "efa4d2afed92cd29128c28423e907d5685a5ed78dda83dd748b57db08df81a0e",
+          "cases": [
+            "registrationRenameAndRetirementRetainIdentityAndCleanAncestorRows()",
+            "lateClosureConflictRollsBackEarlierResourceAndAncestorWrites()",
+            "foreignPathCollisionLeavesPersistedCatalogUnchanged()"
+          ]
+        }
+      ]
+    }
+  ],
+  "style": [
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "2a8fb12a3d43390d6756cd99c376632b8fb472760db6719c98f537c6f8a73c06",
+      "files": 6,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-data/simplepoint-data-jpa/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "b864663ab346c0e1d1de48553f9794c59f09bdfee1e430673896a748c5d4f63f",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "6d1500d6fa703ce4ff611977276b8befe118a44afc64bc7975a9ae86ee606713",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "c0d779871fd96326523357179aa2d41eefc0c6573de268f8154516ad8f784e54",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "6ab7f66bfd192597c2c8c1539fe73418061e2404ced97d3ada7f0eeadfd2758b",
+      "files": 8,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "31b96a6ea879d79ff93aa20ca3f5a20338e53eefdb5e7367dd6474c8c12009dc",
+      "files": 1,
+      "violations": 0
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/dictionaryTransactions.xml",
+      "sha256": "681a16aaa377367067014a341553dd865faceb982c751f8fd27d210013533758",
+      "files": 1,
+      "violations": 0
+    }
+  ],
+  "styleInitScript": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-dictionary-tx-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleDictionaryTransactions', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyDictionaryTransactionsStyle') { dependsOn checks }\n}\n",
+  "styleSourcePaths": [
+    "simplepoint-data/simplepoint-data-jpa/src/main/java/org/simplepoint/data/jpa/transaction/CatalogWriteBoundary.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/DictionaryExceptionHandler.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceCatalogWriteBoundary.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/error/DictionaryWriteException.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryItemServiceImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryServiceImpl.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/BuiltInDictionaryRegistrar.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/DictionaryDeclarationWriter.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/support/DictionaryCatalogWriteBoundary.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryCatalogTransactionTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryItemServiceImplTest.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryServiceImplTest.java",
+    "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/ExternalIdentityProviderDictionaryInitializer.java",
+    "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializer.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/DictionaryWriteHttpTest.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/DictionaryDeclarationCompatibilityTest.java",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializerTest.java"
+  ],
+  "postgresRunner": "from pathlib import Path\nimport os,subprocess\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-dictionary-tx-pg.env').read_text().splitlines())\nenv=dict(os.environ,JAVA_HOME='/home/ymsl/.jdks/ms-21.0.12.1',SP_DICTIONARY_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/dictionary_test',SP_DICTIONARY_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_RESOURCE_TEST_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/resource_registration_test',SP_RESOURCE_TEST_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'],SP_MIGRATIONS_POSTGRES_URL='jdbc:postgresql://127.0.0.1:45436/migration_test',SP_MIGRATIONS_POSTGRES_USER='resource_test',SP_MIGRATIONS_POSTGRES_PASSWORD=values['POSTGRES_PASSWORD'])\nargs=['./gradlew',':simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test',':simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:test',':simplepoint-platform:simplepoint-platform-composition-verification:test','--tests','*IdentityModuleMigrationPostgresTest','--tests','*PackagedPersistenceTest','--tests','*RepositoryOwnershipTest','--tests','*RemoteContractBoundaryTest','--tests','*PlatformDeploymentPlanTest',':simplepoint-services:simplepoint-service-common:test','verifyDictionaryTransactionsStyle','verifyModuleBoundaries','-I','/tmp/simplepoint-dictionary-tx-checkstyle.gradle','-Psimplepoint.frontend.skip=true','--console=plain']\nwith open('/tmp/simplepoint-dictionary-tx-postgres.log','w') as log:\n result=subprocess.run(args,env=env,stdout=log,stderr=subprocess.STDOUT)\nprint('PostgreSQL regression and quality gates exit:',result.returncode)\nraise SystemExit(result.returncode)\n",
+  "postgresEnvironment": {
+    "image": "postgres:17",
+    "container": "simplepoint-dictionary-tx-test",
+    "port": "127.0.0.1:45436",
+    "databases": [
+      "dictionary_test",
+      "resource_registration_test",
+      "migration_test"
+    ],
+    "storage": "tmpfs /var/lib/postgresql/data",
+    "cleanup": "container removed with volumes; temporary credentials deleted; no business database/config modified"
+  },
+  "verificationNotes": [
+    "671 is the primary regression count, not a sum that counts H2 or focused reruns twice.",
+    "Real PostgreSQL dictionary tests use actual JPA repositories, transaction proxies and migration SQL. Schema/audit collaborators are test doubles.",
+    "ResourceDirectoryHttpTest constructor changed to inject the new collaborator; existing formatting violations were repaired and all 51 cases rerun. Final while braces and final local variable changes were formatting only.",
+    "Initial compile/fixture issues were corrected before the passing H2 suite. Primary regression tests passed while style gates initially rejected overload placement/variable distance and legacy fixture style; final style gate passed.",
+    "Migration tests exercised identity V3/V4/V5 upgrade without changing dictionary/item values or disabled state."
+  ],
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test --tests '*Dictionary*Test' :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation:test --tests '*ResourceCatalog*Test' --tests '*ResourceRegistration*Test' :simplepoint-services:simplepoint-service-common:test --tests '*Dictionary*Test' -Psimplepoint.frontend.skip=true --console=plain",
+    "python3 /tmp/run-dictionary-tx-postgres.py",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyDictionaryTransactionsStyle verifyModuleBoundaries :simplepoint-services:simplepoint-service-common:test --tests '*ResourceDirectoryHttpTest' :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-dictionary-tx-checkstyle.gradle --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew verifyDictionaryTransactionsStyle verifyModuleBoundaries :simplepoint-services:simplepoint-service-common:installDist -I /tmp/simplepoint-dictionary-tx-checkstyle.gradle --console=plain",
+    "pnpm typecheck",
+    "node scripts/sync-i18n-bundles.mjs",
+    "node --test scripts/i18n/backend-resources.test.mjs"
+  ],
+  "sources": [
+    {
+      "path": "simplepoint-data/simplepoint-data-jpa/src/main/java/org/simplepoint/data/jpa/transaction/CatalogWriteBoundary.java",
+      "sha256": "b9b639e122cfaabff52ae05c67d6a4499a2528c5c12c929de44eebb954d58e7c"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java",
+      "sha256": "235dcdcae4d59c1b9ba010a99a07243776bba59264c33a8f6e7463258dc14f1d"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/tenant/rest/controller/DictionaryExceptionHandler.java",
+      "sha256": "a94c72c1f56108077d8b1cac58a4804ef44f691cc9bdf1d87778e211ab12c1b6"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceCatalogWriteBoundary.java",
+      "sha256": "a742c1310ce2d831292d732155cc290a7b5b244cbe5d801b6dd5ab588929361e"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/error/DictionaryWriteException.java",
+      "sha256": "f92165b8d59ed4dbc0f03fc8ea78bbcd285b1f7deddd86bb362a1136c4973921"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryItemServiceImpl.java",
+      "sha256": "86d8c90ba4b39208beace9a9c917f7b37bad491a19c044a7ad01e31c7b73bd1f"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryServiceImpl.java",
+      "sha256": "49622ac9e6a21745f98866a190c46a1089184dc14528cb5178ea397bc3a266ca"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/BuiltInDictionaryRegistrar.java",
+      "sha256": "b7e311aeffa4cac212630601b9e95d5874a0bf4808afcfa1d6e780df482a0740"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/initialize/DictionaryDeclarationWriter.java",
+      "sha256": "69dc528714d4c4fc87004e9101131a74c815df8b52553a6edfc1e625f6e083dc"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/support/DictionaryCatalogWriteBoundary.java",
+      "sha256": "ab1898a607c7d4d1021e91f4b93cbc271627806dcf99acae57d0c19ee047cc3d"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryCatalogTransactionTest.java",
+      "sha256": "b1638f1bfd72636fb57128209930af375170e962ed6f169c056a8ed8defc9c53"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryItemServiceImplTest.java",
+      "sha256": "2946dbd457d1bc0f8bbf32d6ffa046556adf9c68e9070f107e9300af15ba1e9b"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/DictionaryServiceImplTest.java",
+      "sha256": "992da7efeee4e8c3318ac2a543d60d3dd4199761f3229054f2e8c20c30c3a3c4"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/ExternalIdentityProviderDictionaryInitializer.java",
+      "sha256": "995323463a83d96b59f5f3806784561885d4def4d35219990a5cd5e32a8a0350"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/main/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializer.java",
+      "sha256": "0e28c496a8d59168224312465a9a816f4541b67697c07f8e11056733fcea95f3"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/DictionaryWriteHttpTest.java",
+      "sha256": "366520d471777582d8ff749358316da5f199594f7c7cb71af4fea2b3a5ad6eba"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java",
+      "sha256": "5c3f202abd05f215936ede4cc5adabde403fbef37f43e8a4ebc58f4fc08355e8"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/DictionaryDeclarationCompatibilityTest.java",
+      "sha256": "dc30382293c5666eeb82773f85c8aca8d7b2f199da296781b96a367792ac97fc"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/initialize/NotificationDictionaryInitializerTest.java",
+      "sha256": "30a3cec2f320acbc74940d1201e695be442338686cc4e1797a6476c647e4500b"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build.gradle.kts",
+      "sha256": "6543b32887051cc9322eb27923d4fb56c67e08fd87be8d872e012bc1f5d9f0d0"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity/db/manifest.properties",
+      "sha256": "1af5b93a0c431c2c2811af00e7ea3b0ebd0eb324ecfdc7f3e3b35a87501668c5"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/resources/META-INF/simplepoint/modules/identity/db/postgresql/V6__dictionary_catalog_revision.sql",
+      "sha256": "b8c92449f0167dd43eb21de5ea3ddd908dbbb61f9f30aac7a0235e8041465a04"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-dictionary-api/README.md",
+      "sha256": "3760f43e90fe7972cf43261681f097237b666c62edde386fa9a9ec9b478cac2d"
+    },
+    {
+      "path": "doc/design/modular_service_composition_plan.md",
+      "sha256": "746665587d469c9fb1dd4b0f0f0198b943b27f8f538e0ceeb2d6bc4bf2f65947"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/resources/META-INF/simplepoint/modules/identity/i18n/en-US/dictionaries.json",
+      "sha256": "ac6ef34f7324066bd162c341bf893d8cf9e22d0dbe3df30e5510dea486c36dca"
+    },
+    {
+      "path": "simplepoint-react/modules/mocks/src/i18n/bundles/local/en-US.json",
+      "sha256": "932c2286acc0d2cefabcf1db64c4ac4eaf76ffd9b024cb2f6b4deb132eabc51f"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/resources/META-INF/simplepoint/modules/identity/i18n/zh-CN/dictionaries.json",
+      "sha256": "16bbea7f4b86be2248cf29eb5e4ea57ad805ba238768e093d1647613e69b4ae1"
+    },
+    {
+      "path": "simplepoint-react/modules/mocks/src/i18n/bundles/local/zh-CN.json",
+      "sha256": "a6c52488df721ff786dd2930416c65f3fbf26a2ac66ccabc1e16e5d0c4ceaa4b"
+    }
+  ],
+  "logs": [
+    {
+      "path": "/tmp/simplepoint-dictionary-transactions-targeted.log",
+      "sha256": "7bbd775bae8cb459ddbda1faad087cf4bd44c2fc455da204cd383a217bb9d89d"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-tx-postgres.log",
+      "sha256": "2c80a9db417c86ed4952be2df4def090144c98208c7ba29c9fafbd1e60dd34eb"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-tx-final.log",
+      "sha256": "d3e274ad6ef66610821961aa0383db58eb94db9188d34571d1474ed3d1465b15"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-tx-package-final.log",
+      "sha256": "eae30c05b73d24c9f67f72951921bfb784947630c269349bd04c79857e5375cb"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-tx-typecheck.log",
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    {
+      "path": "/tmp/simplepoint-dictionary-tx-i18n.log",
+      "sha256": "d6db583a28b13af020dbc87eecc9c58fcca41541f9c63ab4995d95207047dbc9"
+    }
+  ],
+  "limits": [
+    "No remote dictionary endpoint, authorization or durable deployment generation added.",
+    "Bootstrap registry acknowledgement and dictionary transaction are not a distributed atomic commit.",
+    "Identity V6 must be installed before new dictionary writers; old writers must retire in a coordinated upgrade.",
+    "No production deployment, configuration mutation, commit or push; formal standalone and full three-topology acceptance remain outstanding."
+  ],
+  "artifactProbe": {
+    "source": "import java.util.*;\nimport org.simplepoint.platform.composition.ModuleCatalog;\nimport org.simplepoint.platform.composition.ModuleDictionaryPlan;\nimport org.simplepoint.platform.dictionary.DictionaryContribution;\nimport org.simplepoint.plugin.rbac.tenant.service.initialize.DictionaryDeclarationWriter;\nimport org.springframework.transaction.annotation.Transactional;\n\npublic class VerifyDictionaryTransactionArtifacts {\n  public static void main(String[] args) throws Exception {\n    var loader = VerifyDictionaryTransactionArtifacts.class.getClassLoader();\n    var catalog = ModuleCatalog.discover(loader);\n    var declarations = ModuleDictionaryPlan.declarations(catalog.plan(List.of(\"oidc\", \"notification\")));\n    if (declarations.size() != 2) throw new AssertionError(\"Missing dictionary declarations\");\n    var method = DictionaryDeclarationWriter.class.getMethod(\"apply\", DictionaryContribution.class);\n    if (method.getAnnotation(Transactional.class) == null) throw new AssertionError(\"Writer missing transaction\");\n    for (String name : List.of(\"DictionaryServiceImpl\", \"DictionaryItemServiceImpl\")) {\n      var type = Class.forName(\"org.simplepoint.plugin.rbac.tenant.service.impl.\" + name);\n      for (var write : type.getDeclaredMethods()) {\n        if (!write.isBridge() && Set.of(\"create\", \"modifyById\", \"removeById\", \"removeByIds\", \"removeAll\").contains(write.getName())\n            && write.getAnnotation(Transactional.class) == null)\n          throw new AssertionError(\"Untransactional dictionary mutation: \" + write);\n      }\n    }\n    for (String name : List.of(\"ExternalIdentityProviderDictionaryInitializer\", \"NotificationDictionaryInitializer\")) {\n      var type = Class.forName(\"org.simplepoint.common.server.initialize.\" + name);\n      var beans = Arrays.stream(type.getDeclaredMethods()).filter(m -> m.isAnnotationPresent(org.springframework.context.annotation.Bean.class)).toList();\n      if (beans.size() != 1 || !Arrays.equals(beans.getFirst().getParameterTypes(), new Class<?>[]{DictionaryDeclarationWriter.class}))\n        throw new AssertionError(\"Legacy adapter does not use aggregate writer\");\n    }\n    var migration = \"META-INF/simplepoint/modules/identity/db/postgresql/V6__dictionary_catalog_revision.sql\";\n    var urls = Collections.list(loader.getResources(migration));\n    if (urls.size() != 1) throw new AssertionError(\"Missing/duplicate dictionary migration\");\n    try (var stream = loader.getResourceAsStream(\"META-INF/simplepoint/modules/identity/db/manifest.properties\")) {\n      var manifest = new Properties(); manifest.load(stream);\n      if (!manifest.getProperty(\"migrations\").contains(\"V6__dictionary_catalog_revision.sql\")\n          || !manifest.getProperty(\"tables\").contains(\"simpoint_dictionary_catalog_revision\"))\n        throw new AssertionError(\"Migration not declared\");\n    }\n    var boundary = Collections.list(loader.getResources(\"org/simplepoint/data/jpa/transaction/CatalogWriteBoundary.class\"));\n    if (boundary.size() != 1 || !boundary.getFirst().toString().contains(\"simplepoint-data-jpa.jar\"))\n      throw new AssertionError(\"Shared catalog boundary is not packaged once\");\n    Class.forName(\"org.simplepoint.plugin.rbac.tenant.rest.controller.DictionaryExceptionHandler\");\n    System.out.println(\"Installed distribution: shared catalog boundary, transactional dictionary writers, aggregate legacy adapters, unique declared V6 migration and HTTP error adapter verified.\");\n  }\n}\n",
+    "command": "/home/ymsl/.jdks/ms-21.0.12.1/bin/java --class-path 'simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/*' /tmp/VerifyDictionaryTransactionArtifacts.java",
+    "output": "Installed distribution: shared catalog boundary, transactional dictionary writers, aggregate legacy adapters, unique declared V6 migration and HTTP error adapter verified.\n",
+    "sha256": "4c95d0afe62d07d848d0db56f7aab5d879f92a10125445ff6ee8949ab0b2288a"
+  },
+  "artifactJars": [
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-data-jpa.jar",
+      "sha256": "55fdbfd55dc6edbab1888449cda42bab5cea136c34fd19a5d6f8eb67e34ef229"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-plugin-rbac-module.jar",
+      "sha256": "e44ee292123e000078c66948d66fd2b6758585a3b7d0fdf5420a7ef6f67166fc"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-plugin-rbac-tenant-implementation.jar",
+      "sha256": "bc092299bd9a8da5c8e04a8803bef56c97d6af8e90d0b1d5ad44f41753c33962"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-plugin-rbac-http.jar",
+      "sha256": "ff5033fa0f6dc1167d0a290e1ed9c034ebc7155913a62b4fe15e2a992b53503c"
+    },
+    {
+      "path": "simplepoint-services/simplepoint-service-common/build/install/simplepoint-service-common/lib/simplepoint-service-common.jar",
+      "sha256": "23d4ba20135d045f1a977ff1d8f37698fad3ae5b6474135faeb8b950f14b3e3e"
+    }
+  ]
+}

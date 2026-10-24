@@ -50,14 +50,15 @@ class ObjectStorageProviderConfigServiceImplTest {
     properties = new ObjectStorageProperties();
     properties.setCredentialEncryptionKey("provider-config-test-key");
     cipher = new ObjectStorageCredentialCipher(properties);
-    service = new ObjectStorageProviderConfigServiceImpl(
-        repository,
-        detailsProviderService,
-        objectRepository,
-        cipher,
-        properties,
-        List.of(driver)
-    );
+    service =
+        new ObjectStorageProviderConfigServiceImpl(
+            repository,
+            detailsProviderService,
+            objectRepository,
+            cipher,
+            properties,
+            List.of(driver),
+            null);
   }
 
   @Test
@@ -113,7 +114,8 @@ class ObjectStorageProviderConfigServiceImplTest {
   @Test
   void readOnlyCredentialCannotBeEncryptedAndSavedThroughTheCustomCreatePath() {
     var context = new org.simplepoint.core.AuthorizationContext();
-    context.setFieldPermissions(Map.of(ObjectStorageProviderConfig.class.getName() + "#secretKey", "VISIBLE"));
+    context.setFieldPermissions(
+        Map.of(ObjectStorageProviderConfig.class.getName() + "#secretKey", "VISIBLE"));
     org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     try {
       var input = provider(); input.setSecretKey("replacement");
@@ -128,13 +130,18 @@ class ObjectStorageProviderConfigServiceImplTest {
   @Test
   void connectionTestCannotUseCredentialsOutsideThePageScope() {
     var context = new org.simplepoint.core.AuthorizationContext(); context.setUserId("reader");
-    context.setResourceDataScopes(Map.of("storage.providers.view", new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
+    context.setResourceDataScopes(
+        Map.of(
+            "storage.providers.view",
+            new org.simplepoint.core.ResourceDataScope("SELF", java.util.Set.of(), false)));
     org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     org.simplepoint.core.ResourcePolicyContext.set("storage.providers.view");
     try {
       var input = provider(); input.setCreatedBy("other");
       when(repository.findActiveById("provider-1")).thenReturn(Optional.of(input));
-      assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> service.testConnection("provider-1"));
+      assertThrows(
+          org.springframework.security.access.AccessDeniedException.class,
+          () -> service.testConnection("provider-1"));
       org.mockito.Mockito.verifyNoInteractions(driver);
     } finally {
       org.simplepoint.core.RequestContextHolder.clearContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
@@ -163,13 +170,25 @@ class ObjectStorageProviderConfigServiceImplTest {
     var context = new org.simplepoint.core.AuthorizationContext();
     context.setUserId("editor");
     var permissions = new java.util.LinkedHashMap<String, String>();
-    List.of("name", "type", "endpoint", "region", "accessKey", "bucket", "enabled", "defaultProvider")
-        .forEach(field -> permissions.put(ObjectStorageProviderConfig.class.getName() + "#" + field, "MASKED"));
+    List.of(
+            "name",
+            "type",
+            "endpoint",
+            "region",
+            "accessKey",
+            "bucket",
+            "enabled",
+            "defaultProvider")
+        .forEach(
+            field ->
+                permissions.put(
+                    ObjectStorageProviderConfig.class.getName() + "#" + field, "MASKED"));
     context.setFieldPermissions(permissions);
     org.simplepoint.core.RequestContextHolder.setContext(org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     try {
       var current = provider();
-      var patch = new ObjectStorageProviderConfig(); patch.setId(current.getId()); patch.setDescription("edited note");
+      var patch = new ObjectStorageProviderConfig(); patch.setId(current.getId());
+      patch.setDescription("edited note");
       when(repository.findActiveById(current.getId())).thenReturn(Optional.of(current));
       when(repository.findActiveByCode(current.getCode())).thenReturn(Optional.of(current));
       when(repository.findById(current.getId())).thenReturn(Optional.of(current));

@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+
+export async function smokePackageAdministration({clickReady, clickText, fill, poll, evaluate, fixture, tenant, tenantId}) {
+  const parent = '.tenant-package-config.ant-drawer-open', modal = '.tenant-package-administration .ant-modal';
+  await clickText(tenant + ' button', '管理套餐');
+  await poll(() => evaluate(`!!document.querySelector('${parent} [data-resource$="/package-instances"]')`), 'standard instance directory');
+  assert.equal(await evaluate(`[...document.querySelectorAll('${parent} button')].some(b=>b.textContent.replaceAll(' ','')==='激活')`), false);
+  await clickText(parent + ' .sp-table-button', '分配套餐');
+  await poll(() => evaluate(`!!document.querySelector('${modal} .ant-select')`), 'allocation uses shared entity selection');
+  await clickReady(modal + ' .ant-select');
+  await fill(modal + ' .ant-select input', 'Package520');
+  await poll(() => evaluate(`[...document.querySelectorAll('.ant-select-item-option')].some(e=>e.textContent.includes('Package520'))`), 'search beyond 500 packages');
+  await clickReady('.ant-select-item-option[title="Package520 · package-520"]');
+  fixture.failAfterCommit();
+  await evaluate(`(()=>{const b=document.querySelector('${modal} .ant-btn-primary');b.click();b.click()})()`);
+  await poll(() => evaluate(`document.querySelector('${modal} .ant-alert-error')?.textContent.includes('分配结果未确认')`), 'uncertain committed allocation retains command');
+  assert.equal(fixture.writes.length, 1, 'same-frame confirmation obtains one write lock');
+  assert.equal(fixture.instances.get(tenantId).length, 1);
+  assert.equal(await evaluate(`!!document.querySelector('${modal} .ant-modal-close')`), false);
+  assert.equal(await evaluate(`!!document.querySelector('${parent} .ant-drawer-close')`), false, 'parent cannot discard an uncertain allocation');
+  assert.equal(await evaluate(`!!document.querySelector('${modal} .ant-select-disabled')`), true);
+  await clickReady(modal + ' .ant-btn-primary');
+  await poll(() => evaluate(`!document.querySelector('${modal}')&&document.querySelector('${parent} [data-row-key=instance-0]')?.textContent.includes('待激活')`), 'retry resolves original receipt');
+  assert.deepEqual(fixture.writes[0], fixture.writes[1]);
+  assert.equal(fixture.instances.get(tenantId).length, 1);
+  assert.equal(fixture.instances.get(tenantId)[0].activatedAt, undefined, 'allocation does not start time');
+  await clickText(parent + ' [data-row-key=instance-0] .sp-table-button', '资源明细');
+  const details = '.ant-drawer-open:not(.tenant-package-config)';
+  await poll(() => evaluate(`document.querySelector('${details}')?.textContent.includes('待激活资源0')`), 'admin sees entitlement detail');
+  await clickReady(details + ' .ant-pagination-next');
+  await poll(() => evaluate(`!!document.querySelector('${details} [data-row-key=instance-0-20]')`), 'admin detail server pagination');
+  await clickReady(details + ' .ant-drawer-close');
+  await clickText(parent + ' [data-row-key=instance-0] .sp-table-button', '撤销');
+  await poll(() => evaluate(`!!document.querySelector('${modal}')`), 'explicit revocation confirmation');
+  await clickReady(modal + ' .ant-modal-close');
+  assert.equal(fixture.writes.length, 2, 'cancelling revocation has no effects');
+  await clickText(parent + ' [data-row-key=instance-0] .sp-table-button', '撤销');
+  await clickReady(modal + ' .ant-btn-primary');
+  await poll(() => evaluate(`!document.querySelector('${modal}')&&document.querySelector('${parent} [data-row-key=instance-0]')?.textContent.includes('已撤销')`), 'revocation revalidates instance');
+  assert.equal(await evaluate(`[...document.querySelectorAll('${parent} [data-row-key=instance-0] button')].some(b=>b.textContent.replaceAll(' ','')==='撤销')`), false);
+  assert.ok(fixture.writes.every(write => write.tenant === tenantId));
+  await clickReady(parent + ' .ant-drawer-close');
+  console.log('PASS: platform package instances, searchable selector, exact committed-allocation retry, no early activation, paged resources and explicit revocation');
+}

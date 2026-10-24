@@ -15,7 +15,6 @@ import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.FormCondition;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormRecordState;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.service.FormSubmissionRequirements.All;
 import org.simplepoint.plugin.app.form.service.FormSubmissionRequirements.Any;
 import org.simplepoint.plugin.app.form.service.FormSubmissionRequirements.Condition;
@@ -27,6 +26,7 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordFilter;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordFilterOperator;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordJsonSemantics;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordValidationRule;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionOperator;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordViolationQuery;
@@ -42,16 +42,25 @@ final class FormPublicationRequirementsCompiler {
 
   static Plan compile(final String modelId, final String appId, final String formId,
       final Iterable<Version> pages, final ApplicationFormDocument governing) {
+    return compile(modelId, appId, formId, pages, governing, FormCalculationCompiler.hasCalculations(governing));
+  }
+
+  static Plan compile(final String modelId, final String appId, final String formId,
+      final Iterable<Version> pages, final ApplicationFormDocument governing, final boolean calculated) {
     Map<Group, TreeSet<String>> groups = new LinkedHashMap<>();
     Map<RecordViolationQuery, String> choices = new LinkedHashMap<>();
+    List<RecordValidationRule> validations = List.of();
     try {
       boolean observedPage = false;
       for (Version page : pages) {
         observedPage = true;
         ApplicationFormDocument document = FormWritePolicyProjection.apply(page.document(), governing);
+        if (calculated) {
+          validations = FormCalculationValidationProjection.merge(validations, FormCalculationValidationProjection.pageRequirements(document));
+        }
         Map<String, FormFieldDefinition> fields = document.fields().stream()
             .collect(Collectors.toUnmodifiableMap(FormFieldDefinition::fieldId, Function.identity()));
-        for (var requirement : FormSubmissionRequirements.compile(document)) {
+        for (var requirement : FormSubmissionRequirements.compileCalculated(document)) {
           if (!requirement.field().choices().isEmpty()) {
             var check = FormPublicationChoiceChecks.compile(modelId, appId, formId, page.schema(), requirement.field());
             choices.computeIfAbsent(check, ignored -> "choice-" + choices.size());
@@ -87,7 +96,7 @@ final class FormPublicationRequirementsCompiler {
       Map<String, RecordViolationQuery> valueChecks = new LinkedHashMap<>();
       choices.forEach((query, key) -> valueChecks.put(key, query));
       RecordWritePolicyPublicationCommand.validateBudget(checks, valueChecks);
-      return new Plan(checks, valueChecks);
+      return new Plan(checks, valueChecks, calculated ? validations : null);
     } catch (IllegalArgumentException failure) {
       throw new ApplicationFormException(ApplicationFormErrorCode.DOCUMENT_INVALID,
           "The form publication requirements exceed the supported inspection budget", failure);
@@ -95,10 +104,12 @@ final class FormPublicationRequirementsCompiler {
   }
 
   /** Separate typed checks retain their distinct missing-value and invalid-value report semantics. */
-  record Plan(Map<String, RecordCompletenessQuery> checks, Map<String, RecordViolationQuery> valueChecks) {
+  record Plan(Map<String, RecordCompletenessQuery> checks, Map<String, RecordViolationQuery> valueChecks,
+      List<RecordValidationRule> validations) {
     Plan {
       checks = Map.copyOf(checks);
       valueChecks = Map.copyOf(valueChecks);
+      validations = validations == null ? null : List.copyOf(validations);
     }
   }
 
@@ -134,7 +145,7 @@ final class FormPublicationRequirementsCompiler {
       return operator == RecordValueConditionOperator.NOT ? not(children.getFirst()) : group(operator, children);
     }
     FormFieldDefinition field = Objects.requireNonNull(fields.get(condition.fieldId()), "condition field");
-    if (field.storageMode() == FormStorageMode.TRANSIENT || field.storageMode() == FormStorageMode.COMPUTED) {
+    if (!field.persistent()) {
       // Historical rows have no transient input. Use the same absent/default value as server submission.
       Map<String, Object> values = new HashMap<>();
       values.put(field.fieldId(), FormRecordPayloadCompiler.value(field.defaultValue()));

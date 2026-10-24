@@ -35,9 +35,9 @@ import org.springframework.core.annotation.Order;
 /**
  * Unified resource entity.
  *
- * <p>A resource is the single authorization unit used for navigation, product capability,
- * page actions, and API access. Route-specific and API-specific columns are optional and
- * are populated only for resource types that need them.</p>
+ * <p>A resource is the single authorization unit used for navigation, product capability, page
+ * actions, and API access. Route-specific and API-specific columns are optional and are populated
+ * only for resource types that need them.
  */
 @Data
 @Entity
@@ -45,63 +45,60 @@ import org.springframework.core.annotation.Order;
 @Table(name = "simpoint_ac_resources")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
-    @ButtonDeclaration(
-        title = PublicButtonKeys.ADD_TITLE,
-        key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE,
-        sort = 0,
-        argumentMaxSize = 1,
-        argumentMinSize = 0,
-        authority = "resources.create"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.EDIT_TITLE,
-        key = PublicButtonKeys.EDIT_KEY,
-        color = "orange",
-        icon = Icons.EDIT,
-        sort = 1,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "resources.edit"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.DELETE_TITLE,
-        key = PublicButtonKeys.DELETE_KEY,
-        color = "danger",
-        icon = Icons.MINUS_CIRCLE,
-        sort = 2,
-        argumentMinSize = 1,
-        argumentMaxSize = 10,
-        danger = true,
-        authority = "resources.delete"
-    )
+  @ButtonDeclaration(
+      title = PublicButtonKeys.ADD_TITLE,
+      key = PublicButtonKeys.ADD_KEY,
+      icon = Icons.PLUS_CIRCLE,
+      sort = 0,
+      argumentMaxSize = 1,
+      argumentMinSize = 0,
+      authority = "resources.create"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.EDIT_TITLE,
+      key = PublicButtonKeys.EDIT_KEY,
+      color = "orange",
+      icon = Icons.EDIT,
+      sort = 1,
+      argumentMinSize = 1,
+      argumentMaxSize = 1,
+      authority = "resources.edit"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.DELETE_TITLE,
+      key = PublicButtonKeys.DELETE_KEY,
+      color = "danger",
+      icon = Icons.MINUS_CIRCLE,
+      sort = 2,
+      argumentMinSize = 1,
+      argumentMaxSize = 10,
+      danger = true,
+      authority = "resources.delete")
 })
 @Schema(name = "资源对象", description = "统一描述菜单、页面、功能、操作和接口资源")
 @org.simplepoint.core.query.TableQuery({
-    @org.simplepoint.core.query.QueryField("code"),
-    @org.simplepoint.core.query.QueryField("name"),
-    @org.simplepoint.core.query.QueryField("alias"),
-    @org.simplepoint.core.query.QueryField("title"),
-    @org.simplepoint.core.query.QueryField("label"),
-    @org.simplepoint.core.query.QueryField("type"),
-    @org.simplepoint.core.query.QueryField("parentId"),
-    @org.simplepoint.core.query.QueryField("pluginId"),
-    @org.simplepoint.core.query.QueryField("path"),
-    @org.simplepoint.core.query.QueryField("component"),
-    @org.simplepoint.core.query.QueryField("icon"),
-    @org.simplepoint.core.query.QueryField("sort"),
-    @org.simplepoint.core.query.QueryField("routeKind"),
-    @org.simplepoint.core.query.QueryField("method"),
-    @org.simplepoint.core.query.QueryField("pattern"),
-    @org.simplepoint.core.query.QueryField("description"),
-    @org.simplepoint.core.query.QueryField("publicAccess"),
-    @org.simplepoint.core.query.QueryField("requireOrgTenant"),
-    @org.simplepoint.core.query.QueryField("grantable"),
-    @org.simplepoint.core.query.QueryField("disabled"),
-    @org.simplepoint.core.query.QueryField("danger"),
-    @org.simplepoint.core.query.QueryField("createdAt"),
-    @org.simplepoint.core.query.QueryField("updatedAt"),
-    @org.simplepoint.core.query.QueryField("id")
+  @org.simplepoint.core.query.QueryField("code"),
+  @org.simplepoint.core.query.QueryField("name"),
+  @org.simplepoint.core.query.QueryField("alias"),
+  @org.simplepoint.core.query.QueryField("title"),
+  @org.simplepoint.core.query.QueryField("label"),
+  @org.simplepoint.core.query.QueryField("type"),
+  @org.simplepoint.core.query.QueryField("parentId"),
+  @org.simplepoint.core.query.QueryField("pluginId"),
+  @org.simplepoint.core.query.QueryField("path"),
+  @org.simplepoint.core.query.QueryField("component"),
+  @org.simplepoint.core.query.QueryField("icon"),
+  @org.simplepoint.core.query.QueryField("sort"),
+  @org.simplepoint.core.query.QueryField("routeKind"),
+  @org.simplepoint.core.query.QueryField("method"),
+  @org.simplepoint.core.query.QueryField("pattern"),
+  @org.simplepoint.core.query.QueryField("description"),
+  @org.simplepoint.core.query.QueryField("publicAccess"),
+  @org.simplepoint.core.query.QueryField("requireOrgTenant"),
+  @org.simplepoint.core.query.QueryField("grantable"),
+  @org.simplepoint.core.query.QueryField("disabled"),
+  @org.simplepoint.core.query.QueryField("danger"),
+  @org.simplepoint.core.query.QueryField("createdAt"),
+  @org.simplepoint.core.query.QueryField("updatedAt"),
+  @org.simplepoint.core.query.QueryField("id")
 })
 @org.simplepoint.core.permission.PermissionModel(data = false)
 public class Resource extends BaseEntityImpl<String> {
@@ -119,10 +116,10 @@ public class Resource extends BaseEntityImpl<String> {
       maxLength = 120,
       minLength = 1,
       example = "users.view",
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Column(length = 120, nullable = false, unique = true)
   private String code;
 
@@ -133,10 +130,10 @@ public class Resource extends BaseEntityImpl<String> {
       maxLength = 100,
       minLength = 1,
       example = "用户管理",
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Column(length = 100, nullable = false)
   private String name;
 
@@ -145,10 +142,10 @@ public class Resource extends BaseEntityImpl<String> {
       title = "i18n:resources.title.alias",
       description = "i18n:resources.description.alias",
       maxLength = 120,
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Column(name = "resource_alias", length = 120)
   private String alias;
 
@@ -166,10 +163,10 @@ public class Resource extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:resources.title.type",
       description = "i18n:resources.description.type",
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Enumerated(EnumType.STRING)
   @Column(length = 32, nullable = false)
   private ResourceType type;
@@ -179,26 +176,37 @@ public class Resource extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:resources.title.scopeTypes",
       description = "i18n:resources.description.scopeTypes",
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-          @ExtensionProperty(name = "widget", value = "checkboxes")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {
+                @ExtensionProperty(name = "x-list-visible", value = "true"),
+                @ExtensionProperty(name = "widget", value = "checkboxes")
+              }))
   @Convert(converter = ResourceScopeTypesConverter.class)
   @Column(
       name = "scope_types",
       length = 64,
       nullable = false,
-      columnDefinition = "varchar(64) default 'SYSTEM'"
-  )
+      columnDefinition = "varchar(64) default 'SYSTEM'")
   private Set<ResourceScopeType> scopeTypes;
 
-  @Schema(title = "i18n:resources.title.parentId", description = "i18n:resources.description.parentId", hidden = true)
+  @Schema(
+      title = "i18n:resources.title.parentId",
+      description = "i18n:resources.description.parentId",
+      hidden = true)
   @Column(length = 36)
   private String parentId;
 
+  /** Only explicitly shared non-executable directories accept another module's declarations. */
+  @Schema(hidden = true)
+  @Column(name = "shared_directory")
+  private Boolean sharedDirectory;
+
   @Order(19)
-  @Schema(title = "i18n:resources.title.pluginId", description = "i18n:resources.description.pluginId")
+  @Schema(
+      title = "i18n:resources.title.pluginId",
+      description = "i18n:resources.description.pluginId")
   @Column(length = 128)
   private String pluginId;
 
@@ -207,10 +215,10 @@ public class Resource extends BaseEntityImpl<String> {
       title = "i18n:resources.title.path",
       description = "i18n:resources.description.path",
       maxLength = 200,
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Column(length = 200, unique = true)
   private String path;
 
@@ -219,10 +227,10 @@ public class Resource extends BaseEntityImpl<String> {
       title = "i18n:resources.title.component",
       description = "i18n:resources.description.component",
       maxLength = 160,
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   @Column(length = 160)
   private String component;
 
@@ -231,11 +239,13 @@ public class Resource extends BaseEntityImpl<String> {
       title = "i18n:resources.title.icon",
       description = "i18n:resources.description.icon",
       maxLength = 100,
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true"),
-          @ExtensionProperty(name = "widget", value = "IconPicker")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {
+                @ExtensionProperty(name = "x-list-visible", value = "true"),
+                @ExtensionProperty(name = "widget", value = "IconPicker")
+              }))
   @Column(length = 100)
   private String icon;
 
@@ -243,14 +253,16 @@ public class Resource extends BaseEntityImpl<String> {
   @Schema(
       title = "i18n:resources.title.sort",
       description = "i18n:resources.description.sort",
-      extensions = @Extension(name = "x-ui", properties = {
-          @ExtensionProperty(name = "x-list-visible", value = "true")
-      })
-  )
+      extensions =
+          @Extension(
+              name = "x-ui",
+              properties = {@ExtensionProperty(name = "x-list-visible", value = "true")}))
   private Integer sort;
 
   @Order(8)
-  @Schema(title = "i18n:resources.title.routeKind", description = "i18n:resources.description.routeKind")
+  @Schema(
+      title = "i18n:resources.title.routeKind",
+      description = "i18n:resources.description.routeKind")
   @Column(length = 32)
   private String routeKind;
 
@@ -260,32 +272,44 @@ public class Resource extends BaseEntityImpl<String> {
   private String method;
 
   @Order(13)
-  @Schema(title = "i18n:resources.title.pattern", description = "i18n:resources.description.pattern")
+  @Schema(
+      title = "i18n:resources.title.pattern",
+      description = "i18n:resources.description.pattern")
   @Column(length = 240)
   private String pattern;
 
   @Order(20)
-  @Schema(title = "i18n:resources.title.description", description = "i18n:resources.description.description")
+  @Schema(
+      title = "i18n:resources.title.description",
+      description = "i18n:resources.description.description")
   @Column(length = 255)
   private String description;
 
   @Order(14)
-  @Schema(title = "i18n:resources.title.publicAccess", description = "i18n:resources.description.publicAccess")
+  @Schema(
+      title = "i18n:resources.title.publicAccess",
+      description = "i18n:resources.description.publicAccess")
   @Column(nullable = false)
   private Boolean publicAccess;
 
   @Order(15)
-  @Schema(title = "i18n:resources.title.requireOrgTenant", description = "i18n:resources.description.requireOrgTenant")
+  @Schema(
+      title = "i18n:resources.title.requireOrgTenant",
+      description = "i18n:resources.description.requireOrgTenant")
   @Column(nullable = false)
   private Boolean requireOrgTenant;
 
   @Order(16)
-  @Schema(title = "i18n:resources.title.grantable", description = "i18n:resources.description.grantable")
+  @Schema(
+      title = "i18n:resources.title.grantable",
+      description = "i18n:resources.description.grantable")
   @Column(nullable = false)
   private Boolean grantable;
 
   @Order(17)
-  @Schema(title = "i18n:resources.title.disabled", description = "i18n:resources.description.disabled")
+  @Schema(
+      title = "i18n:resources.title.disabled",
+      description = "i18n:resources.description.disabled")
   @Column(nullable = false)
   private Boolean disabled;
 
@@ -327,8 +351,9 @@ public class Resource extends BaseEntityImpl<String> {
       publicAccess = false;
     }
     if (requireOrgTenant == null) {
-      requireOrgTenant = scopeTypes.contains(ResourceScopeType.TENANT)
-          && !scopeTypes.contains(ResourceScopeType.PERSONAL);
+      requireOrgTenant =
+          scopeTypes.contains(ResourceScopeType.TENANT)
+              && !scopeTypes.contains(ResourceScopeType.PERSONAL);
     }
     if (grantable == null) {
       grantable = type != ResourceType.GROUP && type != ResourceType.MODULE;

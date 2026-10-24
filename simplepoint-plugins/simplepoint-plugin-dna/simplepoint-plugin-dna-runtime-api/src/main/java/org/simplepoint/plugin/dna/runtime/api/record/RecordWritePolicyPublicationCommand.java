@@ -17,7 +17,8 @@ public record RecordWritePolicyPublicationCommand(
     String policyChecksum,
     Map<String, RecordCompletenessQuery> checks,
     int timeoutMs,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, RecordViolationQuery> valueChecks
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) Map<String, RecordViolationQuery> valueChecks,
+    @JsonInclude(JsonInclude.Include.NON_NULL) RecordCalculationDefinition calculation
 ) {
 
   /** Bounds the entire inspection, requires a monotonic transition and rejects checks for other owners. */
@@ -37,6 +38,13 @@ public record RecordWritePolicyPublicationCommand(
     policyChecksum = policyChecksum.toLowerCase(Locale.ROOT);
     checks = Map.copyOf(Objects.requireNonNull(checks, "checks"));
     valueChecks = valueChecks == null ? Map.of() : Map.copyOf(valueChecks);
+    if (calculation != null) {
+      for (var detail : calculation.details().values()) {
+        if (physicalModelId.equals(detail.physicalModelId())) {
+          throw new IllegalArgumentException("A calculation detail cannot reference its parent model");
+        }
+      }
+    }
     validateBudget(checks, valueChecks);
     for (var entry : checks.entrySet()) {
       RecordQueryLimits.idempotencyKey(entry.getKey());
@@ -59,7 +67,16 @@ public record RecordWritePolicyPublicationCommand(
       final RecordSchemaReference schemaReference, final long expectedVersion, final long targetVersion,
       final String publicationKey, final String policyChecksum, final Map<String, RecordCompletenessQuery> checks, final int timeoutMs) {
     this(physicalModelId, appId, formId, schemaReference, expectedVersion, targetVersion, publicationKey,
-        policyChecksum, checks, timeoutMs, Map.of());
+        policyChecksum, checks, timeoutMs, Map.of(), null);
+  }
+
+  /** Missing calculations retain every existing publication, cancellation and retry identity. */
+  public RecordWritePolicyPublicationCommand(final String physicalModelId, final String appId, final String formId,
+      final RecordSchemaReference schemaReference, final long expectedVersion, final long targetVersion,
+      final String publicationKey, final String policyChecksum, final Map<String, RecordCompletenessQuery> checks,
+      final int timeoutMs, final Map<String, RecordViolationQuery> valueChecks) {
+    this(physicalModelId, appId, formId, schemaReference, expectedVersion, targetVersion, publicationKey,
+        policyChecksum, checks, timeoutMs, valueChecks, null);
   }
 
   /** Lets trusted compilers reject oversized plans before persisting an immutable publication intent. */

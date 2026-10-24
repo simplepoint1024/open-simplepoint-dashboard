@@ -58,6 +58,23 @@ class FormDetailEngineTest {
         .isInstanceOf(ApplicationFormException.class);
   }
 
+  @Test
+  void previewProjectsOnlyAuthorizedFieldsAndPreservesDetailOrderWithoutPhysicalIdentities() {
+    var dna = mock(DnaOwnedRecordService.class);
+    var coordinator = new FormDetailRecordCoordinator(dna, new FormRecordPayloadCompiler(), mock(FormAttachmentReferenceValidator.class));
+    var command = coordinator.intent(form(), new RecordCreateMutation("parent", Map.of("record_state", "DRAFT")),
+        "preview", Map.of(), FormRecordState.DRAFT);
+    org.mockito.Mockito.when(dna.preview(null, command)).thenReturn(new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordPreview(
+        Map.of("record_state", "DRAFT"), Map.of("child-model", List.of(Map.of("name", "第一行", "parent_record_id", "private"), Map.of())), 0));
+    var result = coordinator.preview(form(), null, command);
+    assertThat(result.values()).isEmpty();
+    assertThat(result.details()).containsOnlyKeys("lines");
+    assertThat(result.details().get("lines")).containsExactly(Map.of("name", "第一行"), Map.of());
+    org.mockito.Mockito.when(dna.preview(null, command)).thenReturn(new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordPreview(
+        Map.of(), Map.of(), 1));
+    assertThatThrownBy(() -> coordinator.preview(form(), null, command)).isInstanceOf(ApplicationFormException.class);
+  }
+
   private static FormDetailDefinition detail() {
     var field = new FormFieldDefinition("name", "name", "Name", "Name", FormFieldType.STRING,
         FormStorageMode.STORED, true, false, 128, null, null, null, List.of());

@@ -6,8 +6,13 @@ public record ApplicationPageTarget(
     String name,
     String description,
     int sortOrder,
-    String navigationGroupName
-) {
+    String navigationGroupName,
+    PageResourcePresentation presentation) {
+  public ApplicationPageTarget(
+      String pageId, String name, String description, int sortOrder, String navigationGroupName) {
+    this(pageId, name, description, sortOrder, navigationGroupName, null);
+  }
+
   /** Existing applications retain their original platform parent. */
   public ApplicationPageTarget(String pageId, String name, String description, int sortOrder) {
     this(pageId, name, description, sortOrder, null);

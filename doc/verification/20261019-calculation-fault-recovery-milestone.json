@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "wholeGoalComplete": false,
+  "status": "milestone_passed_not_final_acceptance",
+  "checks": {
+    "rpc-timeout": {
+      "passed": true,
+      "temporaryRecordRemoved": true,
+      "failure": {
+        "status": 503,
+        "elapsedMs": 65551,
+        "code": "RUNTIME_UNAVAILABLE",
+        "messageKey": "app.error.RUNTIME_UNAVAILABLE"
+      },
+      "restoredReadiness": true,
+      "recordId": "44728442-74d9-550f-99cc-c164ff87a9e4",
+      "recordVersion": 0,
+      "authoritativeValues": {
+        "total": "21",
+        "normalized_total": "31"
+      },
+      "precedingFailures": [
+        {
+          "status": 500,
+          "elapsedMs": 20125
+        },
+        {
+          "status": 200,
+          "elapsedMs": 45338,
+          "note": "Watchdog resumed DNA at 45 seconds, before configured 65 second RPC timeout; successful request was expected.",
+          "recordId": "78ae7edb-c4c8-5b20-80f1-366ce172492c",
+          "temporaryRecordRemoved": true
+        },
+        {
+          "status": 500,
+          "elapsedMs": 65190,
+          "note": "Actual SocketTimeoutException wrapped by RestClientException before integration9 fix."
+        }
+      ],
+      "completedAt": "2026-10-19T05:23:49.500Z"
+    },
+    "browser-response-loss": {
+      "passed": true,
+      "temporaryRecordRemoved": true,
+      "recordId": "995a261b-24bd-5d36-96fa-2f024abc7662",
+      "finalVersion": 1,
+      "sameCommandOnRetry": true,
+      "committedBeforeRetryVersion": 1,
+      "completedAt": "2026-10-19T05:23:56.881Z"
+    },
+    "aggregate-restart": {
+      "passed": true,
+      "temporaryRecordRemoved": true,
+      "restart": {
+        "before": "2026-10-19T05:20:39.115344171Z",
+        "after": "2026-10-19T05:29:14.50837258Z",
+        "healthy": true,
+        "sameEmployeeSession": true
+      },
+      "recordId": "e99926ca-d9db-521d-82a4-b1e397243a45",
+      "recordVersion": 0,
+      "total": "123.45",
+      "ownedRows": [
+        {
+          "id": "ec0deb3a-1f13-5306-80da-c32df85e5591",
+          "version": 0
+        }
+      ],
+      "changedBodyStatus": 409,
+      "completedAt": "2026-10-19T05:29:42.986Z"
+    },
+    "event-infrastructure": {
+      "passed": true,
+      "realPostgresqlAndRabbitmq": true,
+      "businessInfrastructureUntouchedByIsolatedTests": true,
+      "suites": [
+        {
+          "name": "org.simplepoint.events.jdbc.JdbcEventStoreTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "reportSha256": "360571150d433a2bf15fa2e0628a26671f5b81dac0d2d957df7ff00c35b79525"
+        },
+        {
+          "name": "org.simplepoint.events.rabbit.RabbitEventIntegrationTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "reportSha256": "c7a3fe6749260b25869b38b9f3d0065c05b63d8c094a6a231ae23f323a4b8dd6"
+        },
+        {
+          "name": "org.simplepoint.events.rabbit.RabbitEventReceiverTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "reportSha256": "1791866bfce4d8d901a2b933b560aa7336d5a5637359c22c0dec5974c7d0c540"
+        },
+        {
+          "name": "org.simplepoint.events.rabbit.EventInfrastructureConfigurationTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "reportSha256": "b4ffabb7c2ebc0be339a301e59c7a4524d9b98882b9f4b76effec2f802a43d96"
+        }
+      ],
+      "total": 19,
+      "disposableContainersRemoved": true,
+      "logSha256": "51b69d92745195bcca81990bff218658225da08368687acebef78b85ed86bfe0"
+    },
+    "health": {
+      "passed": true,
+      "deployment": {
+        "passed": true,
+        "at": "2026-10-19T05:30:25.409Z",
+        "version": "20261019-calculation-integration9",
+        "sourceDigest": "ff01e991dc951286ee8eaa075c80e32724d1cea654def46dddaf7ae967ede4c0",
+        "services": [
+          {
+            "service": "app",
+            "version": "20261019-calculation-integration9",
+            "health": "healthy",
+            "consul": "passing",
+            "jarCount": 262,
+            "jarHashesMatch": true
+          }
+        ],
+        "allNineServiceHealth": "passing",
+        "rabbitmq": "healthy"
+      },
+      "queues": {
+        "/simplepoint": [
+          {
+            "name": "sp.events.common.resource-offline.grants",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.dna.resource-offline.projection",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.app.resource-offline.common",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          },
+          {
+            "name": "sp.events.app.resource-offline.dna",
+            "messages_unacknowledged": 0,
+            "consumers": 1,
+            "messages_ready": 0
+          }
+        ]
+      }
+    },
+    "quality": {
+      "passed": true,
+      "appService": {
+        "tests": 56,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "checkstyle": "zero violations",
+      "runtimeFrontendUnchanged": true
+    }
+  },
+  "sourceFiles": {
+    "scripts/business/calculation-acceptance/rpc-recovery.mjs": "8ad44b4dcc2f11cea7bcf4186bc692ef7167c8a2c15b81bb0477e83589c4c689",
+    "scripts/business/calculation-acceptance/browser-response-loss.mjs": "dfea3bfeec568ca08c8d6eae49c06649cca968fc13f3b60ee1bc214853ddbdc9",
+    "scripts/business/calculation-acceptance/record-restart.mjs": "cbb1c74d5b97e826f31d251cf23813463a4a33931dade1283f0ec72899ab90f9",
+    "scripts/verification/run-event-infrastructure.mjs": "096c89a550c19e0384f8e7bc4ee0d0f6d5f46bb117c117270e89781207688933",
+    "simplepoint-services/simplepoint-service-app/src/main/java/org/simplepoint/app/form/controller/ApplicationFormExceptionHandler.java": "581402b0552a43453ceec4320c50a862426f743c5f0ae78f5634b949257d5c07",
+    "simplepoint-services/simplepoint-service-app/src/test/java/org/simplepoint/app/form/controller/ApplicationFormExceptionHandlerTest.java": "6b3df9ad981efb47fd847e73e3b53a5a0ac945b2353f42f24637949a9142d045"
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration7/rpc-recovery.json": "f453545e9f30cc97d1d6f7bd400c89329e3a9a6b6afd00456934940d3a463555",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/browser-response-loss.json": "22b9419c954ce6166c08913bbce5055344dea6f44fad0c6a2fcd60d0164c0004",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/record-restart.json": "eaf96034c3cc88eaf65683b14cff71d3afd183970173a15b020aa532d3eb04f2",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/deployment.json": "f5c5879d810b5e3f28fd2ee141f8f6eccf252e2602fc2199890a61166710bfc9",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/queues-after-faults.json": "e88da6113b5c619497ac14ee783f4424ee4e59107f296af38251ade31bedc004"
+  },
+  "limitations": [
+    "Complete publication/CRUD/workflow evidence for all registered UI components and the remaining permission scenarios is still outstanding.",
+    "Initial missing-provider and nested timeout cases returned 500; final real 65 second timeout returned the repaired 503 envelope.",
+    "The new-record test assertion was corrected to DNA initial version zero, then the same command was replayed and the record removed."
+  ]
+}

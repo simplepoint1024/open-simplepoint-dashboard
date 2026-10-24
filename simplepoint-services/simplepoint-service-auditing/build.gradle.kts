@@ -28,6 +28,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 dependencies {
+    implementation(project(":simplepoint-events:simplepoint-events-rabbit"))
     implementation(project(":simplepoint-boot:simplepoint-boot-starter"))
     implementation(project(":simplepoint-boot:simplepoint-boot-config-consul-starter"))
 
@@ -52,6 +53,8 @@ dependencies {
 
     // 引入API文档
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
+
+    implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-http"))
 
     // 日志管理
     implementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))

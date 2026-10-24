@@ -13,7 +13,6 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantPackagesRelevanceDt
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.UserRelevanceVo;
-import org.simplepoint.remoting.RemoteContract;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,7 +22,6 @@ import org.springframework.data.domain.Pageable;
  * will handle operations related to tenants, such as retrieving tenant information, managing tenant
  * data, and other related functionalities.
  */
-@RemoteContract(name = "saas.tenant")
 public interface TenantService extends BaseService<Tenant, String> {
 
   /**
@@ -85,7 +83,7 @@ public interface TenantService extends BaseService<Tenant, String> {
   String calculateAuthorizationContextId(String tenantId, String roleId);
 
   /**
-   * Loads package codes assigned to the tenant.
+   * Retired legacy package relation read; always fails with LEGACY_ASSIGNMENT_RETIRED.
    *
    * @param tenantId tenant identifier
    * @return assigned package codes
@@ -93,7 +91,7 @@ public interface TenantService extends BaseService<Tenant, String> {
   Collection<String> authorizedPackages(String tenantId);
 
   /**
-   * Assigns packages to the tenant.
+   * Retired legacy assignment; use TenantPackageAssignmentService with an allocation ID.
    *
    * @param dto tenant package dto
    * @return saved relevance records
@@ -101,7 +99,7 @@ public interface TenantService extends BaseService<Tenant, String> {
   Collection<TenantPackageRelevance> authorizePackages(TenantPackagesRelevanceDto dto);
 
   /**
-   * Removes package assignments from the tenant.
+   * Retired legacy removal; revoke a specific instance with TenantPackageRevocationService.
    *
    * @param tenantId tenant identifier
    * @param packageCodes package codes to remove

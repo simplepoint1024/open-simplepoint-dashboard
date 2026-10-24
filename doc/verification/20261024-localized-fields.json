@@ -1,0 +1,163 @@
+{
+  "verifiedAt": "2026-10-24T10:11:17.709915+00:00",
+  "scope": "Localized field contract, tenant resource names, and reported organization-panel failure",
+  "backend": {
+    "tests": 5094,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 142,
+    "suites": 772
+  },
+  "frontend": {
+    "targetedTestsPassed": 15,
+    "typecheck": true,
+    "i18nCheck": true,
+    "uiStandardsAudit": true
+  },
+  "migration": {
+    "identityVersion": 18,
+    "isolatedRehearsal": {
+      "newColumn": 1,
+      "nonNullValues": 0,
+      "migrationAndRepeatVerified": true
+    },
+    "production": {
+      "releaseFingerprint": "d96f2408aa2019db960af0b3b81713c00f79821e6e19855d20dd0ada2878a9d9",
+      "schemaVerified": true,
+      "schemaContributions": 21
+    }
+  },
+  "deployment": {
+    "images": [
+      {
+        "service": "standalone",
+        "image": "simplepoint-standalone:20261024-localized-fields-r2",
+        "imageId": "sha256:e7a82897d9e4fa976a6db7ea85912fd7f21137dea1dffcc987871ef91aef69fd",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "common",
+        "image": "simplepoint203/common:20261024-localized-fields-r1",
+        "imageId": "sha256:b4f26fdd82d786ad66ae3c544429980ceee5791443afcabab900f036323420ff",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "authorization",
+        "image": "simplepoint203/authorization:20261024-localized-fields-r1",
+        "imageId": "sha256:96640f3f61a567cac326c94c6a62eb535809bf2bf25fdaf4efeee91c041f325a",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "host",
+        "image": "simplepoint203/host:20261024-localized-fields-r2",
+        "imageId": "sha256:8c43b0ff37fadf53afe8148fd7588149df3a01d6ba66dc379aeecca912e6b2d3",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "app",
+        "image": "simplepoint203/app:20261024-localized-fields-r1",
+        "imageId": "sha256:3be30f3b60899b2af5776fe611753e1453bc593ef5a65142fa52dbf982460db5",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "dna",
+        "image": "simplepoint203/dna:20261024-localized-fields-r1",
+        "imageId": "sha256:f0d41887318ff627359e1449b2022810ef57a6d80d06b00f1a3ad5f89bda3e2b",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "workflow",
+        "image": "simplepoint203/workflow:20261024-localized-fields-r1",
+        "imageId": "sha256:a687abb6042364b951101800ac3b7c4a2d91a606607ab43556ac2e66a7da399d",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "ai",
+        "image": "simplepoint203/ai:20261024-localized-fields-r1",
+        "imageId": "sha256:c108c427c8b53b47491e84f55b7f766ad0aa427bbbe6932635237678f20b53fa",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "auditing",
+        "image": "simplepoint203/auditing:20261024-localized-fields-r1",
+        "imageId": "sha256:fad7d37994a807dad33ddf58103f640a77346e8856b71efa18d36e2adf47d8a3",
+        "completeManifestVerified": true
+      },
+      {
+        "service": "mcp-gateway",
+        "image": "simplepoint203/mcp-gateway:20261024-localized-fields-r1",
+        "imageId": "sha256:4139155a5184fb20919ad68fb2a6e1f78602c0d1e61ee9587b26c76aa5bfbee6",
+        "completeManifestVerified": true
+      }
+    ],
+    "allTenContainersHealthy": true
+  },
+  "origins": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "api": [
+        "Create/read normalizes locales and preserves Unicode; oversized translation rejected atomically with stable error key",
+        "Another tenant cannot read the resource; ordinary member cannot write translations",
+        "Legacy updates do not erase multilingual values",
+        "Both renamed navigation resources carry scoped translations and retain inherited translation keys"
+      ],
+      "browser": [
+        "Cancel restores the opening field snapshot and causes no resource write",
+        "Translation drawer supports keyboard resize and bounded table scrolling",
+        "Done retains draft; parent submits all languages in one resource write",
+        "Switching interface language updates existing resource rows without changing their identities"
+      ],
+      "inheritance": [
+        "Add language loads its inherited menu namespace",
+        "Restore removes tenant override and previews platform text",
+        "Cancel restores default language and all overrides without persistence"
+      ],
+      "organization": {
+        "passed": true,
+        "membersDisplayed": 7,
+        "httpFailures": []
+      },
+      "frontendAssets": {
+        "remoteManifestsAndDeclaredAssetsPassed": true,
+        "hostFilesVerified": 350
+      }
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "api": [
+        "Create/read normalizes locales and preserves Unicode; oversized translation rejected atomically with stable error key",
+        "Another tenant cannot read the resource; ordinary member cannot write translations",
+        "Legacy updates do not erase multilingual values",
+        "Both renamed navigation resources carry scoped translations and retain inherited translation keys"
+      ],
+      "browser": [
+        "Cancel restores the opening field snapshot and causes no resource write",
+        "Translation drawer supports keyboard resize and bounded table scrolling",
+        "Done retains draft; parent submits all languages in one resource write",
+        "Switching interface language updates existing resource rows without changing their identities"
+      ],
+      "inheritance": [
+        "Add language loads its inherited menu namespace",
+        "Restore removes tenant override and previews platform text",
+        "Cancel restores default language and all overrides without persistence"
+      ],
+      "organization": {
+        "passed": true,
+        "membersDisplayed": 7,
+        "httpFailures": []
+      },
+      "frontendAssets": {
+        "remoteManifestsAndDeclaredAssetsPassed": true,
+        "hostFilesVerified": 350
+      }
+    }
+  ],
+  "organizationIncident": {
+    "observed": "Organization endpoints returned 500/502/504 during the service replacement window; after recovery both browser tests displayed seven members without HTTP or page errors.",
+    "organizationDomainCodeChanged": false
+  },
+  "limits": [
+    "142 backend tests skipped under their existing environment conditions; this release does not claim those optional external-engine scenarios were executed.",
+    "Tenant resource names are the first integration of the generic field editor; unrelated business text fields are not automatically converted."
+  ]
+}

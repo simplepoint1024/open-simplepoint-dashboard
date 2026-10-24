@@ -4,7 +4,7 @@ import '@/App.css';
 import '@simplepoint/components/Simplepoint.css';
 import 'antd/dist/reset.css';
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 import {HashRouter, Routes} from 'react-router';
 import {App as AntApp, ConfigProvider, Modal, Result, theme} from 'antd';
 import TableActions from '@simplepoint/components/Table/Actions';
@@ -18,6 +18,7 @@ import {useI18n} from '@/layouts/i18n/useI18n';
 import {isHttpError} from '@simplepoint/shared/api/client';
 import {useData} from '@simplepoint/shared/api/methods';
 import {fetchServiceRoutes, ServiceResourceRouteResult} from '@/fetches/routes';
+import {localizeRouteNames} from '@simplepoint/shared/i18n/localizedText';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {useCurrentTenants} from '@/fetches/tenants';
 import {getTenantId, setTenantId} from '@/store/tenant';
@@ -25,6 +26,7 @@ import {getRoleId, setRoleId} from '@/store/role';
 import {setContextId} from '@/store/contextId';
 import {ensureContextId} from '@simplepoint/shared/api/contextId';
 import {registerFeedbackBridge} from '@simplepoint/shared/api/feedbackBridge';
+import {isSessionExiting, subscribeSessionExit} from '@simplepoint/shared/api/sessionLifecycle';
 
 import {useLocaleLoader} from '@/hooks/useLocaleLoader';
 import {useRegisterRemotes} from '@/hooks/useRegisterRemotes';
@@ -90,8 +92,10 @@ const App: React.FC = () => {
     ], [t]);
 
     // Restore only after resolving the account and its current memberships.
+    const sessionExiting = useSyncExternalStore(subscribeSessionExit, isSessionExiting, () => false);
     const workspaceUserQuery = useUserInfo();
-    const workspaceOwner = workspaceUserQuery.isFetchedAfterMount ? workspaceUserId(workspaceUserQuery.data) : undefined;
+    const workspaceOwner = !sessionExiting && workspaceUserQuery.isFetchedAfterMount
+        ? workspaceUserId(workspaceUserQuery.data) : undefined;
     const [restoredWorkspaceOwner, setRestoredWorkspaceOwner] = useState<string>();
     const [tenantId, setTenantIdState] = useState<string | undefined>(() => getTenantId());
     const [roleId, setRoleIdState] = useState<string | undefined>(() => getRoleId(getTenantId()));
@@ -127,7 +131,7 @@ const App: React.FC = () => {
     }, [scopeTenantId, scopeRoleId]);
 
     useEffect(() => {
-        if (!currentTenants || !workspaceOwner) return;
+        if (isSessionExiting() || !currentTenants || !workspaceOwner) return;
         if (restoredWorkspaceOwner !== workspaceOwner) {
             const next = selectInitialWorkspace(rememberedWorkspace(workspaceOwner), tenantId,
                 currentTenants.map(tenant => tenant.tenantId));
@@ -167,11 +171,11 @@ const App: React.FC = () => {
         const run = async () => {
             setContextReady(false);
 
-            if (!activeTenantId) return;
+            if (isSessionExiting() || !activeTenantId) return;
 
             const activeRoleId = roleId;
             const ctxId = await ensureContextId(activeTenantId, {force: true, roleId: activeRoleId});
-            if (cancelled || contextRequestSeq.current !== requestSeq) return;
+            if (isSessionExiting() || cancelled || contextRequestSeq.current !== requestSeq) return;
             if (getTenantId() !== activeTenantId) return;
 
             const storedRoleId = getRoleId(activeTenantId);
@@ -196,7 +200,7 @@ const App: React.FC = () => {
         && (tenantId ?? null) === scopeTenantId
         && (roleId ?? null) === scopeRoleId);
     const {
-        data: res,
+        data: rawRoutes,
         isLoading,
         isError: routesFailed,
         error: routesError,
@@ -211,6 +215,8 @@ const App: React.FC = () => {
             enabled: routesEnabled,
         } as any
     );
+
+    const res = useMemo(() => rawRoutes ? {...rawRoutes, routes: localizeRouteNames(rawRoutes.routes, locale)} : undefined, [rawRoutes, locale]);
 
     // 远程模块注册
     const {remoteRegistryKey, remotesReady} = useRegisterRemotes(res, isLoading);

@@ -46,6 +46,7 @@ export async function smokeApplicationResources({clickMenu, clickReady, clickTex
   await poll(() => evaluate(`document.querySelector('${side(2)} .ant-pagination-item-active')?.textContent==='25'`), 'settled assigned-tree last page clamps'); await settled();
   assert.equal(fixture.writes.length, start + 2); assert.deepEqual(fixture.writes.at(-1).data, {applicationCode: 'resource-app-a', resourceCodes: ['resource.code.501']});
   await clickReady(side(1) + ' .ant-pagination-item-27'); await poll(() => evaluate(`!!document.querySelector('${node(1, 'resource-520')}')`), 'resource candidate beyond 500'); await settled();
+  assert.equal(fixture.roots[520].grantable, false, 'private runtime host remains non-grantable');
   await clickReady(node(1, 'resource-520') + ' .ant-tree-checkbox'); await poll(() => fixture.grants.get('resource-app-a').has('resource.code.520'), 'actual checked resource persists'); await settled();
   assert.deepEqual(fixture.writes.at(-1).data, {applicationCode: 'resource-app-a', resourceCodes: ['resource.code.520']});
   console.log('PASS: Application actual action contract, lazy 521-row pages, independent read failure, captured single-flight removal/retry, inactive ownership, parent close barrier and assigned last-page clamp');

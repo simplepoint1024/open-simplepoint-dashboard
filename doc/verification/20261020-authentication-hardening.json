@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-20",
+  "scope": "登录失败处理、双因素认证、登录审计可靠性、浏览器会话和 CSRF、认证秘密保护",
+  "implementation_status": "source_and_isolated_verification_complete",
+  "deployment_status": "not_deployed",
+  "production_data_migrated": false,
+  "environment": {
+    "jdk": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "backend_test_option": "-Psimplepoint.frontend.skip=true（只用于后端测试/检查，禁止用于发行包）"
+  },
+  "backend": {
+    "results": [
+      {
+        "module": "simplepoint-security/simplepoint-security-core",
+        "tests": 42,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-security/simplepoint-security-oauth2-server",
+        "tests": 96,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-services/simplepoint-service-authorization",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-services/simplepoint-service-auditing",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 13
+      },
+      {
+        "module": "simplepoint-services/simplepoint-service-host",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation",
+        "tests": 160,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "passed": 342,
+    "failed": 0,
+    "skipped": 13,
+    "skipped_reason": "既有 RedisEntryQueryHttpTest 需要 REDIS_QUERY_TEST_PORT，当前未指定；本轮 LoginProtectionTest 自建隔离 Redis，已执行。",
+    "reproduce_tasks": [
+      ":simplepoint-security:simplepoint-security-core:test",
+      ":simplepoint-security:simplepoint-security-oauth2-server:test",
+      ":simplepoint-services:simplepoint-service-authorization:test",
+      ":simplepoint-services:simplepoint-service-auditing:test",
+      ":simplepoint-services:simplepoint-service-host:test",
+      ":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-implementation:test",
+      ":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test"
+    ],
+    "logs": [
+      "/tmp/simplepoint-auth-final-checks.log",
+      "/tmp/simplepoint-auth-completion-test.log",
+      "/tmp/simplepoint-auth-last-regression.log"
+    ]
+  },
+  "checks": {
+    "frontend_typecheck": {
+      "status": "passed",
+      "command": "cd simplepoint-react && pnpm typecheck"
+    },
+    "csrf_frontend": {
+      "status": "passed",
+      "tests": 2,
+      "command": "cd simplepoint-react && node --experimental-strip-types --test libs/shared/api/csrf.test.mjs"
+    },
+    "ui_contracts": {
+      "status": "passed",
+      "reviewed": 40,
+      "unreviewed": 0,
+      "command": "cd simplepoint-react && node scripts/ui-standards/audit.mjs --strict"
+    },
+    "module_boundaries": {
+      "status": "passed",
+      "task": "verifyModuleBoundaries"
+    },
+    "main_checkstyle": {
+      "status": "passed",
+      "modules": [
+        "simplepoint-security/simplepoint-security-core",
+        "simplepoint-security/simplepoint-security-oauth2-server",
+        "simplepoint-services/simplepoint-service-authorization",
+        "simplepoint-services/simplepoint-service-host",
+        "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-api",
+        "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-implementation"
+      ]
+    },
+    "additional_rbac_checkstyle": {
+      "status": "failed_on_existing_other_files",
+      "warnings": 423,
+      "files": 21,
+      "modified_authentication_file": "PlatformStepUpService.java",
+      "modified_authentication_file_warnings": 0,
+      "log": "/tmp/simplepoint-auth-rbac-style-final.log"
+    },
+    "diff_whitespace": "passed"
+  },
+  "covered_boundaries": [
+    "真实 Spring Security 过滤链：密码验证后仅保留待验证状态，成功后轮换会话并持久化无秘密 principal",
+    "未完成双因素不能授权、改账户或关联外部身份；挑战到期、授权版本变化和无种子账号拒绝通过",
+    "独立 Redis 并发额度、验证码防重放、挑战单次完成、存储故障拒绝认证",
+    "绑定会话的 CSRF、缺失/错误/跨会话令牌、上传和退出、有限机器端点豁免",
+    "绝对/空闲会话到期，旧会话要求重新登录，安全 Cookie",
+    "H2 实库 outbox 独立事务、投递失败后重试、重复 inbox 去重、消费事务回滚，审计写失败不保留成功登录",
+    "AES-GCM 篡改/跨账号移植拒绝、密钥缺失、轮换、存量明文种子维护迁移"
+  ],
+  "limitations": [
+    "未进行真实代理、浏览器、生产数据库及 RabbitMQ 的部署后验收；消息故障测试在隔离数据库与可控传输器完成",
+    "未强制所有账户启用 MFA；已启用账户必须完成第二因素",
+    "未新增全部 OAuth2 access/refresh token 即时吊销机制",
+    "审计保留、防篡改归档、异地备份和权限分离仍需运行环境落实",
+    "当前工作区存在其他未提交改动；本报告不是全仓无告警或等保通过证明"
+  ],
+  "deployment_guide": "doc/deployment/authentication-hardening.md"
+}

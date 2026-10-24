@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
-import org.simplepoint.security.service.ResourceService;
+import org.simplepoint.security.service.ResourceRegistrationService;
 import org.springframework.beans.factory.ObjectProvider;
 
 class ResourceAutoConfigurationTest {
@@ -16,8 +16,8 @@ class ResourceAutoConfigurationTest {
   @Test
   @SuppressWarnings("unchecked")
   void initializesModuleResourcesFromClasspath() throws Exception {
-    ResourceService resourceService = mock(ResourceService.class);
-    ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
+    ResourceRegistrationService resourceService = mock(ResourceRegistrationService.class);
+    ObjectProvider<ResourceRegistrationService> provider = mock(ObjectProvider.class);
     when(provider.getIfAvailable()).thenReturn(resourceService);
 
     ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/missing-resources.json");
@@ -31,8 +31,8 @@ class ResourceAutoConfigurationTest {
   @Test
   @SuppressWarnings("unchecked")
   void initializesLegacyResourcesWhenConfigured() throws Exception {
-    ResourceService resourceService = mock(ResourceService.class);
-    ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
+    ResourceRegistrationService resourceService = mock(ResourceRegistrationService.class);
+    ObjectProvider<ResourceRegistrationService> provider = mock(ObjectProvider.class);
     when(provider.getIfAvailable()).thenReturn(resourceService);
 
     ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/test-resources.json");
@@ -46,7 +46,7 @@ class ResourceAutoConfigurationTest {
   @Test
   @SuppressWarnings("unchecked")
   void skipsResourceInitializationWhenResourceServiceIsUnavailable() throws Exception {
-    ObjectProvider<ResourceService> provider = mock(ObjectProvider.class);
+    ObjectProvider<ResourceRegistrationService> provider = mock(ObjectProvider.class);
     when(provider.getIfAvailable()).thenReturn(null);
 
     ResourceAutoConfiguration configuration = new ResourceAutoConfiguration(provider, "dna", "conf/test-resources.json");

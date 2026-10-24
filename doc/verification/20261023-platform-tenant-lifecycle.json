@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-23",
+  "scope": "platform-catalog-tenant-lifecycle-propagation",
+  "implemented": [
+    "Platform resource schema, reads and inherited CRUD enforce the explicit platform namespace; tenant administrators cannot read or mutate the source catalog. Delegated platform action permissions remain supported.",
+    "Identity-owned local port commits platform definition changes, scoped policy renames, dependent grant revocation and tenant authorization version changes in the source transaction. Tenant runtime still reads only its own catalog. Cross-service APP/REPORT lifecycle continues through durable events.",
+    "Preserves tenant display overrides, manual disable, purchased duration and business data. Source retirement revokes descendant, alias and managed-host dependent grants; re-online does not restore revoked ordinary grants.",
+    "Code renames update only platform policies, matching tenant mirror policies and future-allocation templates. Tenant custom resources sharing the code retain their own policy namespace. Already issued package snapshots remain immutable.",
+    "Deterministic tenant locks, paged keyset reads and bounded bindings; entity mutation preserves managed grant coherence. A later tenant conflict rolls back source, earlier mirrors and real authorization versions.",
+    "Removed unused global grant delete/rename repository operations and legacy package/application authorization invalidation joins."
+  ],
+  "validation": {
+    "modules": [
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+        "totals": {
+          "tests": 347,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation",
+        "totals": {
+          "tests": 191,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation",
+        "totals": {
+          "tests": 81,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-services/simplepoint-service-common",
+        "totals": {
+          "tests": 455,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-security/simplepoint-security-core",
+        "totals": {
+          "tests": 50,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-platform/simplepoint-platform-installation-host",
+        "totals": {
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    ],
+    "totalTests": 1145,
+    "postgresql17": "Full tenant suite and offline adoption enabled against per-test schemas on isolated PostgreSQL 17; new lifecycle tests use the real tenant version repository, rollback, retired grants and 521 dependents. Other suites include H2/mocks; total is not an all-PostgreSQL claim.",
+    "quality": "26 scoped Java files Checkstyle passed across initial and corrected runs; module boundary verification passed; installer distribution built with frontend packaging enabled.",
+    "reports": [
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.PlatformResourceCatalogEffectsTest",
+        "tests": "5",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:36:54",
+        "hostname": "arch",
+        "time": "1.78",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.PlatformResourceCatalogEffectsTest.xml",
+        "sha256": "6401255a098414c909ba8ee1e352a81316ffb26863cb173605f042fb2e0e503c"
+      },
+      {
+        "name": "org.simplepoint.installation.host.TenantAdoptionInstallationPostgresTest",
+        "tests": "3",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:36:05",
+        "hostname": "arch",
+        "time": "34.958",
+        "report": "simplepoint-platform/simplepoint-platform-installation-host/build/test-results/test/TEST-org.simplepoint.installation.host.TenantAdoptionInstallationPostgresTest.xml",
+        "sha256": "2670ed7c9da2cb9206188b174906c41f28b291e76707e088e57793805eab7346"
+      }
+    ]
+  },
+  "sourceSha256": {
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java": "8a75c1edeb5dabc344990ce6fe9b9f842c580d4d3ca8fd35059edd8dc662ddee",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/CurrentUserAccessHttpTest.java": "bc84b8ec455b308c82ec4c9cfb59b71a0ffd2f97754915678ebfd270a9e6a5b2",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceQueryHttpTest.java": "03f11711fbcadee600c5c83dc6e5b9acf511ec578dadce463437bf9a52eda7a2",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceCatalogTestSupport.java": "f70f95e10788b796e3c97db29121728413695c1405d0fff03b1339c0a2730b35",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ManagedTenantResourceRoutesTest.java": "93f26169b71689dae53bd94e5229a3e49df06a17fbdad11c10437697e00c4a30",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImplTest.java": "a3199a6455826d961dcd539d825bba57739fbd4d2ea9eb51b94b025e1a333fe2",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceRegistrationTransactionTest.java": "946bb2198a5517feef21a4ad38d4ea4e7d5cb01eeac6c3ca51aa78fe5c277d65",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/test/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceCatalogConcurrencyTest.java": "c865e94efd66cacb82735e8e7b83e86e7869041948e31ab4b71c0d3e6ff208c0",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/BuiltInTenantProvisionerImplTest.java": "d5ef456c66aa7a619a9544d461dc5b76e6c8331d6cd4ec5a2d01264e5dbe1f95",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/BuiltInCatalogAuthorizationBoundaryTest.java": "69c007b81c287f83aa289280e7efc61d41e28e03c703bb36099a53e8d652acd7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/PlatformResourceCatalogEffectsTest.java": "0a68e4c84899f26000c77da9fa815d4b01d982e8c2f74992059988b0e55bac41",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/ResourceAuthorizationVersionServiceTest.java": "863790d84398adb0c44021e1ef88c3c4a1b790b9e730dca1a29d48f04d7eded3",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/support/ResourceCatalogWriteBoundary.java": "21f39ab081ef7ae5f6e5194715aa4f1a7f8baf236c0108ca7ff3d8851b20fb2f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "ba0491a9d74225980dd368c2429d7e1edfd7ad1d58af661c0f517930de1ec0c6",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/PlatformResourceBoundary.java": "a3b15066c88c5ba8fc0e1abc8c67bbb75a77c798f4c7ea770b9cb0e312ae9fca",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceDirectoryQuery.java": "2776a658e8f0764e515968bd4eb68aafe0618bede5f562da7aefd5cb53d88c7a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/PlatformResourceCatalogEffectsImpl.java": "e73d9d6acd4773998582fd16a69a150c54709c220e66e0f0f191fbf7913bb2ac",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/BuiltInTenantProvisionerImpl.java": "15803a3d607a00d5b3bb8b79a534a151ef247058950619bff975f83c552af600",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourcePlatformImporter.java": "09d9183696050502776066cc8f090d1f95f637edbf83bdd82e9fb5b98b6160ec",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/ResourceAuthorizationVersionService.java": "d970ff9f0271cadf8fc77c1c399b9993495384f7f3d980a893cb35a83893ad22",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/PlatformResourceCatalogEffects.java": "a6534cc611bec5e619586cdfcb93002629ef7c0a43397058dba57e2dac384d02",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/OptionalCommonHttpAssemblyTest.java": "318482986b42321074865f23c8310da76c8a9d18918d66917ed092e5cae4cada",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/OrganizationSelectionHttpTest.java": "735ad814b228119c95ef255d1fa2d6a5e38418efc0f8f85e6c06021a5335c1c5",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantLegacyAdoptionHttpTest.java": "87f5312443dbb57b123f136ba4ed3fbcf960d26e383fa4d01bfdc9f4d7b31986",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/repository/RoleResourceGrantRepository.java": "3cc5972ee8cdd888b11103b3b822777211447da5c1fa8110814dbc4bf39508e9",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/base/repository/JpaRoleResourceGrantRepository.java": "69634d3441c40ebb7c6039f844dc824e97ed29bfd04d6963951494f684babd4b"
+  },
+  "deployment": "Not deployed. Existing PostgreSQL 18 snapshot restored to isolated loopback instance; migration/adoption rehearsal and live dual-topology validation remain."
+}

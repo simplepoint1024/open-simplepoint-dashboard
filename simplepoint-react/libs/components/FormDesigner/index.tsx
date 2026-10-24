@@ -1,8 +1,11 @@
+import {calculationPreviewDocument} from './calculationModel';
+import type {CalculationPreviewLoader} from '../FormRuntime/calculationPreview';
+import {DesignerCalculationContext, type DesignerCalculations} from './CalculationFieldEditor';
 import FormProperties from './FormProperties';
 import FormPreview from './Preview';
 import type {DesignerPropertyRegistry} from './extensions';
 import {platformComponentBehaviors} from '../FormComponents/modelRegistry';
-import {useMemo, useRef, useState, type KeyboardEvent, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode} from 'react';
 import {Alert, App, Collapse, Tabs} from 'antd';
 import {DndContext, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors, type DragEndEvent} from '@dnd-kit/core';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -17,12 +20,16 @@ import FormRuntime, {platformFormComponents, type FormComponentRegistry} from '.
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
 import type {FormFieldWritePolicy} from '../FormRuntime/contracts.ts';
 import {addScene, copyComponent, insertComponent, locate, moveComponent,
-  pasteComponent, recordHistory, redo, removeComponent, removeScene, undo, validateStructure, type Clipboard, type DesignHistory} from './model.ts';
+  pasteComponent, recordHistory, redo, removeComponent, removeScene, undo, validateStructure, DesignError, type Clipboard, type DesignHistory} from './model.ts';
 import CanvasNode, {PaletteItem, type DragSource, type DropTarget, type NodeActions} from './Canvas';
 import Properties from './Properties';
 import ResizableSidebar from '../ResizableSidebar';
 import DataSchemaEditor from './DataSchemaEditor';
 import RuleEditor from './RuleEditor';
+import DesignerNavigator from './DesignerNavigator';
+import FieldDefinitionDialog from './FieldDefinitionDialog';
+import {designFields, fieldKey, fieldUsages, type FieldTarget} from './fieldAnalysis';
+import type {DesignerCalculationTrial} from './CalculationTrial';
 import {componentLabels, designError} from './labels';
 import './style.css';
 
@@ -34,6 +41,9 @@ export type FormDesignerActions = {
 
 export type FormDesignerProps = {document: DesignDocument; components: readonly ComponentDescriptor[];
   writePolicies?: readonly FormFieldWritePolicy[];
+  calculations?: DesignerCalculations;
+  calculationPreview?: CalculationPreviewLoader;
+  calculationTrial?: DesignerCalculationTrial;
   propertyRegistry?: DesignerPropertyRegistry;
   /** Hosts compose persistence actions with editor-owned history without taking over editor state. */
   toolbar?: {title?: ReactNode; beforePreview?: ReactNode; renderActions?: (actions: FormDesignerActions) => ReactNode};
@@ -42,11 +52,13 @@ export type FormDesignerProps = {document: DesignDocument; components: readonly 
 
 /** Shared controlled editor: no networking, SQL, permissions or publication state live in the canvas. */
 export default function FormDesigner({document, components, registry = platformFormComponents, labels: customLabels,
-  disabled = false, onChange, writePolicies = [], toolbar, propertyRegistry}: FormDesignerProps) {
+  disabled = false, onChange, writePolicies = [], toolbar, propertyRegistry, calculations, calculationPreview, calculationTrial}: FormDesignerProps) {
   const {t} = useI18n(), {message} = App.useApp();
   const selected = usePageSelected();
   const [sceneId, setSceneId] = useState(() => document.scenes.find(scene => scene.type === 'MAIN')!.sceneId);
   const [selectedId, setSelectedId] = useState('');
+  const [navigation, setNavigation] = useState<'tree' | 'fields' | 'checks'>();
+  const [editingField, setEditingField] = useState<FieldTarget>();
   const [mode, setMode] = useState('design');
   const [preview, setPreview] = useState(false), [previewValues, setPreviewValues] = useState<Record<string, unknown>>({});
   const [formPropertiesOpen, setFormPropertiesOpen] = useState(false);
@@ -60,12 +72,24 @@ export default function FormDesigner({document, components, registry = platformF
   const supported = useMemo(() => components.filter(item => {
     try {registry.resolve({componentType: item.type, componentVersion: item.version}); return true;} catch {return false;}
   }), [components, registry]);
-  const structuralError = useMemo(() => {
-    try {validateStructure(document, supported); return '';} catch (error) {return designError(error, t);}
+  const structuralIssue = useMemo(() => {
+    try {validateStructure(document, supported); return undefined;} catch (error) {
+      return {message: designError(error, t), componentId: error instanceof DesignError ? error.componentId : undefined};
+    }
   }, [document, supported, t]);
+  const structuralError = structuralIssue?.message ?? '';
   const scene = document.scenes.find(scene => scene.sceneId === sceneId) ?? document.scenes.find(scene => scene.type === 'MAIN')!;
   const current = locate(document, selectedId);
   const selection = current?.scene.sceneId === scene.sceneId ? current : locate(document, scene.root.componentId)!;
+  useEffect(() => {
+    if (mode !== 'design' || !selectedId) return;
+    const frame = requestAnimationFrame(() => {
+      const target = [...globalThis.document.querySelectorAll<HTMLElement>('[data-design-node]')]
+        .find(element => element.dataset.designNode === selectedId && element.getClientRects().length);
+      target?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId, mode, scene.sceneId]);
   const locked = disabled || !selected || preview || Boolean(structuralError);
   const parentId = supported.find(item => item.type === selection.node.componentType && item.version === selection.node.componentVersion)?.container
     ? selection.node.componentId : selection.parent?.componentId ?? scene.root.componentId;
@@ -78,6 +102,18 @@ export default function FormDesigner({document, components, registry = platformF
     validateStructure(next, supported);
     commitHistory(recordHistory(historyRef.current, next));
   };
+  const selectNode = (componentId: string) => {
+    const target = locate(document, componentId); if (!target) return;
+    setMode('design'); setSceneId(target.scene.sceneId); setSelectedId(componentId);
+  };
+  const locateField = (target: FieldTarget) => {
+    if (!selected) return;
+    const usage = fieldUsages(document, target)[0];
+    if (usage) selectNode(usage.componentId); else setMode('data');
+    setEditingField(target);
+  };
+  const edited = editingField && designFields(document).find(item => item.key === fieldKey(editingField));
+  const editedDetail = document.details?.find(detail => detail.detailId === editingField?.scope);
   const attempt = (action: () => void) => {if (!locked) try {action();} catch (error) {setFailure(designError(error, t));}};
   const add = (item: ComponentDescriptor, destination = parentId, index = parent.children.length, fieldId?: string) => attempt(() => {
     const result = insertComponent(document, destination, index, item, labels[item.type] ?? item.type, supported, fieldId);
@@ -158,6 +194,7 @@ export default function FormDesigner({document, components, registry = platformF
     } else if (command && event.key.toLowerCase() === 'v') {event.preventDefault(); paste();}
     else if (event.key === 'Delete' && selection.parent) {event.preventDefault(); remove();}
   };
+  const previewDocument = useMemo(() => calculationPreviewDocument(document), [document]);
   const previewMain = document.scenes.find(scene => scene.type === 'MAIN')!;
   const sceneActions = (id: string): NodeActions => ({buttons: [
     {key: 'dialog', sort: 0, icon: 'ExpandOutlined', text: t('app.designer.addDialog', '新建弹窗'), disabled: locked},
@@ -175,8 +212,11 @@ export default function FormDesigner({document, components, registry = platformF
     ],
     onButtonEvents: {undo: () => commitHistory(undo(historyRef.current)), redo: () => commitHistory(redo(historyRef.current))},
   };
-  return <div className="sp-form-designer" onKeyDown={keyboard}>
-    {(failure || structuralError) && <Alert type="error" showIcon title={failure || structuralError}/>}
+  return <DesignerCalculationContext.Provider value={{document, catalog: calculations, trial: calculationTrial, onLocate: locateField}}><div className="sp-form-designer" onKeyDown={keyboard}>
+    {(failure || structuralError) && <Alert type="error" showIcon title={failure || structuralError}
+      action={structuralIssue?.componentId && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'locate', sort: 0, icon: 'AimOutlined', text: t('app.designer.locate', '定位')},
+      ]} onButtonEvents={{locate: () => selectNode(structuralIssue.componentId!)}}/>}/>}
     <PageSection selected={!preview}>
       <div className="sp-form-designer-header">
         <Tabs className="sp-form-designer-tabs" activeKey={mode} onChange={setMode} items={[
@@ -190,7 +230,10 @@ export default function FormDesigner({document, components, registry = platformF
           <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
             {key: 'preview', sort: 0, type: 'text', iconOnly: true, icon: 'EyeOutlined', text: t('app.designer.preview', '预览'), disabled: !selected || Boolean(structuralError)},
             {key: 'properties', sort: 1, type: 'text', iconOnly: true, icon: 'SettingOutlined', text: t('app.designer.formProperties', '表单属性'), disabled: locked},
-          ]} onButtonEvents={{properties: () => setFormPropertiesOpen(true), preview: () => {setPreviewValues({}); setPreviewNotice(false); setPreview(true);}}}/>
+            {key: 'navigation', sort: 2, type: 'text', iconOnly: true, icon: 'ApartmentOutlined', text: t('app.designer.navigator', '结构导航'), disabled: !selected},
+            {key: 'check', sort: 3, type: 'text', iconOnly: true, icon: 'CheckCircleOutlined', text: t('app.designer.check', '配置检查'), disabled: !selected},
+          ]} onButtonEvents={{navigation: () => setNavigation('tree'), check: () => setNavigation('checks'),
+            properties: () => setFormPropertiesOpen(true), preview: () => {setPreviewValues({}); setPreviewNotice(false); setPreview(true);}}}/>
           {toolbar?.renderActions ? toolbar.renderActions(historyActions) :
             <TableActions selectedKeys={[]} selectedRows={[]} buttons={historyActions.buttons} onButtonEvents={historyActions.onButtonEvents}
               menu={{trigger: ['hover', 'click'], label: t('app.designer.actions', '操作'), disabled: !historyActions.active}}/>}
@@ -219,7 +262,7 @@ export default function FormDesigner({document, components, registry = platformF
                   item={item} label={labels[item.type] ?? item.type} disabled={locked} onAdd={() => add(item)}/>)}
             </div>}))}/>
           </aside>
-          <ResizableSidebar sidebar={<Properties propertyRegistry={propertyRegistry} document={document} componentId={selection.node.componentId} components={supported} disabled={locked}
+          <ResizableSidebar sidebar={<Properties key={selection.node.componentId} propertyRegistry={propertyRegistry} document={document} componentId={selection.node.componentId} components={supported} disabled={locked}
             writePolicies={writePolicies} onChange={next => attempt(() => commit(next))}/>}>
           <main className="sp-form-designer-center">
             <div className="sp-form-designer-scenes">
@@ -242,13 +285,21 @@ export default function FormDesigner({document, components, registry = platformF
         </div>
       </DndContext>}
     </PageSection>
+    <DesignerNavigator document={document} selectedId={selection.node.componentId} open={navigation} catalog={calculations}
+      onClose={() => setNavigation(undefined)} onSelect={selectNode} onField={locateField}/>
+    {edited && <FieldDefinitionDialog key={edited.key} field={edited.field} scope={edited.scope}
+      mode={edited.field.calculation ? 'calculated' : 'stored'}
+      document={editedDetail ? {...document, fields: editedDetail.fields, indexes: editedDetail.indexes, scenes: [], rules: []} : document}
+      components={supported} writePolicies={writePolicies} disabled={locked} onClose={() => setEditingField(undefined)}
+      onDocumentChange={next => commit(editedDetail ? {...document, details: document.details?.map(detail => detail.detailId === editedDetail.detailId
+        ? {...detail, fields: next.fields, indexes: next.indexes} : detail)} : next)}/>}
     <FormProperties document={document} open={formPropertiesOpen} disabled={locked} onClose={() => setFormPropertiesOpen(false)} onChange={next => attempt(() => commit(next))}/>
     <FormPreview open={preview && selected} onClose={() => setPreview(false)}>
       {previewNotice ? <Alert type="success" showIcon title={t('app.designer.previewValid', '预览校验通过，未保存业务数据。')}/>
         : <div className="sp-form-editor-help"><HelpTip>{t('app.designer.previewHint', '可试填表单并打开弹窗和抽屉，预览不会保存业务数据。')}</HelpTip></div>}
-      <FormRuntime document={document} registry={registry} sceneId={previewMain.sceneId} value={previewValues} onChange={setPreviewValues}
+      <FormRuntime disabled={!preview || !selected} calculationPreview={calculationPreview} document={previewDocument} registry={registry} sceneId={previewMain.sceneId} value={previewValues} onChange={setPreviewValues}
         onAction={(_, values) => {setPreviewValues(values); setPreviewNotice(true); message.success(t('app.designer.previewValid', '预览校验通过，未保存业务数据。')); return true;}}/>
     </FormPreview>
-  </div>;
+  </div></DesignerCalculationContext.Provider>;
 }
 export type {DesignDocument, DesignerContract, FormDraft, FormSummary} from './contracts.ts';

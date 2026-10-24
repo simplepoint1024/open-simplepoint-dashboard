@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * Service router configuration properties.
- */
+/** Service router configuration properties. */
 @ConfigurationProperties(prefix = "simplepoint.service-router")
 public class ServiceRouterProperties {
 
@@ -88,9 +86,7 @@ public class ServiceRouterProperties {
     this.routes = routes;
   }
 
-  /**
-   * Provider settings.
-   */
+  /** Provider settings. */
   public static class Provider {
 
     private boolean enabled = true;
@@ -114,14 +110,42 @@ public class ServiceRouterProperties {
     }
   }
 
-  /**
-   * Consumer settings.
-   */
+  /** Consumer settings. */
   public static class Consumer {
 
     private boolean enabled = true;
 
     private boolean localFirst = true;
+
+    private boolean localIsolation;
+
+    private int localMaxConcurrent = 256;
+
+    private int localMaxDepth = 16;
+
+    public boolean isLocalIsolation() {
+      return localIsolation;
+    }
+
+    public void setLocalIsolation(final boolean localIsolation) {
+      this.localIsolation = localIsolation;
+    }
+
+    public int getLocalMaxConcurrent() {
+      return localMaxConcurrent;
+    }
+
+    public void setLocalMaxConcurrent(final int localMaxConcurrent) {
+      this.localMaxConcurrent = localMaxConcurrent;
+    }
+
+    public int getLocalMaxDepth() {
+      return localMaxDepth;
+    }
+
+    public void setLocalMaxDepth(final int localMaxDepth) {
+      this.localMaxDepth = localMaxDepth;
+    }
 
     public boolean isEnabled() {
       return enabled;
@@ -140,9 +164,7 @@ public class ServiceRouterProperties {
     }
   }
 
-  /**
-   * Discovery settings.
-   */
+  /** Discovery settings. */
   public static class Discovery {
 
     private String type = "consul";
@@ -166,9 +188,7 @@ public class ServiceRouterProperties {
     }
   }
 
-  /**
-   * HTTP settings.
-   */
+  /** HTTP settings. */
   public static class Http {
 
     private String client = "rest-client";
@@ -202,9 +222,7 @@ public class ServiceRouterProperties {
     }
   }
 
-  /**
-   * Internal service-router authentication settings.
-   */
+  /** Internal service-router authentication settings. */
   public static class InternalAuth {
 
     private String mode = "shared-token";
@@ -247,9 +265,7 @@ public class ServiceRouterProperties {
       this.oauth2 = oauth2;
     }
 
-    /**
-     * OAuth2 client credentials settings for service-to-service calls.
-     */
+    /** OAuth2 client credentials settings for service-to-service calls. */
     public static class Oauth2 {
 
       private String tokenUri;

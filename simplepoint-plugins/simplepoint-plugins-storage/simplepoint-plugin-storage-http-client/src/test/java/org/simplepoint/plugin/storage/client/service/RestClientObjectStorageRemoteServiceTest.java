@@ -49,11 +49,13 @@ class RestClientObjectStorageRemoteServiceTest {
     final MockHttpServletRequest servletRequest = new MockHttpServletRequest();
     servletRequest.addHeader(HttpHeaders.AUTHORIZATION, "Bearer token");
     servletRequest.addHeader("X-Tenant-Id", "tenant-1");
+    servletRequest.addHeader("X-CSRF-TOKEN", "masked-token");
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(servletRequest));
     server.expect(requestTo("http://common/object-storage/upload"))
         .andExpect(method(HttpMethod.POST))
         .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer token"))
         .andExpect(header("X-Tenant-Id", "tenant-1"))
+        .andExpect(header("X-CSRF-TOKEN", "masked-token"))
         .andRespond(withSuccess(
             "{\"id\":\"object-1\",\"originalFileName\":\"测试文档.md\"}",
             MediaType.APPLICATION_JSON

@@ -5,10 +5,13 @@ export type FormVersion = {formId: string; version: number; checksum: string};
 export type PublicationInspection = {checkedAt: string; repairPageId?: string | null;
   issues: {id: string; kind: 'REQUIRED' | 'INVALID_VALUE'; fields: string[]; count: string}[]};
 export type FormRelease = {
+  progress?: PublicationProgress | null;
   inspection?: PublicationInspection | null;
   dataPublication: {id: string; formId: string; formVersion: number; status: string; errorCode?: string | null} | null;
   pageBinding?: {pageId: string; formId: string; formVersion: number; status: string; errorCode?: string | null} | null;
 };
+export type PublicationProgress = {contractVersion: 1; phase: 'STAGING' | 'APPLYING' | 'RESTORING';
+  sequence: string; completedRecords: string; totalRecords: string};
 type Transport = {
   freeze: (revision: number) => Promise<FormVersion>;
   versions: () => Promise<FormVersion[]>;

@@ -12,8 +12,8 @@ export function TitleSync({
   const location = useLocation();
   useEffect(() => {
     const current = leafRoutes.find(n => n.path === location.pathname);
-    const keyOrText = (current?.title || current?.label || '') as string;
-    const localizedPageTitle = location.pathname === '/dashboard' ? t('menu.home', '首页') : keyOrText ? t(keyOrText, keyOrText) : '';
+    const localizedPageTitle = location.pathname === '/dashboard' ? t('menu.home', '首页')
+      : current?.title ? t(current.title, current.label || current.title) : current?.label || '';
     const appTitle = t('app.title', DEFAULT_APP_TITLE);
     document.title = resolveDocumentTitle(localizedPageTitle, appTitle);
   }, [location.pathname, leafRoutes, t]);

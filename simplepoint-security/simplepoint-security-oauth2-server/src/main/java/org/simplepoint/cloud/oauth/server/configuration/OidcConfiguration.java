@@ -27,7 +27,7 @@ import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcConfigurerExpansion
 import org.simplepoint.cloud.oauth.server.expansion.oidc.OidcUserInfoAuthenticationExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.DefaultOidcConfigurerExpansion;
 import org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthentication;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.decorator.TokenDecorator;
 import org.simplepoint.security.token.TokenRevocationService;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,11 +104,11 @@ public class OidcConfiguration {
   @Bean
   @ConditionalOnMissingBean(OidcUserInfoAuthenticationExpansion.class)
   public OidcUserInfoAuthenticationExpansion oidcUserInfoAuthentication(
-      final UsersService usersService
+      final UserManagementService usersService
   ) {
     /*
-     * Uses {@link UsersService} as a dependency for user info authentication.
-     * 使用 {@link UsersService} 作为用户信息认证服务的依赖项
+     * Uses {@link UserManagementService} as a dependency for user info authentication.
+     * 使用 {@link UserManagementService} 作为用户信息认证服务的依赖项
      *
      * @param usersService The user service that provides user information retrieval.
      *                     用户服务，提供用户信息获取功能

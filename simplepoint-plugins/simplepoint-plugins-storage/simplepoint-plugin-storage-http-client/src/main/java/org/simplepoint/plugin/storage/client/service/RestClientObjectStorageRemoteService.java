@@ -196,6 +196,7 @@ public class RestClientObjectStorageRemoteService implements ObjectStorageRemote
     copyHeader(request, headers, "X-Context-Id");
     copyHeader(request, headers, HttpHeaders.ACCEPT_LANGUAGE);
     copyHeader(request, headers, HttpHeaders.COOKIE);
+    copyHeader(request, headers, "X-CSRF-TOKEN");
   }
 
   private static void copyHeader(final HttpServletRequest request, final HttpHeaders headers, final String headerName) {

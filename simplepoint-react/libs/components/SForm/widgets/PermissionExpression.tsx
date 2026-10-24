@@ -40,7 +40,7 @@ const server = (node: QueryNode): unknown => node.children
 export default function PermissionExpression({value, onChange, registry, disabled, readonly}: WidgetProps) {
   const {t, ensure, locale} = useI18n();
   // This field uses contract titles and static context labels, not the caller's whole presentation directory.
-  const labels = useMemo(() => permissionLabels(t), [t]);
+  const labels = useMemo(() => permissionLabels(t, undefined, locale), [t, locale]);
   const [textDraft, setTextDraft] = useState('');
   const resourceCode = registry.formContext?.formData?.resourceCode as string | undefined;
   const [tab, setTab] = useState(value ? 'text' : 'visual');

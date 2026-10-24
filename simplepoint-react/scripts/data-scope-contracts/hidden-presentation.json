@@ -10,6 +10,28 @@
           "owner": "createdBy",
           "department": "id",
           "properties": {
+            "name": {
+              "type": "java.lang.String",
+              "title": "组织名称",
+              "operators": [
+                "like",
+                "not:like",
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "between",
+                "not:between",
+                "than:greater",
+                "than:less",
+                "than:equal:greater",
+                "than:equal:less",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": [],
+              "readOnly": false
+            },
             "sort": {
               "type": "java.lang.Integer",
               "title": "排序",
@@ -29,6 +51,27 @@
               ],
               "values": [],
               "readOnly": false
+            },
+            "createdBy": {
+              "type": "java.lang.String",
+              "title": "createdBy",
+              "operators": [
+                "equals",
+                "not:equals",
+                "in",
+                "not:in",
+                "is:null",
+                "is:not:null"
+              ],
+              "values": [],
+              "readOnly": true
+            },
+            "updatedAt": {
+              "type": "java.time.Instant",
+              "title": "updatedAt",
+              "operators": [],
+              "values": [],
+              "readOnly": true
             },
             "enabled": {
               "type": "java.lang.Boolean",
@@ -66,23 +109,9 @@
               "values": [],
               "readOnly": false
             },
-            "updatedAt": {
-              "type": "java.time.Instant",
-              "title": "updatedAt",
-              "operators": [],
-              "values": [],
-              "readOnly": true
-            },
-            "createdAt": {
-              "type": "java.time.Instant",
-              "title": "createdAt",
-              "operators": [],
-              "values": [],
-              "readOnly": true
-            },
-            "code": {
+            "parentId": {
               "type": "java.lang.String",
-              "title": "组织编码",
+              "title": "上级组织",
               "operators": [
                 "like",
                 "not:like",
@@ -99,48 +128,19 @@
                 "is:null",
                 "is:not:null"
               ],
+              "values": [],
+              "readOnly": false
+            },
+            "leaderId": {
+              "type": "java.lang.String",
+              "title": "i18n:organizations.title.leaderId",
+              "operators": [],
               "values": [],
               "readOnly": false
             },
             "type": {
               "type": "java.lang.String",
               "title": "i18n:organizations.title.type",
-              "operators": [
-                "like",
-                "not:like",
-                "equals",
-                "not:equals",
-                "in",
-                "not:in",
-                "between",
-                "not:between",
-                "than:greater",
-                "than:less",
-                "than:equal:greater",
-                "than:equal:less",
-                "is:null",
-                "is:not:null"
-              ],
-              "values": [],
-              "readOnly": false
-            },
-            "createdBy": {
-              "type": "java.lang.String",
-              "title": "createdBy",
-              "operators": [
-                "equals",
-                "not:equals",
-                "in",
-                "not:in",
-                "is:null",
-                "is:not:null"
-              ],
-              "values": [],
-              "readOnly": true
-            },
-            "parentId": {
-              "type": "java.lang.String",
-              "title": "上级组织",
               "operators": [
                 "like",
                 "not:like",
@@ -174,9 +174,16 @@
               "values": [],
               "readOnly": true
             },
-            "name": {
+            "createdAt": {
+              "type": "java.time.Instant",
+              "title": "createdAt",
+              "operators": [],
+              "values": [],
+              "readOnly": true
+            },
+            "code": {
               "type": "java.lang.String",
-              "title": "组织名称",
+              "title": "组织编码",
               "operators": [
                 "like",
                 "not:like",

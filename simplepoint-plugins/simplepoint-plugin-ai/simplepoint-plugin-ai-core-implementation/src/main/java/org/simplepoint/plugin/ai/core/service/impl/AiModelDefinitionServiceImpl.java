@@ -2,10 +2,7 @@ package org.simplepoint.plugin.ai.core.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import org.simplepoint.core.jackson.FieldPermissionPolicy;
-import org.simplepoint.core.query.QueryCapabilities;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Currency;
@@ -17,25 +14,25 @@ import java.util.Optional;
 import java.util.Set;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
+import org.simplepoint.core.jackson.FieldPermissionPolicy;
+import org.simplepoint.core.query.QueryCapabilities;
 import org.simplepoint.plugin.ai.core.api.entity.AiModelDefinition;
 import org.simplepoint.plugin.ai.core.api.entity.AiProviderDefinition;
-import org.simplepoint.plugin.ai.core.api.model.AiModelType;
 import org.simplepoint.plugin.ai.core.api.model.AiEmbeddingModelOption;
+import org.simplepoint.plugin.ai.core.api.model.AiModelType;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.core.api.repository.AiModelDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.repository.AiProviderDefinitionRepository;
 import org.simplepoint.plugin.ai.core.api.service.AiModelDefinitionService;
-import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.core.repository.AiEmbeddingModelOptionsQuery;
+import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy;
 import org.simplepoint.plugin.ai.core.service.support.AiScopeAccessPolicy.ScopeAssignment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Model definition service implementation.
- */
+/** Model definition service implementation. */
 @Service
 public class AiModelDefinitionServiceImpl
     extends BaseServiceImpl<AiModelDefinitionRepository, AiModelDefinition, String>
@@ -49,27 +46,28 @@ public class AiModelDefinitionServiceImpl
 
   private final AiScopeAccessPolicy scopeAccessPolicy;
 
-  @PersistenceContext
-  private EntityManager entityManager;
+  private final EntityManager entityManager;
 
   /**
    * Creates the model service.
    *
-   * @param repository             model repository
+   * @param repository model repository
    * @param detailsProviderService details provider
-   * @param providerRepository     provider repository
-   * @param scopeAccessPolicy      AI resource scope policy
+   * @param providerRepository provider repository
+   * @param scopeAccessPolicy AI resource scope policy
+   * @param entityManager module-owned persistence context
    */
   public AiModelDefinitionServiceImpl(
       final AiModelDefinitionRepository repository,
       final DetailsProviderService detailsProviderService,
       final AiProviderDefinitionRepository providerRepository,
-      final AiScopeAccessPolicy scopeAccessPolicy
-  ) {
+      final AiScopeAccessPolicy scopeAccessPolicy,
+      final EntityManager entityManager) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.providerRepository = providerRepository;
     this.scopeAccessPolicy = scopeAccessPolicy;
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -80,16 +78,14 @@ public class AiModelDefinitionServiceImpl
   /** {@inheritDoc} */
   @Override
   public <S extends AiModelDefinition> Page<S> limit(
-      final Map<String, String> attributes,
-      final Pageable pageable
-  ) {
+      final Map<String, String> attributes, final Pageable pageable) {
     Map<String, String> normalized = new LinkedHashMap<>();
     if (attributes != null) {
       normalized.putAll(attributes);
     }
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    Map<String, String> required = Map.of(
-        "tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
+    Map<String, String> required =
+        Map.of("tenantId", scope.tenantId() == null ? "is:null" : "equals:" + scope.tenantId());
     normalizeLikeQuery(normalized, "modelId");
     normalizeLikeQuery(normalized, "displayName");
     Page<S> page = super.limitScoped(normalized, required, pageable);
@@ -115,12 +111,20 @@ public class AiModelDefinitionServiceImpl
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends AiModelDefinition> AiModelDefinition modifyById(final S entity) {
-    AiModelDefinition current = repository.findActiveById(requireEntityId(entity))
-        .orElseThrow(() -> new IllegalArgumentException("模型不存在: " + entity.getId()));
+    AiModelDefinition current =
+        repository
+            .findActiveById(requireEntityId(entity))
+            .orElseThrow(() -> new IllegalArgumentException("模型不存在: " + entity.getId()));
     scopeAccessPolicy.assertCanWriteResource(current.getScopeType(), current.getTenantId());
     // Validation and derived manual/automatic flags must see the permission-correct values.
-    BeanUtil.copyProperties(current, entity, CopyOptions.create().setIgnoreNullValue(false)
-        .setFieldNameEditor(name -> FieldPermissionPolicy.writable(AiModelDefinition.class, name) ? null : name));
+    BeanUtil.copyProperties(
+        current,
+        entity,
+        CopyOptions.create()
+            .setIgnoreNullValue(false)
+            .setFieldNameEditor(
+                name ->
+                    FieldPermissionPolicy.writable(AiModelDefinition.class, name) ? null : name));
     normalizeAndValidate(entity, current.getId());
     entity.setAvailable(current.getAvailable());
     entity.setDiscovered(current.getDiscovered());
@@ -151,10 +155,10 @@ public class AiModelDefinitionServiceImpl
   @Override
   public Optional<AiModelDefinition> findById(final String id) {
     Optional<AiModelDefinition> model = repository.findActiveById(requireValue(id, "模型 ID 不能为空"));
-    model.ifPresent(item -> scopeAccessPolicy.assertCanReadManagedResource(
-        item.getScopeType(),
-        item.getTenantId()
-    ));
+    model.ifPresent(
+        item ->
+            scopeAccessPolicy.assertCanReadManagedResource(
+                item.getScopeType(), item.getTenantId()));
     model.ifPresent(this::assertAccessible);
     model.ifPresent(this::decorate);
     return model;
@@ -164,9 +168,10 @@ public class AiModelDefinitionServiceImpl
   @Override
   public List<AiModelDefinition> listAvailableModels() {
     ScopeAssignment scope = scopeAccessPolicy.currentManagementScope();
-    List<AiModelDefinition> models = scope.scopeType() == AiResourceScope.SYSTEM
-        ? repository.findAllAvailableSystemModels()
-        : repository.findAllAvailableForTenant(scope.tenantId());
+    List<AiModelDefinition> models =
+        scope.scopeType() == AiResourceScope.SYSTEM
+            ? repository.findAllAvailableSystemModels()
+            : repository.findAllAvailableForTenant(scope.tenantId());
     models = models.stream().filter(this::isAccessible).toList();
     decorate(models);
     return models;
@@ -174,8 +179,10 @@ public class AiModelDefinitionServiceImpl
 
   @Override
   @Transactional(readOnly = true)
-  public Page<AiEmbeddingModelOption> embeddingModelOptions(Map<String, String> attributes, Pageable pageable) {
-    return AiEmbeddingModelOptionsQuery.page(entityManager, scopeAccessPolicy.currentManagementScope(), attributes, pageable);
+  public Page<AiEmbeddingModelOption> embeddingModelOptions(
+      Map<String, String> attributes, Pageable pageable) {
+    return AiEmbeddingModelOptionsQuery.page(
+        entityManager, scopeAccessPolicy.currentManagementScope(), attributes, pageable);
   }
 
   /** {@inheritDoc} */
@@ -185,15 +192,14 @@ public class AiModelDefinitionServiceImpl
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    List<AiModelDefinition> models = ids.stream()
-        .map(repository::findActiveById)
-        .map(model -> model.orElseThrow(() ->
-            new IllegalArgumentException("AI 模型不存在或无权访问")))
-        .toList();
-    models.forEach(model -> scopeAccessPolicy.assertCanWriteResource(
-        model.getScopeType(),
-        model.getTenantId()
-    ));
+    List<AiModelDefinition> models =
+        ids.stream()
+            .map(repository::findActiveById)
+            .map(model -> model.orElseThrow(() -> new IllegalArgumentException("AI 模型不存在或无权访问")))
+            .toList();
+    models.forEach(
+        model ->
+            scopeAccessPolicy.assertCanWriteResource(model.getScopeType(), model.getTenantId()));
     super.removeByIds(ids);
   }
 
@@ -209,17 +215,21 @@ public class AiModelDefinitionServiceImpl
     if (entity.getModelType() == null) {
       entity.setModelType(AiModelType.LLM);
     }
-    AiProviderDefinition provider = providerRepository.findActiveById(entity.getProviderId())
-        .orElseThrow(() -> new IllegalArgumentException("供应商不存在: " + entity.getProviderId()));
+    AiProviderDefinition provider =
+        providerRepository
+            .findActiveById(entity.getProviderId())
+            .orElseThrow(() -> new IllegalArgumentException("供应商不存在: " + entity.getProviderId()));
     scopeAccessPolicy.assertCanWriteResource(provider.getScopeType(), provider.getTenantId());
     entity.setScopeType(AiScopeAccessPolicy.effectiveScope(provider.getScopeType()));
     entity.setTenantId(provider.getTenantId());
-    repository.findActiveByProviderAndModelId(entity.getProviderId(), entity.getModelId())
-        .ifPresent(existing -> {
-          if (!existing.getId().equals(currentId)) {
-            throw new IllegalArgumentException("该供应商下已存在此模型: " + entity.getModelId());
-          }
-        });
+    repository
+        .findActiveByProviderAndModelId(entity.getProviderId(), entity.getModelId())
+        .ifPresent(
+            existing -> {
+              if (!existing.getId().equals(currentId)) {
+                throw new IllegalArgumentException("该供应商下已存在此模型: " + entity.getModelId());
+              }
+            });
   }
 
   private static void normalizePricing(final AiModelDefinition entity) {
@@ -235,18 +245,11 @@ public class AiModelDefinitionServiceImpl
       throw new IllegalArgumentException("计费币种必须是有效的 ISO 4217 三字母代码", ex);
     }
     entity.setBillingCurrency(currency);
-    entity.setInputTokenPrice(normalizePrice(
-        entity.getInputTokenPrice(), "输入 Token 单价"
-    ));
-    entity.setCachedInputTokenPrice(normalizePrice(
-        entity.getCachedInputTokenPrice(), "缓存输入 Token 单价"
-    ));
-    entity.setOutputTokenPrice(normalizePrice(
-        entity.getOutputTokenPrice(), "输出 Token 单价"
-    ));
-    entity.setRequestPrice(normalizePrice(
-        entity.getRequestPrice(), "单次请求价格"
-    ));
+    entity.setInputTokenPrice(normalizePrice(entity.getInputTokenPrice(), "输入 Token 单价"));
+    entity.setCachedInputTokenPrice(
+        normalizePrice(entity.getCachedInputTokenPrice(), "缓存输入 Token 单价"));
+    entity.setOutputTokenPrice(normalizePrice(entity.getOutputTokenPrice(), "输出 Token 单价"));
+    entity.setRequestPrice(normalizePrice(entity.getRequestPrice(), "单次请求价格"));
     if (Boolean.TRUE.equals(entity.getBillingEnabled())
         && entity.getInputTokenPrice() == null
         && entity.getCachedInputTokenPrice() == null
@@ -256,10 +259,7 @@ public class AiModelDefinitionServiceImpl
     }
   }
 
-  private static BigDecimal normalizePrice(
-      final BigDecimal value,
-      final String name
-  ) {
+  private static BigDecimal normalizePrice(final BigDecimal value, final String name) {
     if (value == null) {
       return null;
     }
@@ -276,15 +276,11 @@ public class AiModelDefinitionServiceImpl
   }
 
   private static boolean pricingChanged(
-      final AiModelDefinition requested,
-      final AiModelDefinition current
-  ) {
+      final AiModelDefinition requested, final AiModelDefinition current) {
     return !Objects.equals(requested.getBillingEnabled(), current.getBillingEnabled())
         || !Objects.equals(requested.getBillingCurrency(), current.getBillingCurrency())
         || !samePrice(requested.getInputTokenPrice(), current.getInputTokenPrice())
-        || !samePrice(
-            requested.getCachedInputTokenPrice(), current.getCachedInputTokenPrice()
-        )
+        || !samePrice(requested.getCachedInputTokenPrice(), current.getCachedInputTokenPrice())
         || !samePrice(requested.getOutputTokenPrice(), current.getOutputTokenPrice())
         || !samePrice(requested.getRequestPrice(), current.getRequestPrice());
   }
@@ -301,10 +297,14 @@ public class AiModelDefinitionServiceImpl
         model.setProviderName(null);
         continue;
       }
-      String name = providerNames.computeIfAbsent(model.getProviderId(), id -> providerRepository
-          .findActiveById(id)
-          .map(AiProviderDefinition::getName)
-          .orElse(id));
+      String name =
+          providerNames.computeIfAbsent(
+              model.getProviderId(),
+              id ->
+                  providerRepository
+                      .findActiveById(id)
+                      .map(AiProviderDefinition::getName)
+                      .orElse(id));
       model.setProviderName(name);
     }
   }
@@ -315,8 +315,7 @@ public class AiModelDefinitionServiceImpl
 
   @Override
   protected Set<Map<String, Object>> getButtonDeclarationsSchema(
-      final Class<AiModelDefinition> domainClass
-  ) {
+      final Class<AiModelDefinition> domainClass) {
     Set<Map<String, Object>> declarations = super.getButtonDeclarationsSchema(domainClass);
     if (scopeAccessPolicy.canConfigureCurrentScope()) {
       return declarations;
@@ -349,10 +348,7 @@ public class AiModelDefinitionServiceImpl
     return trimmed.isEmpty() ? null : trimmed;
   }
 
-  private static void normalizeLikeQuery(
-      final Map<String, String> attributes,
-      final String field
-  ) {
+  private static void normalizeLikeQuery(final Map<String, String> attributes, final String field) {
     String value = attributes.get(field);
     if (value != null && !value.isBlank() && !value.contains(":")) {
       attributes.put(field, "like:" + value.trim());

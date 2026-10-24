@@ -4,7 +4,6 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,13 +13,9 @@ import java.util.function.Supplier;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
-import org.apache.calcite.adapter.jdbc.JdbcTable;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Hook;
-import org.apache.calcite.schema.SchemaPlus;
 import org.simplepoint.data.calcite.core.query.CalciteQueryEngine;
 import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
 import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
@@ -46,12 +41,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class RuntimeCalciteRecordBackend {
 
-  private static final String CATALOG = "runtime";
-
   private final ManagedRuntimeDataSourceProvider dataSourceProvider;
   private final CalciteQueryEngine queryEngine;
   private final RecordOperationJournal journal = new RecordOperationJournal();
   private final RecordSnapshotStore snapshots = new RecordSnapshotStore();
+  private final RecordCalculationStore calculations = new RecordCalculationStore();
+  private final RecordMaintenanceAdmission maintenance = new RecordMaintenanceAdmission();
   private RecordResourceFence resourceFence;
 
   /** Installs the shared runtime resource fence without coupling isolated SQL tests to JPA. */
@@ -93,6 +88,41 @@ public class RuntimeCalciteRecordBackend {
     }
   }
 
+  /** Tenant-scoped internal read; the root lock and maintenance check precede every value read. */
+  CalciteQueryResult query(final RuntimeRecordModel model, final String tenantId,
+      final RecordSelectPlan plan, final int timeoutMs) {
+    return maintenanceRead(model, tenantId, timeoutMs, reader -> reader.apply(plan));
+  }
+
+  /** Management callers hold the owning control model lock through their eventual commit. */
+  void requireMaintenanceAvailable(final RuntimeRecordModel model, final String tenantId) {
+    maintenanceRead(model, tenantId, 30_000, reader -> null);
+  }
+
+  private <T> T maintenanceRead(final RuntimeRecordModel model, final String tenantId, final int timeoutMs,
+      final java.util.function.Function<java.util.function.Function<RecordSelectPlan, CalciteQueryResult>, T> work) {
+    var deadline = new RecordExecutionDeadline(timeoutMs);
+    try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
+      return RecordTargetTransaction.execute(handle, physical -> {
+        var key = RecordMaintenanceAdmission.key(model, tenantId);
+        var fence = new RecordWriteFence(handle.runtimeDialect().recordWriteFenceSql(
+            handle.coreDialect(), handle.supportContext(), model.target()));
+        var admitted = fence.admitRead(physical, key, deadline.remainingMillis());
+        var catalog = catalog(new TransactionConnectionDataSource(physical), handle, model);
+        java.util.function.Function<RecordSelectPlan, CalciteQueryResult> reader =
+            plan -> readInTransaction(plan, catalog, handle, deadline);
+        maintenance.requireAvailable(key, admitted.revision(), reader);
+        T result = work.apply(reader);
+        deadline.remainingMillis();
+        return result;
+      });
+    } catch (DnaRuntimeException failure) {
+      throw failure;
+    } catch (SQLException | RuntimeException failure) {
+      throw executionFailed("Calcite maintenance-admitted read failed", failure);
+    }
+  }
+
   private static CalciteQueryResult withPhysicalProjection(
       final Supplier<CalciteQueryResult> query) {
     try (Hook.Closeable ignored =
@@ -115,6 +145,11 @@ public class RuntimeCalciteRecordBackend {
    * thread-scoped, applies to explain and execution, and is removed on success or failure.
    * Unsupported database aggregates fail planning instead of falling back to a service-side scan.
    */
+  CalciteQueryResult aggregateQuery(final RuntimeRecordModel model, final String tenantId,
+      final RecordSelectPlan plan, final int timeoutMs) {
+    return withPhysicalAggregation(() -> query(model, tenantId, plan, timeoutMs));
+  }
+
   CalciteQueryResult aggregateQuery(
       final RuntimeRecordModel model, final RecordSelectPlan plan, final int timeoutMs) {
     return withPhysicalAggregation(() -> query(model, plan, timeoutMs));
@@ -131,6 +166,35 @@ public class RuntimeCalciteRecordBackend {
               planner.addRule(CoreRules.AGGREGATE_VALUES);
             })) {
       return query.get();
+    }
+  }
+
+  /** One worker batch, after control model locks; no ordinary maintenance bypass is exported. */
+  <T> T publication(final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordWriteFenceKey key, final int timeoutMs,
+      final java.util.function.Function<RecordPublicationSession, T> work) {
+    if (!model.physicalModelId().equals(key.modelId())) {
+      throw new IllegalArgumentException("Publication lock does not belong to the resolved root model");
+    }
+    var deadline = new RecordExecutionDeadline(timeoutMs);
+    try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
+      return RecordTargetTransaction.execute(handle, physical -> {
+        var fence = new RecordWriteFence(handle.runtimeDialect().recordWriteFenceSql(
+            handle.coreDialect(), handle.supportContext(), model.target()));
+        var admitted = fence.lockPublication(physical, key, deadline);
+        var catalog = catalog(new TransactionConnectionDataSource(physical), handle, model, children);
+        var session = new RecordPublicationSession(physical, fence, admitted, deadline,
+            plan -> readInTransaction(plan, catalog, handle, deadline),
+            plan -> withPhysicalAggregation(() -> readInTransaction(plan, catalog, handle, deadline)),
+            statement -> updateInTransaction(statement, catalog, handle, deadline).affectedRows());
+        T result = work.apply(session);
+        deadline.remainingMillis();
+        return result;
+      });
+    } catch (DnaRuntimeException failure) {
+      throw failure;
+    } catch (SQLException | RuntimeException failure) {
+      throw executionFailed("Calcite publication batch failed; resolve its durable checkpoint before retrying", failure);
     }
   }
 
@@ -156,6 +220,10 @@ public class RuntimeCalciteRecordBackend {
                         .runtimeDialect()
                         .recordWriteFenceSql(
                             handle.coreDialect(), handle.supportContext(), model.target()));
+            var key = RecordMaintenanceAdmission.key(model, actor.tenantId());
+            var current = fence.lockPublication(physical, key, deadline);
+            var admissionCatalog = catalog(new TransactionConnectionDataSource(physical), handle, model);
+            maintenance.requireAvailable(key, current.revision(), plan -> readInTransaction(plan, admissionCatalog, handle, deadline));
             var snapshot =
                 fence.publish(
                     physical,
@@ -241,6 +309,20 @@ public class RuntimeCalciteRecordBackend {
       final String fingerprint,
       final String cancellationFingerprint,
       final RecordExecutionDeadline deadline) {
+    return resolveCancellation(model, actor, command, fingerprint, cancellationFingerprint, deadline, false).orElseThrow();
+  }
+
+  /** An unstarted calculation has no staged/applied data; consume its cancellation under the target fence. */
+  java.util.Optional<RecordWritePolicyCancellationView> cancelUnstartedCalculationPolicy(
+      final RuntimeRecordModel model, final RuntimeActor actor, final RecordWritePolicyPublicationCommand command,
+      final String fingerprint, final String cancellationFingerprint, final RecordExecutionDeadline deadline) {
+    return resolveCancellation(model, actor, command, fingerprint, cancellationFingerprint, deadline, true);
+  }
+
+  private java.util.Optional<RecordWritePolicyCancellationView> resolveCancellation(
+      final RuntimeRecordModel model, final RuntimeActor actor, final RecordWritePolicyPublicationCommand command,
+      final String fingerprint, final String cancellationFingerprint, final RecordExecutionDeadline deadline,
+      final boolean onlyUnstartedCalculation) {
     try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
       return RecordTargetTransaction.execute(
           handle,
@@ -251,6 +333,19 @@ public class RuntimeCalciteRecordBackend {
                         .runtimeDialect()
                         .recordWriteFenceSql(
                             handle.coreDialect(), handle.supportContext(), model.target()));
+            var key = RecordMaintenanceAdmission.key(model, actor.tenantId());
+            var current = fence.lockPublication(physical, key, deadline);
+            var admissionCatalog = catalog(new TransactionConnectionDataSource(physical), handle, model);
+            if (onlyUnstartedCalculation) {
+              var journal = new RecordPublicationStore();
+              var existing = journal.read(key, command.targetVersion(),
+                  readInTransaction(journal.lookup(key, command.targetVersion()), admissionCatalog, handle, deadline));
+              if (existing != null) {
+                // A durable batch always follows the original restoration protocol and its metadata checks.
+                return java.util.Optional.empty();
+              }
+            }
+            maintenance.requireAvailable(key, current.revision(), plan -> readInTransaction(plan, admissionCatalog, handle, deadline));
             var resolution =
                 fence.cancel(
                     physical,
@@ -262,11 +357,11 @@ public class RuntimeCalciteRecordBackend {
                     actor.actorId(),
                     deadline);
             deadline.remainingMillis();
-            return new RecordWritePolicyCancellationView(
+            return java.util.Optional.of(new RecordWritePolicyCancellationView(
                 resolution.cancelled(),
                 resolution.snapshot().revision(),
                 fingerprint,
-                resolution.snapshot().fingerprint());
+                resolution.snapshot().fingerprint()));
           });
     } catch (DnaRuntimeException failure) {
       throw failure;
@@ -319,7 +414,18 @@ public class RuntimeCalciteRecordBackend {
       final RuntimeRecordModel model,
       final RecordOperationIdentity operation,
       final int timeoutMs) {
-    return journal.read(operation, query(model, journal.lookup(operation), timeoutMs));
+    if (!model.physicalModelId().equals(operation.modelId())) {
+      throw new IllegalArgumentException("Receipt model does not match the resolved model");
+    }
+    return maintenanceRead(model, operation.tenantId(), timeoutMs,
+        reader -> journal.read(operation, reader.apply(journal.lookup(operation))));
+  }
+
+  /** Preloads immutable metadata only; execution rereads it after policy admission in the target transaction. */
+  RecordCalculationStore.Installed calculation(final RuntimeRecordModel model, final String tenantId,
+      final long policyVersion, final int timeoutMs) {
+    var key = new RecordWriteFenceKey(tenantId, model.physicalModelId());
+    return calculations.read(key, policyVersion, query(model, tenantId, calculations.lookup(key, policyVersion), timeoutMs));
   }
 
   /** Executes every statement on one physical connection and commits only after all match. */
@@ -343,9 +449,41 @@ public class RuntimeCalciteRecordBackend {
     return executeOwned(model, List.of(), admission, statements, timeoutMs, operation);
   }
 
-  org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView snapshot(
-      RuntimeRecordModel model, RecordOperationIdentity operation, int timeoutMs) {
-    return snapshots.read(operation, query(model, snapshots.lookup(operation), timeoutMs));
+  /** Keeps resource state and the installed policy fixed through authorization, SQL and projection. */
+  <T> T read(final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordAccessContext access, final int timeoutMs,
+      final java.util.function.Function<RecordReadSession, T> work) {
+    Supplier<T> operation = () -> readFenced(model, children, access, timeoutMs, work);
+    return resourceFence == null ? operation.get()
+        : resourceFence.execute(access.actor().tenantId(), model.physicalModelId(), access.resourceGeneration(), operation);
+  }
+
+  private <T> T readFenced(final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordAccessContext access, final int timeoutMs,
+      final java.util.function.Function<RecordReadSession, T> work) {
+    var deadline = new RecordExecutionDeadline(timeoutMs);
+    try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
+      return RecordTargetTransaction.execute(handle, physical -> {
+        var key = new RecordWriteFenceKey(access.actor().tenantId(), model.physicalModelId());
+        var fence = new RecordWriteFence(handle.runtimeDialect().recordWriteFenceSql(
+            handle.coreDialect(), handle.supportContext(), model.target()));
+        var admitted = fence.admitRead(physical, key, deadline.remainingMillis());
+        var catalog = catalog(new TransactionConnectionDataSource(physical), handle, model, children);
+        java.util.function.Function<RecordSelectPlan, CalciteQueryResult> reader =
+            plan -> readInTransaction(plan, catalog, handle, deadline);
+        maintenance.requireAvailable(key, admitted.revision(), reader);
+        var installed = calculations.read(key, admitted.revision(), reader.apply(calculations.lookup(key, admitted.revision())));
+        T result = work.apply(new RecordReadSession(key, admitted.revision(), installed, reader));
+        deadline.remainingMillis();
+        return result;
+      });
+    } catch (DnaRuntimeException failure) {
+      throw failure;
+    } catch (org.springframework.security.access.AccessDeniedException failure) {
+      throw failure;
+    } catch (SQLException | RuntimeException failure) {
+      throw executionFailed("Calcite authorized record read failed", failure);
+    }
   }
 
   /**
@@ -369,23 +507,62 @@ public class RuntimeCalciteRecordBackend {
       final int timeoutMs,
       final RecordOperationIdentity operation,
       final RecordSnapshotPlan snapshot) {
+    return executeWork(model, children, admission, timeoutMs, operation,
+        children.isEmpty() ? statements.size() : 1, (reader, at, calculation) -> {
+          if (calculation != null && !calculation.policy().definition().isEmpty()) {
+            throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+                "Calculated records require the aggregate calculation write boundary");
+          }
+          return new RecordWritePreparation(statements, snapshot, children.isEmpty() ? statements.size() : 1);
+        });
+  }
+
+  /** Prepares aggregate reads and computed writes inside the same physical transaction. */
+  RecordBatchExecutionResult executePreparedOwned(
+      final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final RecordWritePreparation.Work work) {
+    return executeWork(model, children, admission, timeoutMs, operation, 1, work);
+  }
+
+  private RecordBatchExecutionResult executeWork(
+      final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final int receiptCount, final RecordWritePreparation.Work work) {
+    return executeSequence(model, children, admission, timeoutMs, operation, receiptCount, List.of(work));
+  }
+
+  /** Each operation prepares after preceding operations have executed on the borrowed transaction. */
+  RecordBatchExecutionResult executePreparedSequence(final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final List<RecordWritePreparation.Work> work) {
+    if (work.isEmpty() || work.size() > 100) {
+      throw new IllegalArgumentException("Record sequence requires 1 to 100 operations");
+    }
+    return executeSequence(model, children, admission, timeoutMs, operation, work.size(), List.copyOf(work));
+  }
+
+  private RecordBatchExecutionResult executeSequence(final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final int receiptCount, final List<RecordWritePreparation.Work> work) {
     if (resourceFence == null) {
-      return executeOwnedFenced(model, children, admission, statements, timeoutMs, operation, snapshot);
+      return executeOwnedFenced(model, children, admission, timeoutMs, operation, receiptCount, work);
     }
     return resourceFence.execute(admission.tenantId(), model.physicalModelId(), admission.resourceGeneration(),
-        () -> executeOwnedFenced(model, children, admission, statements, timeoutMs, operation, snapshot));
+        () -> executeOwnedFenced(model, children, admission, timeoutMs, operation, receiptCount, work));
   }
 
   private RecordBatchExecutionResult executeOwnedFenced(
       final RuntimeRecordModel model, final List<RuntimeRecordModel> children,
-      final RecordWriteAdmission admission, final List<RecordSqlStatement> statements,
-      final int timeoutMs, final RecordOperationIdentity operation, final RecordSnapshotPlan snapshot) {
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final int receiptCount, final List<RecordWritePreparation.Work> work) {
     long startedAt = System.nanoTime();
-    // Owned rows share the parent acknowledgement; the journal stays bounded independently of child
-    // count.
-    List<RecordSqlStatement> receipts =
-        children.isEmpty() ? statements : List.of(statements.getFirst());
+    var deadline = new RecordExecutionDeadline(timeoutMs);
     Objects.requireNonNull(admission, "admission");
+    Objects.requireNonNull(work, "work");
+    if (receiptCount < 1 || receiptCount > 100) {
+      throw new IllegalArgumentException("Invalid record receipt count");
+    }
     try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
       return RecordTargetTransaction.execute(
           handle,
@@ -393,6 +570,12 @@ public class RuntimeCalciteRecordBackend {
             DataSource transactionDataSource = new TransactionConnectionDataSource(physical);
             CalciteSchemaConfigurer catalog =
                 catalog(transactionDataSource, handle, model, children);
+            var key = RecordMaintenanceAdmission.key(model, admission.tenantId());
+            var fence = new RecordWriteFence(handle.runtimeDialect().recordWriteFenceSql(
+                handle.coreDialect(), handle.supportContext(), model.target()));
+            // Replays preserve their original result across policy versions, but never bypass maintenance.
+            var admitted = fence.admitRead(physical, key, deadline.remainingMillis());
+            maintenance.requireAvailable(key, admitted.revision(), plan -> readInTransaction(plan, catalog, handle, deadline));
             if (operation != null) {
               RecordSelectPlan lookup = journal.lookup(operation);
               List<RecordCommandResult> existing =
@@ -403,93 +586,65 @@ public class RuntimeCalciteRecordBackend {
                               lookup.sql(),
                               null,
                               1,
-                              timeoutMs,
+                              deadline.remainingMillis(),
                               RecordSqlParameters.bind(
                                   lookup.parameters(), handle.runtimeDialect())),
                           catalog));
               if (existing != null) {
-                return replay(existing, receipts, elapsed(startedAt));
+                return replay(existing, receiptCount, elapsed(startedAt));
               }
             }
-            new RecordWriteFence(
-                    handle
-                        .runtimeDialect()
-                        .recordWriteFenceSql(
-                            handle.coreDialect(), handle.supportContext(), model.target()))
-                .admitWrite(
-                    physical,
-                    new RecordWriteFenceKey(admission.tenantId(), model.physicalModelId()),
-                    admission.version(),
-                    timeoutMs);
+            fence.admitWrite(physical, key, admission.version(), deadline.remainingMillis());
+            var calculation = calculations.read(key, admission.version(),
+                readInTransaction(calculations.lookup(key, admission.version()), catalog, handle, deadline));
+            var at = java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            List<RecordSqlStatement> receipts = new ArrayList<>(receiptCount);
+            List<Integer> affected = new ArrayList<>();
+            int pushedStatements = 0;
+            for (var step : work) {
+              var prepared = step.prepare(plan -> readInTransaction(plan, catalog, handle, deadline), at, calculation);
+              var statements = prepared.statements();
+              if (affected.size() + statements.size() > 401) {
+                throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+                    "Record transaction exceeds the aggregate physical mutation budget");
+              }
+              receipts.addAll(statements.subList(0, prepared.receiptCount()));
+              for (int index = 0; index < statements.size(); index++) {
+                RecordSqlStatement statement = statements.get(index);
+                var result = updateInTransaction(statement, catalog, handle, deadline);
+                if (result.affectedRows() != 1) {
+                  // Prepared aggregate callers diagnose child/parent races inside their domain boundary.
+                  throw new RecordMutationMissException(
+                      work.size() == 1 && prepared.receiptCount() == statements.size() ? index : receipts.size() - 1);
+                }
+                affected.add(result.affectedRows());
+                pushedStatements += result.pushedSqls().size();
+              }
+              var snapshot = prepared.snapshot();
+              if (snapshot != null) {
+                if (work.size() != 1 || operation == null) {
+                  throw new IllegalArgumentException("A snapshot requires one keyed aggregate operation");
+                }
+                var captured = snapshot.capture(plan -> readInTransaction(plan, catalog, handle, deadline));
+                var storedSnapshot = RecordStoredSnapshot.capture(captured, calculation);
+                if (updateInTransaction(snapshots.insert(operation, storedSnapshot, statements.getFirst().updatedAt()),
+                    catalog, handle, deadline).affectedRows() != 1) {
+                  throw executionFailed("Snapshot insert did not affect one row", null);
+                }
+              }
+            }
+            if (receipts.size() != receiptCount) {
+              throw new IllegalArgumentException("Prepared operations do not match receipt count");
+            }
             if (operation != null) {
-              // Insert first: the unique operation identity serializes concurrent replays.
-              // If any business mutation fails, this insert rolls back with it.
-              RecordSqlStatement receipt = journal.insert(operation, receipts);
-              CalciteUpdateResult inserted =
-                  queryEngine.executeUpdate(
-                      new CalciteUpdateRequest(
-                          receipt.sql(),
-                          null,
-                          timeoutMs,
-                          RecordSqlParameters.bind(receipt.parameters(), handle.runtimeDialect())),
-                      catalog);
-              if (inserted.affectedRows() != 1) {
+              // A sequence's complete receipts become known after its last prepared operation.
+              // The unique journal insert still commits atomically with all business effects;
+              // a concurrent replay loser rolls back everything before reading the winner.
+              if (updateInTransaction(journal.insert(operation, receipts), catalog, handle, deadline).affectedRows() != 1) {
                 throw executionFailed("Record receipt insert did not affect exactly one row", null);
               }
             }
-            List<Integer> affected = new ArrayList<>(statements.size());
-            int pushedStatements = 0;
-            for (int index = 0; index < statements.size(); index++) {
-              RecordSqlStatement statement = statements.get(index);
-              CalciteUpdateResult result =
-                  queryEngine.executeUpdate(
-                      new CalciteUpdateRequest(
-                          statement.sql(),
-                          null,
-                          timeoutMs,
-                          RecordSqlParameters.bind(
-                              statement.parameters(), handle.runtimeDialect())),
-                      catalog);
-              if (result.affectedRows() != 1) {
-                throw new RecordMutationMissException(index);
-              }
-              affected.add(result.affectedRows());
-              pushedStatements += result.pushedSqls().size();
-            }
-            if (snapshot != null) {
-              var captured =
-                  snapshot.capture(
-                      plan -> {
-                        Supplier<CalciteQueryResult> read =
-                            () ->
-                                queryEngine.execute(
-                                    new CalciteQueryRequest(
-                                        plan.sql(),
-                                        null,
-                                        plan.maxRows(),
-                                        timeoutMs,
-                                        RecordSqlParameters.bind(
-                                            plan.parameters(), handle.runtimeDialect())),
-                                    catalog);
-                        return plan.physicalValueProjection()
-                            ? withPhysicalProjection(read)
-                            : read.get();
-                      });
-              var statement =
-                  snapshots.insert(operation, captured, statements.getFirst().updatedAt());
-              var stored =
-                  queryEngine.executeUpdate(
-                      new CalciteUpdateRequest(
-                          statement.sql(),
-                          null,
-                          timeoutMs,
-                          RecordSqlParameters.bind(
-                              statement.parameters(), handle.runtimeDialect())),
-                      catalog);
-              if (stored.affectedRows() != 1) {
-                throw executionFailed("Snapshot insert did not affect one row", null);
-              }
-            }
+            deadline.remainingMillis();
             return new RecordBatchExecutionResult(affected, elapsed(startedAt), pushedStatements);
           });
     } catch (RuntimeException | SQLException exception) {
@@ -498,12 +653,14 @@ public class RuntimeCalciteRecordBackend {
           // Read on a new connection after rollback/close. Covers a concurrent winner
           // as well as a commit that succeeded before its acknowledgement was lost.
           List<RecordCommandResult> committed =
-              journal.read(operation, query(model, journal.lookup(operation), timeoutMs));
+              findResult(model, operation, timeoutMs);
           if (committed != null) {
-            return replay(committed, receipts, elapsed(startedAt));
+            return replay(committed, receiptCount, elapsed(startedAt));
           }
         } catch (DnaRuntimeException recoveryFailure) {
-          if (recoveryFailure.errorCode() == DnaRuntimeErrorCode.RECORD_IDEMPOTENCY_CONFLICT) {
+          if (recoveryFailure.errorCode() == DnaRuntimeErrorCode.RECORD_OPERATION_REJECTED
+              || recoveryFailure.errorCode() == DnaRuntimeErrorCode.RECORD_IDEMPOTENCY_CONFLICT
+              || recoveryFailure.errorCode() == DnaRuntimeErrorCode.RECORD_MAINTENANCE_IN_PROGRESS) {
             throw recoveryFailure;
           }
           exception.addSuppressed(recoveryFailure);
@@ -512,6 +669,9 @@ public class RuntimeCalciteRecordBackend {
       if (exception instanceof RecordMutationMissException miss) {
         throw miss;
       }
+      if (operation != null && RecordConstraintFailures.integrityViolation(exception)) {
+        return rejectConstraint(model, admission, timeoutMs, operation, receiptCount, startedAt);
+      }
       if (exception instanceof DnaRuntimeException failure) {
         throw failure;
       }
@@ -519,14 +679,64 @@ public class RuntimeCalciteRecordBackend {
     }
   }
 
+  /** Drain earlier writers, then commit either their successful receipt or a permanent rejection. */
+  private RecordBatchExecutionResult rejectConstraint(final RuntimeRecordModel model,
+      final RecordWriteAdmission admission, final int timeoutMs, final RecordOperationIdentity operation,
+      final int receiptCount, final long startedAt) {
+    var deadline = new RecordExecutionDeadline(timeoutMs);
+    try (ManagedRuntimeDataSource handle = dataSourceProvider.open(model.target())) {
+      List<RecordCommandResult> committed = RecordTargetTransaction.execute(handle, physical -> {
+        var catalog = catalog(new TransactionConnectionDataSource(physical), handle, model);
+        var key = RecordMaintenanceAdmission.key(model, admission.tenantId());
+        var fence = new RecordWriteFence(handle.runtimeDialect().recordWriteFenceSql(
+            handle.coreDialect(), handle.supportContext(), model.target()));
+        var admitted = fence.lockPublication(physical, key, deadline);
+        maintenance.requireAvailable(key, admitted.revision(), plan -> readInTransaction(plan, catalog, handle, deadline));
+        var existing = journal.read(operation, readInTransaction(journal.lookup(operation), catalog, handle, deadline));
+        if (existing != null) {
+          return existing;
+        }
+        // An exclusive model fence blocks every ordinary writer until this receipt commits.
+        // A late retry must read it before policy validation or any business mutation.
+        var rejection = journal.reject(operation, java.time.Instant.now());
+        if (updateInTransaction(rejection, catalog, handle, deadline).affectedRows() != 1) {
+          throw executionFailed("Record rejection receipt was not persisted", null);
+        }
+        return null;
+      });
+      if (committed != null) {
+        return replay(committed, receiptCount, elapsed(startedAt));
+      }
+    } catch (SQLException failure) {
+      // An uncertain rejection commit must remain retryable until its durable receipt is read.
+      throw executionFailed("Record rejection outcome is uncertain", failure);
+    }
+    throw RecordOperationJournal.rejected();
+  }
+
   private static RecordBatchExecutionResult replay(
-      List<RecordCommandResult> results, List<RecordSqlStatement> statements, long elapsed) {
-    if (results.size() != statements.size()) {
+      List<RecordCommandResult> results, int receiptCount, long elapsed) {
+    if (results.size() != receiptCount) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PERSISTENCE_FAILED, "Record operation receipt size is invalid");
     }
     return new RecordBatchExecutionResult(
         results.stream().map(RecordCommandResult::affectedRows).toList(), elapsed, 0, results);
+  }
+
+  private CalciteUpdateResult updateInTransaction(final RecordSqlStatement statement,
+      final CalciteSchemaConfigurer catalog, final ManagedRuntimeDataSource handle, final RecordExecutionDeadline deadline) {
+    return queryEngine.executeUpdate(new CalciteUpdateRequest(statement.sql(), null, deadline.remainingMillis(),
+        RecordSqlParameters.bind(statement.parameters(), handle.runtimeDialect())), catalog);
+  }
+
+  private CalciteQueryResult readInTransaction(final RecordSelectPlan plan,
+      final CalciteSchemaConfigurer catalog, final ManagedRuntimeDataSource handle,
+      final RecordExecutionDeadline deadline) {
+    Supplier<CalciteQueryResult> read = () -> queryEngine.execute(new CalciteQueryRequest(
+        plan.sql(), null, plan.maxRows(), deadline.remainingMillis(),
+        RecordSqlParameters.bind(plan.parameters(), handle.runtimeDialect())), catalog);
+    return plan.physicalValueProjection() ? withPhysicalProjection(read) : read.get();
   }
 
   private static CalciteSchemaConfigurer catalog(
@@ -544,6 +754,10 @@ public class RuntimeCalciteRecordBackend {
     var tables = new java.util.HashSet<String>();
     tables.add(model.target().metadataTarget().tableName().toLowerCase(java.util.Locale.ROOT));
     tables.add(RecordJournalSchema.TABLE.toLowerCase(java.util.Locale.ROOT));
+    tables.add(org.simplepoint.plugin.dna.runtime.service.schema.RecordCalculationSchema.TABLE.toLowerCase(java.util.Locale.ROOT));
+    tables.add(org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationSchema.TABLE.toLowerCase(java.util.Locale.ROOT));
+    tables.add(org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationStageSchema.TABLE.toLowerCase(java.util.Locale.ROOT));
+    tables.add(org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationStageSchema.CHUNKS.toLowerCase(java.util.Locale.ROOT));
     tables.add(
         org.simplepoint.plugin.dna.runtime.service.schema.RecordSnapshotSchema.TABLE.toLowerCase(
             java.util.Locale.ROOT));
@@ -551,37 +765,7 @@ public class RuntimeCalciteRecordBackend {
         child ->
             tables.add(
                 child.target().metadataTarget().tableName().toLowerCase(java.util.Locale.ROOT)));
-    return new CalciteSchemaConfigurer() {
-      @Override
-      public void configure(final SchemaPlus root) {
-        var jdbc =
-            JdbcSchema.create(
-                root,
-                CATALOG,
-                dataSource,
-                handle.runtimeDialect().recordSqlDialectFactory(),
-                handle.metadataCatalog(),
-                handle.metadataSchema());
-        var catalog = root.add(CATALOG, jdbc);
-        for (String name : jdbc.getTableNames()) {
-          if (tables.contains(name.toLowerCase(java.util.Locale.ROOT))) {
-            if (jdbc.getTable(name) instanceof JdbcTable table) {
-              catalog.add(name, new RuntimeRecordJdbcTable(table));
-            }
-          }
-        }
-      }
-
-      @Override
-      public Class<? extends RelDataTypeSystem> typeSystem() {
-        return RuntimeRecordTypeSystem.class;
-      }
-
-      @Override
-      public ZoneId timeZone() {
-        return ZoneId.of("UTC");
-      }
-    };
+    return new RuntimeRecordCatalog(dataSource, handle.runtimeDialect(), handle.metadataCatalog(), handle.metadataSchema(), tables);
   }
 
   private static long elapsed(final long startedAt) {

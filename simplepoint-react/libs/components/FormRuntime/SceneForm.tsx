@@ -1,6 +1,10 @@
+import {requiredValueIssues} from './requiredValues';
+import {useCalculationPreview} from './useCalculationPreview';
+import {calculationInputs, type CalculationPreviewLoader} from './calculationPreview';
 import {formRuntimeFields} from '../FormComponents/runtimeFields';
+import {detailFormValues} from '../FormComponents/Detail/payload';
 import {Alert} from 'antd';
-import {useCallback, useMemo, useRef, useState, type MutableRefObject, type Ref} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type Ref} from 'react';
 import {flushSync} from 'react-dom';
 import {usePageSelected} from '@simplepoint/shared/page/hooks';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
@@ -16,6 +20,7 @@ import SceneLayout from './SceneLayout';
 import {aggregateIssues, deriveFormTotals} from './aggregateValidation.ts';
 
 export type SceneFormProps = {
+  calculationPreview?: CalculationPreviewLoader;
   document: ApplicationFormDocument;
   sceneId: string;
   value: FormValues;
@@ -40,18 +45,29 @@ const templates = {ObjectFieldTemplate: SceneLayout};
 /** One SForm per scene, using shared values for rules and a bounded field projection for edits. */
 export default function SceneForm(props: SceneFormProps) {
   const {document, sceneId, value, disabled = false, readOnly = false, externalSubmit = false, submitting = false, registry, recordState,
-    formRef, onChange, onSubmit, onAction, onApply, onClose, onOpen, canOpen} = props;
+    calculationPreview, formRef, onChange, onSubmit, onAction, onApply, onClose, onOpen, canOpen} = props;
   const {t} = useI18n();
   const selected = usePageSelected();
   const localForm = useRef<SFormHandle | null>(null), actionLock = useRef(false);
   const [intent, setIntent] = useState<'save' | 'submit' | 'apply'>();
   const [validationAction, setValidationAction] = useState<'save' | 'submit' | 'apply'>('save');
+  const calculation = useCalculationPreview(document, value, calculationPreview, !readOnly && !disabled && !submitting);
+  const displayValues = calculation.values;
+  const [validationNotice, setValidationNotice] = useState('');
+  const [validationAttempt, setValidationAttempt] = useState(0);
+  const validationFeedback = useRef<HTMLDivElement>(null);
   const [errorFields, setErrorFields] = useState<readonly string[]>([]);
+  useEffect(() => {
+    if (selected && validationNotice) {
+      validationFeedback.current?.focus({preventScroll: true});
+      validationFeedback.current?.scrollIntoView({block: 'nearest'});
+    }
+  }, [selected, validationNotice, validationAttempt]);
   const compilation = useMemo(() => {
-    try { return {model: runtimeFormModel(document, sceneId, value, {
-      enforceRequired: !onAction && !onApply || validationAction === 'submit', registry, recordState, readOnly,
+    try { return {model: runtimeFormModel(document, sceneId, displayValues, {
+      enforceRequired: !onAction && !onApply || recordState === 'SUBMITTED' || validationAction === 'submit', registry, recordState, readOnly,
     })}; } catch (error) { return {error}; }
-  }, [document, sceneId, value, onAction, onApply, validationAction, registry, recordState, readOnly]);
+  }, [document, sceneId, displayValues, onAction, onApply, validationAction, registry, recordState, readOnly]);
   const bindForm = useCallback((handle: SFormHandle | null) => {
     localForm.current = handle;
     if (typeof formRef === 'function') formRef(handle);
@@ -60,21 +76,24 @@ export default function SceneForm(props: SceneFormProps) {
   if (!compilation.model) return <Alert type="error" showIcon
     title={t('app.runtime.unsupported', '表单包含当前版本不支持的组件，请联系设计者检查。')}/>;
   const model = compilation.model;
+  // A detail collection is one editable field; strip its preview-only cells before merging that field.
+  const mergeInput = (next: FormValues) => mergeSceneValues(value, calculationInputs(document, next), model);
   const clearIntent = () => {actionLock.current = false; setIntent(undefined);};
   const ready = () => selected && !disabled && !readOnly && !submitting && !actionLock.current;
   const submitAction = (action: 'save' | 'submit' | 'apply') => {
-    if (!ready() || !localForm.current) return;
+    if (!ready()) return;
+    if (!localForm.current) {setValidationAttempt(value => value + 1); setValidationNotice(t('app.submission.formNotReady', '表单尚未就绪，请等待附件上传或当前操作完成后重试。')); return;}
     actionLock.current = true;
     // RJSF derives schema in componentDidUpdate; complete that commit before dispatch.
     flushSync(() => {setIntent(action); setValidationAction(action);});
-    if (!localForm.current.submit()) clearIntent();
+    if (!localForm.current.submit()) {clearIntent(); setValidationAttempt(value => value + 1); setValidationNotice(t('app.submission.formNotReady', '表单尚未就绪，请等待附件上传或当前操作完成后重试。'));}
   };
   const invoke = (action: RuntimeFormAction) => {
     if (readOnly && action.key !== 'close' && !action.key.startsWith('open-')) return;
     if (!selected || submitting || actionLock.current || action.hidden
       || action.key !== 'close' && (disabled || action.disabled)) return;
     if (action.key === 'save' || action.key === 'submit' || action.key === 'apply') submitAction(action.key);
-    else if (action.key === 'reset') onChange?.(mergeSceneValues(value, {}, model));
+    else if (action.key === 'reset') onChange?.(mergeInput({}));
     else if (action.key === 'close') onClose?.();
     else if (canOpen?.(action)) onOpen?.(action);
   };
@@ -96,34 +115,46 @@ export default function SceneForm(props: SceneFormProps) {
   if (onClose && !model.actions.some(action => action.key === 'close')) footer.push(localAction('close'));
   if (onAction && model.sceneType === 'MAIN' && !model.actions.length) footer.push(localAction('save'));
   return <>
+    {validationNotice && <div ref={validationFeedback} tabIndex={-1}><Alert role="alert" showIcon type="error" title={validationNotice}/></div>}
+    {onAction && recordState !== 'SUBMITTED' && <Alert type="info" showIcon title={t('app.runtime.draftValidationHint', '保存草稿允许暂缺提交必填项；提交时将校验完整数据和明细。')}/>}
+
+    {calculation.loading && <div role="status" className="sp-form-calculation-status">{t('app.calculation.loading', '正在计算…')}</div>}
+    {calculation.failed && <Alert type="warning" showIcon title={t('app.calculation.previewFailed', '暂时无法计算，请检查输入或稍后重试。保存时将重新计算。')}/>}
     <SForm customValidate={(data, errors) => {
-      if (!readOnly && (!onAction && !onApply || validationAction === 'submit')) {
-        for (const issue of aggregateIssues(document, mergeSceneValues(value, data ?? {}, model))) {
+      if (!readOnly) for (const issue of requiredValueIssues(document, model.schema, data ?? {})) {
+        let target: any = errors;
+        for (const part of issue.path) target = target?.[part];
+        (target ?? errors).addError(t('app.runtime.requiredValue', '{field}不能为空', {field: issue.label}));
+      }
+      if (!readOnly && (!onAction && !onApply || recordState === 'SUBMITTED' || validationAction === 'submit')) {
+        for (const issue of aggregateIssues(document, mergeInput(data ?? {}))) {
           (errors[issue.fieldId] ?? errors).addError(issue.message);
         }
       }
       return errors;
     }} fields={formRuntimeFields} ref={bindForm} schema={model.schema} uiSchema={model.uiSchema}
-      idPrefix={`form_${sceneId}`} formData={sceneValues(value, model.fieldIds)}
+      idPrefix={`form_${sceneId}`} formData={sceneValues(detailFormValues(document, displayValues), model.fieldIds)}
       disabled={disabled || readOnly || !selected || submitting} submitLoading={submitting}
       hideSubmit={externalSubmit || Boolean(onAction) || Boolean(onApply) || !onSubmit} templates={templates}
       formContext={{labelCol: {flex: `${document.presentation?.labelWidth ?? 140}px`}, wrapperCol: {flex: '1 1 0'}, descriptionLocation: 'tooltip', runtimeLayout: {layout: model.layout, renderAction: (action: RuntimeFormAction) => renderActions([action]), errorFields}}}
       onChange={event => {
         if (selected && !disabled && !readOnly && !submitting && !actionLock.current) {
-          onChange?.(deriveFormTotals(document, mergeSceneValues(value, event.formData ?? {}, model)));
+          onChange?.(deriveFormTotals(document, mergeInput(event.formData ?? {})));
         }
       }}
       onError={errors => {
-        setErrorFields(errors.map(error => (error.property ?? '').replace(/^\./, '').split('.')[0]));
+        setValidationAttempt(value => value + 1);
+        setValidationNotice(t('app.runtime.validationFailed', '请检查标记的字段和明细，修正校验错误后重试。'));
+        setErrorFields(errors.map(error => (error.property ?? '').replace(/^\./, '').split(/[.\[]/)[0]));
         clearIntent();
       }}
       onSubmit={event => {
         if (disabled || readOnly || submitting || !selected) {clearIntent(); return;}
-        const data = mergeSceneValues(value, event.formData ?? {}, model);
+        const data = mergeInput(event.formData ?? {});
         if (intent === 'apply') onApply?.(data);
         else if (intent && onAction) onAction(intent === 'submit' ? 'SUBMIT' : 'SAVE_DRAFT', data);
         else onSubmit?.(data);
-        setErrorFields([]); clearIntent();
+        setValidationNotice(''); setErrorFields([]); clearIntent();
       }}/>
     {footer.length > 0 && <div className="sp-form-runtime-footer">{renderActions(footer)}</div>}
   </>;

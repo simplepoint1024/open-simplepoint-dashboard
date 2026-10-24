@@ -1,0 +1,136 @@
+{
+  "date": "2026-10-21",
+  "scope": "Module-owned HTTP policy clients and opt-in modular servlet browser security; aggregate distribution packaging, not deployed topology acceptance",
+  "tests": [
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-resource",
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-server",
+      "tests": 96,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-core",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http",
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http",
+      "tests": 28,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 14
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http",
+      "tests": 164,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    }
+  ],
+  "style": "verifyOwnedAuthStyle passed; /tmp/simplepoint-standalone-distribution2.log",
+  "distribution": {
+    "project": "simplepoint-service-standalone",
+    "sha256": "d51d33fe9b89ddeb8f053306acf4af8120db667e666e9a95930727a17603762c",
+    "manifests": [
+      "static/common/mf/mf-manifest.json",
+      "static/auditing/mf/mf-manifest.json",
+      "static/workflow/mf/mf-manifest.json",
+      "static/app/mf/mf-manifest.json",
+      "static/dna/mf/mf-manifest.json",
+      "static/ai/mf/mf-manifest.json"
+    ],
+    "gate": "installDist + verifyFrontendDistribution with frontend enabled passed"
+  },
+  "limits": [
+    "Spring MVC and policy/identity fixtures do not prove a deployed login or complete business topology.",
+    "Formal installer, runtime startup, browser navigation, real workflow/event/database acceptance and domain activation remain in progress."
+  ],
+  "sources": {
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleHttp.java": "02ccdf23a458801dd74fccd171d2b43a9bf86bbb6abd9bbba4e5d017fa2b7b3c",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/main/java/org/simplepoint/ai/http/AiHttpModule.java": "fcc0bb337c24d7d079e438d9302ae7c392155b3d4c4fb968a78d79db4275a10b",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-http/src/test/java/org/simplepoint/ai/http/AiResourceInitializationTest.java": "a988676cd2c2700b92b362dd01541cbfbc22fc0a93c030de50c4fe662f7001cb",
+    "simplepoint-plugins/simplepoint-plugin-ai/simplepoint-plugin-ai-mcp-gateway/src/main/java/org/simplepoint/mcp/gateway/module/McpGatewayModule.java": "b9388c00d6ce5b8efe4af288a9f2f43d4ab92d25c67ea95b583934221757b0de",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/main/java/org/simplepoint/app/http/AppHttpModule.java": "b46a97fad5fa4ca30311796e7d2dc1a418b847e750ec52e3e4bf0c1cb2e1503f",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-http/src/test/java/org/simplepoint/app/http/AppResourceInitializationTest.java": "488a23dfc5dd1c07090e5d5ee69c88d2b6ae1f562cad42d33158f07f5a05a5d8",
+    "simplepoint-plugins/simplepoint-plugin-common-ui/src/test/java/org/simplepoint/plugin/common/ui/CommonUiResourceInitializationTest.java": "964a5614cf14bb85bf7eb9e75d6333c1c6f0a99a84860508d5a35b3de04de9f2",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/main/java/org/simplepoint/dna/http/DnaHttpModule.java": "e961e9ddef0b1b14ad66dc3cee6c190353e6e6eb897a920614acf9c093ed3790",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-http/src/test/java/org/simplepoint/dna/http/DnaResourceInitializationTest.java": "6056fd5bf8e13e7c6b4a7153e97da4be6341ccbf492c15e58b48e2268fc0e808",
+    "simplepoint-plugins/simplepoint-plugin-notification/simplepoint-plugin-notification-rest/src/main/java/org/simplepoint/plugin/notification/rest/configuration/NotificationHttpModule.java": "b6f9f4f1bda8267f95ce92d412f094f17cc3e668bc94a99b40718050291e2f7d",
+    "simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-rest/src/main/java/org/simplepoint/plugin/personal/rest/configuration/PersonalHttpModule.java": "f8fe60d7e8b3b6e397afcc821fe40a5a1c64952655651bb56279bd147dead292",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/main/java/org/simplepoint/workflow/http/WorkflowHttpModule.java": "506092c56b0710fb29bb34ca094866076994c34a3d50a39812406bf9100f3c0b",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-http/src/test/java/org/simplepoint/workflow/http/WorkflowResourceInitializationTest.java": "4d7f332eede9fe897c7943cd591afa21c2ddf92e87b82cd5bf2989dcbe03df4d",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/main/java/org/simplepoint/auditing/http/AuditingHttpModule.java": "8cace5d40afa58b41de46e58727f290739db552a19e1f0cb50e24fb0b7d417af",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-http/src/test/java/org/simplepoint/auditing/http/AuditingResourceInitializationTest.java": "e7bbc71a7e7fe2fb690f970f2da0bc6e256c19ca79c5d40f5cac535b0c6b137c",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-rest/src/main/java/org/simplepoint/plugin/i18n/rest/configuration/I18nHttpModule.java": "0d0776eee9ac51d1b56ae96e70d4a3a1685282c94236d318cc9d95b5043b4b8f",
+    "simplepoint-plugins/simplepoint-plugins-oidc/simplepoint-plugin-oidc-rest/src/main/java/org/simplepoint/plugin/oidc/rest/configuration/OidcHttpModule.java": "16b4956a130a1c3d40e3377ecbc48426d98fd0ded26982bd6d770ecceeb6844c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-http/src/main/java/org/simplepoint/plugin/rbac/http/IdentityHttpModule.java": "60857340bf1013b41d13a595f312e856d65c934fdf1acde19db4af2867c42da5",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-http/src/main/java/org/simplepoint/plugin/storage/http/StorageHttpModule.java": "3f3ea37146da98c07e86df201e9d61b2098d1df4e9e180f3639c7870135ed592",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextResolver.java": "ebd24cd9e8a3d5f8ea23ccbb0000af62cb5203090498d3b90066a98daf60e388",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/AuthorizationContextFilter.java": "25eb88eb4b46742a2b724bf7b1cb017ccfcfa141005dc83eef8094e2cadbd369",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/ServiceRouterLocalAuthentication.java": "e20f7f359b6ece55cefc9eaad53e6a77cfbc96849cd0a44e2217e7765c0dd3cd",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/composition/ModuleAuthorizationContexts.java": "bf50aeffa4469fce888ec821dfdacaf86aebcda5e947460a200177a1460ac1e4",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/composition/ModuleAuthorizationInitializer.java": "2210386c49a95b4cf07aba461ee7d93df04823836edf16efebde9daae5393025",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ResourceServerAutoConfiguration.java": "31d21d4c4d7fb8d3ed9c67e0c0e7e6a254c08a7a21df7051ec0c074143d63872",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ServiceRouterLocalSecurityAutoConfiguration.java": "303fd122972f077309e3cb6e82caaabf9e6e965b32c833fe5e7ada6d98f8c346",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/delegate/JwtAuthenticationConverterDelegate.java": "f49679f9a9d6bdf400c8d09758719cadad1aee54c012877ead3ccb8ea93bce2e",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/delegate/JwtGrantedAuthoritiesConverterDelegate.java": "db5021a68cbedcdc88ade0fe8f7a5c554af2888fd0fc59c8dfd2d6ccd215fab9",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ClasspathResourceScopeRegistry.java": "161092800ecd71be2f701e7bed4c3dddeb26a0497349d399b9d455697e0f0322",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptor.java": "bf79db9d43f318d25fcd6853d43f074a5e668ca3c50c2d7cb561e135014dbd31",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/scope/StandardResourcePermissionCatalog.java": "2772ab7d22e71815de16f7bdeaa108da39e50c58df90acb81b36123ae57868cd",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/AuthorizationContextFilterTest.java": "948e10d7750cc50c472ba38a628471a7aac00ed37f28a68334f99b48bd4f16ae",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/ServiceRouterLocalAuthenticationTest.java": "dc8a051d8ff53ea299c35758a52cff4b098ae7d536fab50319f7e3a411c98e46",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/composition/ModuleAuthorizationContextsTest.java": "3864bfc7f0eee90a8eb2d3d7d96087d0b88d68da28764856517bf9e84d93387b",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/config/ResourceServerAutoConfigurationTest.java": "37be6318493adb5ba617d1149e9d3accf6693d00d2b0f2d958b30302fac8ba39",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/config/ServiceRouterBoundaryTest.java": "1be9a1ecdf92ada1ee4f37c49bfc66b3eefe192b3556fbf33d148af754aa8c3f",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/ResourceScopeHandlerInterceptorTest.java": "f1d6b4818c2da94a886bd33774f86a4f05495b9e7189f369168b48d238fff9a6",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/SelectedResourceScopeRegistryTest.java": "a4b36af5fed4b7cc1fa2c7a664494981ca99b06b27b9a1c86b6598264edceb17",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/oauth2/resourceserver/scope/StandardResourcePermissionCatalogTest.java": "971077fb96e79403b3fbf265d551fe916601b4126ee4c3494fd079ab63f07ef8",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/browser/BrowserSessionController.java": "5efd2ec609d4a6042791de8fe31a1d6fd9d82dce05f68a9575726a44f5ed4895",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/browser/BrowserSessionIdentityFilter.java": "4c492d12157259713fd501c39871b85f4d5365ea340933f5d793065d8054b0b4",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/browser/BrowserSessionSecurityConfiguration.java": "712d03ed26d8f2ce28fa07c0ccc32a57327aa628b379ca570ae7bc2d19a59742",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/AuthorizationServerConfiguration.java": "faee22d3032f384d54282f45e730d57465c34885533e411706e1bd849e5d3c36",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/module/AuthorizationHttpModule.java": "c8f9b0d34224188ed71a46901a3b00e21344a3746d3929979f13a81ae4660c97",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/browser/fixture/BusinessEndpoint.java": "db5440f7382024138215e57a05f245712b69b6453a1ed0c2e5a3d51c34306779",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/BrowserSessionBoundaryHttpTest.java": "172967c35fb1850409a88675205e8101167503f062c8d0bd96fe77b56448e04f",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/ModularAuthenticationBoundaryHttpTest.java": "447db854cf09312eafe312f4d06f6e3f1d871a24163cba8dfca3abaa017894b9"
+  }
+}

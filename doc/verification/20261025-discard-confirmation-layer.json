@@ -1,0 +1,201 @@
+{
+  "date": "2026-10-25",
+  "task": "新增/编辑抽屉的放弃修改确认框被遮挡",
+  "status": "fixed_deployed_verified",
+  "cause": "SimpleTable 的抽屉与放弃修改确认框并列挂载且使用同一浮层高度。确认框关闭后保留门户节点，抽屉销毁再打开时插入到其后方，导致第二次新增时确认框和按钮被抽屉覆盖。",
+  "beforeFix": {
+    "buttonAccessible": false,
+    "hitClass": "ant-col ant-form-item-label css-ry7cab css-var-_r_0_",
+    "layers": [
+      {
+        "className": "ant-modal-mask",
+        "zIndex": "1000"
+      },
+      {
+        "className": "ant-modal-wrap sp-simple-table-discard",
+        "zIndex": "1000"
+      },
+      {
+        "className": "ant-drawer ant-drawer-right sp-simple-table-drawer css-ry7cab css-var-_r_0_ ant-drawer-open",
+        "zIndex": "1000"
+      }
+    ]
+  },
+  "fix": {
+    "component": "simplepoint-react/libs/components/SimpleTable/index.tsx",
+    "changes": [
+      "将确认框放入所属抽屉的浮层上下文，通过组件层级自动计算覆盖关系，不依赖门户节点先后顺序或额外硬编码 z-index。",
+      "确认期间锁定父抽屉的 Esc、遮罩及重复关闭操作；确认框取消后继续保留输入，放弃后关闭抽屉。"
+    ]
+  },
+  "validation": {
+    "typecheck": "pnpm typecheck: passed",
+    "uiStandards": "node scripts/ui-standards/audit.mjs --strict: passed (39/39 reviewed, 0 unreviewed)",
+    "distribution": "Frontend-enabled installDist and verifyFrontendDistribution passed",
+    "browser": [
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "at": "2026-10-25T02:28:03.304Z",
+        "results": [
+          {
+            "page": "会议室申请",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "会议室申请",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "日报填写",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "日报填写",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "财务报销",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "财务报销",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          }
+        ],
+        "confirmationChecks": 18,
+        "httpErrors": [],
+        "consoleErrors": [],
+        "businessWrites": 0
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "at": "2026-10-25T02:28:26.334Z",
+        "results": [
+          {
+            "page": "会议室申请",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "会议室申请",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "日报填写",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "日报填写",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "财务报销",
+            "width": 1440,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          },
+          {
+            "page": "财务报销",
+            "width": 768,
+            "modal": 1200,
+            "drawer": 1000,
+            "continueRetainsDraft": true,
+            "escapeRetainsDrawerAndDraft": true,
+            "discardClosesDrawer": true
+          }
+        ],
+        "confirmationChecks": 18,
+        "httpErrors": [],
+        "consoleErrors": [],
+        "businessWrites": 0
+      }
+    ],
+    "confirmationChecks": 36,
+    "businessWrites": 0,
+    "assets": [
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "hostAssetsVerified": 350,
+        "remoteCount": 6,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "hostAssetsVerified": 350,
+        "remoteCount": 6,
+        "passed": true
+      }
+    ]
+  },
+  "deployment": {
+    "healthyServices": 10,
+    "allServicesHealthy": true,
+    "oldDeploymentCredentialsRetired": {
+      "expiredPreviousDeploymentCredentials": 21,
+      "currentDeploymentCredentialsUntouched": true,
+      "clientHistoryPreserved": true
+    },
+    "credentialChecks": {
+      "currentDeploymentAuthenticates": true,
+      "previousDeploymentCredentialRejected": true
+    }
+  },
+  "preservation": {
+    "resourcesUnchanged": 322,
+    "grantsUnchanged": 332,
+    "tenantOverridesUnchanged": 2
+  },
+  "scope": "覆盖两个正式入口、三个办公表单、1440/768 两种宽度，以及同一抽屉反复打开。验证使用真实鼠标事件和 Esc 键；未保存测试记录。"
+}

@@ -12,6 +12,7 @@ import org.simplepoint.core.annotation.PermissionFields;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.core.jackson.FieldPermissionPolicy;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.security.entity.PlatformIdentity;
 import org.simplepoint.security.entity.PlatformRole;
 import org.simplepoint.security.entity.User;
@@ -57,7 +58,7 @@ import org.springframework.core.annotation.Order;
       @org.simplepoint.core.query.QueryField("revision"),
       @org.simplepoint.core.query.QueryField("id")
     },
-    maxPageSize = 50)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public record PlatformAccountView(
     @PermissionFields(resource = User.class, value = "id")
         @Order(0)

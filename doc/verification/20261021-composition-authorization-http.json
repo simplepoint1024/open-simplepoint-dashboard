@@ -1,0 +1,364 @@
+{
+  "date": "2026-10-21",
+  "scope": "Selected authorization HTTP protocol adapter and separate durable authentication audit owner",
+  "reports": {
+    "simplepoint-security/simplepoint-security-oauth2-server": [
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.OauthPersistenceBoundaryTest",
+        "timestamp": "2026-10-21T09:57:17",
+        "sha256": "6f739cc264610eb78b13e5d372ce303a6b8eeee3e1e3405e859360888575661d"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.ClientIdMetadataDocumentRegisteredClientRepositoryTest",
+        "timestamp": "2026-10-21T09:57:19",
+        "sha256": "37ef56446f7a641c2d516a8524debedeab16256b6895f5c63a703b06fe74b39a"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationConverterTest",
+        "timestamp": "2026-10-21T09:57:20",
+        "sha256": "6a549ee1eba3863fbd8d91224e26b5737ebad4c3b61ceb26fa335519bce5b53f"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.DevicePublicClientAuthenticationProviderTest",
+        "timestamp": "2026-10-21T09:57:20",
+        "sha256": "6c37e0347e89ac96f60922f1d63b27aa092eb11cd9b31b3b976c7d646e26ed74"
+      },
+      {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.ExternalIdentityAccountLinkerTest",
+        "timestamp": "2026-10-21T09:57:22",
+        "sha256": "df6723fcc78f94f2312e2a6c8fc3f6eb86df4ecfbb1ee8c1d9eb02f98fea7525"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.ExternalIdentityLinkFlowTest",
+        "timestamp": "2026-10-21T09:57:23",
+        "sha256": "dedf96042045432ac4b90a7c40063f7d01de154b963727e41cad0dd1f2a4362c"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.client.GithubEmailAttributeEnricherTest",
+        "timestamp": "2026-10-21T09:57:23",
+        "sha256": "48afdd09223030c66b4bce85329a1f5cdc43b3ba5ef7609f13aee25f1a9fd93a"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.AuthenticationBoundaryHttpTest",
+        "timestamp": "2026-10-21T09:57:24",
+        "sha256": "70ac053d81c39bafbc0ff8d155f1f93280759314e9aed918ce19bd7485c6e7f6"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.AuthorizationServerConfigurationTest",
+        "timestamp": "2026-10-21T09:57:26",
+        "sha256": "9ef3539355d2b09cfabaacd1ce8c4aa262a8ee75393cfd5d5a77b1a22f99144a"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.GatewayAwareLoginAuthenticationEntryPointTest",
+        "timestamp": "2026-10-21T09:57:26",
+        "sha256": "0ab007a03cfa29c8288e1ab382c98025cbcfc1a2cf5a4bccdd7cc85c9f95b36b"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.LocalJwkConfigurationTest",
+        "timestamp": "2026-10-21T09:57:26",
+        "sha256": "b077e08aea11ee465f7e6a3b84a288847af649808cb202b1ec5ad37608b80df2"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.ModularAuthenticationBoundaryHttpTest",
+        "timestamp": "2026-10-21T09:57:27",
+        "sha256": "26cda3b0add609832a97160f6438fad3683c150d0f5fae49aa63c6a285f3004c"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.configuration.OidcConfigurationTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "692450b819dfe20f6056f1e7a110d9a624684fe7f98471a35a2b0b430916ac9e"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.controller.ExternalIdentityAccountControllerTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "1b0675003f85b2bb0613988705cbd70dff92ee993a08c278399589a1db92852b"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.controller.TwoFactorControllerTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "32e36c5f0679c8d34d352a3aa41d428168e3c84bebe7707ec51576ceebbc2acb"
+      },
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.controller.TwoFactorSetupControllerTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "6436ebf82e77fa5d070b67fa72e4a5179ab9f1a8960bb7c8fb9eb257e8a479bb"
+      },
+      {
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisherTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "d475eeb095ed7fcfe5055a00f4cf0da6827722985a5c92c4ba182be8125e1943"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandlerTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "61b8abf1ba2b55997c5ba869e762df453e2a91ed54807a176a57958e75cd8fb1"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.handler.RecoveringOidcLogoutFailureHandlerTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "cfb79ae84824a84e6022f69263156759f96698d1a5eb03b94acaf100da5b3df6"
+      },
+      {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.oidc.OpenidOidcUserInfoAuthenticationTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "8a91b10f51e6f1f346449e464892e9139cd354e4e18c48b7c97affc30cd3cd11"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.cloud.oauth.server.unit.test.GenerateJwkTest",
+        "timestamp": "2026-10-21T09:57:28",
+        "sha256": "8be175680f9cd3fe0f9cb325e20ddfceecabb15619bfd6622b17676e048f8ffc"
+      }
+    ],
+    "simplepoint-security/simplepoint-security-authorization-audit": [
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.security.authorization.audit.LoginAuditDurabilityTest",
+        "timestamp": "2026-10-21T09:58:11",
+        "sha256": "287e9d8fd1508dbd0ccb1de7e56ffce8e546c90d146ee0ac2344a2fa96b77b2e"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication": [
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.AccountCredentialVerifierTest",
+        "timestamp": "2026-10-21T09:57:16",
+        "sha256": "3397afffd2f93521f0f0e719a59a1a8d6368bae1d42d401b7859825c3e56c835"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.AuthenticationModuleBoundaryTest",
+        "timestamp": "2026-10-21T09:57:17",
+        "sha256": "8f1fa0d05cb81c331b17de442bc1d3d76eeb09aefcd9e5003c1481ff27d62f2f"
+      },
+      {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.LoginProtectionTest",
+        "timestamp": "2026-10-21T09:57:21",
+        "sha256": "63177189478808346daf10a4683ba9cff368ec21d8ebf2e8bc523fe3b3edd9f2"
+      },
+      {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.MfaVerificationServiceTest",
+        "timestamp": "2026-10-21T09:57:21",
+        "sha256": "97c21dd40980069f1c3fc385010d26b0d2b57a1a689ba3b6412b23de0f0ac55c"
+      },
+      {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.TotpServiceTest",
+        "timestamp": "2026-10-21T09:57:21",
+        "sha256": "ddc1bb9fe5182867a93fcf1d04ce6d8fc4954b7dd5e12c6a87e63750dc862304"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.maintenance.AuthenticationSecretMigrationTest",
+        "timestamp": "2026-10-21T09:57:21",
+        "sha256": "1ee55c0d00cf4ded84024099f920a1b5971c72d46d4be9d1488ab1bb73cf020e"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.authentication.mfa.TwoFactorSetupServiceImplTest",
+        "timestamp": "2026-10-21T09:57:23",
+        "sha256": "60c7e2927f0056ccc4163044abdfdea6de30a9900b00547ed38eaac1a9a1e7fc"
+      }
+    ],
+    "simplepoint-platform/simplepoint-platform-composition-verification": [
+      {
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+        "timestamp": "2026-10-21T09:58:13",
+        "sha256": "fe74ae2a11d9518b4b8c199b6b4a30c35fd2386250854e550cbd15c47a719e3c"
+      },
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+        "timestamp": "2026-10-21T09:58:14",
+        "sha256": "508e65b0edd2bea576750541020b7f802f79de40e60627798a570b8e857172fa"
+      },
+      {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+        "timestamp": "2026-10-21T09:58:28",
+        "sha256": "72c4b6e1748982ebcd44e9acf60dffec07a04d3f4f98ae679d1c30a966fbb5c7"
+      },
+      {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+        "timestamp": "2026-10-21T09:58:29",
+        "sha256": "b843504a8f1a2ab5f18d9960260c553daef460056b5639ea820315a32cd48a65"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 141,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sourceSha256": {
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedEventDeclarationsTest.java": "55b1a28c3271d25c4de067ed06e2dc6a7b7d1e114b5959561b1fce34b8255d28",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PlatformDeploymentPlanTest.java": "2221d4ecfb3a2ba4b93d426bd4c320e1b8324bc4ebba5b442671ad6caee74f74",
+    "simplepoint-plugins/simplepoint-plugins-auditing/simplepoint-plugin-auditing-logging-api/src/main/java/org/simplepoint/plugin/auditing/logging/api/event/LoginAuditContract.java": "9fd4a3ccba510746a83e6ee4c75a74dd2973968a0862c5ab62f9f4a3fa499ccc",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/main/java/org/simplepoint/plugin/rbac/authentication/maintenance/AuthenticationSecretMigration.java": "170b919c8cb752ab1228f84dd07b347f83a36f7085bedd4b735ae141d1ef181b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-authentication/src/test/java/org/simplepoint/plugin/rbac/authentication/maintenance/AuthenticationSecretMigrationTest.java": "d0c3ac2e5992b7715939fffbc03e8aa70f1959d0d11c1d4474d530853dcb6730",
+    "simplepoint-security/simplepoint-security-authorization-audit/src/main/java/org/simplepoint/security/authorization/audit/AuthorizationAuditModule.java": "ce3ab4541d8d3deaf5b09c26815fbb50fcece6ef28900b7d4f0c287ebd544686",
+    "simplepoint-security/simplepoint-security-authorization-audit/src/main/java/org/simplepoint/security/authorization/audit/AuthorizationEventDeclarations.java": "579c3c2ce4c445d311890dbcb2a92cf9e1ee17ab772959a02e0dfeb851d4a15d",
+    "simplepoint-security/simplepoint-security-authorization-audit/src/main/java/org/simplepoint/security/authorization/audit/LoginAuthenticationAuditEventListener.java": "2a1d43488941919fd04b68d7a945edd0b47821cefbed2c4d8125734e5a219e92",
+    "simplepoint-security/simplepoint-security-authorization-audit/src/test/java/org/simplepoint/security/authorization/audit/LoginAuditDurabilityTest.java": "1203da5c653c085c15f53d0ffad938ef6ca0e33441008e579d3dffa81243aca6",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/authentication/event/LoginAuthenticationFailureEvent.java": "eaebbce6c72e560d3a00213bc32781bcb387c558379a491109fb4a26d2e118f9",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/authentication/event/LoginAuthenticationSuccessEvent.java": "5245fc856a4c508184d37962e35cef559126af9f62d25634d7c4617e1eee5e53",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/configuration/AuthorizationServerConfiguration.java": "fd64f51a4c9f828dd6ec51a0cb84bf7fcc26be84ecb03da4a22c71c83bcfdedc",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/event/LoginAuditEventPublisher.java": "0770799580cdaf5a16fcc0ed643495e3e6f933490b0cf16d919b9e58c0a16ae4",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/module/AuthorizationHttpModule.java": "6a98ecb88ec98a01504089bb2a31cf9ac4cf61a6df8a1877c91e0a4086943372",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/main/java/org/simplepoint/cloud/oauth/server/module/AuthorizationHttpRoutes.java": "501dfdfc78d0c48964e6735dbf6afd2db458eef8ba0eb97a080797ba673ed9b9",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/AuthenticationBoundaryHttpTest.java": "2dcd5965fa7909223f842ff64c4e0f4c52d2b9841e836db9b8802476f57f0626",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/configuration/ModularAuthenticationBoundaryHttpTest.java": "8c1e848001424a8e9fc1d3e7d2f3d7b59341b844b71fccecac7120cfc9fa2b61",
+    "simplepoint-security/simplepoint-security-oauth2-server/src/test/java/org/simplepoint/cloud/oauth/server/event/LoginAuditEventPublisherTest.java": "2eec384c204acd6b519fdb57182c6fc69ee098f7795b3380cd1cfc414901bcce"
+  },
+  "artifacts": {
+    "jars": 280,
+    "classes": {
+      "org/simplepoint/cloud/oauth/server/module/AuthorizationHttpModule.class": [
+        "simplepoint-security-oauth2-server.jar"
+      ],
+      "org/simplepoint/security/authorization/audit/LoginAuthenticationAuditEventListener.class": [
+        "simplepoint-security-authorization-audit.jar"
+      ],
+      "org/simplepoint/plugin/rbac/authentication/maintenance/AuthenticationSecretMigration.class": [
+        "simplepoint-plugin-rbac-authentication.jar"
+      ]
+    }
+  },
+  "validation": [
+    "Inherited real login/MFA/CSRF cases run in legacy and modular security configurations",
+    "Actual native OAuth and OIDC discovery responses match declared routes; other business/MCP/health paths are not captured",
+    "Historical authorization event identity, H2 outbox outage/restart/duplicate/rollback tests, audit-only shared ledger plan",
+    "MFA key migration belongs to identity; OAuth adapter persistence boundary remains strict",
+    "35-module capability/persistence/repository ownership gates; frontend-enabled authorization distribution and scoped zero-warning Checkstyle"
+  ],
+  "limitations": [
+    "Legacy Authorization deliberately excludes the credential RPC provider; Common remains its legacy provider",
+    "Composable authorization currently requires local identity and OIDC domain services; no claim of a remote stateless authorization adapter",
+    "Browser session-to-business authorization adapter and formal standalone host/deployment still pending",
+    "Running environment unchanged"
+  ]
+}

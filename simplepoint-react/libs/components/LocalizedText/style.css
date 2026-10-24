@@ -1,0 +1,9 @@
+.sp-localized-field { min-width: 0; width: 100%; }
+.sp-localized-input { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sp-localized-input > .ant-input, .sp-localized-input > textarea { flex: 1; min-width: 0; }
+.sp-localized-input .ant-tag { flex-shrink: 0; margin: 0; }
+.sp-localized-dirty { position: relative; }
+.sp-localized-dirty::after { content: ''; position: absolute; right: 2px; top: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--ant-color-primary, #1677ff); pointer-events: none; }
+.sp-localized-toolbar { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.sp-localized-toolbar > .ant-select { width: 250px; max-width: 100%; }
+.sp-localized-footer { flex-shrink: 0; display: flex; justify-content: flex-end; padding-top: 12px; }

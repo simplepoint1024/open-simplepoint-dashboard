@@ -23,21 +23,21 @@ import org.simplepoint.plugin.rbac.tenant.api.repository.DictionaryRepository;
 @ExtendWith(MockitoExtension.class)
 class DictionaryItemServiceImplTest {
 
-  @Mock
-  DictionaryItemRepository repository;
+  @Mock DictionaryItemRepository repository;
+
+  @Mock DetailsProviderService detailsProviderService;
+
+  @Mock DictionaryRepository dictionaryRepository;
 
   @Mock
-  DetailsProviderService detailsProviderService;
+  org.simplepoint.plugin.rbac.tenant.service.support.DictionaryCatalogWriteBoundary catalogWrites;
 
-  @Mock
-  DictionaryRepository dictionaryRepository;
-
-  @InjectMocks
-  DictionaryItemServiceImpl service;
+  @InjectMocks DictionaryItemServiceImpl service;
 
   @BeforeEach
   void stubAuditingService() {
-    lenient().when(detailsProviderService.getDialects(ModifyDataAuditingService.class))
+    lenient()
+        .when(detailsProviderService.getDialects(ModifyDataAuditingService.class))
         .thenReturn(Set.of());
   }
 

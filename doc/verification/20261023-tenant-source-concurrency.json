@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-23",
+  "scope": "tenant-first-import-source-concurrency",
+  "implemented": [
+    "Acquire the existing platform catalog row read lock before tenant write locks for initialization, activation, owner synchronization and offline legacy adoption. PostgreSQL shares this lock between imports; platform source writers retain their exclusive lock. No resource version or new schema was introduced.",
+    "Two-connection tests verify source-first import waits and reads the committed definition without holding the tenant lock; import-first source update waits then discovers and updates the newly committed mirror.",
+    "Missing catalog fence fails closed with no partial tenant directory; unauthorized callers are rejected before acquiring the catalog lock.",
+    "Availability presentation distinguishes source disable from a manual tenant disable even when the importer also clears effective enabled."
+  ],
+  "validation": {
+    "postgresqlEnabledRun": [
+      {
+        "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation",
+        "totals": {
+          "tests": 350,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-platform/simplepoint-platform-installation-host",
+        "totals": {
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "module": "simplepoint-services/simplepoint-service-common",
+        "totals": {
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      }
+    ],
+    "postgresqlReports": [
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "tests": "25",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T11:04:44",
+        "hostname": "arch",
+        "time": "5.459",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "sha256": "d054fe693fac54de13edd65b9970345bd495688faba9671f5116f095247c312d"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceProvisioningServiceImplTest",
+        "tests": "22",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T11:04:50",
+        "hostname": "arch",
+        "time": "5.789",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceProvisioningServiceImplTest.xml",
+        "sha256": "c5c30dbc851a7e9b240f3b5923d2e9509d0530ae4a3e75921aa6bf7d52489188"
+      },
+      {
+        "name": "org.simplepoint.installation.host.TenantAdoptionInstallationPostgresTest",
+        "tests": "3",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T11:03:48",
+        "hostname": "arch",
+        "time": "23.26",
+        "report": "simplepoint-platform/simplepoint-platform-installation-host/build/test-results/test/TEST-org.simplepoint.installation.host.TenantAdoptionInstallationPostgresTest.xml",
+        "sha256": "a5cca5e60b08a39dbda1362a1cf97f8057f082a582242cc87ddb8fbaaea7fe92"
+      }
+    ],
+    "h2": {
+      "tests": 350,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 16
+    },
+    "quality": "9 scoped Java files Checkstyle and module boundary verification passed."
+  },
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceSourceBoundary.java": "4dc5d383122e3b0c4aded3c3d35ed888cc0ca979bc029e5954619b3ecfc10f46",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceProvisioningServiceImpl.java": "c14b00cebba19613e4edcf96b5ef5cd3aaf75d7d84a4c525cfb15072fd0d6e45",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantLegacyAdoptionStore.java": "52ddcfaf243f6edb4e816783147b5fc87d6f88fc9db734b430693f8994c8ad7a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageActivationServiceImpl.java": "5796f46a191f3fbcc2500b68b410086900cf0881419ad6d9b2a544dcc5d6625e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceAvailabilityProjector.java": "ac24044efdd6a39e0af57f5689152dd21303fd65b351dd161de86a3bb48a9d52",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantEntitlementDatabase.java": "a5d77be8db0dce8a2dff11ed896dc0bb4a11128b03097d52c8d7f053ded80824",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceProvisioningServiceImplTest.java": "ca9dd781a103030d114362146fe285e06aee35dabc7790517e7845288d7071fb",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "64e23858e29e45d35e162dc4d037b5b40ce6dc03833f6ef13bf9ce05fb63fc6b",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantPackageHttpTest.java": "034206d0a4fa5ddd515bf7f01babb265a77859117a3914c6c6c00c7e58ef8e9c"
+  },
+  "deployment": "Not deployed; rebuilding immutable installer and service distributions, then repeating existing-data rehearsal."
+}

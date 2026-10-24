@@ -14,7 +14,6 @@ import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.api.model.FormWorkflowBindingCheck;
 import org.simplepoint.plugin.app.form.api.model.FormWorkflowSubmissionCheck;
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormWorkflowPort;
@@ -112,10 +111,8 @@ public class ApplicationFormWorkflowPortImpl implements ApplicationFormWorkflowP
         .forEach(
             (id, type) -> {
               var field = fields.get(id);
-              if (field == null
-                  || !Set.of(FormStorageMode.STORED, FormStorageMode.REFERENCE)
-                      .contains(field.storageMode())
-                  || !FormSubmissionMapping.compatible(field.type(), type)) {
+              if (!FormWorkflowFields.supports(field)
+                  || !FormWorkflowFields.compatible(field.type(), type)) {
                 throw invalid("Incompatible form field mapping: " + id);
               }
             });

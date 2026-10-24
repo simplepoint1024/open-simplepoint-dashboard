@@ -29,6 +29,7 @@ import org.simplepoint.plugin.ai.mcp.api.properties.AiMcpProperties;
 import org.simplepoint.plugin.ai.mcp.api.repository.AiMcpTaskRepository;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpPublicationRuntimeService;
 import org.simplepoint.plugin.ai.mcp.api.service.AiMcpTaskService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,7 @@ public class AiMcpTaskServiceImpl implements AiMcpTaskService {
   public AiMcpTaskServiceImpl(
       final AiMcpTaskRepository repository,
       final AiMcpPublicationRuntimeService publicationRuntimeService,
+      @Qualifier("httpMcpGatewayOperations")
       final McpGatewayOperations gatewayOperations,
       final AiMcpProperties properties,
       final ObjectMapper objectMapper

@@ -8,6 +8,19 @@ import org.simplepoint.remoting.RemoteContract;
 @RemoteContract(name = "saas.managed-resource", version = "1")
 public interface ManagedTenantResourceService {
 
+  /** Atomic hierarchy/presentation update; repeating the exact revision is safe after a timeout. */
+  @org.simplepoint.remoting.RemoteOperation(idempotent = true)
+  long applyNavigation(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand command);
+
+  /** Fences a pending revision before the owner discards it; false means it already applied. */
+  @org.simplepoint.remoting.RemoteOperation(idempotent = true)
+  boolean cancelNavigation(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand command);
+
+  /** Bounded tenant parent choices, revalidated on apply. */
+  @org.simplepoint.remoting.RemoteOperation(idempotent = true)
+  org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationDirectoryPage navigationDirectories(
+      String tenantId, String rootKey, String keyword, int offset, int limit);
+
   /** Creates or refreshes a declaration without exposing a new resource prematurely. */
   ManagedTenantResourceView prepare(ManagedTenantResourceCommand command);
 

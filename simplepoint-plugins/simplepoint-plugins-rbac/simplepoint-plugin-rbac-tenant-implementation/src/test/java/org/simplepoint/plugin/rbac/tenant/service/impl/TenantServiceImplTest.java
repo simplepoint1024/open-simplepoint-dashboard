@@ -22,9 +22,8 @@ import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.command.TenantProfileUpdateCommand;
@@ -33,7 +32,9 @@ import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.TenantUsersRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.TenantUserRelevanceRepository;
+import org.simplepoint.plugin.rbac.tenant.api.service.PersonalTenantProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceProvisioningService;
 import org.simplepoint.plugin.rbac.tenant.api.vo.NamedTenantVo;
 import org.simplepoint.plugin.rbac.tenant.api.vo.TenantContextType;
 import org.springframework.data.domain.PageImpl;
@@ -58,9 +59,13 @@ class TenantServiceImplTest {
 
   @Mock ResourceAuthorizationVersionService resourceAuthorizationVersionService;
 
-  @Mock UsersService usersService;
+  @Mock UserManagementService usersService;
 
   @Mock TenantUserCandidateQuery userCandidateQuery;
+
+  @Mock PersonalTenantProvisioningService personalTenants;
+
+  @Mock TenantResourceProvisioningService resourceProvisioning;
 
   @InjectMocks TenantServiceImpl service;
 
@@ -101,8 +106,7 @@ class TenantServiceImplTest {
     personalTenant.setName("Tenant One");
     personalTenant.setTenantType(TenantType.PERSONAL);
     NamedTenantVo vo = new NamedTenantVo("t1", "Tenant One", TenantType.PERSONAL);
-    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
-    when(tenantUserRelevanceRepository.authorized("t1")).thenReturn(List.of("user1"));
+    when(personalTenants.ensureForUser("user1")).thenReturn(personalTenant);
     when(repository.getTenantsByUserId("user1")).thenReturn(Set.of(vo));
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
@@ -117,17 +121,15 @@ class TenantServiceImplTest {
     savedTenant.setId("t-personal");
     savedTenant.setName("user1 的个人空间");
     savedTenant.setTenantType(TenantType.PERSONAL);
-    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.empty());
-    when(repository.save(any(Tenant.class))).thenReturn(savedTenant);
+    when(personalTenants.ensureForUser("user1")).thenReturn(savedTenant);
     when(repository.getTenantsByUserId("user1")).thenReturn(Set.of());
-    when(tenantUserRelevanceRepository.authorized("t-personal")).thenReturn(List.of());
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
 
     assertThat(result)
         .containsExactly(new NamedTenantVo("t-personal", "user1 的个人空间", TenantType.PERSONAL));
-    verify(repository).save(any(Tenant.class));
-    verify(tenantUserRelevanceRepository).saveAll(any(Collection.class));
+    verify(personalTenants).ensureForUser("user1");
+    verify(repository, never()).save(any(Tenant.class));
   }
 
   @Test
@@ -137,8 +139,7 @@ class TenantServiceImplTest {
     personalTenant.setId("personal-admin");
     personalTenant.setName("admin 的个人空间");
     personalTenant.setTenantType(TenantType.PERSONAL);
-    when(repository.findPersonalTenantByOwnerId("admin")).thenReturn(Optional.of(personalTenant));
-    when(tenantUserRelevanceRepository.authorized("personal-admin")).thenReturn(List.of("admin"));
+    when(personalTenants.ensureForUser("admin")).thenReturn(personalTenant);
     when(repository.getTenantsByUserId("admin")).thenReturn(Set.of());
 
     Set<NamedTenantVo> result = service.getCurrentUserTenants();
@@ -183,14 +184,13 @@ class TenantServiceImplTest {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
-    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
-    when(tenantUserRelevanceRepository.authorized("personal-1")).thenReturn(List.of("user1"));
+    when(personalTenants.ensureForUser("user1")).thenReturn(personalTenant);
     when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(3L);
 
     String contextId = service.calculateAuthorizationContextId("default");
 
     assertThat(contextId).isNotBlank().hasSize(64); // SHA-256 hex is 64 chars
-    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(personalTenants).ensureForUser("user1");
     verify(repository).getTenantAuthorizationVersion("personal-1");
   }
 
@@ -260,13 +260,13 @@ class TenantServiceImplTest {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
-    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(personalTenants.ensureForUser("user1")).thenReturn(personalTenant);
     when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(2L);
 
     String contextId = service.calculateAuthorizationContextId(null);
 
     assertThat(contextId).isNotBlank().hasSize(64);
-    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(personalTenants).ensureForUser("user1");
     verify(repository).getTenantAuthorizationVersion("personal-1");
   }
 
@@ -275,46 +275,14 @@ class TenantServiceImplTest {
     setAuthentication("user1");
     Tenant personalTenant = new Tenant();
     personalTenant.setId("personal-1");
-    when(repository.findPersonalTenantByOwnerId("user1")).thenReturn(Optional.of(personalTenant));
+    when(personalTenants.ensureForUser("user1")).thenReturn(personalTenant);
     when(repository.getTenantAuthorizationVersion("personal-1")).thenReturn(4L);
 
     String contextId = service.calculateAuthorizationContextId("   ");
 
     assertThat(contextId).isNotBlank().hasSize(64);
-    verify(repository).findPersonalTenantByOwnerId("user1");
+    verify(personalTenants).ensureForUser("user1");
     verify(repository).getTenantAuthorizationVersion("personal-1");
-  }
-
-  // ── authorizedPackages ────────────────────────────────────────────────────
-
-  @Test
-  void authorizedPackages_throwsWhenTenantIdIsNull() {
-    assertThatThrownBy(() -> service.authorizedPackages(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("租户ID不能为空");
-  }
-
-  @Test
-  void authorizedPackages_throwsWhenTenantIdIsBlank() {
-    assertThatThrownBy(() -> service.authorizedPackages("  "))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("租户ID不能为空");
-  }
-
-  @Test
-  void authorizedPackages_delegatesToRepository() {
-    setAdminRole();
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-    List<String> expected = List.of("pkg.standard");
-    when(tenantPackageRelevanceRepository.authorized("tenant1")).thenReturn(expected);
-
-    Collection<String> result = service.authorizedPackages("tenant1");
-
-    assertThat(result).isEqualTo(expected);
-    verify(tenantPackageRelevanceRepository).authorized("tenant1");
   }
 
   // ── ownerItems ────────────────────────────────────────────────────────────
@@ -487,124 +455,47 @@ class TenantServiceImplTest {
         .isInstanceOf(AccessDeniedException.class);
   }
 
-  // ── authorizePackages ─────────────────────────────────────────────────────
-
   @Test
-  void authorizePackages_throwsWhenTenantIdIsBlank() {
-    TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
-    dto.setTenantId("  ");
-    dto.setPackageCodes(Set.of("pkg.standard"));
-
-    assertThatThrownBy(() -> service.authorizePackages(dto))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("租户ID不能为空");
+  void packageManagementActionRequiresExplicitPlatformAdministratorScope() {
+    for (var scope : org.simplepoint.core.AuthorizationScopeType.values()) {
+      for (boolean administrator : List.of(false, true)) {
+        setTenantContext("__platform__", "admin");
+        var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+        context.setResources(Set.of("tenants.config.package", "tenants.view"));
+        context.setScopeType(scope);
+        context.setIsAdministrator(administrator);
+        assertThat(
+                service.getButtonDeclarationsSchema(Tenant.class).stream()
+                    .anyMatch(button -> "config.package".equals(button.get("key"))))
+            .isEqualTo(
+                administrator && scope == org.simplepoint.core.AuthorizationScopeType.PLATFORM);
+      }
+    }
+    setTenantContext("__platform__", "admin");
+    org.simplepoint.core.AuthorizationContextHolder.getContext().setIsAdministrator(true);
+    assertThat(service.getButtonDeclarationsSchema(Tenant.class))
+        .noneMatch(button -> "config.package".equals(button.get("key")));
   }
 
   @Test
-  void authorizePackages_returnsEmptyWhenPackageCodesIsNull() {
+  void retiredPackageRelationsNeverReadOrWriteLegacyGrantsEvenForAnAdministrator() {
     setAdminRole();
-    TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
-    dto.setTenantId("tenant1");
-    dto.setPackageCodes(null);
-
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-
-    Collection<TenantPackageRelevance> result = service.authorizePackages(dto);
-
-    assertThat(result).isEmpty();
-    verify(tenantPackageRelevanceRepository, never()).saveAll(any());
-  }
-
-  @Test
-  void authorizePackages_returnsEmptyWhenPackageCodesIsEmpty() {
-    setAdminRole();
-    TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
-    dto.setTenantId("tenant1");
-    dto.setPackageCodes(Set.of());
-
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-
-    Collection<TenantPackageRelevance> result = service.authorizePackages(dto);
-
-    assertThat(result).isEmpty();
-    verify(tenantPackageRelevanceRepository, never()).saveAll(any());
-  }
-
-  @Test
-  void authorizePackages_savesRelationsAndRefreshesTenant() {
-    setAdminRole();
-    TenantPackagesRelevanceDto dto = new TenantPackagesRelevanceDto();
+    var dto = new TenantPackagesRelevanceDto();
     dto.setTenantId("tenant1");
     dto.setPackageCodes(Set.of("pkg.standard"));
-
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-
-    TenantPackageRelevance saved = new TenantPackageRelevance();
-    when(tenantPackageRelevanceRepository.saveAll(any())).thenReturn(List.of(saved));
-
-    Collection<TenantPackageRelevance> result = service.authorizePackages(dto);
-
-    assertThat(result).containsExactly(saved);
-    verify(tenantPackageRelevanceRepository).saveAll(any());
-    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
-  }
-
-  // ── unauthorizedPackages ──────────────────────────────────────────────────
-
-  @Test
-  void unauthorizedPackages_returnsEarlyWhenPackageCodesIsNull() {
-    setAdminRole();
-    service.unauthorizedPackages("tenant1", null);
-    verify(tenantPackageRelevanceRepository, never()).unauthorized(any(), any());
-  }
-
-  @Test
-  void unauthorizedPackages_returnsEarlyWhenPackageCodesIsEmpty() {
-    setAdminRole();
-    service.unauthorizedPackages("tenant1", Set.of());
-    verify(tenantPackageRelevanceRepository, never()).unauthorized(any(), any());
-  }
-
-  @Test
-  void unauthorizedPackages_throwsWhenTenantIdIsBlankAfterNormalize() {
-    assertThatThrownBy(() -> service.unauthorizedPackages("  ", Set.of("pkg.standard")))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("租户ID不能为空");
-  }
-
-  @Test
-  void unauthorizedPackages_callsRepositoryAndRefreshesVersion() {
-    setAdminRole();
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("admin");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-
-    service.unauthorizedPackages("tenant1", Set.of("pkg.standard"));
-
-    verify(tenantPackageRelevanceRepository).unauthorized("tenant1", Set.of("pkg.standard"));
-    verify(resourceAuthorizationVersionService).refreshTenant("tenant1");
-  }
-
-  @Test
-  void authorizedPackages_throwsAccessDeniedForNonOwnerNonAdmin() {
-    setAuthentication("regularUser");
-    Tenant tenant = new Tenant();
-    tenant.setId("tenant1");
-    tenant.setOwnerId("owner1");
-    when(repository.findById("tenant1")).thenReturn(Optional.of(tenant));
-
-    assertThatThrownBy(() -> service.authorizedPackages("tenant1"))
-        .isInstanceOf(AccessDeniedException.class);
+    for (Runnable action :
+        List.<Runnable>of(
+            () -> service.authorizedPackages("tenant1"),
+            () -> service.authorizePackages(dto),
+            () -> service.unauthorizedPackages("tenant1", Set.of("pkg.standard")),
+            () -> service.authorizePackages(null),
+            () -> service.unauthorizedPackages(null, null))) {
+      assertThatThrownBy(action::run)
+          .isInstanceOf(org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException.class)
+          .hasMessage("TENANT_PACKAGE:LEGACY_ASSIGNMENT_RETIRED");
+    }
+    org.mockito.Mockito.verifyNoInteractions(
+        tenantPackageRelevanceRepository, repository, resourceAuthorizationVersionService);
   }
 
   // ── authorizeUsers ────────────────────────────────────────────────────────
@@ -757,6 +648,15 @@ class TenantServiceImplTest {
 
     assertThat(result.getId()).isEqualTo("t-new");
     verify(repository).save(any());
+    verify(resourceProvisioning).initialize("t-new");
+  }
+
+  @Test
+  void bulkCreateCannotBypassPlatformAdministratorCheck() {
+    setAuthentication("ordinary-user");
+    assertThatThrownBy(() -> service.create(List.of(new Tenant())))
+        .isInstanceOf(AccessDeniedException.class);
+    verify(repository, never()).saveAll(any());
   }
 
   @Test
@@ -855,6 +755,31 @@ class TenantServiceImplTest {
     assertThat(result.getProfileEditable()).isTrue();
   }
 
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"TENANT,ORGANIZATION", "PERSONAL,PERSONAL"})
+  void ownerCapabilitiesFollowTheSelectedWorkspaceAndDoNotFollowAdministratorFlag(
+      org.simplepoint.core.AuthorizationScopeType scope, TenantType type) {
+    setAuthentication("owner1");
+    setTenantContext("t1", "owner1");
+    var context = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    context.setScopeType(scope);
+    var tenant = new Tenant();
+    tenant.setId("t1");
+    tenant.setName("Workspace");
+    tenant.setOwnerId("owner1");
+    tenant.setTenantType(type);
+    when(repository.findById("t1")).thenReturn(Optional.of(tenant));
+    when(repository.hasUser("t1", "owner1")).thenReturn(true);
+    var profile = service.getCurrentTenantProfile();
+    assertThat(profile.getResourceManageable()).isTrue();
+    assertThat(profile.getPackageManageable()).isTrue();
+    tenant.setOwnerId("new-owner");
+    context.setIsAdministrator(true);
+    profile = service.getCurrentTenantProfile();
+    assertThat(profile.getResourceManageable()).isFalse();
+    assertThat(profile.getPackageManageable()).isFalse();
+  }
+
   @Test
   void updateCurrentTenantProfile_rejectsInlineImageData() {
     setAuthentication("owner1");
@@ -927,7 +852,16 @@ class TenantServiceImplTest {
         new SimpleGrantedAuthority("SCOPE_service-router.invoke");
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken(
-            "simplepoint-service-workflow", null, List.of(serviceRouterAuthority));
+            new org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal(
+                "simplepoint-service-workflow",
+                java.util.Map.of(
+                    "client_id",
+                    "simplepoint-service-workflow",
+                    "grant_type",
+                    "client_credentials"),
+                List.of(serviceRouterAuthority)),
+            null,
+            List.of(serviceRouterAuthority));
     SecurityContextHolder.getContext().setAuthentication(auth);
   }
 

@@ -8,8 +8,15 @@ const functions = [
 ];
 function Demo() {
   const [value, setValue] = useState('=ROUND([单价]*[数量],2)');
+  const [readOnly, setReadOnly] = useState(false);
+  const [acceptChanges, setAcceptChanges] = useState(true);
   return <main style={{maxWidth: 960, margin: '24px auto', padding: 12}}>
-    <CalculationEditor value={value} onChange={setValue} functions={functions}
+    <fieldset><legend>Host controls</legend>
+      <label><input type="checkbox" checked={readOnly} onChange={event => setReadOnly(event.target.checked)}/>Read only</label>
+      <label><input type="checkbox" checked={acceptChanges} onChange={event => setAcceptChanges(event.target.checked)}/>Accept changes</label>
+      <button type="button" onClick={() => setValue('=SUM(7,11)')}>Replace from host</button>
+    </fieldset>
+    <CalculationEditor value={value} readOnly={readOnly} onChange={next => {if (acceptChanges) setValue(next);}} functions={functions}
       fields={[{id: '单价', label: '单价', type: 'DECIMAL'}, {id: '数量', label: '数量', type: 'INT32'}]}/>
     <output data-testid="formula">{value}</output>
   </main>;

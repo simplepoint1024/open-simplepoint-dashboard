@@ -4,17 +4,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.extern.slf4j.Slf4j;
 import org.simplepoint.cloud.oauth.server.event.LoginAuditEventPublisher;
 import org.simplepoint.cloud.oauth.server.handler.LoginAuthenticationSuccessHandler;
-import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationProvider;
-import org.simplepoint.cloud.oauth.server.provider.TwoFactorAuthenticationToken;
-import org.simplepoint.cloud.oauth.server.service.TotpService;
-import org.simplepoint.security.entity.User;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.core.Authentication;
+import org.simplepoint.cloud.oauth.server.provider.PendingMfaAuthentication;
+import org.simplepoint.cloud.oauth.server.service.LoginSession;
+import org.simplepoint.plugin.rbac.authentication.MfaVerificationService;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -23,89 +17,56 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * Controller for handling two-factor authentication verification during login.
- * Uses the global AuthenticationManager to delegate to TwoFactorAuthenticationProvider
- * for validating TOTP codes when 2FA is enabled for the current user.
- */
-@Slf4j
+/** A five-minute, credential-free challenge is the only accepted input identity. */
 @Controller
 public class TwoFactorController {
+  private final MfaVerificationService verification;
+  private final LoginAuthenticationSuccessHandler success;
+  private final LoginAuditEventPublisher audit;
 
-  private final AuthenticationManager authenticationManager;
-
-  private final LoginAuthenticationSuccessHandler authenticationSuccessHandler;
-  private final LoginAuditEventPublisher loginAuditEventPublisher;
-
-  /**
-   * Constructs the TwoFactorController and registers the TwoFactorAuthenticationProvider
-   * with the provided AuthenticationManager.
-   *
-   * @param authenticationManager the global authentication manager
-   * @param totpService           the TOTP service for code verification
-   */
+  /** Creates the challenge endpoint with shared verification and final login handling. */
   public TwoFactorController(
-      AuthenticationManager authenticationManager,
-      TotpService totpService,
-      LoginAuthenticationSuccessHandler authenticationSuccessHandler,
-      LoginAuditEventPublisher loginAuditEventPublisher
-  ) {
-    this.authenticationManager = authenticationManager;
-    this.authenticationSuccessHandler = authenticationSuccessHandler;
-    this.loginAuditEventPublisher = loginAuditEventPublisher;
-    if (authenticationManager instanceof ProviderManager providerManager) {
-      providerManager.getProviders().add(new TwoFactorAuthenticationProvider(totpService));
-    }
+      MfaVerificationService verification,
+      LoginAuthenticationSuccessHandler success,
+      LoginAuditEventPublisher audit) {
+    this.verification = verification;
+    this.success = success;
+    this.audit = audit;
   }
 
-  /**
-   * Display the 2FA verification page.
-   */
+  /** Displays verification only for an outstanding challenge. */
   @GetMapping("/two-factor/verify")
   public String showVerificationPage() {
-    return "two-factor-verify";
+    return pending() == null ? "redirect:/login" : "two-factor-verify";
   }
 
-  /**
-   * Handle submission of the 2FA verification code.
-   * For now, any non-empty code is treated as success so we don't block login
-   * while stabilizing the integration.
-   */
+  /** Verifies the current challenge without granting access on failure. */
   @PostMapping("/two-factor/verify")
   public String verify(
       @RequestParam("code") String code,
       Model model,
       HttpServletRequest request,
-      HttpServletResponse response
-  ) {
-    Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
-    if (currentAuth == null || !currentAuth.isAuthenticated()) {
+      HttpServletResponse response)
+      throws ServletException, IOException {
+    PendingMfaAuthentication challenge = pending();
+    if (challenge == null) {
       return "redirect:/login";
     }
-
-    Object principal = currentAuth.getPrincipal();
-    if (!(principal instanceof User user)) {
-      return "redirect:/login";
-    }
-
-    if (code == null || code.trim().isEmpty()) {
-      loginAuditEventPublisher.publishFailure(request, currentAuth, new BadCredentialsException("Two-factor code is required"));
-      model.addAttribute("error", "Code is required");
-      return "two-factor-verify";
-    }
-
     try {
-      Authentication result = authenticationManager.authenticate(new TwoFactorAuthenticationToken(user, code.trim()));
-      SecurityContextHolder.getContext().setAuthentication(result);
-      authenticationSuccessHandler.onAuthenticationSuccessDelegate(request, response, result);
+      var user = verification.verify(challenge.challenge(), code == null ? "" : code.trim());
+      success.complete(request, response, LoginSession.authenticated(user));
       return null;
     } catch (AuthenticationException ex) {
-      loginAuditEventPublisher.publishFailure(request, currentAuth, ex);
-      log.error("AuthenticationException", ex);
-      model.addAttribute("error", "Invalid authentication code");
+      audit.publishFailure(request, challenge, ex);
+      model.addAttribute("error", "验证失败或尝试次数过多，请稍后重试");
       return "two-factor-verify";
-    } catch (ServletException | IOException e) {
-      throw new RuntimeException(e);
     }
+  }
+
+  private PendingMfaAuthentication pending() {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication instanceof PendingMfaAuthentication value && !value.expired()
+        ? value
+        : null;
   }
 }

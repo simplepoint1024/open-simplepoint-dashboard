@@ -25,7 +25,7 @@ export function useRedisQuery(baseUrl: string, pattern: string) {
   const [session] = useState(() => new SnapshotSession());
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<TableQueryState>({filters: {}});
-  const [pagination, setPagination] = useState({page: 0, size: 20});
+  const [pagination, setPagination] = useState({page: 0, size: 50});
   const schemas = useSchema(endpoint, {retry: false});
   const schema = schemas.data?.schema?.['x-query'] ? schemas.data.schema as unknown as QuerySchema : undefined;
   const result = useData<ScanResult>([endpoint, instance, pattern, revision, state, pagination], async ({signal}) => {

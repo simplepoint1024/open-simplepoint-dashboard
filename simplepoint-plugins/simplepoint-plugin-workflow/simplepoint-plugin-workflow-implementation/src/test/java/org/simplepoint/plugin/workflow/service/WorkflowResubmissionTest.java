@@ -80,7 +80,8 @@ class WorkflowResubmissionTest extends WorkflowDirectoryFixture {
     var rows =
         transaction.execute(
             status ->
-                new WorkflowMatterQueries(em).query("started", Map.of(), PageRequest.of(0, 20)));
+                new WorkflowMatterQueries(em, labelReader())
+                    .query("started", Map.of(), PageRequest.of(0, 20)));
     assertThat(rows.content())
         .filteredOn(row -> row.id().equals(source.id()))
         .singleElement()
@@ -249,7 +250,7 @@ class WorkflowResubmissionTest extends WorkflowDirectoryFixture {
   }
 
   @Test
-  void aSuspendedOriginalVersionCannotBeReplacedSilentlyByAnotherVersion() {
+  void suspendedOriginalVersionCannotBeReplacedSilentlyByAnotherVersion() {
     var source = start(publish("actor", null), Map.of());
     transaction.execute(status -> service.withdraw(source.id(), "Revise"));
     String definitionId =

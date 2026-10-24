@@ -1,16 +1,11 @@
 package com.simplepoint.service.router.config;
 
 import com.simplepoint.service.router.annotation.RoutedService;
-import com.simplepoint.service.router.proxy.ServiceRouterProxyFactoryBean;
-import java.util.Arrays;
 import java.util.Objects;
 import org.simplepoint.remoting.RemoteContract;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.context.EnvironmentAware;
@@ -23,7 +18,7 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
 
 /**
- * Scans routed service interfaces and registers consumer proxy beans for interfaces without local providers.
+ * Registers one primary routing boundary per contract, including contracts with local providers.
  */
 public class ServiceRouterProxyBeanDefinitionRegistryPostProcessor
     implements BeanDefinitionRegistryPostProcessor, EnvironmentAware, ResourceLoaderAware, Ordered {
@@ -70,39 +65,13 @@ public class ServiceRouterProxyBeanDefinitionRegistryPostProcessor
           .filter(Objects::nonNull)
           .map(this::loadClass)
           .filter(Class::isInterface)
-          .filter(serviceInterface -> !hasLocalProvider(registry, serviceInterface))
-          .forEach(serviceInterface -> registerProxy(registry, serviceInterface));
+          .forEach(serviceInterface -> ServiceRouterProxyDefinitions.register(registry, serviceInterface));
     }
   }
 
   @Override
   public void postProcessBeanFactory(final ConfigurableListableBeanFactory beanFactory) throws BeansException {
     // No bean factory changes are required.
-  }
-
-  private void registerProxy(final BeanDefinitionRegistry registry, final Class<?> serviceInterface) {
-    String beanName = serviceInterface.getName() + "#serviceRouterProxy";
-    if (registry.containsBeanDefinition(beanName)) {
-      return;
-    }
-    BeanDefinitionBuilder builder = BeanDefinitionBuilder
-        .genericBeanDefinition(ServiceRouterProxyFactoryBean.class)
-        .addConstructorArgValue(serviceInterface)
-        .setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR)
-        .setLazyInit(true);
-    BeanDefinition beanDefinition = builder.getBeanDefinition();
-    beanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, serviceInterface);
-    registry.registerBeanDefinition(beanName, beanDefinition);
-  }
-
-  private boolean hasLocalProvider(final BeanDefinitionRegistry registry, final Class<?> serviceInterface) {
-    return Arrays.stream(registry.getBeanDefinitionNames())
-        .map(registry::getBeanDefinition)
-        .map(BeanDefinition::getBeanClassName)
-        .filter(Objects::nonNull)
-        .filter(className -> !ServiceRouterProxyFactoryBean.class.getName().equals(className))
-        .map(this::loadClass)
-        .anyMatch(candidate -> !candidate.isInterface() && serviceInterface.isAssignableFrom(candidate));
   }
 
   private Class<?> loadClass(final String className) {

@@ -25,7 +25,6 @@ import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormFieldType;
 import org.simplepoint.plugin.app.form.api.model.FormIndexDefinition;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.api.model.FormValue;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
@@ -54,7 +53,7 @@ public class FormStorageProjectionCompiler {
   /** Compiles stable fields and indexes while excluding UI-only definitions. */
   public CompiledStorageProjection compile(final ApplicationFormDocument document) {
     List<FormFieldDefinition> persistentFields = document.fields().stream()
-        .filter(FormStorageProjectionCompiler::persistent)
+        .filter(FormFieldDefinition::persistent)
         .sorted(Comparator.comparing(FormFieldDefinition::fieldId))
         .toList();
     Map<String, String> fieldCodes = new LinkedHashMap<>();
@@ -208,12 +207,6 @@ public class FormStorageProjectionCompiler {
       return decimal.stripTrailingZeros();
     }
     return value;
-  }
-
-  private static boolean persistent(final FormFieldDefinition field) {
-    return field.storageMode() == FormStorageMode.STORED
-        || field.storageMode() == FormStorageMode.REFERENCE
-        || field.storageMode() == FormStorageMode.ATTACHMENT;
   }
 
   private static String checksum(final byte[] bytes) {

@@ -1,7 +1,5 @@
 package org.simplepoint.plugin.dna.runtime.service.support;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
@@ -35,7 +33,7 @@ public class PhysicalSchemaValidator {
         continue;
       }
       try {
-        LogicalValue normalized = valueConverter.normalize(field, rawValue(declared));
+        LogicalValue normalized = valueConverter.normalize(field, LogicalValueInputs.fromCanonical(declared));
         if (!declared.equals(normalized)) {
           throw new IllegalArgumentException("Default value is not canonical");
         }
@@ -49,20 +47,4 @@ public class PhysicalSchemaValidator {
     }
   }
 
-  private static Object rawValue(final LogicalValue value) {
-    return switch (value.kind()) {
-      case NULL -> null;
-      case BOOLEAN -> parseBoolean(value.canonicalValue());
-      case INTEGER -> new BigInteger(value.canonicalValue());
-      case DECIMAL -> new BigDecimal(value.canonicalValue());
-      case STRING, DATE, TIME, DATETIME, UUID, JSON, BINARY -> value.canonicalValue();
-    };
-  }
-
-  private static boolean parseBoolean(final String value) {
-    if (!"true".equals(value) && !"false".equals(value)) {
-      throw new IllegalArgumentException("Boolean default must be true or false");
-    }
-    return Boolean.parseBoolean(value);
-  }
 }

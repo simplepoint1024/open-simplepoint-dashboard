@@ -1,0 +1,664 @@
+{
+  "date": "2026-10-23T11:52:13.029996+00:00",
+  "status": "completed-and-deployed",
+  "scope": "Tenant resource catalog and package entitlement redesign; existing single and microservice environments",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "deploymentGuide": "doc/deployment/tenant_entitlement_upgrade.md",
+  "migration": {
+    "identityFrom": 8,
+    "identityTo": 17,
+    "existingTenantsAdopted": 13,
+    "newPersonalTenantVerified": true,
+    "noPendingTenants": true,
+    "originalGrantRowsPreserved": {
+      "kind": "grants",
+      "rows": 332,
+      "active": 307,
+      "revoked": 25,
+      "fingerprint": "6a3912b71a9670dcda2f9a2126ac8d2f"
+    },
+    "backup": {
+      "at": "2026-10-23T11:14:25.811668+00:00",
+      "stoppedServices": 10,
+      "backupBytes": 7232213,
+      "backupSha256": "763a0875e5f52ce74183fb55c751ca2d7f25e744094e786fb790c33eeea57524",
+      "archiveReadable": true,
+      "counts": {
+        "tenants": 13,
+        "liveGrants": 307,
+        "retiredGrants": 25,
+        "resources": 389
+      }
+    }
+  },
+  "tests": {
+    "postgres": {
+      "simplepoint-plugin-rbac-tenant-implementation": {
+        "tests": 351,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "simplepoint-platform-installation-host": {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "gateway": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "hostTypecheck": "passed",
+      "i18nTests": 12,
+      "i18nUsageAndBundles": "passed",
+      "uiStrictAudit": {
+        "sourceFiles": 163,
+        "reviewedNativeControls": 40,
+        "unreviewed": 0
+      }
+    },
+    "moduleBoundaries": "passed",
+    "scopedJavaStyle": "passed",
+    "frontendIncludedDistributions": 10,
+    "earlierFullDomainRegression": "doc/verification/20261023-platform-tenant-lifecycle.json"
+  },
+  "runtime": {
+    "at": "2026-10-23T11:51:21.673221+00:00",
+    "services": [
+      {
+        "service": "standalone",
+        "container": "simplepoint-single",
+        "image": "simplepoint-standalone:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:e25cf71b264f1ac757f380f5e5dbe713c38a0c3aa328bae8ec03695d04226861",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "common",
+        "container": "simplepoint203-common-1",
+        "image": "simplepoint203/common:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:beb5ae6833d914f42f2daf25f1b223071af8ca4df6ab9d619611cd091de959f2",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "authorization",
+        "container": "simplepoint203-authorization-1",
+        "image": "simplepoint203/authorization:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:fd590508c0707482f8f4e8072deae6f2efa1dd80f6b863051f317f5a29d8e84c",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "host",
+        "container": "simplepoint203-host-1",
+        "image": "simplepoint203/host:20261023-tenant-entitlements-r4",
+        "imageId": "sha256:5a1083995c29b613375d69db3d18d30dd6e767e63534569c47f8fe158540db7b",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "app",
+        "container": "simplepoint203-app-1",
+        "image": "simplepoint203/app:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:9b5a9069592bb3e03151384f756a6fe31b7bffdcee8763824038b366cd3f7ed2",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "dna",
+        "container": "simplepoint203-dna-1",
+        "image": "simplepoint203/dna:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:c4e1b0aacb84ca1c88dbfde9e6b740ae530ded8002ceeb5aae482d62e0a667d9",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "workflow",
+        "container": "simplepoint203-workflow-1",
+        "image": "simplepoint203/workflow:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:4b54cec8f0f3c6a9a074df3893db3b2ac5220925c338dc4f50923bbf753acf16",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "ai",
+        "container": "simplepoint203-ai-1",
+        "image": "simplepoint203/ai:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:3108b6c5dcdbda81fb6369a10569194ed1575bcd7ef37729057db63c5081a335",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "auditing",
+        "container": "simplepoint203-auditing-1",
+        "image": "simplepoint203/auditing:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:c31f36143542871b6e5d4a079366c41ea357930c56d33219335760aaa8e3eda8",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      },
+      {
+        "service": "mcp-gateway",
+        "container": "simplepoint203-mcp-gateway-1",
+        "image": "simplepoint203/mcp-gateway:20261023-tenant-entitlements-r3",
+        "imageId": "sha256:1212dc6d4ed2f5437fdafa6510cc32879c753f1f6b6371da46f7941886619e8c",
+        "completeDistributionManifestVerified": true,
+        "health": "healthy",
+        "restartCount": 0
+      }
+    ]
+  },
+  "liveTenantChecks": [
+    {
+      "name": "Tenant members cannot manage source catalog or owner-only pages",
+      "passed": true
+    },
+    {
+      "name": "New personal owner has baseline catalog, package page and check-update capability",
+      "passed": true
+    },
+    {
+      "name": "Allocation is idempotent and does not start time or import purchased resources",
+      "passed": true
+    },
+    {
+      "name": "Owner activation retries keep exact receipt; overlapping resource time adds one day",
+      "passed": true,
+      "additionalSeconds": 86400
+    },
+    {
+      "name": "Revocation invalidates the retained authorization context, recomputes remaining time and retains metadata",
+      "passed": true
+    },
+    {
+      "name": "Live source disable/re-enable/formal removal propagate to tenant mirror and retained-context navigation",
+      "passed": true
+    },
+    {
+      "name": "Both entry points retain same personal workspace and package history",
+      "passed": true,
+      "origin": "https://single.simplepoint.online:8000"
+    },
+    {
+      "name": "Both entry points retain same personal workspace and package history",
+      "passed": true,
+      "origin": "https://home.simplepoint.online:8000"
+    },
+    {
+      "name": "Temporary source resource/application/package removed; audit history retained",
+      "passed": true
+    }
+  ],
+  "ownerBrowsers": {
+    "single": {
+      "at": "2026-10-23T11:39:44.584Z",
+      "origin": "https://single.simplepoint.online:8000",
+      "checks": [
+        {
+          "route": "/tenant/resources",
+          "passed": true
+        },
+        {
+          "route": "/tenant/packages",
+          "passed": true
+        }
+      ]
+    },
+    "micro": {
+      "at": "2026-10-23T11:43:30.071Z",
+      "origin": "https://home.simplepoint.online:8000",
+      "checks": [
+        {
+          "route": "/tenant/resources",
+          "passed": true
+        },
+        {
+          "route": "/tenant/packages",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "businessBrowserRoutes": [
+    "/app/workbench",
+    "/workflow/tasks",
+    "/workspace/users",
+    "/app/runtime/06165401-1851-4bda-bb6a-f0511a1cab7a/cd442ce8-9844-4674-9c0a-3ac210c647f3"
+  ],
+  "businessBrowserBothTopologies": "passed without browser exceptions or HTTP failures",
+  "businessFlows": {
+    "single": {
+      "checks": [
+        {
+          "name": "meeting end must follow start",
+          "at": "2026-10-23T11:20:43.257Z"
+        },
+        {
+          "name": "daily report requires detail rows",
+          "at": "2026-10-23T11:20:43.353Z"
+        },
+        {
+          "name": "daily hours must equal exact detail sum",
+          "at": "2026-10-23T11:20:43.441Z"
+        },
+        {
+          "name": "expense cannot tamper with routing amount",
+          "at": "2026-10-23T11:20:43.545Z"
+        },
+        {
+          "name": "expense requires attachments",
+          "at": "2026-10-23T11:20:43.632Z"
+        },
+        {
+          "name": "expense rejects forged storage reference",
+          "at": "2026-10-23T11:20:43.792Z"
+        },
+        {
+          "name": "meeting: employee → administration → completed, immutable record",
+          "at": "2026-10-23T11:21:15.709Z"
+        },
+        {
+          "name": "daily: parent + two detail rows → manager → completed",
+          "at": "2026-10-23T11:21:40.808Z"
+        },
+        {
+          "name": "expense <= 5000: manager → finance, attachment bytes verified",
+          "at": "2026-10-23T11:22:05.560Z"
+        },
+        {
+          "name": "expense > 5000: manager → director → finance, exact amount routing",
+          "at": "2026-10-23T11:22:31.177Z"
+        },
+        {
+          "name": "rejection → linked new revision → completed; original business evidence preserved",
+          "at": "2026-10-23T11:23:21.416Z"
+        },
+        {
+          "name": "administration cannot access financial form; applicant cannot approve any stage",
+          "at": "2026-10-23T11:23:21.447Z"
+        }
+      ],
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "id": "e9a6e5f3fe43f248b9ff2dd3160ca77269ef6e4428f1c5813095ada59975fab6",
+          "recordId": "72c07809-daff-53b5-928f-d16a63d6dc5b",
+          "processInstanceId": "2501",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_daily_report",
+          "id": "4332dede5da48654de6239fb01a7b1ba3103106bf18f9e4735bc7639b1b3feb0",
+          "recordId": "ed453172-cb65-5158-ac2d-964729bc5dd1",
+          "processInstanceId": "2518",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "ce58bc488e9fb868ae4ee5af018cc63a7b865bf266bf1c96ac039379c135d3a7",
+          "recordId": "e393e07a-522c-5ac2-8f29-499acfea766d",
+          "processInstanceId": "2535",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "9c25797e484baa20dbff28c4aefebd6b3c63236800c5bb55bc2f6327c6813e90",
+          "recordId": "63fcf605-3636-528f-b99b-f8e0d0a9f95e",
+          "processInstanceId": "2563",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "523458b35498fc674d1f6f181c990a063bc1fa33d4deaa2e7f29adb7f937ac62",
+          "recordId": "abdb723b-01c8-560c-bf8e-b30576de1581",
+          "processInstanceId": "2599",
+          "status": "REJECTED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "17ec1ddbf67c548f23dead0e2c8e66a4a3765cc08494a833864b57d395f88a93",
+          "recordId": "9de7a34d-d8c2-5243-83e0-4a03460e7961",
+          "processInstanceId": "2615",
+          "status": "COMPLETED"
+        }
+      ]
+    },
+    "micro": {
+      "checks": [
+        {
+          "name": "meeting end must follow start",
+          "at": "2026-10-23T11:44:32.003Z"
+        },
+        {
+          "name": "daily report requires detail rows",
+          "at": "2026-10-23T11:44:32.082Z"
+        },
+        {
+          "name": "daily hours must equal exact detail sum",
+          "at": "2026-10-23T11:44:32.158Z"
+        },
+        {
+          "name": "expense cannot tamper with routing amount",
+          "at": "2026-10-23T11:44:32.259Z"
+        },
+        {
+          "name": "expense requires attachments",
+          "at": "2026-10-23T11:44:32.330Z"
+        },
+        {
+          "name": "expense rejects forged storage reference",
+          "at": "2026-10-23T11:44:32.420Z"
+        },
+        {
+          "name": "meeting: employee → administration → completed, immutable record",
+          "at": "2026-10-23T11:44:58.148Z"
+        },
+        {
+          "name": "daily: parent + two detail rows → manager → completed",
+          "at": "2026-10-23T11:45:23.724Z"
+        },
+        {
+          "name": "expense <= 5000: manager → finance, attachment bytes verified",
+          "at": "2026-10-23T11:45:48.880Z"
+        },
+        {
+          "name": "expense > 5000: manager → director → finance, exact amount routing",
+          "at": "2026-10-23T11:46:13.237Z"
+        },
+        {
+          "name": "rejection → linked new revision → completed; original business evidence preserved",
+          "at": "2026-10-23T11:47:03.643Z"
+        },
+        {
+          "name": "administration cannot access financial form; applicant cannot approve any stage",
+          "at": "2026-10-23T11:47:03.789Z"
+        }
+      ],
+      "cases": [
+        {
+          "code": "office_meeting_room",
+          "id": "8dc4832d0a815444007b6a8fd8723753192261119e434093bb2d25a21c28799e",
+          "recordId": "ef217b8f-a465-5263-9481-9d5e5a2cfeaf",
+          "processInstanceId": "5001",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_daily_report",
+          "id": "b363fdeca596e04474ad61aea9991ed3d09c737f95fd5415088521f9dff18461",
+          "recordId": "5a144ea4-fd29-5591-a857-04438e410c22",
+          "processInstanceId": "5018",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "049bf81f01dade7aedfb5641ecbec1d246ec68193b754165b46f68213d95e73b",
+          "recordId": "806793b5-d613-5b5c-a653-59670763fc94",
+          "processInstanceId": "5035",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "4c63c96c32cc002b28af110944534137d894d498c9fdf63858ecf7e17ef31b22",
+          "recordId": "f51e81fa-6565-53db-a6fc-3e4b135252ce",
+          "processInstanceId": "5063",
+          "status": "COMPLETED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "5de0161893c2733f3e7417063ac8a4a1f1a2b27568d37b406a7226b070b0405c",
+          "recordId": "36ff0fb0-a411-5c49-8526-c83e94e13231",
+          "processInstanceId": "5099",
+          "status": "REJECTED"
+        },
+        {
+          "code": "office_expense_claim",
+          "id": "dff4c835102581267c2e23d443b6b8297663bdcb3225fe19abf5cc08b890dd38",
+          "recordId": "ac17bd99-1407-5c54-93b4-1f474cc22676",
+          "processInstanceId": "5115",
+          "status": "COMPLETED"
+        }
+      ]
+    }
+  },
+  "crossHostStoredRecords": {
+    "at": "2026-10-23T11:43:31.443Z",
+    "checks": [
+      {
+        "case": "office_meeting_room",
+        "sharedRecordVisible": true
+      },
+      {
+        "case": "office_daily_report",
+        "sharedRecordVisible": true
+      },
+      {
+        "case": "office_expense_claim",
+        "sharedRecordVisible": true
+      },
+      {
+        "case": "office_expense_claim",
+        "sharedRecordVisible": true
+      },
+      {
+        "case": "office_expense_claim",
+        "sharedRecordVisible": true
+      },
+      {
+        "case": "office_expense_claim",
+        "sharedRecordVisible": true
+      }
+    ]
+  },
+  "servedFederationAssets": {
+    "single": {
+      "modules": [
+        {
+          "module": "common",
+          "assetCount": 103
+        },
+        {
+          "module": "audit",
+          "assetCount": 45
+        },
+        {
+          "module": "dna",
+          "assetCount": 76
+        },
+        {
+          "module": "ai",
+          "assetCount": 49
+        },
+        {
+          "module": "app",
+          "assetCount": 54
+        },
+        {
+          "module": "workflow",
+          "assetCount": 54
+        }
+      ],
+      "totalAssets": 381
+    },
+    "micro": {
+      "modules": [
+        {
+          "module": "common",
+          "assetCount": 103
+        },
+        {
+          "module": "audit",
+          "assetCount": 45
+        },
+        {
+          "module": "dna",
+          "assetCount": 76
+        },
+        {
+          "module": "ai",
+          "assetCount": 49
+        },
+        {
+          "module": "app",
+          "assetCount": 54
+        },
+        {
+          "module": "workflow",
+          "assetCount": 54
+        }
+      ],
+      "totalAssets": 381
+    }
+  },
+  "finalPublicLogins": {
+    "at": "2026-10-23T11:51:05.053Z",
+    "checks": [
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "scope": "PERSONAL",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "scope": "ORGANIZATION",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "scope": "PLATFORM",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "scope": "PERSONAL",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "scope": "ORGANIZATION",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "scope": "PLATFORM",
+        "loginAndAuthorizedRead": true,
+        "noMaintenanceProbe": true
+      }
+    ]
+  },
+  "publicEntryPoints": {
+    "at": "2026-10-23T11:50:12.243276+00:00",
+    "checks": [
+      {
+        "url": "https://single.simplepoint.online:8000/edge-health",
+        "status": 200,
+        "noMaintenanceProbe": true
+      },
+      {
+        "url": "https://home.simplepoint.online:8000/edge-health",
+        "status": 200,
+        "noMaintenanceProbe": true
+      }
+    ]
+  },
+  "databaseInventory": [
+    {
+      "kind": "grants",
+      "rows": 332,
+      "active": 307,
+      "revoked": 25,
+      "fingerprint": "6a3912b71a9670dcda2f9a2126ac8d2f"
+    },
+    {
+      "kind": "readiness",
+      "active": 14,
+      "ready": 14,
+      "pending": 0
+    },
+    {
+      "kind": "events",
+      "owner": "auditing",
+      "direction": "INBOX",
+      "state": "DONE",
+      "count": 37
+    },
+    {
+      "kind": "events",
+      "owner": "authorization",
+      "direction": "OUTBOX",
+      "state": "DONE",
+      "count": 37
+    },
+    {
+      "kind": "events",
+      "owner": "common",
+      "direction": "OUTBOX",
+      "state": "DONE",
+      "count": 14
+    },
+    {
+      "kind": "events",
+      "owner": "workflow",
+      "direction": "INBOX",
+      "state": "DONE",
+      "count": 14
+    }
+  ],
+  "fixesFoundByLiveValidation": [
+    "Moved identity persistence service implementation out of tenant API to permit independent consumer services",
+    "Used new behavior-specific synchronization translation keys and standard table edit label",
+    "Added missing legacy host auditing route for the declared federation asset prefix"
+  ],
+  "cleanup": {
+    "temporaryPlatformCatalogTemplatesRemoved": true,
+    "revokedPackageAndOfflineMirrorHistoryRetained": true,
+    "maintenanceRemoved": true,
+    "maintenanceProbeRemoved": true,
+    "isolatedPostgresInstancesStopped": true
+  },
+  "validationBoundaries": [
+    "Expiry boundaries, concurrent transactions, ownership transfer, REPORT provider contract and rollback/recovery are covered by the linked isolated database and HTTP regression records; no live production clock manipulation.",
+    "Business acceptance uses explicitly labeled simulation records and test actors; it performs no real payment.",
+    "REPORT is an extensible resource origin contract; this delivery does not implement a reporting product."
+  ],
+  "privateOperationalArtifacts": ".simplepoint/tenant-entitlements-20261023 (credentials, sessions and database backups are excluded from source control)",
+  "registration": {
+    "at": "2026-10-23T11:18:53.996Z",
+    "checks": [
+      {
+        "name": "registration and first login creates personal workspace",
+        "passed": true
+      },
+      {
+        "path": "/common/tenants/current",
+        "status": 200
+      },
+      {
+        "path": "/userinfo",
+        "status": 200
+      },
+      {
+        "name": "second login retains same personal workspace",
+        "passed": true
+      }
+    ]
+  }
+}

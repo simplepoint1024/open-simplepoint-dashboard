@@ -1,3 +1,4 @@
+import type {LocalizedText} from '../../shared/i18n/localizedText.ts';
 export type FormFieldType =
   | 'STRING'
   | 'TEXT'
@@ -24,17 +25,19 @@ export type FormValueKind =
   | 'NULL';
 
 export type FormValue = {kind: FormValueKind; value?: string | null};
-export type FormChoiceOption = {value: string; label: string};
+export type FormChoiceOption = {value: string; label: string; labelLocalization?: LocalizedText | null};
 export type FormFieldWritePolicy = 'EDITABLE' | 'CREATE_ONLY' | 'UNTIL_SUBMITTED';
 
 export type FormFieldValidation = {minLength?: number; maxLength?: number; pattern?: string; patternMessage?: string};
 export type FormFieldAccess = {readOnly?: boolean; create?: 'WRITE' | 'HIDDEN'; edit?: 'WRITE' | 'READ' | 'HIDDEN'};
 export type FormPresentation = {listFieldOrder: string[]; labelWidth?: number | null};
 export type FormFieldDefinition = {
+  /** Server-owned output; expressions and dependency metadata are never exposed to runtime clients. */
+  calculated?: boolean | null;
   access?: FormFieldAccess | null;
   validation?: FormFieldValidation | null;
   fieldId: string;
-  label: string;
+  label: string; labelLocalization?: LocalizedText | null;
   type: FormFieldType;
   submitRequired: boolean;
   length?: number | null;
@@ -52,6 +55,7 @@ export type FormComponentDefinition = {
   fieldId?: string | null;
   columnSpan: number;
   label?: string | null;
+  labelLocalization?: LocalizedText | null;
   description?: string | null;
   placeholder?: string | null;
   targetSceneId?: string | null;
@@ -98,7 +102,7 @@ export type FormRuleDefinition = {
   condition: FormCondition;
 };
 
-export type FormDetailDefinition = {detailId: string; label: string; fields: FormFieldDefinition[]; readOnlyFieldIds?: string[]};
+export type FormDetailDefinition = {detailId: string; label: string; labelLocalization?: LocalizedText | null; fields: FormFieldDefinition[]; readOnlyFieldIds?: string[]};
 
 export type FormValidationConstraint = {
   constraintId: string; kind: 'RANGE' | 'AFTER' | 'DETAIL_COUNT' | 'DETAIL_RANGE' | 'DETAIL_SUM';

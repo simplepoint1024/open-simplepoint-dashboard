@@ -1,19 +1,17 @@
 package org.simplepoint.cloud.oauth.server.client;
 
-import java.time.Instant;
 import java.util.Map;
-import org.simplepoint.plugin.oidc.api.entity.ExternalIdentityLink;
+import org.simplepoint.plugin.oidc.api.error.ExternalIdentityBindingException;
+import org.simplepoint.plugin.oidc.api.model.ExternalIdentityBinding;
 import org.simplepoint.plugin.oidc.api.model.ExternalIdentityMatchStrategy;
 import org.simplepoint.plugin.oidc.api.model.ResolvedExternalIdentityProvider;
-import org.simplepoint.plugin.oidc.api.repository.ExternalIdentityLinkRepository;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.oidc.api.service.ExternalIdentityAccountService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.security.entity.User;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /** Safely binds stable external subjects to existing local accounts. */
 @Component
@@ -21,18 +19,14 @@ public class ExternalIdentityAccountLinker {
 
   private static final String ERROR_CODE = "external_account_not_linked";
 
-  private final ExternalIdentityLinkRepository linkRepository;
+  private final ExternalIdentityAccountService accounts;
 
-  private final UsersService usersService;
+  private final UserManagementService usersService;
 
-  /**
-   * Creates the account linker.
-   */
+  /** Creates the account linker. */
   public ExternalIdentityAccountLinker(
-      final ExternalIdentityLinkRepository linkRepository,
-      final UsersService usersService
-  ) {
-    this.linkRepository = linkRepository;
+      final ExternalIdentityAccountService accounts, final UserManagementService usersService) {
+    this.accounts = accounts;
     this.usersService = usersService;
   }
 
@@ -43,100 +37,66 @@ public class ExternalIdentityAccountLinker {
    * @param attributes trusted attributes returned by the provider
    * @return enabled local user
    */
-  @Transactional(rollbackFor = Exception.class)
   public User link(
-      final ResolvedExternalIdentityProvider provider,
-      final Map<String, Object> attributes
-  ) {
+      final ResolvedExternalIdentityProvider provider, final Map<String, Object> attributes) {
     String subject = attribute(attributes, provider.subjectClaim());
     if (subject == null) {
       throw failure("身份提供商未返回稳定的 subject");
     }
-    ExternalIdentityLink existing = linkRepository
-        .findActiveByProviderAndSubject(provider.id(), subject)
-        .orElse(null);
-    if (existing != null) {
-      User user = loadById(existing.getUserId());
-      existing.setLastLoginAt(Instant.now());
-      linkRepository.save(existing);
-      return requireUsable(user);
-    }
-
-    User matched = matchLocalUser(provider, attributes);
-    ExternalIdentityLink link = new ExternalIdentityLink();
-    link.setProviderId(provider.id());
-    link.setExternalSubject(subject);
-    link.setUserId(matched.getId());
-    link.setEmailAtLink(attribute(attributes, provider.emailClaim()));
-    link.setLastLoginAt(Instant.now());
     try {
-      linkRepository.save(link);
-    } catch (DataIntegrityViolationException ex) {
-      ExternalIdentityLink concurrent = linkRepository
-          .findActiveByProviderAndSubject(provider.id(), subject)
-          .orElseThrow(() -> ex);
-      matched = loadById(concurrent.getUserId());
+      ExternalIdentityBinding existing = accounts.find(provider.id(), subject).orElse(null);
+      if (existing != null) {
+        User user = requireUsable(loadById(existing.userId()));
+        accounts.recordLogin(existing);
+        return user;
+      }
+      User matched = requireUsable(matchLocalUser(provider, attributes));
+      return bindVerified(provider, subject, attribute(attributes, provider.emailClaim()), matched);
+    } catch (ExternalIdentityBindingException ex) {
+      throw bindingFailure(ex);
     }
-    return requireUsable(matched);
   }
 
-  /**
-   * Explicitly binds an authenticated external identity to a locally authenticated account.
-   * This path is used by account settings and by the first-login confirmation flow.
-   */
-  @Transactional(rollbackFor = Exception.class)
+  /** Explicitly binds a subject after the browser flow has authenticated the target account. */
   public User linkToUser(
       final ResolvedExternalIdentityProvider provider,
       final String subject,
       final String email,
-      final String userId
-  ) {
+      final String userId) {
     String normalizedSubject = trimToNull(subject);
     if (normalizedSubject == null) {
       throw failure("身份提供商未返回稳定的 subject");
     }
     User target = requireUsable(loadById(userId));
-    ExternalIdentityLink subjectLink = linkRepository
-        .findActiveByProviderAndSubject(provider.id(), normalizedSubject)
-        .orElse(null);
-    if (subjectLink != null) {
-      if (!target.getId().equals(subjectLink.getUserId())) {
-        throw failure("该外部账号已绑定到其他平台账号");
-      }
-      subjectLink.setLastLoginAt(Instant.now());
-      linkRepository.save(subjectLink);
-      return target;
-    }
-    ExternalIdentityLink userLink = linkRepository
-        .findActiveByProviderAndUserId(provider.id(), target.getId())
-        .orElse(null);
-    if (userLink != null) {
-      throw failure("当前平台账号已绑定该身份提供商的其他账号");
-    }
-
-    ExternalIdentityLink link = new ExternalIdentityLink();
-    link.setProviderId(provider.id());
-    link.setExternalSubject(normalizedSubject);
-    link.setUserId(target.getId());
-    link.setEmailAtLink(trimToNull(email));
-    link.setLastLoginAt(Instant.now());
     try {
-      linkRepository.save(link);
-    } catch (DataIntegrityViolationException ex) {
-      ExternalIdentityLink concurrent = linkRepository
-          .findActiveByProviderAndSubject(provider.id(), normalizedSubject)
-          .orElseThrow(() -> ex);
-      if (!target.getId().equals(concurrent.getUserId())) {
-        throw failure("该外部账号已绑定到其他平台账号");
-      }
+      return bindVerified(provider, normalizedSubject, trimToNull(email), target);
+    } catch (ExternalIdentityBindingException ex) {
+      throw bindingFailure(ex);
     }
-    return target;
+  }
+
+  private User bindVerified(
+      ResolvedExternalIdentityProvider provider, String subject, String email, User target) {
+    var binding = accounts.bind(provider.id(), subject, email, target.getId());
+    // Identity is authoritative. Separate stores do not pretend to share a transaction.
+    User current = requireUsable(loadById(target.getId()));
+    accounts.recordLogin(binding);
+    return current;
+  }
+
+  private static OAuth2AuthenticationException bindingFailure(ExternalIdentityBindingException ex) {
+    return failure(
+        switch (ex.getReason()) {
+          case SUBJECT_IN_USE -> "该外部账号已绑定到其他平台账号";
+          case ACCOUNT_IN_USE -> "当前平台账号已绑定该身份提供商的其他账号";
+          case PROVIDER_UNAVAILABLE -> "身份提供商已停用或不存在";
+          case BINDING_REVOKED, NOT_LINKED -> "外部账号绑定已撤销，请重新登录";
+          case INVALID_INPUT -> "外部账号绑定信息无效";
+        });
   }
 
   private User matchLocalUser(
-      final ResolvedExternalIdentityProvider provider,
-      final Map<String, Object> attributes
-  ) {
+      final ResolvedExternalIdentityProvider provider, final Map<String, Object> attributes) {
     if (provider.matchStrategy() == ExternalIdentityMatchStrategy.USER_ID) {
       String userId = attribute(attributes, provider.subjectClaim());
       return loadById(userId);
@@ -161,22 +121,24 @@ public class ExternalIdentityAccountLinker {
     if (userId == null || userId.isBlank()) {
       throw failure("外部账号没有可绑定的本地用户标识");
     }
-    return usersService.findByIdForAuthorization(userId)
+    return usersService
+        .findByIdForAuthorization(userId)
         .orElseThrow(() -> failure("外部账号绑定的本地账号不存在"));
   }
 
   private static User requireUsable(final User user) {
-    if (user == null || !user.isEnabled() || !user.isAccountNonLocked()
-        || !user.isAccountNonExpired() || !user.isCredentialsNonExpired()) {
+    if (user == null
+        || user.getDeletedAt() != null
+        || !user.isEnabled()
+        || !user.isAccountNonLocked()
+        || !user.isAccountNonExpired()
+        || !user.isCredentialsNonExpired()) {
       throw failure("本地账号已停用、锁定或过期");
     }
     return user;
   }
 
-  private static String attribute(
-      final Map<String, Object> attributes,
-      final String name
-  ) {
+  private static String attribute(final Map<String, Object> attributes, final String name) {
     if (attributes == null || name == null || name.isBlank()) {
       return null;
     }
@@ -188,19 +150,12 @@ public class ExternalIdentityAccountLinker {
     return normalized.isEmpty() ? null : normalized;
   }
 
-  private static boolean booleanAttribute(
-      final Map<String, Object> attributes,
-      final String name
-  ) {
+  private static boolean booleanAttribute(final Map<String, Object> attributes, final String name) {
     String value = attribute(attributes, name);
-    return value != null
-        && ("true".equalsIgnoreCase(value) || "1".equals(value));
+    return value != null && ("true".equalsIgnoreCase(value) || "1".equals(value));
   }
 
-  static String attributeValue(
-      final Map<String, Object> attributes,
-      final String name
-  ) {
+  static String attributeValue(final Map<String, Object> attributes, final String name) {
     return attribute(attributes, name);
   }
 
@@ -214,8 +169,6 @@ public class ExternalIdentityAccountLinker {
 
   private static OAuth2AuthenticationException failure(final String description) {
     return new OAuth2AuthenticationException(
-        new OAuth2Error(ERROR_CODE, description, null),
-        description
-    );
+        new OAuth2Error(ERROR_CODE, description, null), description);
   }
 }

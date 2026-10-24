@@ -46,6 +46,16 @@ class ManagedTenantResourceCallerGuardTest {
   }
 
   @Test
+  void rejectsUnclassifiedOwnersBeforeTheyCanRegisterResources() {
+    var properties = new ManagedTenantResourceProperties();
+    properties.setCallerOwners(Map.of("service", "unclassified"));
+    assertThatThrownBy(() -> new ManagedTenantResourceCallerGuard(properties))
+        .isInstanceOf(IllegalArgumentException.class);
+    properties.setCallerOwners(Map.of("report-service", "report"));
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> new ManagedTenantResourceCallerGuard(properties));
+  }
+
+  @Test
   void failsClosedWhenNoCallerMappingExists() {
     ManagedTenantResourceProperties properties = new ManagedTenantResourceProperties();
     SecurityContextHolder.getContext().setAuthentication(

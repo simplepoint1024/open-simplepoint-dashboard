@@ -69,7 +69,7 @@ class ApplicationFormRecordServiceImplTest {
     when(context.fieldPermissions()).thenReturn(Map.of());
     when(validationContext.fieldPermissions()).thenReturn(Map.of());
     when(resolver.resolve("app-a", "page-a")).thenReturn(form());
-    when(contexts.forResource("app.runtime.page.a")).thenReturn(context);
+    when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
     when(contexts.forResourceValidation("app.runtime.page.a"))
         .thenReturn(validationContext);
     service = new ApplicationFormRecordServiceImpl(
@@ -78,7 +78,8 @@ class ApplicationFormRecordServiceImplTest {
         dna,
         contexts,
         mock(FormRecordInvariantValidator.class),
-        new FormDetailRecordCoordinator(owned, new FormRecordPayloadCompiler(), mock(FormAttachmentReferenceValidator.class))
+        new FormDetailRecordCoordinator(owned, new FormRecordPayloadCompiler(), mock(FormAttachmentReferenceValidator.class)),
+        new FormRecordIdentityLabels(mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class))
     );
   }
 
@@ -121,6 +122,18 @@ class ApplicationFormRecordServiceImplTest {
         Map.of("name-field", "Ada"))))
         .isInstanceOfSatisfying(ApplicationFormException.class,
             failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.RECORD_CONFLICT));
+    verify(dna).createRecord(eq(context), any());
+  }
+
+  @Test
+  void reportsMaintenanceAsPendingPublicationWithoutRetryingTheWrite() {
+    when(dna.createRecord(eq(context), any())).thenThrow(new DnaRuntimeException(
+        DnaRuntimeErrorCode.RECORD_MAINTENANCE_IN_PROGRESS, "Calculation publication is pending"));
+    assertThatThrownBy(() -> service.create("app-a", "page-a", new CreateApplicationFormRecordCommand(
+        new ApplicationFormRuntimeIdentity("form-a", 1), "create-a", FormRecordState.SUBMITTED,
+        Map.of("name-field", "Ada"))))
+        .isInstanceOfSatisfying(ApplicationFormException.class,
+            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
     verify(dna).createRecord(eq(context), any());
   }
 

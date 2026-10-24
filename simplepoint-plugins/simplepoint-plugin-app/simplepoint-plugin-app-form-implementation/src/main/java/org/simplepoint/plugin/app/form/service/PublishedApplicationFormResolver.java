@@ -104,6 +104,7 @@ public class PublishedApplicationFormResolver {
           "The activated form write policy is unavailable");
     }
     ApplicationFormDocument document = codec.decode(version.getDocumentJson());
+    ApplicationFormDocument calculationDocument = null;
     List<FormDetailBinding> detailBindings =
         codec.decodeDetailBindings(version.getDetailBindingsJson());
     if (writePolicyVersion != version.getVersionNumber()) {
@@ -124,8 +125,11 @@ public class PublishedApplicationFormResolver {
                           ApplicationFormErrorCode.VERSION_NOT_FOUND,
                           "The activated form write policy is unavailable"));
       requireDnaBinding(form, governing);
-      document =
-          FormWritePolicyProjection.apply(document, codec.decode(governing.getDocumentJson()));
+      var governingDocument = codec.decode(governing.getDocumentJson());
+      document = FormWritePolicyProjection.apply(document, governingDocument);
+      if (FormCalculationCompiler.hasCalculations(governingDocument)) {
+        calculationDocument = governingDocument;
+      }
       detailBindings = codec.decodeDetailBindings(governing.getDetailBindingsJson());
     }
     return new PublishedApplicationForm(
@@ -143,7 +147,7 @@ public class PublishedApplicationFormResolver {
         document,
         writePolicyVersion,
         form.getWritePolicyVersion(),
-        detailBindings);
+        detailBindings, calculationDocument);
   }
 
   /**
@@ -158,6 +162,30 @@ public class PublishedApplicationFormResolver {
           "Form snapshot belongs to another tenant");
     }
     requireResource(form.resourceCode());
+  }
+
+  /** Current dependency policy for historical evidence; never replaces its frozen layout or values. */
+  @Transactional(readOnly = true)
+  public PublishedApplicationForm currentCalculationScope(final PublishedApplicationForm historical) {
+    requireRead(historical);
+    var form = entityManager.createQuery("from ApplicationFormEntity form where form.tenantId = :tenant "
+        + "and form.applicationId = :application and form.id = :form", ApplicationFormEntity.class)
+        .setParameter("tenant", historical.tenantId()).setParameter("application", historical.applicationId())
+        .setParameter("form", historical.formId()).setMaxResults(1).getResultList().stream().findFirst()
+        .orElseThrow(() -> failure(ApplicationFormErrorCode.VERSION_NOT_FOUND, "Current form policy is unavailable"));
+    if (!historical.physicalModelId().equals(form.getPhysicalModelId()) || form.getPublishedVersion() == null) {
+      throw failure(ApplicationFormErrorCode.VERSION_NOT_FOUND, "Current form policy is unavailable");
+    }
+    var version = entityManager.createQuery("from ApplicationFormVersionEntity version where version.tenantId = :tenant "
+        + "and version.formId = :form and version.versionNumber = :version", ApplicationFormVersionEntity.class)
+        .setParameter("tenant", historical.tenantId()).setParameter("form", historical.formId())
+        .setParameter("version", form.getPublishedVersion()).setMaxResults(1).getResultList().stream().findFirst()
+        .orElseThrow(() -> failure(ApplicationFormErrorCode.VERSION_NOT_FOUND, "Current form policy is unavailable"));
+    requireDnaBinding(form, version);
+    return new PublishedApplicationForm(historical.tenantId(), historical.applicationId(), historical.pageId(), historical.pageName(),
+        historical.formId(), historical.formName(), version.getVersionNumber(), historical.resourceCode(), historical.physicalModelId(),
+        version.getPhysicalModelVersion(), version.getStorageChecksum(), codec.decode(version.getDocumentJson()),
+        version.getVersionNumber(), form.getWritePolicyVersion(), codec.decodeDetailBindings(version.getDetailBindingsJson()));
   }
 
   /** Requires one page child action for a mutation. */
@@ -235,10 +263,21 @@ public class PublishedApplicationFormResolver {
       ApplicationFormDocument document,
       int writePolicyVersion,
       long writeAdmissionVersion,
-      List<FormDetailBinding> detailBindings) {
+      List<FormDetailBinding> detailBindings,
+      @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+      ApplicationFormDocument calculationDocument) {
     /** Preserves the immutable runtime identity and optional child bindings. */
     public PublishedApplicationForm {
       detailBindings = detailBindings == null ? List.of() : List.copyOf(detailBindings);
+    }
+
+    /** Legacy accepted operations preserve their serialized shape when no separate calculation scope existed. */
+    public PublishedApplicationForm(String tenantId, String applicationId, String pageId, String pageName, String formId,
+        String formName, int formVersion, String resourceCode, String physicalModelId, int physicalModelVersion,
+        String storageChecksum, ApplicationFormDocument document, int writePolicyVersion, long writeAdmissionVersion,
+        List<FormDetailBinding> detailBindings) {
+      this(tenantId, applicationId, pageId, pageName, formId, formName, formVersion, resourceCode, physicalModelId,
+          physicalModelVersion, storageChecksum, document, writePolicyVersion, writeAdmissionVersion, detailBindings, null);
     }
 
     /** Preserves the immutable runtime identity and optional child bindings. */

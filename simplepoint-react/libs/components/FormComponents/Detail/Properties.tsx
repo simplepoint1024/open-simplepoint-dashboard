@@ -7,7 +7,7 @@ function DetailProperties({node, document, components, writePolicies, disabled, 
   DesignerPropertyEditorProps & {section: 'fields' | 'indexes'}) {
   const detail = document.details?.find(item => item.detailId === detailIdentity(node));
   if (!detail) return null;
-  return <DataSchemaEditor modelScope="detail" section={section} compact
+  return <DataSchemaEditor calculationScope={detail.detailId} modelScope="detail" section={section} compact
     document={{contractVersion: document.contractVersion, fields: detail.fields, indexes: detail.indexes, scenes: [], rules: []}}
     components={components} writePolicies={writePolicies} disabled={disabled} maxFields={48} maxIndexes={8}
     onChange={next => onDocumentChange({...document, details: document.details?.map(item => item.detailId === detail.detailId

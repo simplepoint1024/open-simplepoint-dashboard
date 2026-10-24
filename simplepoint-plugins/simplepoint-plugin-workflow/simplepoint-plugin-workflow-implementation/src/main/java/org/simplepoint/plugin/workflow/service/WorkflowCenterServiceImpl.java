@@ -34,7 +34,9 @@ import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
-import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.core.query.TablePagination;
+import org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantDirectory;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.WorkflowException.Code;
 import org.simplepoint.plugin.workflow.api.WorkflowModelingException;
@@ -81,7 +83,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkflowCenterServiceImpl implements WorkflowCenterService {
 
   private static final Pattern KEY = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{2,79}");
-  private static final int MAX_PAGE_SIZE = 100;
+  private static final int MAX_PAGE_SIZE = TablePagination.MAX_PAGE_SIZE;
   private static final int MAX_VARIABLE_BYTES = 128 * 1024;
 
   private final EntityManager entityManager;
@@ -91,7 +93,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   private final HistoryService historyService;
   private final BpmnDefinitionValidator bpmnValidator;
   private final ObjectMapper objectMapper;
-  private final TenantService tenantService;
+  private final TenantDirectory tenantService;
+  private final AuditIdentityDirectory auditIdentities;
   private final WorkflowFormContracts formContracts;
   private final WorkflowOperationJournal operations;
   private final Map<String, WorkflowFormProvider> formProviders;
@@ -105,7 +108,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       final HistoryService historyService,
       final BpmnDefinitionValidator bpmnValidator,
       final ObjectMapper objectMapper,
-      final TenantService tenantService,
+      final TenantDirectory tenantService,
+      final AuditIdentityDirectory auditIdentities,
       final List<WorkflowFormProvider> formProviders) {
     this.entityManager = entityManager;
     this.repositoryService = repositoryService;
@@ -115,6 +119,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     this.bpmnValidator = bpmnValidator;
     this.objectMapper = objectMapper;
     this.tenantService = tenantService;
+    this.auditIdentities = auditIdentities;
     this.formContracts = new WorkflowFormContracts(objectMapper);
     this.operations = new WorkflowOperationJournal(entityManager, objectMapper);
     this.formProviders =
@@ -387,6 +392,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
       return versionSummary(version);
     } catch (WorkflowException exception) {
       throw exception;
+    } catch (org.flowable.bpmn.exceptions.XMLException exception) {
+      throw new WorkflowException(Code.VALIDATION, "BPMN XML 结构不符合规范，请检查节点顺序及定义", exception);
     } catch (FlowableException exception) {
       throw new WorkflowException(Code.ENGINE_FAILURE, "流程部署失败，请检查 BPMN 结构", exception);
     }
@@ -455,7 +462,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
             : command.version();
     WorkflowDefinitionVersionEntity version = requireVersion(definition, requestedVersion);
     requireExecutableVersion(version);
-    final String businessKey = command == null ? null : optional(command.businessKey(), 160, "业务标识");
+    final String businessKey =
+        command == null ? null : optional(command.businessKey(), 160, "业务标识");
     String versionName =
         version.getDefinitionName() == null ? definition.getName() : version.getDefinitionName();
     String title = command == null ? versionName : optional(command.title(), 240, "事项标题");
@@ -579,8 +587,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
             .setMaxResults(50)
             .getResultList();
     return new WorkflowResubmission(
-        new WorkflowMatterQueries(entityManager)
-            .findVisibleProjection(source.getProcessInstanceId()),
+        new WorkflowRuntimeDetails(entityManager, historyService, auditIdentities)
+            .matter(source.getProcessInstanceId()),
         form,
         watchers);
   }
@@ -1185,7 +1193,9 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     requireRuntimeView();
     var diagram = diagram(processInstanceId); // Includes tenant and participant authorization.
     return new WorkflowProgress(
-        new WorkflowMatterQueries(entityManager).findVisibleProjection(processInstanceId), diagram);
+        new WorkflowRuntimeDetails(entityManager, historyService, auditIdentities)
+            .matter(processInstanceId),
+        diagram);
   }
 
   @Override
@@ -1194,7 +1204,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     requireRuntimeView();
     var instance = requireInstance(processInstanceId);
     requireInstanceVisibility(instance);
-    return new WorkflowRuntimeDetails(entityManager, historyService)
+    return new WorkflowRuntimeDetails(entityManager, historyService, auditIdentities)
         .node(instance, activityId, page, size, activeOnly);
   }
 
@@ -1203,7 +1213,8 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     requireRuntimeView();
     var instance = requireInstance(processInstanceId);
     requireInstanceVisibility(instance);
-    return new WorkflowRuntimeDetails(entityManager, historyService).audit(instance, page, size);
+    return new WorkflowRuntimeDetails(entityManager, historyService, auditIdentities)
+        .audit(instance, page, size);
   }
 
   private static void requireRuntimeView() {

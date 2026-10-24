@@ -9,10 +9,14 @@ function storage() {
     clear: () => values.clear(), removeItem: key => values.delete(key)};
 }
 async function withStorage(run) {
-  const keys = ['localStorage', 'sessionStorage', 'document'];
+  const keys = ['localStorage', 'sessionStorage', 'document', 'fetch'];
   const previous = keys.map(key => Object.getOwnPropertyDescriptor(globalThis, key));
   Object.defineProperty(globalThis, 'localStorage', {configurable: true, value: storage()});
   Object.defineProperty(globalThis, 'sessionStorage', {configurable: true, value: storage()});
+  Object.defineProperty(globalThis, 'fetch', {configurable: true, value: async url => {
+    assert.equal(url, '/csrf');
+    return new Response(JSON.stringify({token: 'csrf-token', parameterName: '_csrf', headerName: 'X-CSRF-TOKEN'}));
+  }});
   try {await run();} finally {
     keys.forEach((key, index) => previous[index] ? Object.defineProperty(globalThis, key, previous[index]) : delete globalThis[key]);
   }
@@ -23,8 +27,12 @@ test('logout keeps account choices but erases authorization context, session ide
   localStorage.setItem('sp.tenantId', 'second'); localStorage.setItem('sp.contextId:second', 'authorization');
   localStorage.setItem('business.draft', 'private'); sessionStorage.setItem('sp.userinfo', '{"sub":"alice"}');
   let submitted = false;
-  const form = {style: {}, requestSubmit() {submitted = true;}};
-  Object.defineProperty(globalThis, 'document', {configurable: true, value: {createElement: () => form, body: {appendChild() {}}}});
+  const form = {style: {}, appendChild(input) {
+    assert.deepEqual(input, {type: 'hidden', name: '_csrf', value: 'csrf-token'});
+  }, requestSubmit() {submitted = true;}};
+  Object.defineProperty(globalThis, 'document', {configurable: true, value: {
+    createElement: tag => tag === 'form' ? form : {}, body: {appendChild() {}},
+  }});
   await redirectToLogout();
   assert(submitted); assert.equal(form.method, 'post'); assert.equal(form.action, '/logout');
   assert.equal(rememberedWorkspace('alice'), 'second'); assert.equal(rememberedWorkspace('bob'), 'third');

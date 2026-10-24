@@ -9,8 +9,11 @@ import java.util.Set;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPreviewView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeIdentity;
 import org.simplepoint.plugin.app.form.api.model.FormDetailDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormRecordState;
 import org.simplepoint.plugin.app.form.service.PublishedApplicationFormResolver.PublishedApplicationForm;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
@@ -71,6 +74,17 @@ public class FormDetailRecordCoordinator {
       Map<String, Object> requested,
       FormRecordState state,
       boolean captureSnapshot) {
+    return intent(form, mutation, key, requested, state, captureSnapshot, null);
+  }
+
+  /** A captured integration freezes extra value requirements without changing ordinary CRUD. */
+  public OwnedRecordCommand intent(
+      PublishedApplicationForm form, RecordMutation mutation, String key, Map<String, Object> requested,
+      FormRecordState state, boolean captureSnapshot,
+      List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> requirements) {
+    if (!captureSnapshot && requirements != null) {
+      throw new IllegalArgumentException("Only captured operations can declare snapshot requirements");
+    }
     List<OwnedRecordSet> sets = new ArrayList<>();
     for (var detail : form.document().details()) {
       boolean delete = mutation instanceof RecordDeleteMutation;
@@ -101,7 +115,7 @@ public class FormDetailRecordCoordinator {
             ? new OwnedRecordSnapshotRequest(
                 form.document().details().stream()
                     .map(detail -> reference(form, detail.detailId()))
-                    .toList())
+                    .toList(), requirements)
             : null);
   }
 
@@ -113,6 +127,35 @@ public class FormDetailRecordCoordinator {
   /** Executes parent and owned child mutations in one DNA transaction. */
   public RecordCommandResult execute(DnaInvocationContext context, OwnedRecordCommand command) {
     return dna.execute(context, command);
+  }
+
+  /** Maps already authorized preview values; formulas, columns and model identities stay server-side. */
+  public ApplicationFormRecordPreviewView preview(final PublishedApplicationForm form,
+      final DnaInvocationContext context, final OwnedRecordCommand command) {
+    var result = dna.preview(context, command);
+    if (result.writePolicyVersion() != form.writeAdmissionVersion()) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT,
+          "The form policy changed before preview completed");
+    }
+    Map<String, List<Map<String, Object>>> collections = new LinkedHashMap<>();
+    for (var detail : form.document().details()) {
+      var rows = result.details().get(reference(form, detail.detailId()).physicalModelId());
+      if (rows != null) {
+        collections.put(detail.detailId(), rows.stream().map(row -> previewValues(detail.fields(), row)).toList());
+      }
+    }
+    return new ApplicationFormRecordPreviewView(new ApplicationFormRuntimeIdentity(form.formId(), form.formVersion()),
+        previewValues(form.document().fields(), result.values()), collections);
+  }
+
+  private static Map<String, Object> previewValues(final List<FormFieldDefinition> fields, final Map<String, Object> storage) {
+    Map<String, Object> values = new LinkedHashMap<>();
+    fields.stream().filter(FormFieldDefinition::persistent).forEach(field -> {
+      if (storage.containsKey(field.storageCode())) {
+        values.put(field.fieldId(), FormChoiceValues.displayValue(field, storage.get(field.storageCode())));
+      }
+    });
+    return values;
   }
 
   /** Loads owned children and rejects a parent version change during the read. */
@@ -210,7 +253,7 @@ public class FormDetailRecordCoordinator {
       prospectiveDetails.put(detail.detailId(), List.copyOf(prospectiveRows));
     }
     if (targetState == FormRecordState.SUBMITTED && !form.document().constraints().isEmpty()) {
-      FormAggregateValidation.validate(form.document(),
+      FormAggregateValidation.validateInputs(form.document(),
           payloads.validatedValues(form.document(), parentValues(form, existing), parentValues(form, requested),
               currentState, targetState), prospectiveDetails);
     }

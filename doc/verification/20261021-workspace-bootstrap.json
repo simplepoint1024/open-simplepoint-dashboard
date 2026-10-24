@@ -1,0 +1,165 @@
+{
+  "passed": true,
+  "date": "2026-10-21",
+  "version": "20261021-workspace-bootstrap",
+  "environment": "https://home.simplepoint.online:8000",
+  "rootCauses": [
+    "/userinfo incorrectly required an active tenant, while workspace restoration depended on /userinfo",
+    "Logout cache cleanup allowed the mounted host to restore the first workspace and overwrite the saved preference"
+  ],
+  "sourceChanges": [
+    "simplepoint-react/libs/shared/api/contextId.ts",
+    "simplepoint-react/libs/shared/api/contextId.test.mjs",
+    "simplepoint-react/libs/shared/api/sessionLifecycle.ts",
+    "simplepoint-react/libs/shared/api/sessionLifecycle.test.mjs",
+    "simplepoint-react/libs/shared/api/session.ts",
+    "simplepoint-react/libs/shared/preferences/workspace.test.mjs",
+    "simplepoint-react/modules/simplepoint-host/src/App.tsx"
+  ],
+  "checks": {
+    "targetedTests": {
+      "passed": 13,
+      "failed": 0
+    },
+    "fullFrontendTypecheck": "passed",
+    "uiStandards": {
+      "reviewed": 40,
+      "unreviewed": 0
+    },
+    "gradleVerifyFrontendDistribution": "passed",
+    "deployment": {
+      "passed": true,
+      "at": "2026-10-21T04:26:49.435Z",
+      "version": "20261021-workspace-bootstrap",
+      "onlyHostUpdated": true,
+      "backendByteIdentical": true,
+      "exactJarHashes": true,
+      "health": [
+        {
+          "service": "authorization",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "common",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "auditing",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "dna",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "ai",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "app",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "workflow",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "mcp-gateway",
+          "health": "healthy",
+          "consul": "passing"
+        },
+        {
+          "service": "host",
+          "health": "healthy",
+          "consul": "passing"
+        }
+      ]
+    },
+    "assets": {
+      "passed": true,
+      "at": "2026-10-21T04:27:16.924Z",
+      "hostHtmlMatches": true,
+      "hostAssetsHashMatches": 1,
+      "remotes": [
+        {
+          "service": "common",
+          "manifest": 200,
+          "entry": "common.1165350a19.js",
+          "entryStatus": 200
+        },
+        {
+          "service": "auditing",
+          "manifest": 200,
+          "entry": "auditing.53f4cfbf92.js",
+          "entryStatus": 200
+        },
+        {
+          "service": "dna",
+          "manifest": 200,
+          "entry": "dna.065ddf45a5.js",
+          "entryStatus": 200
+        },
+        {
+          "service": "ai",
+          "manifest": 200,
+          "entry": "ai.426faadf45.js",
+          "entryStatus": 200
+        },
+        {
+          "service": "app",
+          "manifest": 200,
+          "entry": "app.af0c9fbc30.js",
+          "entryStatus": 200
+        },
+        {
+          "service": "workflow",
+          "manifest": 200,
+          "entry": "workflow.4a4653a496.js",
+          "entryStatus": 200
+        }
+      ]
+    },
+    "personal": {
+      "passed": true,
+      "phase": "deployed",
+      "at": "2026-10-21T04:26:51.806Z",
+      "firstLoginPersonalSpace": true,
+      "reloadPersonalSpace": true,
+      "authorizationContext": true,
+      "unauthorizedPlatformDenied": true
+    },
+    "granted": {
+      "passed": true,
+      "phase": "deployed",
+      "at": "2026-10-21T04:26:53.167Z",
+      "employeeRoleEffective": true,
+      "organizationLogin": true,
+      "switchPersonal": true,
+      "realLogoutRelogin": true,
+      "rememberedPersonalSpace": true
+    },
+    "cleanup": {
+      "passed": true,
+      "at": "2026-10-21T04:27:42.709Z",
+      "temporaryOrganizationMembershipRemoved": true,
+      "temporaryAccountsDisabled": 2
+    },
+    "package": {
+      "passed": true,
+      "backendEntriesByteIdentical": 16,
+      "packagedAssets": 367,
+      "previousHashedAssetsRetained": true,
+      "jarSha256": "739541263f9a787fc3d9e85d67b710ea4e1eb3c84b021830feed8c4157719c0d"
+    }
+  },
+  "deploymentScope": "Only host frontend assets updated; all non-static host JAR entries and every other runtime JAR preserved. Source built from the deployed baseline with the selected fixes; pending backend composition changes excluded.",
+  "rollbackImage": "simplepoint203/host:rollback-20261021-workspace-bootstrap",
+  "testData": "Two temporary registered accounts disabled via audited platform APIs; temporary organization membership and grants removed."
+}

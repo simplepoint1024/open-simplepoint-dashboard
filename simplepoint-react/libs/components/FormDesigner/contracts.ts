@@ -5,6 +5,7 @@ export type DesignField = FormFieldDefinition & {
   storageLabel?: string | null;
   storageMode: 'STORED' | 'REFERENCE' | 'ATTACHMENT' | 'COMPUTED' | 'TRANSIENT';
   storageRequired: boolean;
+  calculation?: {languageVersion: '1'; expression: string} | null;
 };
 export type DesignDocument = Omit<ApplicationFormDocument, 'fields' | 'details'> & {
   fields: DesignField[];
@@ -32,4 +33,4 @@ export type FormDraft = {formId: string; revision: number; document: DesignDocum
 export type FormSummary = {id: string; applicationId: string; code: string; name: string; description?: string;
   status: string; draftRevision: number; latestVersion: number; publishedVersion?: number | null};
 
-export type DesignDetail = {detailId: string; storageCode: string; label: string; fields: DesignField[]; indexes: DesignDocument['indexes']};
+export type DesignDetail = {detailId: string; storageCode: string; label: string; labelLocalization?: import('../../shared/i18n/localizedText.ts').LocalizedText | null; fields: DesignField[]; indexes: DesignDocument['indexes']};

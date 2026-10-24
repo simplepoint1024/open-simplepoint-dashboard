@@ -57,6 +57,27 @@ class FormDocumentCodecTest {
     assertThat(codec.encode(first).checksum()).isEqualTo(codec.encode(equivalent).checksum());
   }
 
+
+  @Test
+  void legacySnapshotsOmitNewMetadataAndTranslationsParticipateInCanonicalChecksums() throws Exception {
+    var legacy = document(List.of(field("customer")), List.of());
+    var encoded = codec.encode(legacy);
+    assertThat(encoded.json()).doesNotContain("labelLocalization");
+    var mapper = new ObjectMapper();
+    var tree = mapper.valueToTree(legacy);
+    var field = (com.fasterxml.jackson.databind.node.ObjectNode) tree.path("fields").get(0);
+    field.set("labelLocalization", mapper.valueToTree(new org.simplepoint.api.locale.LocalizedText("customer", "en-US", java.util.Map.of("ja", "顧客", "zh-CN", "客户"))));
+    var translated = mapper.treeToValue(tree, ApplicationFormDocument.class);
+    var localized = codec.encode(translated);
+    assertThat(localized.checksum()).isNotEqualTo(encoded.checksum());
+    assertThat(mapper.readValue(localized.json(), ApplicationFormDocument.class)).isEqualTo(translated);
+    assertThat(translated.fields().getFirst().storageCode()).isEqualTo("customer");
+    assertThat(translated.fields().getFirst().labelLocalization().translations()).containsEntry("ja", "顧客");
+    var invalid = (com.fasterxml.jackson.databind.node.ObjectNode) field.path("labelLocalization");
+    invalid.put("defaultValue", "x".repeat(121));
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> mapper.treeToValue(tree, ApplicationFormDocument.class)).isInstanceOf(com.fasterxml.jackson.databind.JsonMappingException.class);
+  }
+
   private static ApplicationFormDocument document(
       final List<FormFieldDefinition> fields,
       final List<FormIndexDefinition> indexes

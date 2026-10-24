@@ -20,6 +20,7 @@ import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.base.entity.impl.BaseEntityImpl;
 import org.simplepoint.core.constants.Icons;
 import org.simplepoint.core.constants.PublicButtonKeys;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.ai.core.api.model.AiResourceScope;
 import org.simplepoint.plugin.ai.mcp.api.model.AiMcpDiscoveryErrorCodeSerializer;
 import org.simplepoint.plugin.ai.mcp.api.model.McpAuthenticationType;
@@ -142,7 +143,7 @@ import org.springframework.core.annotation.Order;
     @org.simplepoint.core.query.QueryField("lastDiscoveredAt"),
     @org.simplepoint.core.query.QueryField("lastError"),
     @org.simplepoint.core.query.QueryField("description")
-}, maxPageSize = 500)
+}, maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class AiMcpServerDefinition extends BaseEntityImpl<String> {
 
   @Order(0)

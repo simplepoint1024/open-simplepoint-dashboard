@@ -1,19 +1,24 @@
 import type {RJSFSchema} from '@rjsf/utils';
+import type {LocalizedText} from '@simplepoint/shared/i18n/localizedText';
 export type ResourceType = 'GROUP' | 'MODULE' | 'PAGE' | 'FEATURE' | 'ACTION' | 'API';
 export type TenantResource = {id: string; platformResourceId?: string | null; targetResourceId?: string | null;
-  parentId?: string | null; code: string; name: string; type: ResourceType; path?: string | null;
-  icon?: string | null; sort?: number | null; description?: string | null; enabled: boolean; grantable: boolean; origin?: 'PLATFORM' | 'TENANT'};
-export type ResourceDraft = Partial<Pick<TenantResource, 'name' | 'type' | 'path' | 'parentId' | 'icon' | 'sort' | 'description' | 'targetResourceId' | 'enabled'>>;
+  parentId?: string | null; code: string; name: string; nameLocalization?: LocalizedText | null;
+  title?: string | null; label?: string | null; alias?: string | null; type: ResourceType; path?: string | null;
+  icon?: string | null; sort?: number | null; description?: string | null; enabled: boolean; grantable: boolean;
+  allowedActions?: string[]; managedOwner?: string | null; origin?: 'PLATFORM' | 'TENANT' | 'APP' | 'REPORT';
+  availability?: string; entitlementKind?: string; entitlementStartsAt?: string | null; entitlementExpiresAt?: string | null;
+  createdAt?: string; updatedAt?: string; lastSyncedAt?: string | null};
+export type ResourceDraft = Partial<Pick<TenantResource, 'name' | 'nameLocalization' | 'type' | 'path' | 'parentId' | 'icon' | 'sort' | 'description' | 'targetResourceId' | 'enabled'>>;
 type Translate = (key: string, fallback?: string) => string;
 export function resourceDraft(row: TenantResource | null): ResourceDraft {
-  return row ? {name: row.name, type: row.type, path: row.path ?? undefined, parentId: row.parentId ?? undefined,
+  return row ? {name: row.name, ...(row.nameLocalization ? {nameLocalization: row.nameLocalization} : {}), type: row.type, path: row.path ?? undefined, parentId: row.parentId ?? undefined,
     targetResourceId: row.targetResourceId ?? undefined, icon: row.icon ?? undefined, sort: row.sort,
     description: row.description ?? undefined, enabled: row.enabled}
     : {name: '', type: 'GROUP', sort: 0, enabled: true};
 }
-export function resourceFormSchema(t: Translate, row: TenantResource | null, type?: ResourceType): RJSFSchema {
+export function resourceFormSchema(t: Translate, row: TenantResource | null, type?: ResourceType, localized?: RJSFSchema): RJSFSchema {
   const localPage = type === 'PAGE' && !row?.platformResourceId;
-  return {type: 'object', additionalProperties: false, required: ['name', 'type', ...(localPage ? ['targetResourceId', 'path'] : [])], properties: {
+  const result: RJSFSchema = {type: 'object', additionalProperties: false, required: ['name', 'type', ...(localPage ? ['targetResourceId', 'path'] : [])], properties: {
     name: {type: 'string', title: t('tenant.resources.name', '资源名称'), minLength: 1, pattern: '\\S', maxLength: 100},
     type: {type: 'string', title: t('tenant.resources.type', '类型'), readOnly: !!row?.platformResourceId, oneOf: [
       {const: 'GROUP', title: t('tenant.resources.group', '目录')}, {const: 'MODULE', title: t('tenant.resources.module', '模块')},
@@ -32,10 +37,17 @@ export function resourceFormSchema(t: Translate, row: TenantResource | null, typ
     description: {type: ['string', 'null'], title: t('tenant.resources.description', '说明'), maxLength: 255},
     enabled: {type: 'boolean', title: t('tenant.resources.enabled', '启用资源')},
   }};
+  if (localized) {
+    result.properties = {nameLocalization: localized, ...result.properties};
+    delete result.properties.name;
+    result.required = result.required?.map(key => key === 'name' ? 'nameLocalization' : key);
+  }
+  return result;
 }
 export function resourcePayload(draft: ResourceDraft) {
   const optional = (value?: string | null) => value?.trim() || null;
-  return {name: draft.name?.trim() ?? '', type: draft.type, parentId: optional(draft.parentId),
+  return {name: draft.nameLocalization?.defaultValue ?? draft.name?.trim() ?? '',
+    ...(draft.nameLocalization ? {nameLocalization: draft.nameLocalization} : {}), type: draft.type, parentId: optional(draft.parentId),
     targetResourceId: optional(draft.targetResourceId), path: optional(draft.path), icon: optional(draft.icon),
     sort: draft.sort ?? null, description: optional(draft.description), enabled: draft.enabled};
 }

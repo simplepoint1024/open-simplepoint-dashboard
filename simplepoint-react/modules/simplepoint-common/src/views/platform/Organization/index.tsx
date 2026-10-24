@@ -8,6 +8,11 @@ import type {Key} from 'react';
 import {useCallback, useRef, useState, useSyncExternalStore} from 'react';
 import {EMPTY_QUERY_SCOPE, getQueryScopeSnapshot, subscribeQueryScope} from '@simplepoint/shared/api/queryScope';
 import OrganizationMembersPanel from './OrganizationMembersPanel';
+import OrganizationInfoPanel, {type OrganizationDetails} from './OrganizationInfoPanel';
+import {useQueryClient} from '@tanstack/react-query';
+import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useSchema} from '@simplepoint/shared/hooks/useSchema';
+import {scopedQueryKey} from '@simplepoint/shared/api/queryScope';
 import './index.css';
 
 const baseConfig = api['platform.organizations'];
@@ -27,6 +32,10 @@ const App = () => {
 
 const OrganizationWorkspace = ({scope}: {scope: string}) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [tableBlocked, setTableBlocked] = useState(false);
+  const client = useQueryClient(), queryScope = useQueryScope();
+  const organizationSchema = useSchema(baseConfig.baseUrl);
+  const leaderField = organizationSchema.data?.schema.properties?.leaderId;
   const [editingRecord, setEditingRecord] = useState<any | null>(null);
   const [initialValues, setInitialValues] = useState<any>({});
   const [treeMode, setTreeMode] = useState(true);
@@ -97,6 +106,12 @@ const OrganizationWorkspace = ({scope}: {scope: string}) => {
     <SimpleTable
       {...baseConfig}
       loadPage={loadPage}
+      loadEditingRecord={async (record, signal) => (await get<OrganizationDetails>(`${baseConfig.baseUrl}/${encodeURIComponent(record.id)}`, undefined, {signal})).record as OrganizationRow}
+      defaultSubmitDataTransform={data => leaderField && typeof leaderField === 'object' && !leaderField.readOnly && leaderField['x-field-access'] !== 'MASKED'
+        ? {...data, leaderId: data.leaderId ?? null} : data}
+      afterSubmit={() => client.invalidateQueries({queryKey: scopedQueryKey(queryScope, ['organization-detail'])})}
+      onInteractionLockChange={setTableBlocked}
+      onReadAccessDenied={() => setSelectedOrganization(undefined)}
       tree={treeMode ? {hasChildren, loadChildrenPage} : undefined}
       drawerOpen={drawerOpen}
       onDrawerOpenChange={handleDrawerOpenChange}
@@ -110,7 +125,10 @@ const OrganizationWorkspace = ({scope}: {scope: string}) => {
       onSelectionChange={(_keys, rows) => {if (!membersBlockedRef.current) setSelectedOrganization(rows[rows.length - 1]);}}
     />
     </div>
-    <OrganizationMembersPanel organization={selectedOrganization} scope={scope} onBlockedChange={onMembersBlocked}/>
+    <div className="organization-workspace-detail">
+      <OrganizationInfoPanel key={selectedOrganization?.id ?? 'none'} organizationId={selectedOrganization?.id} baseUrl={baseConfig.baseUrl}/>
+      <OrganizationMembersPanel organization={selectedOrganization} scope={scope} onBlockedChange={onMembersBlocked} externalBlocked={tableBlocked}/>
+    </div>
   </div>;
 };
 

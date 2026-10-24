@@ -10,8 +10,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.flowable.engine.HistoryService;
+import org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory;
+import org.simplepoint.plugin.rbac.tenant.api.vo.AuditIdentityRequest;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
+import org.simplepoint.plugin.workflow.api.model.WorkflowMatter;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
 import org.simplepoint.plugin.workflow.api.model.WorkflowProgress.IdentityLabel;
 import org.simplepoint.plugin.workflow.api.model.WorkflowProgress.NodeExecution;
@@ -19,17 +22,28 @@ import org.simplepoint.plugin.workflow.entity.WorkflowActionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowCandidateReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowInboxReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceEntity;
-import org.simplepoint.plugin.workflow.entity.WorkflowMemberReadModel;
-import org.simplepoint.plugin.workflow.entity.WorkflowRoleReadModel;
+import org.simplepoint.plugin.workflow.entity.WorkflowMatterReadModel;
 
 /** Called only after instance visibility authorization; bounded, batch-enriched node history. */
 final class WorkflowRuntimeDetails {
   private final EntityManager em;
   private final HistoryService history;
+  private final AuditIdentityDirectory identities;
 
-  WorkflowRuntimeDetails(EntityManager em, HistoryService history) {
+  WorkflowRuntimeDetails(
+      EntityManager em, HistoryService history, AuditIdentityDirectory identities) {
     this.em = em;
     this.history = history;
+    this.identities = identities;
+  }
+
+  WorkflowMatter matter(String id) {
+    var row = em.find(WorkflowMatterReadModel.class, id);
+    if (row == null || !WorkflowAccess.tenantId().equals(row.getTenantId())) {
+      throw new WorkflowException(WorkflowException.Code.NOT_FOUND, "流程事项不存在");
+    }
+    return WorkflowMatterProjection.item(
+        row, names(row.getTenantId(), List.of(row.getStarterId())).get(row.getStarterId()));
   }
 
   WorkflowAuditTrail audit(WorkflowInstanceEntity instance, int page, int size) {
@@ -196,8 +210,13 @@ final class WorkflowRuntimeDetails {
     var users =
         names(
             tenant,
-            candidates.stream()
-                .map(WorkflowCandidateReadModel::getUserId)
+            java.util.stream.Stream.concat(
+                    candidates.stream().map(WorkflowCandidateReadModel::getUserId),
+                    tasks.values().stream()
+                        .flatMap(
+                            task ->
+                                java.util.stream.Stream.of(
+                                    task.getAssigneeId(), task.getActorId())))
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList());
@@ -226,8 +245,8 @@ final class WorkflowRuntimeDetails {
                       state(
                           activity.getEndTime(), activity.getDeleteReason(), instance.getStatus()),
                       task != null && task.getAssigneeId() != null,
-                      task == null ? null : task.getAssigneeName(),
-                      task == null ? null : task.getActorName(),
+                      task == null ? null : users.get(task.getAssigneeId()),
+                      task == null ? null : users.get(task.getActorId()),
                       task == null ? null : task.getOutcome(),
                       task == null ? null : task.getComment(),
                       instant(activity.getStartTime()),
@@ -252,41 +271,35 @@ final class WorkflowRuntimeDetails {
   }
 
   private Map<String, String> names(String tenant, List<String> ids) {
-    Map<String, String> result = new LinkedHashMap<>();
-    for (var batch : batches(ids)) {
-      em.createQuery(
-              "select u from WorkflowMemberReadModel u where u.tenantId = :tenant and u.userId in"
-                  + " :ids",
-              WorkflowMemberReadModel.class)
-          .setParameter("tenant", tenant)
-          .setParameter("ids", batch)
-          .setMaxResults(50)
-          .getResultList()
-          .forEach(user -> result.put(user.getUserId(), user.getName()));
-    }
-    return result;
+    return labels(tenant, ids, false);
   }
 
   private Map<String, String> roleNames(String tenant, List<String> ids) {
+    return labels(tenant, ids, true);
+  }
+
+  private Map<String, String> labels(String tenant, List<String> ids, boolean roles) {
     Map<String, String> result = new LinkedHashMap<>();
-    for (var batch : batches(ids)) {
-      em
-          .createQuery(
-              "select r from WorkflowRoleReadModel r where r.tenantId = :tenant and r.authority in"
-                  + " :ids order by r.id",
-              WorkflowRoleReadModel.class)
-          .setParameter("tenant", tenant)
-          .setParameter("ids", batch)
-          .setMaxResults(500)
-          .getResultList()
-          .stream()
-          .filter(role -> role.getRoleName() != null && !role.getRoleName().isBlank())
-          .forEach(
-              role ->
-                  result.merge(
-                      role.getAuthority(),
-                      role.getRoleName(),
-                      (a, b) -> a.equals(b) ? a : a + " / " + b));
+    for (var batch : batches(ids.stream().filter(Objects::nonNull).distinct().toList())) {
+      var requested = Set.copyOf(batch);
+      var response =
+          identities.resolve(
+              new AuditIdentityRequest(
+                  tenant,
+                  false,
+                  roles ? Set.of() : requested,
+                  Set.of(),
+                  roles ? requested : Set.of()));
+      if (response == null || !tenant.equals(response.tenantId())) {
+        throw new WorkflowException(WorkflowException.Code.ENGINE_FAILURE, "身份名称目录返回的范围无效");
+      }
+      var values = roles ? response.roles() : response.users();
+      for (String id : batch) {
+        String name = values.get(id);
+        if (name != null && !name.isBlank()) {
+          result.put(id, name);
+        }
+      }
     }
     return result;
   }

@@ -115,9 +115,10 @@ class RecordOperationJournalDatabaseTest {
           metadata.getDatabaseMajorVersion(), metadata.getDatabaseMinorVersion());
     }
     var failCommit = new AtomicBoolean();
+    var failNthCommit = new AtomicInteger();
     var failRollback = new AtomicBoolean();
     var opened = new AtomicInteger();
-    var dataSource = new SimpleDataSource(faultSource(source, failCommit, failRollback, opened));
+    var dataSource = new SimpleDataSource(faultSource(source, failCommit, failRollback, opened, failNthCommit));
     var provider = mock(ManagedRuntimeDataSourceProvider.class);
     when(provider.open(any())).thenReturn(new ManagedRuntimeDataSource(dataSource, false, context, core, dialect,
         database, catalog, postgres ? namespace : null));
@@ -160,7 +161,8 @@ class RecordOperationJournalDatabaseTest {
     when(policy.authorize(ACTOR, model)).thenReturn(access);
     var transactions = new RecordTransactionServiceImpl(requestContext, resolver, policy, compiler, backend,
         mock(RecordAuditSupport.class), new RecordAdmissionController(new DnaRuntimeExecutionProperties()),
-        mock(RecordExecutionObserver.class), fingerprint);
+        mock(RecordExecutionObserver.class), fingerprint, new RecordCalculationWriteSupport(resolver,
+            new org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec(mapper), compiler));
     var commands = new RecordCommandServiceImpl(mock(RecordCreateCoordinator.class), transactions);
     var keyedUpdate = new RecordUpdateCommand("model-a", SCHEMA, id, 0, Map.of("title", "first"), "first");
     assertThat(commands.findUpdateResult(keyedUpdate)).isNull();
@@ -215,6 +217,7 @@ class RecordOperationJournalDatabaseTest {
       assertThat(two.get(30, TimeUnit.SECONDS).affectedRows()).containsExactly(1);
     }
     assertVersion(backend, model, id, 3);
+    RecordConstraintDatabaseAssertions.verify(source, model, backend, compiler, access, failNthCommit);
     var deleted = compiler.mutation(model, access, new RecordDeleteMutation("delete", id, 3), Instant.now());
     var deleteIdentity = RecordOperationIdentity.of(ACTOR,
         new RecordTransactionCommand("model-a", SCHEMA, List.of(new RecordDeleteMutation("delete", id, 3)), 15_000, "delete"), "e".repeat(64));
@@ -319,7 +322,8 @@ class RecordOperationJournalDatabaseTest {
     assertThat(((Number) rows.getFirst().getFirst()).longValue()).isEqualTo(version);
   }
 
-  private static DataSource faultSource(DataSource source, AtomicBoolean failCommit, AtomicBoolean failRollback, AtomicInteger opened) {
+  private static DataSource faultSource(DataSource source, AtomicBoolean failCommit, AtomicBoolean failRollback,
+      AtomicInteger opened, AtomicInteger failNthCommit) {
     return (DataSource) Proxy.newProxyInstance(DataSource.class.getClassLoader(), new Class<?>[] {DataSource.class},
         (proxy, method, arguments) -> {
           try {
@@ -335,7 +339,8 @@ class RecordOperationJournalDatabaseTest {
                       throw new SQLException("Simulated rollback failure before the transaction has ended");
                     }
                     Object result = connectionMethod.invoke(connection, parameters);
-                    if (connectionMethod.getName().equals("commit") && failCommit.compareAndSet(true, false)) {
+                    if (connectionMethod.getName().equals("commit") && (failCommit.compareAndSet(true, false)
+                        || failNthCommit.get() > 0 && failNthCommit.decrementAndGet() == 0)) {
                       throw new SQLException("Simulated lost acknowledgement after a successful commit");
                     }
                     return result;

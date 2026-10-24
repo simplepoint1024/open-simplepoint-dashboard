@@ -2,6 +2,7 @@ package org.simplepoint.plugin.workflow.api.model;
 
 import java.time.Instant;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 
 /**
@@ -10,7 +11,7 @@ import org.simplepoint.core.query.TableQuery;
  * unavailable, never permission to display an internal ID as a person's name.
  */
 @TableQuery(
-    maxPageSize = 100,
+    maxPageSize = TablePagination.MAX_PAGE_SIZE,
     value = {
       @QueryField("title"), @QueryField("definitionName"), @QueryField("taskName"),
       @QueryField("starterName"), @QueryField("assigneeName"), @QueryField("actorName"),

@@ -45,8 +45,9 @@ type Step = {
 };
 type Plan = {
   physicalModelId: string; targetVersion: number; dialectId: string;
-  actualSchemaChecksum: string; targetSchemaChecksum: string; risk: string; steps: Step[];
+  actualChecksum: string; targetChecksum: string; risk: string; steps: Step[];
 };
+type Review = {plan: Plan; expectedVersion: number; canPublish: boolean};
 type Publication = {
   migrationId: string; physicalModelId: string; fromVersion?: number; targetVersion: number;
   status: string; risk?: string; dialectId?: string; errorCode?: string; steps: Step[];
@@ -83,7 +84,7 @@ export default function RuntimeGovernance() {
   const detailScope = useOperationScope('dna.runtime');
   const reads = useOwnedReads(detailScope, true);
   const [confirmation, setConfirmation] = useState<{migration: Migration; action: 'retry' | 'recover'}>();
-  const [plan, setPlan] = useState<Plan>();
+  const [plan, setPlan] = useState<(Plan & Omit<Review, 'plan'>)>();
   const [publication, setPublication] = useState<Publication>();
   const detailLoading = reads.loading.length > 0;
   const modelError = reads.errors.model ? resolveErrorMessage(reads.errors.model, t('dna.runtime.model.detailFailed', '模型详情加载失败')) : '';
@@ -106,9 +107,28 @@ export default function RuntimeGovernance() {
       undefined, {signal, notifyOnError: false}), setModelDetail);
   };
   const openPlan = (model: Model) => {
+    if (detailScope.isBusy()) return;
     reads.cancel('plan'); reads.clearErrors('plan'); setPlan(undefined);
-    void reads.run('plan', signal => get<Plan>(endpoint + '/models/' + encodeURIComponent(model.id) + '/plan',
-      {targetVersion: model.latestVersion}, {signal, notifyOnError: false}), setPlan);
+    void reads.run('plan', signal => get<Review>(endpoint + '/models/' + encodeURIComponent(model.id) + '/review',
+      undefined, {signal, notifyOnError: false}), review => setPlan({...review.plan,
+      expectedVersion: review.expectedVersion, canPublish: review.canPublish}));
+  };
+  const publishReviewed = async () => {
+    if (!plan?.canPublish) return;
+    const operation = detailScope.begin(); if (!operation) return;
+    const reviewed = plan;
+    try {
+      const result = await post<Publication>(endpoint + '/models/' + encodeURIComponent(reviewed.physicalModelId) + '/publish', {
+        targetVersion: reviewed.targetVersion, expectedVersion: reviewed.expectedVersion,
+        actualChecksum: reviewed.actualChecksum, targetChecksum: reviewed.targetChecksum,
+      }, {signal: operation.signal, notifyOnError: false});
+      if (detailScope.current(operation.signal)) {
+        setPlan(undefined); setPublication(result); setRevision(value => value + 1);
+      }
+    } catch (error) {
+      if (detailScope.current(operation.signal)) message.error(resolveErrorMessage(error,
+        t('dna.runtime.publishFailed', '迁移未完成，请检查状态或重新评审计划')));
+    } finally {detailScope.finish(operation);}
   };
   const openMigration = (migration: Migration) => {
     reads.cancel('migration'); reads.clearErrors('migration'); setPublication(undefined);
@@ -222,7 +242,13 @@ export default function RuntimeGovernance() {
     </Drawer>
 
     <Drawer title={t('dna.runtime.plan.title', '结构差异与迁移计划')} width="min(960px, 94vw)"
-      open={!!plan && detailScope.selected} loading={detailLoading} destroyOnHidden onClose={() => {reads.cancel('plan'); setPlan(undefined);}}>
+      open={!!plan && detailScope.selected} loading={detailLoading} destroyOnHidden
+      closable={!detailScope.busy} maskClosable={!detailScope.busy} keyboard={!detailScope.busy}
+      onClose={() => {if (!detailScope.isBusy()) {reads.cancel('plan'); setPlan(undefined);}}}
+      footer={plan?.canPublish ? <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'publish', sort: 0, icon: 'CloudUploadOutlined', type: 'primary', disabled: detailScope.busy,
+          text: t('dna.runtime.action.publishReviewed', '执行已评审迁移')},
+      ]} onButtonEvents={{publish: () => void publishReviewed()}}/> : undefined}>
       {plan && <>
         <Descriptions size="small" column={2} style={{marginBottom: 16}}>
           <Descriptions.Item label={t('dna.runtime.column.physicalModelId', '模型 ID')}>

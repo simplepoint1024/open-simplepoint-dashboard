@@ -82,3 +82,10 @@
 .sp-form-detail-cell .ant-form-item, .sp-form-detail-cell .form-group { margin-bottom: 0; }
 .sp-form-detail-cell .ant-form-item-control { min-width: 0; width: 100%; }
 .sp-form-detail-cell .ant-form-item-label { display: none; }
+
+.sp-form-calculation-status {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.sp-form-calculation-expression {white-space: pre-wrap; overflow-wrap: anywhere;}

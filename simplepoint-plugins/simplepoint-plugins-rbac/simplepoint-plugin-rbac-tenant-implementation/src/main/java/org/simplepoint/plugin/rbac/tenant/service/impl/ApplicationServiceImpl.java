@@ -9,29 +9,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
-import org.simplepoint.core.AuthorizationScopeGuards;
-import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
 import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.pojo.dto.ApplicationResourcesRelevanceDto;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationResourceRelevanceRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.PackageApplicationRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.service.ApplicationService;
-import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.security.service.ResourceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Application service implementation.
- */
+/** Application service implementation. */
 @Service
 public class ApplicationServiceImpl
     extends BaseServiceImpl<ApplicationRepository, Application, String>
@@ -39,31 +31,53 @@ public class ApplicationServiceImpl
 
   private final ApplicationResourceRelevanceRepository applicationResourceRelevanceRepository;
   private final PackageApplicationRelevanceRepository packageApplicationRelevanceRepository;
-  private final TenantPackageRelevanceRepository tenantPackageRelevanceRepository;
-  private final TenantRepository tenantRepository;
-  private final ResourceAuthorizationVersionService resourceAuthorizationVersionService;
   private final ResourceService resourceService;
 
-  /**
-   * Application Service Impl.
-   */
+  /** Application Service Impl. */
   public ApplicationServiceImpl(
       ApplicationRepository repository,
       DetailsProviderService detailsProviderService,
       ApplicationResourceRelevanceRepository applicationResourceRelevanceRepository,
       PackageApplicationRelevanceRepository packageApplicationRelevanceRepository,
-      TenantPackageRelevanceRepository tenantPackageRelevanceRepository,
-      TenantRepository tenantRepository,
-      ResourceAuthorizationVersionService resourceAuthorizationVersionService,
-      ResourceService resourceService
-  ) {
+      ResourceService resourceService) {
     super(repository, detailsProviderService);
     this.applicationResourceRelevanceRepository = applicationResourceRelevanceRepository;
     this.packageApplicationRelevanceRepository = packageApplicationRelevanceRepository;
-    this.tenantPackageRelevanceRepository = tenantPackageRelevanceRepository;
-    this.tenantRepository = tenantRepository;
-    this.resourceAuthorizationVersionService = resourceAuthorizationVersionService;
     this.resourceService = resourceService;
+  }
+
+  @Override
+  public Map<String, Object> schema() {
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.schema();
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public <S extends Application> S create(S entity) {
+    requirePlatformAdministrator();
+    return super.create(entity);
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public List<Application> create(Collection<Application> entities) {
+    requirePlatformAdministrator();
+    return super.create(entities);
+  }
+
+  @Override
+  public List<Application> findAllByIds(Iterable<String> ids) {
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.findAllByIds(ids);
+  }
+
+  @Override
+  protected Set<Map<String, Object>> getButtonDeclarationsSchema(Class<Application> domainClass) {
+    return org.simplepoint.core.AuthorizationScopeGuards.isPlatformAdministrator(
+            getAuthorizationContext())
+        ? super.getButtonDeclarationsSchema(domainClass)
+        : Set.of();
   }
 
   @Override
@@ -73,52 +87,42 @@ public class ApplicationServiceImpl
 
   @Override
   public <S extends Application> Page<S> limit(Map<String, String> attributes, Pageable pageable) {
-    if (AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return super.limit(attributes, pageable);
-    }
-    Set<String> applicationCodes = tenantPackageRelevanceRepository.findApplicationCodesByTenantId(resolveTenantScope());
-    return super.limitInScope(attributes, "code", applicationCodes, pageable);
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.limit(attributes, pageable);
   }
 
   @Override
-  public Page<Application> assignmentItems(String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
+  public Page<Application> assignmentItems(
+      String parent, boolean selected, Map<String, String> filters, Pageable pageable) {
     String packageCode = requireCode(parent, "套餐编码不能为空");
     var memberships = new java.util.ArrayList<org.simplepoint.api.base.QueryMembership>();
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      String tenantId = resolveTenantScope();
-      if (!tenantPackageRelevanceRepository.authorized(tenantId).contains(packageCode)) {
-        throw new org.springframework.security.access.AccessDeniedException("套餐不属于当前租户");
-      }
-      memberships.add(new org.simplepoint.api.base.QueryMembership("code",
-          tenantPackageRelevanceRepository.findApplicationCodesByTenantId(tenantId).stream().toList(), true));
-    }
-    memberships.add(new org.simplepoint.api.base.QueryMembership("code",
-        packageApplicationRelevanceRepository.authorized(packageCode).stream().toList(), selected));
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+
+    memberships.add(
+        new org.simplepoint.api.base.QueryMembership(
+            "code",
+            packageApplicationRelevanceRepository.authorized(packageCode).stream().toList(),
+            selected));
     return super.limitMemberships(filters, memberships, pageable);
   }
 
   @Override
   public Optional<Application> findById(String id) {
-    Optional<Application> application = super.findById(id);
-    if (application.isEmpty() || AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())) {
-      return application;
-    }
-    Set<String> applicationCodes = tenantPackageRelevanceRepository.findApplicationCodesByTenantId(resolveTenantScope());
-    return applicationCodes.contains(application.get().getCode()) ? application : Optional.empty();
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return super.findById(id);
   }
 
   @Override
   public Collection<String> authorizedResources(String applicationCode) {
-    if (!AuthorizationScopeGuards.isPlatformAdministrator(getAuthorizationContext())
-        && !tenantPackageRelevanceRepository.findApplicationCodesByTenantId(resolveTenantScope()).contains(applicationCode)) {
-      throw new IllegalArgumentException("应用不存在或不属于当前租户");
-    }
-    return applicationResourceRelevanceRepository.authorized(requireCode(applicationCode, "应用编码不能为空"));
+    PlatformTemplateBoundary.read(getAuthorizationContext());
+    return applicationResourceRelevanceRepository.authorized(
+        requireCode(applicationCode, "应用编码不能为空"));
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
-  public Collection<ApplicationResourceRelevance> authorizeResources(ApplicationResourcesRelevanceDto dto) {
+  public Collection<ApplicationResourceRelevance> authorizeResources(
+      ApplicationResourcesRelevanceDto dto) {
     requirePlatformAdministrator();
     if (dto == null) {
       throw new IllegalArgumentException("应用资源授权参数不能为空");
@@ -128,14 +132,8 @@ public class ApplicationServiceImpl
     if (resourceCodes.isEmpty()) {
       return List.of();
     }
-    Set<String> deliverableCodes = new LinkedHashSet<>(resourceService.filterGrantableAccessibleCodes(
-        resourceCodes,
-        AuthorizationScopeType.TENANT
-    ));
-    deliverableCodes.addAll(resourceService.filterGrantableAccessibleCodes(
-        resourceCodes,
-        AuthorizationScopeType.PERSONAL
-    ));
+    Set<String> deliverableCodes =
+        new LinkedHashSet<>(resourceService.filterDistributableCodes(resourceCodes));
     if (!deliverableCodes.containsAll(resourceCodes)) {
       Set<String> rejected = new LinkedHashSet<>(resourceCodes);
       rejected.removeAll(deliverableCodes);
@@ -150,8 +148,8 @@ public class ApplicationServiceImpl
       relations.add(relevance);
     }
 
-    Collection<ApplicationResourceRelevance> saved = applicationResourceRelevanceRepository.saveAll(relations);
-    resourceAuthorizationVersionService.refreshByApplicationCodes(Set.of(applicationCode));
+    Collection<ApplicationResourceRelevance> saved =
+        applicationResourceRelevanceRepository.saveAll(relations);
     return saved;
   }
 
@@ -164,22 +162,21 @@ public class ApplicationServiceImpl
       return;
     }
     String requiredApplicationCode = requireCode(applicationCode, "应用编码不能为空");
-    applicationResourceRelevanceRepository.unauthorized(requiredApplicationCode, normalizedResourceCodes);
-    resourceAuthorizationVersionService.refreshByApplicationCodes(Set.of(requiredApplicationCode));
+    applicationResourceRelevanceRepository.unauthorized(
+        requiredApplicationCode, normalizedResourceCodes);
   }
 
   @Override
   @Transactional(rollbackFor = Exception.class)
   public <S extends Application> Application modifyById(S entity) {
     requirePlatformAdministrator();
-    Application current = findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("应用不存在"));
+    Application current =
+        findById(entity.getId()).orElseThrow(() -> new IllegalArgumentException("应用不存在"));
     String oldCode = current.getCode();
-    Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByApplicationCodes(Set.of(oldCode));
     Application updated = (Application) super.modifyById(entity);
     if (!Objects.equals(oldCode, updated.getCode())) {
       packageApplicationRelevanceRepository.updateApplicationCode(oldCode, updated.getCode());
       applicationResourceRelevanceRepository.updateApplicationCode(oldCode, updated.getCode());
-      resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
     }
     return updated;
   }
@@ -192,20 +189,19 @@ public class ApplicationServiceImpl
       return;
     }
 
-    Set<String> applicationCodes = findAllByIds(ids).stream()
-        .map(Application::getCode)
-        .filter(code -> code != null && !code.isBlank())
-        .collect(Collectors.toSet());
+    Set<String> applicationCodes =
+        findAllByIds(ids).stream()
+            .map(Application::getCode)
+            .filter(code -> code != null && !code.isBlank())
+            .collect(Collectors.toSet());
     if (applicationCodes.isEmpty()) {
       super.removeByIds(ids);
       return;
     }
 
-    final Set<String> affectedTenantIds = tenantPackageRelevanceRepository.findTenantIdsByApplicationCodes(applicationCodes);
     applicationResourceRelevanceRepository.deleteAllByApplicationCodes(applicationCodes);
     packageApplicationRelevanceRepository.deleteAllByApplicationCodes(applicationCodes);
     super.removeByIds(ids);
-    resourceAuthorizationVersionService.refreshTenants(affectedTenantIds);
   }
 
   private static Set<String> normalizeCodes(Collection<String> codes) {
@@ -225,21 +221,6 @@ public class ApplicationServiceImpl
   }
 
   private void requirePlatformAdministrator() {
-    AuthorizationScopeGuards.requirePlatformAdministrator(getAuthorizationContext());
-  }
-
-  private String resolveTenantScope() {
-    String tenantId = currentTenantId();
-    if (tenantId != null && !tenantId.isBlank()) {
-      return tenantId;
-    }
-    var ctx = getAuthorizationContext();
-    String userId = ctx != null ? ctx.getUserId() : null;
-    if (userId == null || userId.isBlank()) {
-      throw new IllegalStateException("Tenant context is required");
-    }
-    return tenantRepository.findPersonalTenantByOwnerId(userId)
-        .map(Tenant::getId)
-        .orElseThrow(() -> new IllegalStateException("Tenant context is required"));
+    PlatformTemplateBoundary.write(getAuthorizationContext());
   }
 }

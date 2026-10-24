@@ -12,13 +12,14 @@ import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordFilter;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordMutationView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPageQuery;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPageView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPreviewView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordSort;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeIdentity;
 import org.simplepoint.plugin.app.form.api.model.CreateApplicationFormRecordCommand;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormRecordState;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
+import org.simplepoint.plugin.app.form.api.model.PreviewApplicationFormRecordCommand;
 import org.simplepoint.plugin.app.form.api.model.UpdateApplicationFormRecordCommand;
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService;
 import org.simplepoint.plugin.app.form.service.PublishedApplicationFormResolver.PublishedApplicationForm;
@@ -54,6 +55,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
   private final DnaInvocationContextFactory contexts;
   private final FormRecordInvariantValidator invariants;
   private final FormDetailRecordCoordinator details;
+  private final FormRecordIdentityLabels identityLabels;
 
   /** Creates the runtime record facade. */
   public ApplicationFormRecordServiceImpl(
@@ -62,13 +64,15 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
       final DnaFormRuntimeService dna,
       final DnaInvocationContextFactory contexts,
       final FormRecordInvariantValidator invariants,
-      final FormDetailRecordCoordinator details) {
+      final FormDetailRecordCoordinator details,
+      final FormRecordIdentityLabels identityLabels) {
     this.resolver = resolver;
     this.payloads = payloads;
     this.dna = dna;
     this.contexts = contexts;
     this.invariants = invariants;
     this.details = details;
+    this.identityLabels = identityLabels;
   }
 
   @Override
@@ -80,7 +84,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
     }
     try {
       FieldMapping mapping = mapping(form);
-      DnaInvocationContext context = contexts.forResource(form.resourceCode());
+      DnaInvocationContext context = contexts.forForm(form);
       List<String> fields = projection(query.fieldIds(), mapping, form, context);
       var page =
           FormRecordProjectionReads.page(
@@ -100,7 +104,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
           page.page(),
           page.size(),
           page.total(),
-          page.records().stream().map(record -> view(record, mapping)).toList());
+          identityLabels.decorate(form.tenantId(), page.records().stream().map(record -> view(record, mapping)).toList()));
     } catch (DnaRuntimeException exception) {
       throw dnaFailure(exception);
     } catch (IllegalArgumentException exception) {
@@ -112,14 +116,14 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
   public ApplicationFormRecordView get(
       final String applicationId, final String pageId, final String recordId) {
     PublishedApplicationForm form = resolver.resolve(applicationId, pageId);
-    return get(form, recordId);
+    return identityLabels.decorate(form.tenantId(), get(form, recordId));
   }
 
   ApplicationFormRecordView get(final PublishedApplicationForm form, final String recordId) {
     resolver.requireRead(form);
     try {
       FieldMapping mapping = mapping(form);
-      DnaInvocationContext context = contexts.forResource(form.resourceCode());
+      DnaInvocationContext context = contexts.forForm(form);
       return details.enrich(
           form, context, view(loadRecord(form, mapping, recordId, context), mapping));
     } catch (DnaRuntimeException exception) {
@@ -135,19 +139,26 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
       final String pageId,
       final CreateApplicationFormRecordCommand command) {
     PublishedApplicationForm form = resolver.resolve(applicationId, pageId);
-    return createRecord(form, command, false);
+    return createRecord(form, command, false, null);
   }
 
   /** Internal submission write against its persisted, server-resolved form version. */
   ApplicationFormRecordView captureCreate(
       final PublishedApplicationForm form, final CreateApplicationFormRecordCommand command) {
-    return createRecord(form, command, true).currentRecord();
+    return captureCreate(form, command, null);
+  }
+
+  ApplicationFormRecordView captureCreate(
+      final PublishedApplicationForm form, final CreateApplicationFormRecordCommand command,
+      final java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> requirements) {
+    return createRecord(form, command, true, requirements).currentRecord();
   }
 
   private ApplicationFormRecordMutationView createRecord(
       final PublishedApplicationForm form,
       final CreateApplicationFormRecordCommand command,
-      final boolean captureSnapshot) {
+      final boolean captureSnapshot,
+      final java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> requirements) {
     resolver.requireAction(form, "records.create");
     if (command == null) {
       throw invalid("Record create command is required");
@@ -156,7 +167,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
         command.runtime(), form.formId(), form.formVersion());
     try {
       FieldMapping mapping = mapping(form);
-      var context = contexts.forResource(form.resourceCode());
+      var context = contexts.forForm(form);
       var intent =
           new RecordCreateCommand(
               form.physicalModelId(),
@@ -175,7 +186,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
                   command.idempotencyKey(),
                   command.values(),
                   command.state(),
-                  captureSnapshot);
+                  captureSnapshot, requirements);
       Supplier<RecordCommandResult> find =
           () ->
               owned == null
@@ -218,7 +229,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
       final String recordId,
       final UpdateApplicationFormRecordCommand command) {
     PublishedApplicationForm form = resolver.resolve(applicationId, pageId);
-    return updateRecord(form, recordId, command, false);
+    return updateRecord(form, recordId, command, false, null);
   }
 
   /** Internal submission update against its persisted, server-resolved form version. */
@@ -226,14 +237,21 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
       final PublishedApplicationForm form,
       final String recordId,
       final UpdateApplicationFormRecordCommand command) {
-    return updateRecord(form, recordId, command, true).currentRecord();
+    return captureUpdate(form, recordId, command, null);
+  }
+
+  ApplicationFormRecordView captureUpdate(
+      final PublishedApplicationForm form, final String recordId, final UpdateApplicationFormRecordCommand command,
+      final java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> requirements) {
+    return updateRecord(form, recordId, command, true, requirements).currentRecord();
   }
 
   private ApplicationFormRecordMutationView updateRecord(
       final PublishedApplicationForm form,
       final String recordId,
       final UpdateApplicationFormRecordCommand command,
-      final boolean captureSnapshot) {
+      final boolean captureSnapshot,
+      final java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> requirements) {
     resolver.requireAction(form, "records.edit");
     if (command == null) {
       throw invalid("Record update command is required");
@@ -242,7 +260,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
         command.runtime(), form.formId(), form.formVersion());
     try {
       FieldMapping mapping = mapping(form);
-      var context = contexts.forResource(form.resourceCode());
+      var context = contexts.forForm(form);
       requireOperationKey(command.idempotencyKey());
       RecordUpdateCommand intent =
           new RecordUpdateCommand(
@@ -264,7 +282,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
                   command.idempotencyKey(),
                   command.values(),
                   command.state(),
-                  captureSnapshot);
+                  captureSnapshot, requirements);
       Supplier<RecordCommandResult> find =
           () ->
               owned == null
@@ -320,10 +338,57 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
     }
   }
 
+  @Override
+  public ApplicationFormRecordPreviewView preview(final String applicationId, final String pageId,
+      final PreviewApplicationFormRecordCommand command) {
+    return preview(resolver.resolve(applicationId, pageId), command);
+  }
+
+  private ApplicationFormRecordPreviewView preview(final PublishedApplicationForm form,
+      final PreviewApplicationFormRecordCommand command) {
+    if (command == null) {
+      throw invalid("Record preview command is required");
+    }
+    resolver.requireAction(form, command.recordId() == null ? "records.create" : "records.edit");
+    ApplicationFormRuntimeIdentity.requireCurrent(command.runtime(), form.formId(), form.formVersion());
+    try {
+      var validationContext = contexts.forResourceValidation(form.resourceCode());
+      var current = command.recordId() == null ? null : details.enrich(form, validationContext,
+          view(loadRecord(form, mapping(form), command.recordId(), validationContext), mapping(form)));
+      if (current != null && current.version() != command.expectedVersion()) {
+        throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_CONFLICT, "Record changed before preview");
+      }
+      var existing = current == null ? Map.<String, Object>of() : current.values();
+      var state = current == null ? null : current.state();
+      var parentValues = details.parentValues(form, command.values());
+      var values = payloads.compile(form.document(), existing, parentValues, state, command.state());
+      details.validate(form, existing, command.values(), state, command.state());
+      if (current == null) {
+        invariants.create(form, parentValues, command.state());
+      } else {
+        invariants.update(form, validationContext, current.id(), current.version(), parentValues, command.state());
+      }
+      org.simplepoint.plugin.dna.runtime.api.record.RecordMutation mutation = current == null
+          ? new org.simplepoint.plugin.dna.runtime.api.record.RecordCreateMutation("parent", values)
+          : new org.simplepoint.plugin.dna.runtime.api.record.RecordUpdateMutation("parent", current.id(), current.version(), values);
+      // Preview never creates a durable operation. Keep its ephemeral identity separate from save/submit retries.
+      var intent = details.intent(form, mutation, "preview:" + java.util.UUID.randomUUID(), command.values(), command.state());
+      return details.preview(form, contexts.forForm(form), intent);
+    } catch (DnaRuntimeException failure) {
+      throw dnaFailure(failure);
+    } catch (IllegalArgumentException failure) {
+      throw invalid("Record preview command is invalid", failure);
+    }
+  }
+
   /** Preflight uses the same current record and validation rules as the eventual captured write. */
   Map<String, Object> previewSubmission(
       PublishedApplicationForm form,
       org.simplepoint.plugin.app.form.api.model.SubmitApplicationFormCommand command) {
+    if (FormCalculationCompiler.hasCalculations(form.document())) {
+      return preview(form, new PreviewApplicationFormRecordCommand(command.runtime(), command.recordId(), command.expectedVersion(),
+          FormRecordState.SUBMITTED, command.values())).values();
+    }
     resolver.requireAction(form, command.recordId() == null ? "records.create" : "records.edit");
     ApplicationFormRuntimeIdentity.requireCurrent(
         command.runtime(), form.formId(), form.formVersion());
@@ -372,11 +437,11 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
                 idempotencyKey,
                 Map.of(),
                 FormRecordState.DRAFT);
-        details.execute(contexts.forResource(form.resourceCode()), intent);
+        details.execute(contexts.forForm(form), intent);
         return;
       }
       dna.deleteRecord(
-          contexts.forResource(form.resourceCode()),
+          contexts.forForm(form),
           new RecordDeleteCommand(
               form.physicalModelId(),
               schema(form),
@@ -501,7 +566,7 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
   private static FieldMapping mapping(final PublishedApplicationForm form) {
     Map<String, String> codesById =
         form.document().fields().stream()
-            .filter(ApplicationFormRecordServiceImpl::persistent)
+            .filter(FormFieldDefinition::persistent)
             .collect(
                 Collectors.toMap(
                     FormFieldDefinition::fieldId,
@@ -587,16 +652,12 @@ public class ApplicationFormRecordServiceImpl implements ApplicationFormRecordSe
     return new RecordSchemaReference(form.physicalModelVersion(), form.storageChecksum());
   }
 
-  private static boolean persistent(final FormFieldDefinition field) {
-    return field.storageMode() == FormStorageMode.STORED
-        || field.storageMode() == FormStorageMode.REFERENCE
-        || field.storageMode() == FormStorageMode.ATTACHMENT;
-  }
-
   private static ApplicationFormException dnaFailure(final DnaRuntimeException exception) {
     ApplicationFormErrorCode code =
         switch (exception.errorCode()) {
+          case RECORD_MAINTENANCE_IN_PROGRESS -> ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS;
           case RECORD_NOT_FOUND -> ApplicationFormErrorCode.RECORD_NOT_FOUND;
+          case RECORD_OPERATION_REJECTED -> ApplicationFormErrorCode.RECORD_OPERATION_REJECTED;
           case RECORD_ACCESS_DENIED -> ApplicationFormErrorCode.RESOURCE_ACCESS_DENIED;
           case RECORD_VERSION_CONFLICT,
               RECORD_IDEMPOTENCY_CONFLICT,

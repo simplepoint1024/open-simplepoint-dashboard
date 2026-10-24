@@ -1,7 +1,7 @@
 import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import {useState} from 'react';
 import {Alert, Empty, Space, Spin, Timeline, Typography} from 'antd';
-import {useData} from '@simplepoint/shared/api/methods';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
 import {resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {workflowApi} from '@simplepoint/shared/workflow/api';
@@ -12,7 +12,7 @@ import {WorkflowStatus} from './Status';
 export default function ActionTimeline({id, onSelectNode}: {id: string; onSelectNode: (id: string) => void}) {
   const {t, locale} = useI18n();
   const [page, setPage] = useState(0);
-  const query = useData(['workflow', 'actions', id, page], ({signal}) => workflowApi.actions(id, page, signal), {retry: false});
+  const query = useOwnedData(['workflow', 'actions', id, page], ({signal}) => workflowApi.actions(id, page, signal), {retry: false});
   const result = query.data;
   return <section className="workflow-node-history" aria-label={t('workflow.audit.title', '流程操作记录')}>
     <Typography.Paragraph type="secondary">{t('workflow.audit.hint', '此处记录平台内的发起、认领、审批和撤回等操作；节点执行情况请在审批节点中查看。')}</Typography.Paragraph>

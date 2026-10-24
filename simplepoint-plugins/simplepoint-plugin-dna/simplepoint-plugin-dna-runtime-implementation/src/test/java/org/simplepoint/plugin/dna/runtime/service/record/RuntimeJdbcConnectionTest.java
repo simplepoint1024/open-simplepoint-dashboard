@@ -9,6 +9,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.JDBCType;
+import java.sql.Types;
+import org.apache.calcite.avatica.util.ByteString;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,6 +44,30 @@ class RuntimeJdbcConnectionTest {
     assertThatThrownBy(() -> fromRows.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE))
         .isInstanceOf(SQLException.class);
     assertThatThrownBy(() -> fromRows.setReadOnly(true)).isInstanceOf(SQLException.class);
+    verify(physical, never()).commit();
+  }
+
+  @Test
+  void bindsCalciteBinaryAsBytesWithoutChangingJdbcOverloadsOrTransactionOwnership() throws Exception {
+    Connection physical = mock(Connection.class);
+    PreparedStatement statement = mock(PreparedStatement.class);
+    when(physical.prepareStatement("write")).thenReturn(statement);
+    Connection borrowed = RuntimeJdbcConnection.borrow(physical);
+    var prepared = borrowed.prepareStatement("write");
+    byte[] bytes = {(byte) 0xfb, (byte) 0xff};
+    var value = new ByteString(bytes);
+    prepared.setObject(1, value);
+    prepared.setObject(2, value, Types.VARBINARY);
+    prepared.setObject(3, value, JDBCType.VARBINARY, 2);
+    prepared.setObject(4, "text");
+    prepared.setObject(5, null);
+    verify(statement).setObject(1, bytes);
+    verify(statement).setObject(2, bytes, Types.VARBINARY);
+    verify(statement).setObject(3, bytes, JDBCType.VARBINARY, 2);
+    verify(statement).setObject(4, "text");
+    verify(statement).setObject(5, null);
+    assertThat(prepared.getConnection()).isSameAs(borrowed);
+    assertThatThrownBy(() -> prepared.getConnection().commit()).isInstanceOf(SQLException.class);
     verify(physical, never()).commit();
   }
 

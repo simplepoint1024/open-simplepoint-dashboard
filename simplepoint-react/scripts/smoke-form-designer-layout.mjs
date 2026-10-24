@@ -8,8 +8,19 @@ export async function smokeFormDesignerLayout({action, clickReady, clickText, fi
   const selectedId = () => evaluate(`document.querySelector('${root} .sp-form-canvas-node.is-selected').dataset.designNode`);
   const insert = type => clickText(`${root} [data-palette-type="${type}"] button`, type === 'layout.grid' ? '栅格' : type === 'layout.group' ? '分组' : '单行文本');
   const context = async (id, action) => {
-    await evaluate(`document.querySelector('${node(id)}').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:650,clientY:350}))`);
+    await evaluate(`document.querySelector('${node(id)} > .sp-form-canvas-title').scrollIntoView({block:'center',inline:'nearest'})`);
+    // Wait for scroll/layout and exiting menus before dispatching a real pointer event.
+    const point = await poll(() => evaluate(`(async()=>{
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const title=document.querySelector('${node(id)} > .sp-form-canvas-title'), r=title.getBoundingClientRect();
+      const point={x:r.x+Math.min(80,r.width/2),y:r.y+r.height/2};
+      return title.contains(document.elementFromPoint(point.x,point.y)) ? point : false;})()`), 'context title receives pointer');
+    await send('Input.dispatchMouseEvent', {type:'mouseMoved', ...point});
+    await send('Input.dispatchMouseEvent', {type:'mousePressed', button:'right', clickCount:1, ...point});
+    await send('Input.dispatchMouseEvent', {type:'mouseReleased', button:'right', clickCount:1, ...point});
+    await poll(() => evaluate(`document.querySelector('${node(id)}')?.classList.contains('is-selected')`), 'context target selected');
     await clickText('.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item', action);
+    await poll(() => evaluate(`!document.querySelector('.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu')`), 'context menu action completed');
   };
   const initialCount = await evaluate(`document.querySelectorAll('${root} [data-design-node]').length`);
   await clickReady(root + ' .sp-form-canvas-node.is-root > .sp-form-canvas-title');
@@ -31,6 +42,7 @@ export async function smokeFormDesignerLayout({action, clickReady, clickText, fi
     'property label and input stay on one row');
   await context(first, '复制');
   await context(group, '粘贴');
+  await poll(async () => ![first, second, group].includes(await selectedId()), 'pasted component selected');
   const pasted = await selectedId();
   assert.notEqual(pasted, first);
   assert.equal(await evaluate(`document.querySelector('${node(pasted)}').parentElement.parentElement.closest('[data-design-node]').dataset.designNode`), group,
@@ -57,7 +69,7 @@ export async function smokeFormDesignerLayout({action, clickReady, clickText, fi
         buttons:[...document.querySelectorAll('${root} .sp-form-designer-toolbar button')].map(b=>b.getAttribute('aria-label'))};
     })()`);
     assert.ok(header.height.bottom-header.height.top <= 38 && header.scenes.bottom-header.scenes.top <= 38, 'both designer bars keep compact heights: ' + JSON.stringify(header));
-    assert.deepEqual(header.buttons.filter(Boolean), ['返回','预览','表单属性','操作'], 'one toolbar has return before preview and actions after it');
+    assert.deepEqual(header.buttons.filter(Boolean), ['返回','预览','表单属性','结构导航','配置检查','操作'], 'one toolbar keeps return before preview and actions after editor tools');
     assert.ok(header.tabs.right <= header.identity.left && header.identity.right <= header.toolbar.left, 'title and save status do not overlap tabs or actions');
     assert.ok(Math.abs(header.identity.center - (header.tabs.right + header.toolbar.left) / 2) <= 2, 'title and save status are centered between tabs and actions');
     assert.ok(header.toolbar.right <= viewport.width && header.tabs.top < header.toolbar.bottom && header.toolbar.top < header.tabs.bottom, 'tabs and actions share one bounded row');

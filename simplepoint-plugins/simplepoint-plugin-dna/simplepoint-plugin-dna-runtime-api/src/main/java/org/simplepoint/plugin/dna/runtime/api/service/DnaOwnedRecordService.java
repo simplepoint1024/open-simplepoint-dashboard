@@ -3,6 +3,7 @@ package org.simplepoint.plugin.dna.runtime.api.service;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorDecoder;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand;
+import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordPreview;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCommandResult;
@@ -16,6 +17,9 @@ import org.simplepoint.remoting.RemoteContract;
 public interface DnaOwnedRecordService {
   /** Reads an authorized parent and its owned child collections with consistent versions. */
   OwnedRecordView get(DnaInvocationContext context, OwnedRecordQuery query);
+
+  /** Evaluates a create/update using the installed policy without writing data, receipts or snapshots. */
+  OwnedRecordPreview preview(DnaInvocationContext context, OwnedRecordCommand command);
 
   /** Returns the original confirmation for an exact tenant, actor and request identity. */
   RecordCommandResult findResult(DnaInvocationContext context, OwnedRecordCommand command);

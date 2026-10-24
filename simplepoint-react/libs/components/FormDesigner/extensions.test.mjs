@@ -5,7 +5,7 @@ import {insertComponent, copyComponent, pasteComponent, removeComponent, moveCom
 import {runtimeFormModel} from '../FormRuntime/model.ts';
 import {recordEditorUiSchema} from '../FormRuntime/recordEditorUiSchema.ts';
 import {detailRowSchema} from '../FormComponents/Detail/schema.ts';
-import {detailPayload} from '../FormComponents/Detail/payload.ts';
+import {detailFormValues, detailPayload} from '../FormComponents/Detail/payload.ts';
 let counter = 0;
 const id = () => `id-${++counter}`;
 const node = type => ({componentId: id(), componentType: type, componentVersion: '1', columnSpan: 24, readOnly: false, properties: {}, children: []});
@@ -55,6 +55,20 @@ test('detail payload keeps concurrency identity and removes protected values', (
   assert.deepEqual(detailPayload(doc, {lines: [{id: 'r', version: 2, values: {name: 'A', locked: 'X', secret: 'S'}}]}, 'DRAFT').lines,
     [{id: 'r', version: 2, values: {name: 'A'}}]);
   assert.deepEqual(detailPayload(doc, {lines: undefined}), {lines: []});
+});
+
+test('record detail audit envelopes never enter form validation or erase displayed readonly results', () => {
+  const doc = {details: [{detailId: 'lines', fields: [{fieldId: 'quantity'}, {fieldId: 'total', calculated: true}]}]};
+  const source = {subject: '中文・日本語', lines: [{id: 'r', version: 3,
+    values: {quantity: '2', total: '20.02'}, systemValues: {createdBy: 'author', tenantId: 'tenant'}},
+  {values: {quantity: '1'}}]};
+  const result = detailFormValues(doc, source);
+  assert.deepEqual(result, {subject: source.subject, lines: [{id: 'r', version: 3, values: {quantity: '2', total: '20.02'}},
+    {values: {quantity: '1'}}]});
+  assert.equal(source.lines[0].systemValues.createdBy, 'author');
+  assert.notEqual(result.lines, source.lines);
+  assert.deepEqual(detailPayload(doc, result, 'DRAFT').lines[0], {id: 'r', version: 3, values: {quantity: '2'}});
+  assert.deepEqual(detailFormValues(doc, {lines: [null, 3]}), {lines: [null, 3]}, 'Malformed business input must still fail schema validation');
 });
 
 test('detail editor retains persisted write policy after projected form values change', () => {

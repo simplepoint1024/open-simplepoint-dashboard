@@ -108,9 +108,11 @@ class PhysicalResourceProjectionDatabaseTest {
     var manager = new JpaTransactionManager(factory);
     final var transaction = new TransactionTemplate(manager);
     var repositories = new JpaRepositoryFactory(entityManager);
+    var maintenance = org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(
+        repositories.getRepository(PhysicalModelRepository.class));
     var target = new PhysicalModelResourceStateService(entityManager, new RuntimeRequestContext(),
         repositories.getRepository(PhysicalModelRepository.class),
-        repositories.getRepository(PhysicalModelResourceBindingRepository.class));
+        repositories.getRepository(PhysicalModelResourceBindingRepository.class), maintenance);
     var proxy = new ProxyFactory(target);
     proxy.setProxyTargetClass(true);
     var interceptor = new TransactionInterceptor();

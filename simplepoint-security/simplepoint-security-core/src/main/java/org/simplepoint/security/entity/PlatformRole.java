@@ -9,6 +9,13 @@ public enum PlatformRole {
   AUDITOR(Set.of("platform.audit.view"));
 
   private final Set<String> permissions;
-  PlatformRole(Set<String> permissions) { this.permissions = permissions; }
-  public Set<String> permissions() { return permissions; }
+
+  PlatformRole(Set<String> permissions) {
+    this.permissions = permissions;
+  }
+
+  /** Returns the capabilities contributed by this platform role. */
+  public Set<String> permissions() {
+    return permissions;
+  }
 }

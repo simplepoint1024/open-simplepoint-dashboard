@@ -68,7 +68,7 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
             {key: 'depts', label: t('permissions.organizations', '组织'), children: labels.organizations(data.deptIds)},
             {key: 'self', label: t('data-scopes.preview.self', '额外包含本人数据'), children: data.includeSelf ? t('common.yes', '是') : t('common.no', '否')},
           ]} />
-          <Table size="small" rowKey="resource" pagination={{pageSize: 10}} storageKey="rbac.effective-page-data-permissions"
+          <Table size="small" rowKey="resource" pagination={{defaultPageSize: 50}} storageKey="rbac.effective-page-data-permissions"
             dataSource={dataRows}
             query={{mode: 'local', scope: 'complete', fields: {
               title: {type: 'string'}, scope: {type: 'string'}, organizations: {type: 'string'}, self: {type: 'string'},
@@ -79,7 +79,7 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
               {title: t('permissions.organizations', '组织'), dataIndex: 'organizations'},
               {title: t('data-scopes.preview.self', '额外包含本人数据'), dataIndex: 'self'},
             ]} />
-          <Table size="small" rowKey="key" pagination={{pageSize: 10}} storageKey="rbac.effective-page-field-permissions"
+          <Table size="small" rowKey="key" pagination={{defaultPageSize: 50}} storageKey="rbac.effective-page-field-permissions"
             dataSource={resourceFields}
             query={{mode: 'local', scope: 'complete', fields: {
               resource: {type: 'string'}, field: {type: 'string'}, access: {type: 'string'},
@@ -89,7 +89,7 @@ export default function EffectiveScopePreview({isBlocked, onOpenChange}: {isBloc
               {title: t('data-scopes.preview.field', '资源字段'), dataIndex: 'field'},
               {title: t('data-scopes.preview.access', '访问级别'), dataIndex: 'access'},
             ]} />
-          <Table size="small" rowKey="key" pagination={{pageSize: 10}} storageKey="rbac.effective-field-permissions"
+          <Table size="small" rowKey="key" pagination={{defaultPageSize: 50}} storageKey="rbac.effective-field-permissions"
             dataSource={legacyFields}
             query={{mode: 'local', scope: 'complete', fields: {field: {type: 'string'}, access: {type: 'string'}}}}
             columns={[

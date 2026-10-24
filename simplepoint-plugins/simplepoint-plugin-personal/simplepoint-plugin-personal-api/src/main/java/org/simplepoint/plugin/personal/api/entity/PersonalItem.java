@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.simplepoint.core.query.TablePagination;
 
 /** A private work item; large text is ordinary text, not a PostgreSQL large object. */
 @Data
@@ -28,7 +29,7 @@ import lombok.EqualsAndHashCode;
       @org.simplepoint.core.query.QueryField("category"),
       @org.simplepoint.core.query.QueryField("dueAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class PersonalItem extends OwnedRecord {
   @Column(nullable = false, length = 200)
   private String title;

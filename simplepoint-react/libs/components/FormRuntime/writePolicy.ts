@@ -3,7 +3,7 @@ import type {RecordState} from './recordTableModel.ts';
 
 /** Uses the persisted session state, never the mutable values or requested submission state. */
 export function fieldWriteAllowed(field: FormFieldDefinition, currentState?: RecordState) {
-  if (field.access?.readOnly || (currentState === undefined ? field.access?.create === 'HIDDEN'
+  if (field.calculated || field.access?.readOnly || (currentState === undefined ? field.access?.create === 'HIDDEN'
     : field.access?.edit === 'READ' || field.access?.edit === 'HIDDEN')) return false;
   switch (field.writePolicy) {
     case undefined: case null: case 'EDITABLE': return true;

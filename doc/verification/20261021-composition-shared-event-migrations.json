@@ -1,0 +1,426 @@
+{
+  "date": "2026-10-21",
+  "scope": "Shared event schema installation, required-contributor completeness and neutral dependency boundaries",
+  "status": "increment_verified_overall_goal_incomplete",
+  "commands": [
+    "./gradlew -I /tmp/simplepoint-shared-events-checkstyle.gradle verifySharedEventsStyle verifyModuleBoundaries :simplepoint-platform:simplepoint-platform-composition:verifyCompositionDependencies :simplepoint-data:simplepoint-data-migrations:test :simplepoint-events:simplepoint-events-migrations:test :simplepoint-events:simplepoint-events-api:test :simplepoint-events:simplepoint-events-jdbc:test :simplepoint-events:simplepoint-events-composition:test :simplepoint-platform:simplepoint-platform-composition-verification:test -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-shared-events-checkstyle.gradle :simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation:test --tests '*RecordMaintenanceControlDatabaseTest.serializesControlMetadataAndPostgresqlMaintenance' -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-shared-events-checkstyle.gradle verifySharedEventsStyle -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "environment": {
+    "javaHome": "/home/ymsl/.jdks/ms-21.0.12.1",
+    "database": "PostgreSQL 17.11 on Alpine; disposable localhost migration_test database",
+    "image": "sha256:9e6d0dd4e587ae699e45b94302df6707531b3c2fabb7813c3ea33e85bf8c1d78",
+    "gates": [
+      "SP_MIGRATIONS_POSTGRES_URL",
+      "SP_MIGRATIONS_POSTGRES_USER",
+      "SP_MIGRATIONS_POSTGRES_PASSWORD",
+      "DNA_RUNTIME_TEST_POSTGRES_URL",
+      "DNA_RUNTIME_TEST_POSTGRES_USER",
+      "DNA_RUNTIME_TEST_POSTGRES_PASSWORD"
+    ],
+    "topology": "One PostgreSQL instance, independent schema/data-source groups or shared schema; no broker was started in this increment",
+    "remainingMigrationOrMaintenanceSchemasBeforeCleanup": 0,
+    "remainingPublicTablesBeforeCleanup": 0
+  },
+  "architecture": {
+    "businessSqlOwners": 19,
+    "businessControlTables": 126,
+    "sharedOwner": "platform-events",
+    "sharedTables": [
+      "sp_event_jobs_v1",
+      "sp_event_replays_v1",
+      "sp_event_quarantine_v1"
+    ],
+    "fullCatalogSharedSchemaOwners": 20,
+    "fullCatalogSharedSchemaTables": 129,
+    "migrationAdapter": "simplepoint-events-migrations",
+    "requirementAnnotation": "ModuleSharedSchemas",
+    "discovery": "ModuleMigrationContributor ServiceLoader providers; metadata only"
+  },
+  "coverage": [
+    "Shared contributions are derived once per selected event store; no event capability produces no ledger contribution.",
+    "Shared migration histories remain identical across store/host names and when another selected event owner joins the same store.",
+    "Required shared providers cannot disappear silently; selected domain ownership, unselected-store writes, duplicate contributions and overlapping tables are rejected.",
+    "Existing unresolved domain migration coverage remains unresolved after infrastructure contributions.",
+    "V1 assets match the existing portable event script for both PostgreSQL and H2; old untracked ledger tables refuse implicit adoption.",
+    "Full catalog installs and verifies 129 physical tables; identity/DNA/APP/support/AI migration suites include correct shared storage ownership.",
+    "Real module JPA transaction and outbox commit/rollback together; split-store misuse is rejected.",
+    "Duplicate receipt deduplicates; local business effect, inbox completion and completion outbox commit atomically and rollback together; completed inbox work cannot replay.",
+    "Migration restart preserves outbox/inbox completion and pending outgoing work.",
+    "Existing DNA PostgreSQL control/target maintenance fixture still passes after requiring the event migration adapter.",
+    "Resolved production dependency gates reject Spring, JPA, broker clients and domain implementations in neutral migration adapters and event API; pure composition dependency gate also passes."
+  ],
+  "executionNotes": [
+    "Initial implementation and PostgreSQL tests passed; fixed two scoped declaration-distance style warnings.",
+    "Added explicit shared-schema requirements to reject a missing provider; split the migration adapter from Spring/Rabbit composition to keep installation independent.",
+    "Dependency gate exposed inherited JPA dependencies in the global build template for event API/new adapter; removed those unrelated dependencies and supplied the explicit Jackson BOM for the API.",
+    "Final main command executed 64 cases including one broker skip and reused 20 unchanged cases executed earlier in this increment. The targeted DNA PostgreSQL command executed one additional case.",
+    "Event API has no source tests; it compiled and passed dependency/style gates and its requirement annotation is exercised by migration integration tests.",
+    "The sole skip is the existing opt-in ModuleEventBrokerIntegrationTest; actual broker network transport was not changed or revalidated here.",
+    "After verification, clarified a schema-owner Javadoc and reran all scoped style checks; no runtime logic changed."
+  ],
+  "totals": {
+    "tests": 85,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "passed": 84,
+  "actualExecutionCasesInFinalCommands": 65,
+  "unchangedCasesFromEarlierIncrementExecution": 20,
+  "testProjects": [
+    {
+      "project": ":simplepoint-data:simplepoint-data-migrations",
+      "taskState": "UP-TO-DATE",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.data.migration.ModuleMigrationContributorTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.data.migration.ModuleMigrationEngineTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-events:simplepoint-events-migrations",
+      "taskState": "EXECUTED",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.events.migration.ModuleEventMigrationsTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-events:simplepoint-events-api",
+      "taskState": "NO-SOURCE",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": []
+    },
+    {
+      "project": ":simplepoint-events:simplepoint-events-jdbc",
+      "taskState": "UP-TO-DATE",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.events.jdbc.JdbcEventStoreTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-events:simplepoint-events-composition",
+      "taskState": "EXECUTED",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.events.composition.ModuleBrokerConnectionsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.events.composition.ModuleEventAssemblyTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.events.composition.ModuleEventBrokerIntegrationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        {
+          "suite": "org.simplepoint.events.composition.ModuleEventPlanTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-platform:simplepoint-platform-composition-verification",
+      "taskState": "EXECUTED",
+      "scope": "complete project test task",
+      "totals": {
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AiLegacySchemaContractPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AiModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AppFormModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.AuthenticationStoragePostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.DnaModuleMigrationPostgresTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.EventModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.ExternalIdentityBindingPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.IdentityModuleMigrationPostgresTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.OidcClientMigrationPostgresTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedInitializationTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PackagedPersistenceTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.RepositoryOwnershipTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.SupportModuleMigrationPostgresTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    {
+      "project": ":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation",
+      "taskState": "EXECUTED",
+      "scope": "targeted PostgreSQL maintenance method",
+      "totals": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "suite": "org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControlDatabaseTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  ],
+  "scopedCheckstyle": [
+    {
+      "path": "simplepoint-data/simplepoint-data-migrations/build/reports/checkstyle/sharedEvents.xml",
+      "violations": 0,
+      "sha256": "cbb39f17fbce6e63edcf861c50766a42559ad4f9cc0a9dbba899209ec2a23be3"
+    },
+    {
+      "path": "simplepoint-events/simplepoint-events-migrations/build/reports/checkstyle/sharedEvents.xml",
+      "violations": 0,
+      "sha256": "04ab52ca1b03ae5ee7f03f8d89d85283702801670dbfbcc7dc5d8d21550c2f95"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/sharedEvents.xml",
+      "violations": 0,
+      "sha256": "73af51a358eb7cd5ded4ae30fcade0d3fcffbaf7e557e4055fd30f3d41a96ca9"
+    },
+    {
+      "path": "simplepoint-events/simplepoint-events-api/build/reports/checkstyle/sharedEvents.xml",
+      "violations": 0,
+      "sha256": "60fb24bab6ed795b04ceb06af4898644e73fc343729c86118a6b3601475b55ef"
+    },
+    {
+      "path": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/sharedEvents.xml",
+      "violations": 0,
+      "sha256": "365c84d1ffe95619293d3135696fd6c9d44a4c22f1fd204303169bc5e30df0ad"
+    }
+  ],
+  "moduleBoundaries": "passed",
+  "compositionDependencies": "passed",
+  "cleanup": {
+    "testContainerRemoved": true,
+    "anonymousTestVolumeRemoved": true,
+    "temporaryCredentialFileRemoved": true,
+    "businessDatabaseModified": false,
+    "deployed": false,
+    "committed": false,
+    "pushed": false
+  },
+  "limitations": [
+    "Formal installer and runtime startup ordering remain unintegrated.",
+    "Native Flowable schema contributions, G22 workflow identity read-model decoupling and legacy schema/ledger adoption remain unfinished.",
+    "Broker provisioning and full original/standalone/hybrid deployment acceptance remain unfinished.",
+    "No browser, remote broker, multi-server database outage or complete standalone host acceptance in this increment."
+  ],
+  "sourceSha256": {
+    "AGENTS.md": "b6b3b45645aaefd7b376ccfefa3469d7e6b8e97f626e64cf9067333e2c827250",
+    "build.gradle.kts": "089984c615e9638269ac38d26688b47b266c88cedde299df769f2b4ddd3c18a7",
+    "doc/design/modular_service_composition_plan.md": "7ce71f261b8ed92959634b04caab843b9cd82126dcfd5d2ed719f76aeb3320db",
+    "gradle/module-boundaries.gradle.kts": "bd9f0a3e5371a5d5f34e54a23fc9f5e1006a3550e2886162dc8712e11039f9ed",
+    "settings.gradle.kts": "bae880d2985089258c60175b87458cb7d87a10ee66e44ab1caf4b50ba24d0ba0",
+    "simplepoint-data/simplepoint-data-jpa-composition/README.md": "928ec6b6e5d588efe4b47453ad81ee39ff9445ba82cc928e0142acf67de22191",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "3ea48f3b0dd4c796b1edff0580997df7912aef3b74bdf796a36b73e7d149d331",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationContributor.java": "a31014d70662a529ebcc6a3ec6940210162261bc206e5a852cf20cd2af5e45e9",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationPlan.java": "16636e80da2c10958927324b4d9fd582c66362229473ac34e72ecabfff784b04",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleMigrationContributorTest.java": "71df4ce11311c00c5de05af13d34c2049235df3b2b05b2d89b7233494bdb6b1e",
+    "simplepoint-events/README.md": "7c1a8233eb97b37d00378000b266325530d9f8754ba8228658c39d0c285c71ef",
+    "simplepoint-events/simplepoint-events-api/build.gradle.kts": "857de50ac0ca57fba3b6f9090a193c8cafb9b0a123cfad548892a7c25e4d9e11",
+    "simplepoint-events/simplepoint-events-api/src/main/java/org/simplepoint/events/api/ModuleEvents.java": "fdf436bb782a4fffb69efe2463b80f72912a979729046115701486a8d747a541",
+    "simplepoint-events/simplepoint-events-composition/README.md": "11a05359870a6c66e7a62d0509d8d72f9360159299d062d68970bb1b0921a65b",
+    "simplepoint-events/simplepoint-events-composition/build.gradle.kts": "1cd7e835b55f723e4fa2b1353e265a808089d74df2498275baad169afe9469de",
+    "simplepoint-events/simplepoint-events-jdbc/src/main/resources/META-INF/simplepoint/events/schema-v1.sql": "ba6149ea886d5ad4600f538564503c79f58008f3bb835a41dfda53ebaf21e593",
+    "simplepoint-events/simplepoint-events-migrations/README.md": "e03148deda32d5cfc62b2aea10c8a31a75ddd5deb82a3bc172ed78e6d4492e3a",
+    "simplepoint-events/simplepoint-events-migrations/build.gradle.kts": "ab973917284e3e02ef1462655f84131bda20e08344130e446c6297576940fdbe",
+    "simplepoint-events/simplepoint-events-migrations/src/main/java/org/simplepoint/events/migration/ModuleEventMigrations.java": "ee60d83ac33097239321ac0957eac8972f825edf7151aaee10fcf2fbf7d2fb12",
+    "simplepoint-events/simplepoint-events-migrations/src/main/resources/META-INF/services/org.simplepoint.data.migration.ModuleMigrationContributor": "7c54842f783a0489bbfa6df302076d31b4ceb61c7ab8533940606d15d434f9ea",
+    "simplepoint-events/simplepoint-events-migrations/src/main/resources/META-INF/simplepoint/modules/platform-events/db/h2/V1__event_ledger.sql": "ba6149ea886d5ad4600f538564503c79f58008f3bb835a41dfda53ebaf21e593",
+    "simplepoint-events/simplepoint-events-migrations/src/main/resources/META-INF/simplepoint/modules/platform-events/db/manifest.properties": "433db292be05cb5f2f1d13e47555c9473eb9fc92bddefbc9216c942ff2a4b5ad",
+    "simplepoint-events/simplepoint-events-migrations/src/main/resources/META-INF/simplepoint/modules/platform-events/db/postgresql/V1__event_ledger.sql": "ba6149ea886d5ad4600f538564503c79f58008f3bb835a41dfda53ebaf21e593",
+    "simplepoint-events/simplepoint-events-migrations/src/test/java/org/simplepoint/events/migration/ModuleEventMigrationsTest.java": "e8000aec224cd4f22a7139c0858b513735ecc83e26934ffecf580f1dc6bfbf30",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "fe36c299d9f32f5c3779d279389b64689842a364c0804e0ba067d79ee762409c",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AiModuleMigrationPostgresTest.java": "dae3bc183d1a1330fe4526ac16d2c3d3d708210a29e930b045b48f0f922aaa8d",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/AppFormModuleMigrationPostgresTest.java": "1fc207784bdb21d9507aa2254efdb7e6522700db655561be7df1cc833751e0ac",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/DnaModuleMigrationPostgresTest.java": "c81935839205493594843ce407d9b57e20ca468b7834cb181e7d79d0720baa29",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/EventModuleMigrationPostgresTest.java": "c63dd7f41e0cc44cde80ff9830d3b6feaba1fcd7620c13d15ac410fd5cb2f54a",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/IdentityModuleMigrationPostgresTest.java": "e9ce8d7b7f51a0328f6dabd8bb92da92b0315275ebffbaa3fb322f473e205084",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "c7daf4eb83694ef685bdda6cb0964405cb27ca4686bc226f760f9f190df6defd",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/SupportModuleMigrationPostgresTest.java": "1c960e9683aaf0b99c60c9ce1a91d60a8f0083aafda02047a5955237919144bd",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleSharedSchemas.java": "cb5a359d23b84e2433ca21f2af588c9ce3742f4d48371ef90f67b439db262726",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/build.gradle.kts": "d46aeb855ec906ac3070df1d568314d0675d6f16f3fd9a7b94f75caa9c6f0d84"
+  }
+}

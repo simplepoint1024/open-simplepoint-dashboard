@@ -1,0 +1,226 @@
+{
+  "date": "2026-10-21",
+  "recorded_at_utc": "2026-10-20T16:20:59.716735+00:00",
+  "scope": "G06 versioned migration engine and first real workflow module; full goal remains active",
+  "runner_script": "import subprocess,os\nfrom pathlib import Path\nvalues=dict(line.split('=',1) for line in Path('/tmp/simplepoint-module-migration-postgres.env').read_text().splitlines())\nport=subprocess.check_output(['docker','port','simplepoint-module-migrations-20261021','5432/tcp'],text=True).strip().rsplit(':',1)[1]\nurl='jdbc:postgresql://127.0.0.1:'+port+'/migration_test'\nenv=os.environ.copy();env.update({'JAVA_HOME':'/home/ymsl/.jdks/ms-21.0.12.1',\n'SP_MIGRATIONS_POSTGRES_URL':url,'SP_MIGRATIONS_POSTGRES_USER':values['POSTGRES_USER'],'SP_MIGRATIONS_POSTGRES_PASSWORD':values['POSTGRES_PASSWORD'],\n'WORKFLOW_TEST_POSTGRES':'1','WORKFLOW_TEST_POSTGRES_URL':url.replace('/migration_test','/workflow_test'),'WORKFLOW_TEST_POSTGRES_USER':values['POSTGRES_USER'],'WORKFLOW_TEST_POSTGRES_PASSWORD':values['POSTGRES_PASSWORD']})\ncommand=['./gradlew','-I','/tmp/simplepoint-migration-checkstyle.gradle','verifyMigrationStyle','verifyModuleBoundaries',\n':simplepoint-data:simplepoint-data-migrations:checkstyleMain',':simplepoint-data:simplepoint-data-migrations:checkstyleTest',\n':simplepoint-data:simplepoint-data-migrations:test',':simplepoint-data:simplepoint-data-jpa-composition:test',\n':simplepoint-platform:simplepoint-platform-composition:test',':simplepoint-platform:simplepoint-platform-composition-verification:test',\n':simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-implementation:test',\n':simplepoint-services:simplepoint-service-workflow:test','-Psimplepoint.frontend.skip=true','--console=plain']\nwith open('/tmp/simplepoint-migrations-final.log','w') as log:\n result=subprocess.run(command,env=env,stdout=log,stderr=subprocess.STDOUT)\nraise SystemExit(result.returncode)\n",
+  "framework": "Flyway 11.14.1 from Spring Boot BOM; kernel runtime rejects Spring/JPA/domain implementation dependencies",
+  "test_totals": {
+    "tests": 447,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_suites": [
+    {
+      "project": "simplepoint-data/simplepoint-data-migrations",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-data/simplepoint-data-migrations/build/test-results/test/TEST-org.simplepoint.data.migration.ModuleMigrationEngineTest.xml"
+      ]
+    },
+    {
+      "project": "simplepoint-data/simplepoint-data-jpa-composition",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-data/simplepoint-data-jpa-composition/build/test-results/test/TEST-org.simplepoint.data.jpa.composition.ModulePersistenceTest.xml"
+      ]
+    },
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleCatalogTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleDefaultsTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition/build/test-results/test/TEST-org.simplepoint.platform.composition.ModuleResourcesTest.xml"
+      ]
+    },
+    {
+      "project": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedEventDeclarationsTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedInitializationTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PackagedPersistenceTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.PlatformDeploymentPlanTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RemoteContractBoundaryTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.RepositoryOwnershipTest.xml",
+        "simplepoint-platform/simplepoint-platform-composition-verification/build/test-results/test/TEST-org.simplepoint.platform.composition.verification.WorkflowModuleMigrationPostgresTest.xml"
+      ]
+    },
+    {
+      "project": "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation",
+      "tests": 372,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDefinitionValidatorTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDiagramCompilationTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnDiagramPolicyTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnExecutionSurfaceTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnMultiInstancePolicyTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.BpmnStandardLoopPolicyTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.ExactWorkflowExpressionFactoryTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowApplicationFormEngineTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowAssignmentTransactionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowAuditTrailTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowBusinessRuntimeServiceTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDecimalEngineTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDefinitionQueriesTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDiagramExecutionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowDueDateEngineTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowEngineSignalsTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowExpressionIsolationTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowExpressionLiteralsTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowFormContractsTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowInboxQueriesTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowLinksTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowMatterQueriesTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowModelingExecutionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNotificationDeliveryTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNumericIdentityEngineTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowNumericLiteralPreviewTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowOperationJournalTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowOverviewQueriesTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPostgresPlanTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPriorityEngineTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowPriorityLiteralPreviewTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowResubmissionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowRuntimeDetailsTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowRuntimeLifecycleTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowStandardLoopExecutionTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowStarterTemplateTest.xml",
+        "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/test-results/test/TEST-org.simplepoint.plugin.workflow.service.WorkflowVersionContractTest.xml"
+      ]
+    },
+    {
+      "project": "simplepoint-services/simplepoint-service-workflow",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reports": [
+        "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowLiteralPreviewControllerTest.xml",
+        "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowModelingErrorTest.xml",
+        "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPersonalHttpTest.xml",
+        "simplepoint-services/simplepoint-service-workflow/build/test-results/test/TEST-org.simplepoint.workflow.rest.WorkflowPriorityPreviewControllerTest.xml"
+      ]
+    }
+  ],
+  "style": {
+    "reports": [
+      "simplepoint-data/simplepoint-data-migrations/build/reports/checkstyle/migration.xml",
+      "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/migration.xml",
+      "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/migration.xml",
+      "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build/reports/checkstyle/migration.xml",
+      "simplepoint-data/simplepoint-data-migrations/build/reports/checkstyle/main.xml",
+      "simplepoint-data/simplepoint-data-migrations/build/reports/checkstyle/test.xml"
+    ],
+    "violations": 0,
+    "sources": [
+      "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/two/TwoModule.java",
+      "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/one/OneModule.java",
+      "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleMigrationEngineTest.java",
+      "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationEngine.java",
+      "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationPlan.java",
+      "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/OwnedMigrationResources.java",
+      "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationException.java",
+      "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleMigrations.java",
+      "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowModuleMigrationPostgresTest.java",
+      "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java",
+      "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java",
+      "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/test/java/org/simplepoint/plugin/workflow/service/WorkflowEngineFixture.java",
+      "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/stateless/StatelessModule.java"
+    ],
+    "init_script": "import org.gradle.api.plugins.quality.Checkstyle\n\ngradle.projectsEvaluated {\n    def root = gradle.rootProject\n    def paths = new File('/tmp/simplepoint-migration-style-files.txt').readLines().collect { root.file(it) }\n    def checks = []\n    root.allprojects.each { p ->\n        def sources = paths.findAll { it.toPath().startsWith(p.projectDir.toPath().resolve('src')) }\n        if (!sources.isEmpty()) {\n            checks.add(p.tasks.register('checkstyleMigration', Checkstyle) {\n                source sources\n                classpath = p.sourceSets.test.compileClasspath\n                configFile = root.file('checkstyle/google_checks.xml')\n                maxWarnings = 0\n                reports {\n                    xml.required = true\n                    html.required = true\n                }\n            })\n        }\n    }\n    root.tasks.register('verifyMigrationStyle') { dependsOn checks }\n}\n"
+  },
+  "database": {
+    "engine": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2)",
+    "image": "postgres:17",
+    "image_id": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+    "isolation": "Temporary localhost-only container; per-test UUID schemas; migration_test/workflow_test databases",
+    "storage": "Temporary anonymous Docker volume on the data-disk-backed Docker root",
+    "cleanup": {
+      "remaining_migration_schemas": 0,
+      "remaining_workflow_schemas": 0,
+      "container_removed": true,
+      "temporary_credential_file_removed": true
+    },
+    "interrupted_run": "An earlier --rm temporary database container disappeared during regression; its cause was not established. A fresh diagnostic-retaining container with 2 GiB limit was created and the final entire command passed."
+  },
+  "scenarios": [
+    "H2 shared independent histories and split databases",
+    "No migration replay on restart",
+    "Changed script checksum and future schema rejection",
+    "All-module preflight prevents partial work before later checksum failure",
+    "Legacy tables and colliding views require explicit adoption",
+    "Incomplete selected-module coverage blocks installation",
+    "Explicit schema-free modules need no dummy SQL",
+    "Separate groups cannot alias the same DataSource instance",
+    "PostgreSQL missing current schema fails without namespace fallback",
+    "Packaged workflow baseline validated by selected-module JPA assembly",
+    "Native Flowable deploy/start/user-task-complete and restart on migrated database",
+    "PostgreSQL transactional DDL rollback and identical-script retry after external cause repair",
+    "Concurrent PostgreSQL installers apply the module once",
+    "Relocated legacy workflow SQL remains repeatable",
+    "Full workflow PostgreSQL fixtures create platform tables with versioned migrations and use Hibernate validate"
+  ],
+  "limits": [
+    "Only workflow owns a complete first migration manifest so far; other persistent modules remain undeclared and block complete installation",
+    "Shared event schemas, native engine migrations and multi-store native adapters are not integrated into installation yet",
+    "Verified legacy baseline adoption is not implemented; existing untracked owned tables fail closed",
+    "No automatic schema diff, distributed atomic migration or data relocation",
+    "H2 and PostgreSQL only in this adapter; no additional database dialect support is claimed",
+    "Formal host startup ordering, complete standalone service, frontend packaging and end-to-end topology acceptance remain pending",
+    "No production deployment, code commit or push performed"
+  ],
+  "removed_sources": [
+    "simplepoint-services/simplepoint-service-workflow/src/main/resources/schema.sql"
+  ],
+  "source_sha256": {
+    "AGENTS.md": "0663806b12f062d409e8025c8354563b89edd728c3fcd07674a3be9ef04a9255",
+    "build.gradle.kts": "7772d2baaaf6f15e1577e3e0c258f139d81256615126952464ae27bcf9122eba",
+    "doc/design/modular_service_composition_plan.md": "5bc958bc498d6d18cfb0d09d5367e3bf502f6ddca01563b54c77d4a71c138d5b",
+    "gradle/module-boundaries.gradle.kts": "f16cc557241f8a6c75e30a7bfd11c26a81afba8c2952e5b952c2bf8d9386a2d1",
+    "scripts/node/verify-workflow-migration.mjs": "b269bb058ede699bcd9b420bec253f4367816cd82d89290871921eab94da0f9f",
+    "settings.gradle.kts": "f0eb73ab0a306b2e0d4f0c533de9008fe6ab2ecdbe2be78265a7fc1dfeb521d6",
+    "simplepoint-data/simplepoint-data-jpa-composition/README.md": "3b44deeba9cb860c0ff0d56a8164c5ccf2037da4e3511cc8e7b92ce8774ad6be",
+    "simplepoint-data/simplepoint-data-migrations/README.md": "d03c7914d84751ad86836d71ee326dae94ac7177ad328a7707ac564cd835f70f",
+    "simplepoint-data/simplepoint-data-migrations/build.gradle.kts": "55b96dfe5990d7e055c52811320d174bcff7a10b5442f53ddf506099063923e0",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationEngine.java": "8ba6bb2eb9596968052e95eed034dd5aa15ad04d5122e856c0fb821004c9fa3f",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationException.java": "1a86e31507b911209c5ca61a22d716acf5205ec9a07dbec9a8b67dc2879d7fa2",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/ModuleMigrationPlan.java": "7ded97bedb15f88f30d26bdab09d49f3094aabf2f5faf2a68670cc8472b91663",
+    "simplepoint-data/simplepoint-data-migrations/src/main/java/org/simplepoint/data/migration/OwnedMigrationResources.java": "871739ad316ff507f744e126fc3ce5d239a1ec5e250b36561e73376b1f06e4dd",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/data/migration/ModuleMigrationEngineTest.java": "d68c7f83e97b7821246ce5eeb997788b202df8420c63fcdf006198bdd0f5eae6",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/one/OneModule.java": "298d479810f9702e2f91d3114310cb750962388df8eec50c4543ae2ef29c1803",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/stateless/StatelessModule.java": "3801fb246693af9e157b1e3d35dd013875aa04ec373505b037a6da850004d806",
+    "simplepoint-data/simplepoint-data-migrations/src/test/java/org/simplepoint/migrationfixture/two/TwoModule.java": "14cae5e6bca7adc7132fa1a5b2b99c74f499e881b9d8b1d74143bafac193c5b5",
+    "simplepoint-data/simplepoint-data-migrations/src/test/resources/META-INF/simplepoint/modules/one/db/h2/V1__initial.sql": "b293ab27b04140846d8f9b17b62c857f8b77ac9ea08a6133fbf883aa8f943484",
+    "simplepoint-data/simplepoint-data-migrations/src/test/resources/META-INF/simplepoint/modules/one/db/manifest.properties": "d169bfe2505cb0c1bc343ed0a8cd2e604f9c1e1818248e746756b692c840c4f0",
+    "simplepoint-data/simplepoint-data-migrations/src/test/resources/META-INF/simplepoint/modules/two/db/h2/V1__initial.sql": "1c34f489259014b2e7224778564e6f44b119ead120c25ec65c10c6f3b0877e91",
+    "simplepoint-data/simplepoint-data-migrations/src/test/resources/META-INF/simplepoint/modules/two/db/manifest.properties": "c1ab2043b75320deba819a057f844a37bef5928dd0eccdae70a0a55a8dc42a7d",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "9a3a1dd05813ccfc6ec488bac9537644035610240e3073b453d7ed2ce84736c2",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedPersistenceTest.java": "07a1d381c460e3cdf3b2070edad041aacdb69322e90b17691c3f028a12efd325",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/WorkflowModuleMigrationPostgresTest.java": "b20457b5973f10684755242a3a13484b6b6d3de388b7ace1bfc7535b4ae181ab",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleMigrations.java": "b2b480eb2744fe6b69a293124858cabd0d52c561157c5441d05eb045a8abd503",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/build.gradle.kts": "18128ef8e94d940d3cf4c42ca31d47dda72a521de39099e0f38b96cbdb08990d",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/java/org/simplepoint/plugin/workflow/config/WorkflowEngineConfiguration.java": "b90aa56020d00a147f6f5729d1a10206ecc6f2cf99820784bc2abce92112b8a4",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/legacy.sql": "3f6419c350bb323f15f47d6239508ba7b134a5a10f0a74fe1e1621cb1fedbad2",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/manifest.properties": "82e4ea4294b810be9be5f3a84dada4cd8d1ac0fc81eb99c9a55bf797c0a05393",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/main/resources/META-INF/simplepoint/modules/workflow/db/postgresql/V1__workflow_foundation.sql": "6e07531f5f1632a7aea6fcf01b5bf6e2311ff0493973b4d0ed43da25c823dd7a",
+    "simplepoint-plugins/simplepoint-plugin-workflow/simplepoint-plugin-workflow-implementation/src/test/java/org/simplepoint/plugin/workflow/service/WorkflowEngineFixture.java": "fbd5b54fc10aa26e16f82c236be659888ae333efa4c3589fac5e76e498797768",
+    "simplepoint-services/simplepoint-service-workflow/src/main/resources/application.properties": "03c3ff6782b4bf18dfb5c8343c5872e3302f31fecd229699581852a6d2834a70"
+  }
+}

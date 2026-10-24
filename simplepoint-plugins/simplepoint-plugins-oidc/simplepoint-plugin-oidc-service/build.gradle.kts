@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-platform:simplepoint-platform-composition"))
     api(project(":simplepoint-security:simplepoint-security-core"))
     api(project(":simplepoint-data:simplepoint-data-cp"))
     api(project(":simplepoint-data:simplepoint-data-jpa"))

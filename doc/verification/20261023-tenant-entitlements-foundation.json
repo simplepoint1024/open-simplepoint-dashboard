@@ -1,0 +1,173 @@
+{
+  "verifiedAt": "2026-10-23T03:39:32.272457+00:00",
+  "status": "partial-foundation-only",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Four authoritative resource origins and schema-derived labels/filtering",
+    "Resource creation/synchronization timestamps; identity migrations V9 and V10",
+    "Package instance, per-resource activation receipt and balance entities",
+    "Transactional owner-only activation with per-resource additive duration and stable retries"
+  ],
+  "h2AndDomainTests": {
+    "suites": [
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.vo.MemberLabelDirectoryModelsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.04"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.event.MemberLabelEventsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.054"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.vo.TenantVosTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.005"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.model.ResourceEntitlementWindowTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.013"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.pojo.TenantDtosTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.015"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.entity.TenantEntityFieldsTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.128"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.vo.AuditIdentityRequestTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.328"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodesTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.101"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "1.592"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceServiceImplTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "4.52"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "2.036"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ManagedTenantResourceCallerGuardTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "0.146"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImplTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": "1.585"
+      }
+    ],
+    "totals": {
+      "tests": 79,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "postgresTests": {
+    "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImplTest",
+    "tests": "9",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "8.074",
+    "database": "PostgreSQL 17, disposable container, isolated schema per test",
+    "migration": "exact identity manifest V1-V10, Hibernate validate, no ORM DDL"
+  },
+  "gates": {
+    "typecheck": "pnpm typecheck: all eight workspaces passed",
+    "ui": "node scripts/ui-standards/audit.mjs --strict: 0 unreviewed",
+    "i18n": "pnpm i18n:sync: passed",
+    "checkstyle": "scoped to 18 relevant Java source/test files; 4 reports passed",
+    "moduleBoundaries": "verifyModuleBoundaries: passed"
+  },
+  "notCompleted": [
+    "Package assignment and HTTP/browser activation entrypoints",
+    "Catalog provisioning and legacy tenant/package adoption",
+    "Removal of PLATFORM/CUSTOM reads and runtime platform permission joins",
+    "Expiry-aware authorization and cache lifetime",
+    "Standard owner-only resource and package pages",
+    "Resource update/override and revocation integration",
+    "Full topology/browser acceptance and production deployment"
+  ],
+  "productionModified": false,
+  "committed": false,
+  "sourceHashes": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/test/java/org/simplepoint/plugin/rbac/tenant/api/model/ResourceEntitlementWindowTest.java": "82aa0df403a6fdea64af594cfc2a882af73d230d75658d137dabd84b36aa8893",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/entity/TenantResourceOrigin.java": "380d3e22f9de2fdbef524dceeb5513cc12c0cdcabdf9f888a1da5d780d37b2b5",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/entity/TenantResourceCredit.java": "095ecefe22f88484a9acbf314043e5046821be86e9e516c3de5cf78cb8c39b83",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/entity/TenantResource.java": "78f3122e9a1ca552defd035256235627a4b527209120dbf97deb5d9055ffed7b",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/entity/TenantPackageInstance.java": "204fd90f7908f5025d6ea7c733c894ae7c740f6ac33800ff477587097cfe2d30",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/entity/TenantResourceEntitlement.java": "a0edb8a5ed510fb742697fb1482a52b4c870fbcde217624f997986e65ed87829",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/model/ResourceEntitlementWindow.java": "a3aa403114c7b4c0b681a4f8b07465eda4270f1dbc304fe2fe8110e75c7342f3",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/model/TenantResourceQuery.java": "d52a86eb49b7c5e54c28f67a409c0c5fe9b3fcbf427af969fb98f2d29ec800ad",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/model/TenantPackageActivation.java": "59731a4429451512606a773991ed200f041f3b4231588cceb71c3809db4a38cd",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/error/TenantPackageException.java": "c6af8d6155dad50e3ebd82c1131159f97588f98f61b78844329e6c7b48ea28a7",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantPackageActivationService.java": "91ef867ddf826d9913d3ba2f996d7430aafcf1d070290d5c61c5ddf16163e23e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageActivationServiceImplTest.java": "271de0212268009e1e763094ae771e209e7d97440ac9646b18fbe8bfba28ce63",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantEntitlementDatabase.java": "5c407c5d5811881bf4fb742eb29b6a276a864abcdbfb806aea92c574d004ca33",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "a7d6ecdc5cace02547e8bcf77198680e3d8656c086d5c9164d2a13fe48a07ff4",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "b8841f96a22eff9242c14b34ed3f71993e2fddcd8a24cda9d3feccca1c974afe",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantPackageActivationServiceImpl.java": "e7ee06eeffdbc01934b11454503c7e5f01070524111952173e0b5e5f113ec93c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceServiceImpl.java": "72e3f53efaa5ca2ecc5a6f63f4d59815000bc32b8866a196d535f9012cdc0b3f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ManagedTenantResourceCallerGuard.java": "38d82fde11b38a78296ec1a207656b78270e478347adffade1625e2745016142"
+  }
+}

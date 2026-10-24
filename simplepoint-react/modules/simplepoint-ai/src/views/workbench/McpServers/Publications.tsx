@@ -249,7 +249,7 @@ const McpPublications = () => {
       size="small"
       rowKey={(row) => row[identity] || row.name || JSON.stringify(row)}
       dataSource={rows}
-      pagination={{pageSize: 10, hideOnSinglePage: true}}
+      pagination={{defaultPageSize: 50, hideOnSinglePage: true}}
       columns={[
         {
           title: identityTitle,

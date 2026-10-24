@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-23",
+  "scope": "tenant-resource-availability-presentation",
+  "implemented": [
+    "Read-only owner resource projection uses runtime tenant-only dependency/entitlement graph for exact current availability.",
+    "Distinguishes available, formal offline, local disable, source unavailable, absent entitlement, future start, expiry and blocked dependencies.",
+    "Independent entitlement kind, start and expiry columns distinguish baseline, structural/custom resources, timed and unlimited balances. Availability never implies an ordinary user grant.",
+    "Bounded page/ancestor scalar reads; no global catalog fallback, no per-row SQL and no per-page browser sorting. Display-only columns reject unsupported server filter/sort; derived field annotations preserve source field protection.",
+    "Standard SimpleTable, semantic StatusTag and shared timestamp formatting; no extra persistence/schema version added."
+  ],
+  "validation": {
+    "postgresql17": [
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "tests": "25",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:09:03",
+        "hostname": "arch",
+        "time": "12.804",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "sha256": "449b22818f39f0cbfe94a3d5ff7855691e0b139322e6638071b8e9f743e52ec1"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+        "tests": "16",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-23T10:09:16",
+        "hostname": "arch",
+        "time": "7.281",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest.xml",
+        "sha256": "ec2ac0c6816b4762d12fb17b92d1a02e3688eba916a09fcdc4e3c17b9ebc8134"
+      }
+    ],
+    "databaseIsolation": "Dedicated temporary PostgreSQL container on loopback 33282; per-test schemas execute immutable V1-V17 migrations. No existing database modified.",
+    "h2": "Initial 41 catalog tests passed; final PostgreSQL additionally verifies foreign-key-correct cross-tenant fixture.",
+    "frontend": "All 8 typechecks passed, host production build passed, actual-build tenant resources browser passed including status labels and display-only columns plus existing CRUD/owner regressions.",
+    "quality": "6 Java files Checkstyle passed after enum documentation and final local corrections; module boundaries, strict UI audit and i18n check passed."
+  },
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "e2484c6d8afb4a853ff1e935dcfb0067ed4cf4682096ed2a9d61196928c9b59c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImplTest.java": "ee61c7dfe6aee0b32eab771e1dc3b7f55ff84beff5f45ca4ee10106d134ccf37",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "68742d2c7f5d4fb1342016e0757290c05bfbfc3ff9cba2bcf66fe6615fd35358",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/vo/TenantResourceView.java": "10e230d5b590332204d06a458b93152853606d056743ae695dfcd7b4daebbbf6",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "95207bc14592ecb7ff170ca50513d6d3478ae515fb5b7c461ba40a730014d389",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceAvailabilityProjector.java": "e0d9c568dad910e9f08f45097295afd2f2b9109aec0b57b1eb15aeac2494025c"
+  },
+  "deployment": "Not deployed. Platform lifecycle propagation, full migration and actual dual-topology acceptance remain."
+}

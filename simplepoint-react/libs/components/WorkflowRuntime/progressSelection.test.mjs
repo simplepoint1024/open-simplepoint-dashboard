@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {initialProgressSelection} from './progressSelection.ts';
+import {initialProgressSelection, progressSection} from './progressSelection.ts';
+
+test('business history opens the immutable form and preserves explicit navigation', () => {
+  assert.equal(progressSection('app-form:submission'), 'business');
+  assert.equal(progressSection('app-form:submission', 'nodes'), 'nodes');
+  assert.equal(progressSection('app-form:submission', 'actions'), 'actions');
+  assert.equal(progressSection(undefined), 'nodes');
+  assert.equal(progressSection('ordinary:record', 'business'), 'nodes');
+});
 
 const running = {activeActivityIds: ['review'], activities: [{activityId: 'review', activityType: 'userTask'}]};
 test('reopening a just-completed task does not initialize selection from invalidated active cache', () => {

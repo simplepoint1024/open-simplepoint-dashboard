@@ -1,3 +1,5 @@
+import useDesignerCalculationPreview, {useDesignerCalculationTrial} from './useDesignerCalculationPreview';
+import type {DesignerCalculations} from '@simplepoint/components/FormDesigner/CalculationFieldEditor';
 import {useEffect, useState} from 'react';
 import {Alert, Modal, Spin, Tag} from 'antd';
 import FormDesigner, {type FormDraft, type FormSummary, type DesignerContract} from '@simplepoint/components/FormDesigner';
@@ -10,6 +12,7 @@ import FormPublication from './FormPublication';
 import PublishedFormData from './PublishedFormData';
 import ReleaseHistory from './ReleaseHistory';
 import type {DesignPage} from './designPage';
+import {designFields} from '@simplepoint/components/FormDesigner/fieldAnalysis';
 
 type Props = {applicationId: string; form: FormSummary; contract: DesignerContract; page?: DesignPage; backToPages?: boolean; onClose: () => void};
 export default function FormEditor(props: Props) {
@@ -32,18 +35,26 @@ export default function FormEditor(props: Props) {
 }
 function EditorSession({form, contract, page, onClose, endpoint, initial}: Props & {endpoint: string; initial: FormDraft}) {
   const {t} = useI18n(), selected = usePageSelected();
+  const catalog = useData(['app', 'calculation-catalog', form.applicationId, form.id], ({signal}) =>
+    get<NonNullable<DesignerCalculations>>(`/app/applications/${encodeURIComponent(form.applicationId)}/forms/${encodeURIComponent(form.id)}/calculations/catalog`, undefined, {signal}),
+    {retry: false, enabled: contract.canEdit && selected, refetchOnWindowFocus: false});
   const [confirm, setConfirm] = useState<'close' | 'reload'>();
   const [publishing, setPublishing] = useState(false), [publishOpen, setPublishOpen] = useState(false);
   const [dataPageId, setDataPageId] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
   const editor = useFormDraft(endpoint, initial, contract.canEdit && form.status !== 'ARCHIVED', Boolean(confirm) || publishOpen || historyOpen || Boolean(dataPageId));
+  const calculationPreview = useDesignerCalculationPreview(form.applicationId, form.id, editor.document, contract.canEdit);
+  const calculationTrial = useDesignerCalculationTrial(form.applicationId, form.id, contract.canEdit && form.status !== 'ARCHIVED');
   const close = () => {if (editor.busy) return; if (editor.dirty || editor.retry) setConfirm('close'); else onClose();};
   const reload = () => {if (editor.busy) return; if (editor.dirty || editor.retry) setConfirm('reload'); else void editor.reload();};
   return <div className="app-form-editor">
+    {catalog.error && <Alert type="error" showIcon title={t('app.calculation.catalogFailed', '计算函数加载失败')}
+      action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', icon: 'ReloadOutlined', sort: 0,
+        text: t('app.retry', '重试'), disabled: !selected || catalog.isFetching}]} onButtonEvents={{retry: () => void catalog.refetch()}}/>}/>}
     {editor.error && <Alert type="error" showIcon title={editor.error}
       action={editor.retry && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', icon: 'ReloadOutlined', sort: 0,
         text: t('app.retry', '重试'), disabled: editor.busy || !selected}]} onButtonEvents={{retry: () => void editor.save()}}/>}/>}
-    <FormDesigner key={editor.reset} document={editor.document} components={contract.components}
+    <FormDesigner calculationTrial={calculationTrial} calculationPreview={calculationPreview} calculations={catalog.data?.languageVersion === '1' ? catalog.data : undefined} key={editor.reset} document={editor.document} components={contract.components}
       toolbar={{
         title: <div className="app-form-editor-identity">
           <span className="app-form-editor-name" title={form.name}>{form.name}</span>
@@ -72,7 +83,7 @@ function EditorSession({form, contract, page, onClose, endpoint, initial}: Props
       writePolicies={contract.writePolicies}
       disabled={editor.disabled || Boolean(confirm) || publishOpen || historyOpen || Boolean(dataPageId)} onChange={editor.change}/>
     <FormPublication applicationId={form.applicationId} formId={form.id} revision={editor.revision} checksum={editor.checksum}
-      fields={editor.document.fields} initialPage={page}
+      document={editor.document} fields={designFields(editor.document)} initialPage={page}
       open={publishOpen} enabled={contract.canEdit && contract.canPublish && form.status !== 'ARCHIVED'}
       onClose={() => setPublishOpen(false)} onViewData={setDataPageId} onBusyChange={setPublishing}/>
     {historyOpen && <ReleaseHistory applicationId={form.applicationId} formId={form.id} onClose={() => setHistoryOpen(false)} onViewData={setDataPageId}/>}

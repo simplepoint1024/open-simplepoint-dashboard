@@ -1,3 +1,4 @@
+import {DEFAULT_TABLE_PAGE_SIZE} from '@simplepoint/shared/types/pagination';
 import TableActions from "@simplepoint/components/Table/Actions";
 import { canEditPool } from "./Runtime/rowPolicy";
 import DataTable, {type QuerySchema, type TableQueryState} from "@simplepoint/components/DataTable";
@@ -109,6 +110,7 @@ const McpDeploymentStatusDialog = ({
   const [currentPool, setCurrentPool] = useState(pool);
   const [workloads, setWorkloads] = useState<RuntimeWorkload[]>([]);
   const [workloadPage, setWorkloadPage] = useState(0);
+  const [workloadSize, setWorkloadSize] = useState<number>(DEFAULT_TABLE_PAGE_SIZE);
   const [workloadQuery, setWorkloadQuery] = useState<TableQueryState>({filters: {}});
   const workloadSchema = useSchema(workloadsUrl, {enabled: open && operation.selected, retry: false});
   const querySchema = workloadSchema.data?.schema?.['x-query'] ? workloadSchema.data.schema as unknown as QuerySchema : undefined;
@@ -116,7 +118,7 @@ const McpDeploymentStatusDialog = ({
   const [workloadTotal, setWorkloadTotal] = useState(0);
   const [activeCount, setActiveCount] = useState<number>();
   const [firstActive, setFirstActive] = useState<RuntimeWorkload>();
-  const viewKey = JSON.stringify([pool.id, server.id, workloadPage, workloadQuery]);
+  const viewKey = JSON.stringify([pool.id, server.id, workloadPage, workloadSize, workloadQuery]);
   const currentView = useRef(viewKey); currentView.current = viewKey;
   const [discovery, setDiscovery] = useState<DiscoveryResult>();
   const [refreshing, setRefreshing] = useState(false);
@@ -142,7 +144,7 @@ const McpDeploymentStatusDialog = ({
       try {
         const [nextPool, nextWorkloads, nextServer, nextActive] = await Promise.all([
           get<RuntimePool>(poolsUrl + "/" + encodeURIComponent(pool.id), {}, {signal: request.signal}),
-          get<RawPage<RuntimeWorkload>>(workloadsUrl, {page: workloadPage, size: 20,
+          get<RawPage<RuntimeWorkload>>(workloadsUrl, {page: workloadPage, size: workloadSize,
             ...deploymentWorkloadFilters(pool.id, false, transportFilters(workloadQuery.filters)),
             ...(workloadQuery.sort ? {sort: workloadQuery.sort} : querySchema['x-query'].fields.createdAt ? {sort: 'createdAt,desc'} : {}),
           }, {signal: request.signal}),
@@ -164,7 +166,7 @@ const McpDeploymentStatusDialog = ({
       }
     })();
     readFlight.current = run; return run;
-  }, [open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl, workloadPage, workloadQuery, querySchema, workloadSchema.error, viewKey, operation.current]);
+  }, [open, pool.id, poolsUrl, server.id, serversUrl, t, workloadsUrl, workloadPage, workloadSize, workloadQuery, querySchema, workloadSchema.error, viewKey, operation.current]);
   useEffect(() => {
     if (!open || !operation.selected) readRequest.current?.abort();
     return () => {readRequest.current?.abort();};
@@ -559,9 +561,9 @@ const McpDeploymentStatusDialog = ({
           setWorkloadQuery(next); setWorkloadPage(0);
         }} : undefined}
         dataSource={loadError || schemaFailed ? [] : workloads}
-        pagination={{current: workloadPage + 1, pageSize: 20, total: workloadTotal, hideOnSinglePage: true,
+        pagination={{current: workloadPage + 1, pageSize: workloadSize, total: workloadTotal, hideOnSinglePage: true,
           disabled: operation.busy || !!confirmation || refreshing,
-          onChange: page => {if (!operation.busy && !confirmation && !refreshing) setWorkloadPage(page - 1);}}}
+          onChange: (page, size) => {if (!operation.busy && !confirmation && !refreshing) {setWorkloadSize(size); setWorkloadPage(size === workloadSize ? page - 1 : 0);}}}}
         style={{ marginBottom: 20 }}
         columns={[
           {

@@ -46,7 +46,7 @@ public class RecordInspectionServiceImpl implements RecordInspectionService {
     long startedAt = System.nanoTime();
     try (RecordAdmissionController.Permit ignored = admission.enter(actor.tenantId())) {
       RecordSelectPlan plan = compiler.completeness(model, access, query);
-      RecordCompletenessView result = RecordCompletenessResult.read(query, backend.aggregateQuery(model, plan, TIMEOUT_MS));
+      RecordCompletenessView result = RecordCompletenessResult.read(query, backend.aggregateQuery(model, actor.tenantId(), plan, TIMEOUT_MS));
       audit.success(DnaRuntimeAuditEventType.RECORD_QUERIED, model, access, result.recordCount(), elapsed(startedAt));
       observer.record("completeness", "succeeded", model, access, elapsed(startedAt));
       return result;

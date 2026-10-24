@@ -1,0 +1,70 @@
+{
+  "at": "2026-10-17T04:07:06.582328+00:00",
+  "scope": "Workflow form snapshot integration and retained-page navigation; overall form/calculation/workflow goal remains active",
+  "wholeGoalComplete": false,
+  "deployed": true,
+  "backend": {
+    "formModule": {
+      "suites": 42,
+      "tests": 214,
+      "skipped": 2,
+      "failures": 0,
+      "errors": 0
+    },
+    "workflowApplicationFormEngine": {
+      "suites": 1,
+      "tests": 3,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0
+    },
+    "formModuleCheckstyleMain": "passed"
+  },
+  "frontend": {
+    "workspaceTypecheck": "passed",
+    "uiStandardsStrict": "passed",
+    "selectionAndQueryScopeUnitTests": 18,
+    "productionArtifactsBuilt": [
+      "common",
+      "host"
+    ],
+    "browserFixtureScenarios": [
+      "pending approval renders designed main fields and eight immutable detail rows",
+      "secondary designed scene retains submitted values",
+      "tablet 768px and phone 390px keep detail scrolling inside drawer",
+      "immediate processed notification resolves completed task after mutation settles",
+      "completed business process defaults to submission snapshot and can switch to diagram",
+      "revoked snapshot access hides previously cached business values",
+      "existing personal workflow approval/rejection/claim, retries, retained drafts, withdraw/cancel, linked resubmission and processed deep links"
+    ]
+  },
+  "limitations": [
+    "Original browser fixture scenarios remain isolated HTTP fixtures; live deployment acceptance for the existing human-office businesses is recorded separately in 20261017-deployment-acceptance.json.",
+    "Calculation draft metadata, APP permission projection and server preview are deployed; publication, atomic DNA persistence/backfill and designer/runtime integration remain incomplete.",
+    "Full component/function/workflow catalog coverage, including newly calculated business forms, remains pending."
+  ],
+  "logs": [
+    {
+      "path": "/tmp/sp-goal-types.log",
+      "sha256": "ee1cba279de065b1821006009b2b9f9c977127e4665f1fa0a265a072c00b1b08"
+    },
+    {
+      "path": "/tmp/sp-goal-ui-audit.log",
+      "sha256": "bdb8a012462382995eeea59aa156aee41dc613169d95e77f2d6c61bbc49a39c1"
+    },
+    {
+      "path": "/tmp/sp-goal-app-quality.log",
+      "sha256": "2fa0d63c16b15ed29ff4ff9d3272cad8380f2e5419e11f6a17e18e5a681edf06"
+    },
+    {
+      "path": "/tmp/sp-goal-workflow-form-browser.log",
+      "sha256": "b292acee73dbd88d2126e9725ef07ec1013240adf84dd1821eebf3fdad461374"
+    },
+    {
+      "path": "/tmp/sp-goal-workflow-personal-browser.log",
+      "sha256": "6e6ea1e6e48d5cf7c9eee872a43bd6b0b317ebc38b75cf8b03dbf11e61f25b76"
+    }
+  ],
+  "deploymentVersion": "20261017-workflow-form5",
+  "deploymentEvidence": "20261017-deployment-acceptance.json"
+}

@@ -11,6 +11,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
+import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.simplepoint.security.entity.ResourceType;
@@ -21,14 +22,19 @@ import org.simplepoint.security.entity.ResourceType;
 @Entity
 @Schema(description = "租户独立资源。平台来源项在租户内保留原平台 ID 与编码")
 @IdClass(TenantResourceKey.class)
-@Table(name = "simpoint_saas_tenant_resources", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_tenant_resource_code", columnNames = {"tenant_id", "code"}),
-    @UniqueConstraint(name = "uq_tenant_resource_source", columnNames = {"tenant_id", "platform_resource_id"}),
-    @UniqueConstraint(
-        name = "uq_tenant_resource_managed_key",
-        columnNames = {"tenant_id", "managed_owner", "managed_key"}
-    )
-})
+@Table(
+    name = "simpoint_saas_tenant_resources",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uq_tenant_resource_code",
+          columnNames = {"tenant_id", "code"}),
+      @UniqueConstraint(
+          name = "uq_tenant_resource_source",
+          columnNames = {"tenant_id", "platform_resource_id"}),
+      @UniqueConstraint(
+          name = "uq_tenant_resource_managed_key",
+          columnNames = {"tenant_id", "managed_owner", "managed_key"})
+    })
 public class TenantResource {
   @Id
   @Schema(description = "所属租户 ID", accessMode = Schema.AccessMode.READ_ONLY)
@@ -63,6 +69,19 @@ public class TenantResource {
   @Column(name = "managed_host_resource_id", length = 36)
   private String managedHostResourceId;
 
+  /** Navigation has its own fence, independent of page publication/offline generations. */
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @Column(name = "navigation_root_key", length = 160)
+  private String navigationRootKey;
+
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @Column(name = "navigation_revision", nullable = false)
+  private long navigationRevision;
+
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  @Column(name = "navigation_digest", length = 64)
+  private String navigationDigest;
+
   /** Trusted permission catalog published atomically with a managed page generation. */
   @JsonProperty(access = JsonProperty.Access.READ_ONLY)
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
@@ -87,6 +106,50 @@ public class TenantResource {
 
   @Column(length = 100, nullable = false)
   private String name;
+
+  /** Tenant-owned translations; the platform mirror's title/alias remain inherited defaults. */
+  @org.simplepoint.api.schema.LocalizedField(maxLength = 100)
+  @org.simplepoint.core.annotation.PermissionFields(resource = TenantResource.class, value = "name")
+  @jakarta.persistence.Convert(converter = org.simplepoint.core.convert.LocalizedTextConverter.class)
+  @Column(name = "name_localization", columnDefinition = "TEXT")
+  private org.simplepoint.api.locale.LocalizedText nameLocalization;
+
+  @Column(name = "resource_alias", length = 120)
+  private String alias;
+
+  @Column(length = 120)
+  private String title;
+
+  @Column(length = 120)
+  private String label;
+
+  @Column(name = "plugin_id", length = 128)
+  private String pluginId;
+
+  @jakarta.persistence.Convert(
+      converter = org.simplepoint.security.entity.ResourceScopeTypesConverter.class)
+  @Column(name = "scope_types", length = 64)
+  private Set<org.simplepoint.security.entity.ResourceScopeType> scopeTypes;
+
+  @Column(length = 16)
+  private String method;
+
+  @Column(length = 240)
+  private String pattern;
+
+  @Column(name = "public_access", nullable = false)
+  private boolean publicAccess;
+
+  @Column(nullable = false)
+  private boolean danger;
+
+  /** Current copied upstream availability, distinct from tenant presentation and entitlement. */
+  @Column(name = "source_available", nullable = false)
+  private boolean sourceAvailable = true;
+
+  /** Explicit baseline acquisition; publicAccess is not a baseline license declaration. */
+  @Column(name = "baseline_entitled", nullable = false)
+  private boolean baselineEntitled;
 
   @Enumerated(EnumType.STRING)
   @Column(length = 32, nullable = false)
@@ -122,8 +185,27 @@ public class TenantResource {
   @Column(name = "manual_disabled", nullable = false)
   private boolean manualDisabled;
 
+  @Schema(description = "首次进入租户目录的时间", accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt = Instant.now();
+
   @Column(name = "updated_at", nullable = false)
   private Instant updatedAt = Instant.now();
+
+  @Schema(description = "最近完成平台同步的时间", accessMode = Schema.AccessMode.READ_ONLY)
+  @Column(name = "last_synced_at")
+  private Instant lastSyncedAt;
+
+  /**
+   * Management capability hints; mutations independently revalidate ownership and managed
+   * lifecycle.
+   */
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  public java.util.List<String> getAllowedActions() {
+    return isManaged()
+        ? java.util.List.of()
+        : isPlatformSource() ? java.util.List.of("edit") : java.util.List.of("edit", "delete");
+  }
 
   public boolean isPlatformSource() {
     return platformResourceId != null;
@@ -133,12 +215,17 @@ public class TenantResource {
     return managedOwner != null;
   }
 
+  /** Exposes the owning source without permitting clients to change it. */
   @JsonProperty("origin")
-  @Schema(description = "PLATFORM 平台来源、MANAGED 服务托管或 TENANT 租户自建", accessMode = Schema.AccessMode.READ_ONLY)
+  @Schema(
+      description = "PLATFORM 平台、TENANT 自定义、APP 应用平台、REPORT 报表平台",
+      accessMode = Schema.AccessMode.READ_ONLY)
   public TenantResourceOrigin getOrigin() {
     if (isPlatformSource()) {
       return TenantResourceOrigin.PLATFORM;
     }
-    return isManaged() ? TenantResourceOrigin.MANAGED : TenantResourceOrigin.TENANT;
+    return isManaged()
+        ? TenantResourceOrigin.forManagedOwner(managedOwner)
+        : TenantResourceOrigin.TENANT;
   }
 }

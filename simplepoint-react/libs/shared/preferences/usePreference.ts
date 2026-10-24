@@ -58,7 +58,10 @@ export function usePreference<T>(key: string | undefined, initial: T, normalize:
     const next = createPreferenceSession<T>({initial: value, dirty, current,
       load: async () => {
         if (!key) return undefined;
-        const raw = await get<string | undefined>(await target(), undefined, {signal: abort.signal, notifyOnError: false});
+        // The preference endpoint returns the stored JSON as a raw String response. Read its
+        // text explicitly so the HTTP client and this adapter do not both decode the same JSON.
+        const raw = await get<string | undefined>(await target(), undefined,
+          {signal: abort.signal, notifyOnError: false, responseType: 'text'});
         return raw ? latest.current.normalize(JSON.parse(raw)) : undefined;
       },
       save: async next => {

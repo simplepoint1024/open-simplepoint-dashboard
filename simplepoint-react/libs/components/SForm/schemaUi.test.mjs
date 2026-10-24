@@ -30,3 +30,12 @@ test('explicit nested widget choices win while unrelated array-item metadata sta
   assert.deepEqual(result.items.note['ui:options'].autoSize, {minRows: 4, maxRows: 8});
   assert.equal(automatic.items.note['ui:options'].autoSize.maxRows, 16);
 });
+
+test('localized fields use the shared editor, while masked snapshots stay display-only', () => {
+  const field={type:'object','x-localized':{version:1},'x-ui':{'ui:field':'LocalizedText'}};
+  assert.equal(schemaUi({type:'object',properties:{name:field}}).name['ui:field'],'LocalizedText');
+  const visible=displayOnlyProjection({...field,'x-display-only':true});
+  assert.equal(visible.uiSchema['ui:field'],'LocalizedText'); assert.equal(visible.schema.readOnly,true);
+  const masked=displayOnlyProjection({...field,'x-display-only':true,'x-field-access':'MASKED'});
+  assert.equal(masked.uiSchema['ui:field'],'DisplayValue'); assert.equal(masked.schema['x-localized'],undefined);
+});

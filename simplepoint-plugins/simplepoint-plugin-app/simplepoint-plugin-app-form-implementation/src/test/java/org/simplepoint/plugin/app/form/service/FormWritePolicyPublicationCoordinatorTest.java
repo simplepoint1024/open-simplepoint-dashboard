@@ -64,6 +64,22 @@ class FormWritePolicyPublicationCoordinatorTest {
   }
 
   @Test
+  void deterministicCalculationRejectionIsActionableAndPausesAutomaticRecovery() {
+    var context = mock(DnaInvocationContext.class);
+    when(contexts.current()).thenReturn(context);
+    var prepared = new PreparedPolicy("intent", FormWritePolicyPublicationStatus.PREPARED, command, null, null);
+    when(state.prepare(work, impact)).thenReturn(prepared);
+    var failure = new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID, "Diagnostic code only");
+    when(dna.publishRecordWritePolicy(context, command)).thenThrow(failure);
+    assertThatThrownBy(() -> coordinator.prepareTarget(work, impact))
+        .isInstanceOfSatisfying(ApplicationFormException.class, error -> {
+          assertThat(error.errorCode()).isEqualTo(org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
+          assertThat(error.getCause()).isSameAs(failure);
+        });
+    verify(state).recordDataFailure(work);
+  }
+
+  @Test
   void resumesCancellationWithoutAccidentallyPublishingAfterResponseLoss() {
     var context = mock(DnaInvocationContext.class);
     when(contexts.current()).thenReturn(context);

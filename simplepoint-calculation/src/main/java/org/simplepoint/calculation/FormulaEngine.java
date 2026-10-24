@@ -50,6 +50,11 @@ public final class FormulaEngine {
     return Clock.fixed(clock.instant(), clock.getZone());
   }
 
+  /** Host adapters obey the same immutable value envelope as registered functions. */
+  Object checkedResult(Object value) {
+    return new Evaluation(ignored -> null, clock).checked(value, true);
+  }
+
   /** Returns the stable sorted function catalog. */
   public List<FormulaFunction> functions() {
     return List.copyOf(functions.values());

@@ -75,7 +75,7 @@ export default function RuleEditor({document, disabled, onChange}: Props) {
   return <div className="sp-form-rule-editor">
     <div className="sp-form-editor-help"><HelpTip>{t('app.rules.orderHint', '规则按列表顺序执行，同类效果以后面的规则为准。')}<br/>{t('app.rules.scopeHint', '显隐和启用控制界面交互；必填由服务端在提交时校验。启用不能解除权限或字段写入限制。JSON 按内容比较，空对象、空数组和空白字符串视为空。')}</HelpTip></div>
     {error && !session && <Alert type="error" showIcon title={error}/>}
-    <DataTable<FormRuleDefinition> rowKey="ruleId" storageKey="app.form.designer.rules" dataSource={document.rules} pagination={{pageSize: 20}}
+    <DataTable<FormRuleDefinition> rowKey="ruleId" storageKey="app.form.designer.rules" dataSource={document.rules} pagination={{defaultPageSize: 50}}
       toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'add', icon: 'PlusOutlined', sort: 0, text: t('app.rules.add', '新增规则'), disabled: locked || !document.fields.length || document.rules.length >= 500},
       ]} onButtonEvents={{add: () => open()}}/>}

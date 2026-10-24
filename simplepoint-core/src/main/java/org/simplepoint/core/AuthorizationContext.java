@@ -1,6 +1,7 @@
 package org.simplepoint.core;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,47 +26,46 @@ public class AuthorizationContext implements Serializable {
   private Collection<String> roles;
   private Collection<String> resources;
   private Long version;
+
+  /** Exclusive time boundary for this policy result; null means no scheduled transition. */
+  private Instant validUntil;
+
   private Map<String, String> attributes;
 
-  /**
-   * Runtime scope for the current request: PLATFORM, TENANT, or PERSONAL.
-   */
+  /** Runtime scope for the current request: PLATFORM, TENANT, or PERSONAL. */
   private AuthorizationScopeType scopeType;
 
-  /**
-   * Actor role within the active scope.
-   */
+  /** Actor role within the active scope. */
   private AuthorizationActorRole actorRole;
 
   /**
-   * The effective data scope type name for row-level access control.
-   * Null means no data scope restriction has been configured.
-   * This is the most permissive scope across all of the user's roles.
-   * Values correspond to {@code DataScopeType} enum names.
+   * The effective data scope type name for row-level access control. Null means no data scope
+   * restriction has been configured. This is the most permissive scope across all of the user's
+   * roles. Values correspond to {@code DataScopeType} enum names.
    */
   private String dataScopeType;
 
   /**
-   * Effective department IDs for CUSTOM data scope.
-   * Only populated when dataScopeType is "CUSTOM".
+   * Effective department IDs for CUSTOM data scope. Only populated when dataScopeType is "CUSTOM".
    */
   private Set<String> deptIds;
 
   /**
-   * Whether the effective data scope also includes records owned by the current user.
-   * Used when multiple roles combine SELF with department/custom scopes.
+   * Whether the effective data scope also includes records owned by the current user. Used when
+   * multiple roles combine SELF with department/custom scopes.
    */
   private Boolean dataScopeIncludeSelf;
 
   /**
-   * Field-level access rules keyed by "ClassName#fieldName".
-   * Values are the {@code FieldAccessType} name (VISIBLE, EDITABLE, MASKED, HIDDEN).
-   * The most permissive access type across all of the user's roles is stored.
+   * Field-level access rules keyed by "ClassName#fieldName". Values are the {@code FieldAccessType}
+   * name (VISIBLE, EDITABLE, MASKED, HIDDEN). The most permissive access type across all of the
+   * user's roles is stored.
    */
   private Map<String, String> fieldPermissions;
 
   /** Effective policies keyed by server-declared page resource code. */
   private Map<String, ResourceDataScope> resourceDataScopes;
+
   private Map<String, Map<String, String>> resourceFieldPermissions;
 
   /**
@@ -134,6 +134,13 @@ public class AuthorizationContext implements Serializable {
     }
   }
 
+  /** Sets the exclusive policy deadline once, independently of cache invalidation counters. */
+  public void setValidUntil(Instant validUntil) {
+    if (this.validUntil == null) {
+      this.validUntil = validUntil;
+    }
+  }
+
   /**
    * Sets the attributes map if it has not been set before.
    *
@@ -159,8 +166,8 @@ public class AuthorizationContext implements Serializable {
   /**
    * Replaces the runtime authorization scope.
    *
-   * <p>Use this only when rebuilding or refreshing a context. Normal request
-   * construction should continue using the write-once setters.</p>
+   * <p>Use this only when rebuilding or refreshing a context. Normal request construction should
+   * continue using the write-once setters.
    *
    * @param scopeType the runtime scope to set
    */
@@ -185,7 +192,8 @@ public class AuthorizationContext implements Serializable {
    * @param scopeType the runtime scope enum name
    */
   public void replaceScopeType(String scopeType) {
-    this.scopeType = scopeType == null || scopeType.isBlank() ? null : AuthorizationScopeType.valueOf(scopeType);
+    this.scopeType =
+        scopeType == null || scopeType.isBlank() ? null : AuthorizationScopeType.valueOf(scopeType);
   }
 
   /**
@@ -202,8 +210,8 @@ public class AuthorizationContext implements Serializable {
   /**
    * Replaces the actor role within the active scope.
    *
-   * <p>Use this only when rebuilding or refreshing a context. Normal request
-   * construction should continue using the write-once setters.</p>
+   * <p>Use this only when rebuilding or refreshing a context. Normal request construction should
+   * continue using the write-once setters.
    *
    * @param actorRole the actor role to set
    */
@@ -228,12 +236,13 @@ public class AuthorizationContext implements Serializable {
    * @param actorRole the actor role enum name
    */
   public void replaceActorRole(String actorRole) {
-    this.actorRole = actorRole == null || actorRole.isBlank() ? null : AuthorizationActorRole.valueOf(actorRole);
+    this.actorRole =
+        actorRole == null || actorRole.isBlank() ? null : AuthorizationActorRole.valueOf(actorRole);
   }
 
   /**
-   * Merges request-scoped attributes into the current context.
-   * Existing values are overwritten so the active request headers remain authoritative.
+   * Merges request-scoped attributes into the current context. Existing values are overwritten so
+   * the active request headers remain authoritative.
    *
    * @param attributes request attributes to merge
    */
@@ -245,11 +254,12 @@ public class AuthorizationContext implements Serializable {
     if (this.attributes != null) {
       merged.putAll(this.attributes);
     }
-    attributes.forEach((key, value) -> {
-      if (key != null && value != null) {
-        merged.put(key, value);
-      }
-    });
+    attributes.forEach(
+        (key, value) -> {
+          if (key != null && value != null) {
+            merged.put(key, value);
+          }
+        });
     this.attributes = merged;
   }
 
@@ -282,7 +292,8 @@ public class AuthorizationContext implements Serializable {
    */
   public void setDataScopeIncludeSelf(Boolean dataScopeIncludeSelf) {
     if (this.dataScopeIncludeSelf == null) {
-      this.dataScopeIncludeSelf = dataScopeIncludeSelf == null ? Boolean.FALSE : dataScopeIncludeSelf;
+      this.dataScopeIncludeSelf =
+          dataScopeIncludeSelf == null ? Boolean.FALSE : dataScopeIncludeSelf;
     }
   }
 
@@ -297,13 +308,17 @@ public class AuthorizationContext implements Serializable {
     }
   }
 
+  /** Sets the per-resource data policies once. */
   public void setResourceDataScopes(Map<String, ResourceDataScope> resourceDataScopes) {
     if (this.resourceDataScopes == null) {
-      this.resourceDataScopes = resourceDataScopes == null ? Map.of() : Map.copyOf(resourceDataScopes);
+      this.resourceDataScopes =
+          resourceDataScopes == null ? Map.of() : Map.copyOf(resourceDataScopes);
     }
   }
 
-  public void setResourceFieldPermissions(Map<String, Map<String, String>> resourceFieldPermissions) {
+  /** Copies the per-resource field policies once, retaining independent immutable maps. */
+  public void setResourceFieldPermissions(
+      Map<String, Map<String, String>> resourceFieldPermissions) {
     if (this.resourceFieldPermissions == null) {
       if (resourceFieldPermissions == null) {
         this.resourceFieldPermissions = Map.of();
@@ -324,14 +339,17 @@ public class AuthorizationContext implements Serializable {
   /** Returns null when a page has no explicit field policy. */
   public Map<String, String> activeFieldPermissions() {
     String code = ResourcePolicyContext.get();
-    return code == null || resourceFieldPermissions == null ? null : resourceFieldPermissions.get(code);
+    return code == null || resourceFieldPermissions == null
+        ? null
+        : resourceFieldPermissions.get(code);
   }
 
   /**
    * Retrieves the value of a specific attribute by its key.
    *
    * @param key the key of the attribute to retrieve
-   * @return the value of the attribute, or null if the attributes map is null or the key does not exist
+   * @return the value of the attribute, or null if the attributes map is null or the key does not
+   *     exist
    */
   public String getAttribute(String key) {
     if (this.attributes != null) {

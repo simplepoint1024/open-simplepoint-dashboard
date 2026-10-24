@@ -11,6 +11,7 @@ import org.simplepoint.plugin.oidc.api.pojo.dto.OidcClientConfigurationDto;
 import org.simplepoint.plugin.oidc.api.service.OidcClientService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,19 +25,17 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * OidcClientController handles HTTP requests related to OIDC Client entities.
  *
- * <p>This controller extends the BaseController to provide CRUD operations for OIDC Client entities.
- * It uses the OidcClientService to perform business logic and interact with the data layer.
- * </p>
+ * <p>This controller extends the BaseController to provide CRUD operations for OIDC Client
+ * entities. It uses the OidcClientService to perform business logic and interact with the data
+ * layer.
  */
 @RestController
 @RequestMapping("/oidc/clients")
 public class OidcClientController extends BaseController<OidcClientService, Client, String> {
   /**
-   * Constructor initializing the controller with a service instance.
-   * 使用服务实例初始化控制器的构造函数
+   * Constructor initializing the controller with a service instance. 使用服务实例初始化控制器的构造函数
    *
-   * @param service the service instance
-   *                服务实例
+   * @param service the service instance 服务实例
    */
   public OidcClientController(OidcClientService service) {
     super(service);
@@ -46,13 +45,15 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * Retrieves a paginated list of Clients based on the specified filter attributes.
    *
    * @param attributes a map of filtering attributes
-   * @param pageable   pagination information
+   * @param pageable pagination information
    * @return a paginated list of Client records wrapped in {@link Response}
    * @throws Exception if an error occurs during retrieval
    */
   @GetMapping
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.view')")
   @Operation(summary = "分页查询客户端", description = "根据提供的属性和分页参数，检索客户端的分页列表")
-  public Response<Page<Client>> limit(@RequestParam Map<String, String> attributes, Pageable pageable) throws Exception {
+  public Response<Page<Client>> limit(
+      @RequestParam Map<String, String> attributes, Pageable pageable) throws Exception {
     return limit(service.limit(attributes, pageable), Client.class);
   }
 
@@ -63,6 +64,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @return structured client configuration
    */
   @GetMapping("/{id}/configuration")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.view')")
   @Operation(summary = "查询客户端配置", description = "查询结构化OAuth2客户端配置")
   public Response<OidcClientConfigurationDto> configuration(@PathVariable("id") String id) {
     return ok(service.configuration(id));
@@ -75,6 +77,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @return created client
    */
   @PostMapping("/configuration")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.create')")
   @Operation(summary = "创建客户端配置", description = "使用结构化配置创建OAuth2客户端")
   public Response<Client> addConfiguration(@RequestBody OidcClientConfigurationDto dto) {
     return ok(service.createConfiguration(dto));
@@ -88,11 +91,10 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @return updated client
    */
   @PutMapping("/{id}/configuration")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.edit')")
   @Operation(summary = "更新客户端配置", description = "使用结构化配置更新OAuth2客户端")
   public Response<Client> modifyConfiguration(
-      @PathVariable("id") String id,
-      @RequestBody OidcClientConfigurationDto dto
-  ) {
+      @PathVariable("id") String id, @RequestBody OidcClientConfigurationDto dto) {
     return ok(service.updateConfiguration(id, dto));
   }
 
@@ -104,6 +106,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @throws Exception if an error occurs during creation
    */
   @PostMapping
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.create')")
   @Operation(summary = "添加新客户端", description = "将新的客户端添加到系统中")
   public Response<Client> add(@RequestBody Client data) throws Exception {
     return ok(service.create(data));
@@ -117,6 +120,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @throws Exception if an error occurs during modification
    */
   @PutMapping
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.edit')")
   @Operation(summary = "更新客户端信息", description = "更新系统中现有客户端的信息")
   public Response<Client> modify(@RequestBody Client data) throws Exception {
     return ok(service.modifyById(data));
@@ -130,6 +134,7 @@ public class OidcClientController extends BaseController<OidcClientService, Clie
    * @throws Exception if an error occurs during deletion
    */
   @DeleteMapping
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('oauthClients.delete')")
   @Operation(summary = "删除客户端", description = "根据提供的客户端ID列表，删除对应的客户端记录")
   public Response<Set<String>> remove(@RequestParam("ids") String ids) throws Exception {
     Set<String> idSet = StringUtil.stringToSet(ids);

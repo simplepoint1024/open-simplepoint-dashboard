@@ -29,6 +29,8 @@ public class ManagedTenantResourceCallerGuard {
             Map.Entry::getKey,
             Map.Entry::getValue
         ));
+    this.callerOwners.values().forEach(
+        org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceOrigin::forManagedOwner);
   }
 
   /** Returns the namespace owned by the current service client, failing closed by default. */

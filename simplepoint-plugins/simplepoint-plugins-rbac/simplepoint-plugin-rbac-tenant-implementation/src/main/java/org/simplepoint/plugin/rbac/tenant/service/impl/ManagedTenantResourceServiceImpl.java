@@ -13,8 +13,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import org.simplepoint.plugin.rbac.resource.api.repository.ResourceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceKey;
 import org.simplepoint.plugin.rbac.tenant.api.error.ManagedTenantResourceErrorCode;
@@ -24,9 +22,6 @@ import org.simplepoint.plugin.rbac.tenant.api.model.ManagedTenantResourceView;
 import org.simplepoint.plugin.rbac.tenant.api.service.ManagedTenantResourceService;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
 import org.simplepoint.remoting.RemoteProvider;
-import org.simplepoint.security.ResourceScopePolicy;
-import org.simplepoint.security.entity.Resource;
-import org.simplepoint.security.entity.ResourceScopeType;
 import org.simplepoint.security.entity.ResourceType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -35,50 +30,210 @@ import org.springframework.transaction.annotation.Transactional;
 /** Durable tenant resource lifecycle owned by authenticated platform services. */
 @Service
 @RemoteProvider
-@ConditionalOnProperty(prefix = "simplepoint.rbac.managed-resource", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(
+    prefix = "simplepoint.rbac.managed-resource",
+    name = "enabled",
+    havingValue = "true")
 public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceService {
 
   private static final int MAX_SUBTREE_SIZE = 5_000;
   private static final Pattern KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._:-]{0,159}");
   private static final Pattern CODE = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._:-]{0,119}");
   private static final Pattern PATH = Pattern.compile("^/(?!/)[A-Za-z0-9/_-]+$");
-  private static final Set<ResourceType> TYPES = Set.of(
-      ResourceType.GROUP,
-      ResourceType.MODULE,
-      ResourceType.PAGE,
-      ResourceType.ACTION,
-      ResourceType.FEATURE
-  );
+  private static final Set<ResourceType> TYPES =
+      Set.of(
+          ResourceType.GROUP,
+          ResourceType.MODULE,
+          ResourceType.PAGE,
+          ResourceType.ACTION,
+          ResourceType.FEATURE);
 
   private final EntityManager entityManager;
-  private final ResourceRepository platformResources;
   private final ResourceAuthorizationVersionService authorizationVersions;
   private final ManagedTenantResourceCallerGuard callerGuard;
 
+  /** Coordinates managed resources with caller ownership and authorization invalidation. */
   public ManagedTenantResourceServiceImpl(
       final EntityManager entityManager,
-      final ResourceRepository platformResources,
       final ResourceAuthorizationVersionService authorizationVersions,
-      final ManagedTenantResourceCallerGuard callerGuard
-  ) {
+      final ManagedTenantResourceCallerGuard callerGuard) {
     this.entityManager = entityManager;
-    this.platformResources = platformResources;
     this.authorizationVersions = authorizationVersions;
     this.callerGuard = callerGuard;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationDirectoryPage navigationDirectories(
+      String tenantId, String rootKey, String keyword, int offset, int limit) {
+    String owner = callerGuard.requireOwner();
+    String tenant = required(tenantId, 36, "tenantId");
+    requiredKey(rootKey);
+    if (offset < 0 || offset > 100000 || limit < 1 || limit > 100) throw ManagedNavigationPlan.invalid();
+    String search = optional(keyword, 100, "keyword");
+    String pattern = "%" + (search == null ? "" : search.toLowerCase(java.util.Locale.ROOT)
+        .replace("!", "!!").replace("%", "!%").replace("_", "!_")) + "%";
+    var result = new java.util.ArrayList<org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationDirectory>();
+    long eligible = 0;
+    // Complete structural-directory selection is bounded. Apply availability before offset/count,
+    // so unavailable ancestors cannot create empty pages hiding otherwise eligible directories.
+    for (int cursor = 0; cursor <= MAX_SUBTREE_SIZE; cursor += 100) {
+      var candidates = entityManager.createQuery("from TenantResource r where r.tenantId = :tenant"
+          + " and r.type in ('GROUP','MODULE') and (r.managedOwner is null or r.managedOwner <> :owner"
+          + " or (r.managedKey <> :root and (r.navigationRootKey is null or r.navigationRootKey <> :root)))"
+          + " and (lower(r.name) like :pattern escape '!' or r.code = :exact)"
+          + " order by case when r.code = :exact then 0 else 1 end, r.name, r.id", TenantResource.class)
+          .setParameter("tenant", tenant).setParameter("owner", owner).setParameter("root", rootKey)
+          .setParameter("pattern", pattern).setParameter("exact", search == null ? "" : search)
+          .setFirstResult(cursor).setMaxResults(100).getResultList();
+      if (cursor == MAX_SUBTREE_SIZE && !candidates.isEmpty()) throw ManagedNavigationPlan.invalid();
+      var available = new TenantResourceReadQuery(entityManager, tenant).selectedResources(candidates.stream().map(TenantResource::getCode).toList())
+          .stream().map(TenantResource::getId).collect(java.util.stream.Collectors.toSet());
+      for (var item : candidates) if (available.contains(item.getId())) {
+        if (eligible >= offset && result.size() < limit) result.add(new org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationDirectory(
+            item.getId(), item.getCode(), item.getName(), item.getNameLocalization()));
+        eligible++;
+      }
+      if (candidates.size() < 100) break;
+    }
+    return new org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationDirectoryPage(result, eligible);
+  }
+
+  @Override
+  @Transactional
+  public long applyNavigation(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand command) {
+    String owner = callerGuard.requireOwner();
+    var plan = new ManagedNavigationPlan(command);
+    String tenant = required(command.tenantId(), 36, "tenantId");
+    requiredKey(command.rootKey());
+    lockTenant(tenant);
+    var root = find(owner, tenant, command.rootKey(), true);
+    long revision = root == null ? 0 : root.getNavigationRevision();
+    if (revision == command.revision() && Objects.equals(root.getNavigationDigest(), plan.digest)) return revision;
+    if (command.revision() != revision + 1) throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Navigation revision changed");
+    TenantResource mount = command.tenantParentCode() == null ? null : tenantReference(tenant, command.tenantParentCode());
+    if (command.tenantParentCode() != null && (mount == null || !validParent(mount.getType(), ResourceType.GROUP)))
+      throw failure(ManagedTenantResourceErrorCode.PARENT_NOT_FOUND, "Tenant directory is unavailable");
+    // A parent can be a descendant from an older layout; checking only the new graph misses this cycle.
+    TenantResource ancestor = mount;
+    var seen = new java.util.HashSet<String>();
+    while (ancestor != null) {
+      if (!seen.add(ancestor.getId()) || seen.size() > 64
+          || owner.equals(ancestor.getManagedOwner()) && (command.rootKey().equals(ancestor.getManagedKey())
+          || command.rootKey().equals(ancestor.getNavigationRootKey()))) throw ManagedNavigationPlan.invalid();
+      ancestor = ancestor.getParentId() == null ? null : entityManager.find(TenantResource.class, new TenantResourceKey(tenant, ancestor.getParentId()));
+    }
+    var nodes = new java.util.LinkedHashMap<String, TenantResource>();
+    for (var directory : plan.ordered) {
+      var declaration = validate(owner, new ManagedTenantResourceCommand(tenant, directory.managedKey(), directory.resourceCode(), directory.name(),
+          ResourceType.GROUP, directory.parentKey(), null, null, null, directory.icon(), directory.sort(), null));
+      var item = find(owner, tenant, directory.managedKey(), true);
+      if (item == null) {
+        requireCodeAvailable(tenant, directory.resourceCode());
+        item = new TenantResource(); item.setTenantId(tenant); item.setId(stableId(tenant, owner, directory.managedKey()));
+        item.setManagedOwner(owner); item.setManagedKey(directory.managedKey()); item.setCode(directory.resourceCode());
+        item.setType(ResourceType.GROUP); item.setName(directory.name()); item.setEnabled(true); item.setGrantable(false);
+        entityManager.persist(item);
+      } else if (item.getType() != ResourceType.GROUP || !item.getCode().equals(directory.resourceCode())
+          || item.getNavigationRootKey() != null && !command.rootKey().equals(item.getNavigationRootKey())) throw ManagedNavigationPlan.invalid();
+      // A cancellation before the first registration left a disabled identity reservation only.
+      if (item.getNavigationRootKey() == null && item.getNavigationDigest() != null && item.getNavigationDigest().startsWith("#")
+          && !item.isManualDisabled() && !item.isFormallyOffline()) item.setEnabled(true);
+      item.setParentId(directory.parentKey() == null ? parentId(mount) : nodes.get(directory.parentKey()).getId());
+      refreshPresentation(item, null, declaration);
+      item.setNameLocalization(directory.nameLocalization()); item.setNavigationRootKey(command.rootKey());
+      nodes.put(directory.managedKey(), item);
+    }
+    for (var page : command.pages()) {
+      requiredKey(page.managedKey());
+      var item = find(owner, tenant, page.managedKey(), true);
+      // Unpublished pages are still part of the owner's complete plan. Publication prepares them later.
+      if (item == null) continue;
+      if (item.getType() != ResourceType.PAGE || item.getNavigationRootKey() != null
+          && !command.rootKey().equals(item.getNavigationRootKey())) throw ManagedNavigationPlan.invalid();
+      item.setParentId(nodes.get(page.parentKey()).getId()); item.setName(page.name());
+      item.setNameLocalization(page.nameLocalization()); item.setNavigationRootKey(command.rootKey()); item.setUpdatedAt(Instant.now());
+    }
+    var retained = entityManager.createQuery("from TenantResource r where r.tenantId = :tenant and r.managedOwner = :owner"
+        + " and r.navigationRootKey = :root", TenantResource.class).setParameter("tenant", tenant).setParameter("owner", owner)
+        .setParameter("root", command.rootKey()).setMaxResults(MAX_SUBTREE_SIZE + 1).getResultList();
+    var pageKeys = command.pages().stream().map(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand.Page::managedKey).collect(java.util.stream.Collectors.toSet());
+    if (retained.size() > MAX_SUBTREE_SIZE || retained.stream().anyMatch(item -> item.getType() == ResourceType.PAGE && !pageKeys.contains(item.getManagedKey())))
+      throw ManagedNavigationPlan.invalid();
+    var removed = retained.stream().filter(item -> item.getType() == ResourceType.GROUP && !nodes.containsKey(item.getManagedKey())).toList();
+    var removedIds = removed.stream().map(TenantResource::getId).collect(java.util.stream.Collectors.toSet());
+    for (var item : removed) {
+      var children = entityManager.createQuery("select r.id from TenantResource r where r.tenantId = :tenant and r.parentId = :parent", String.class)
+          .setParameter("tenant", tenant).setParameter("parent", item.getId()).getResultList();
+      if (children.stream().anyMatch(id -> !removedIds.contains(id))) throw ManagedNavigationPlan.invalid();
+      entityManager.remove(item);
+    }
+    root = nodes.get(command.rootKey()); root.setNavigationRevision(command.revision()); root.setNavigationDigest(plan.digest);
+    entityManager.flush(); authorizationVersions.refreshTenant(tenant);
+    return command.revision();
+  }
+
+  @Override
+  @Transactional
+  public boolean cancelNavigation(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand command) {
+    String owner = callerGuard.requireOwner(); var plan = new ManagedNavigationPlan(command);
+    String tenant = required(command.tenantId(), 36, "tenantId"); lockTenant(tenant);
+    var root = find(owner, tenant, requiredKey(command.rootKey()), true);
+    long revision = root == null ? 0 : root.getNavigationRevision();
+    // The durable cancellation decision fences requests still in flight at the remote boundary.
+    if (revision == command.revision()) {
+      if (Objects.equals(root.getNavigationDigest(), plan.digest)) return false;
+      if (Objects.equals(root.getNavigationDigest(), "!" + plan.digest.substring(1)) || Objects.equals(root.getNavigationDigest(), "#" + plan.digest.substring(1))) return true;
+    }
+    if (revision + 1 != command.revision()) throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Navigation revision changed");
+    boolean placeholder = root == null;
+    if (root == null) {
+      var declaration = plan.ordered.getFirst();
+      validate(owner, new ManagedTenantResourceCommand(tenant, declaration.managedKey(), declaration.resourceCode(), declaration.name(), ResourceType.GROUP,
+          null, null, null, null, declaration.icon(), declaration.sort(), null));
+      requireCodeAvailable(tenant, declaration.resourceCode());
+      root = new TenantResource(); root.setTenantId(tenant); root.setId(stableId(tenant, owner, command.rootKey()));
+      root.setManagedOwner(owner); root.setManagedKey(command.rootKey()); root.setCode(declaration.resourceCode());
+      root.setName(declaration.name()); root.setType(ResourceType.GROUP); root.setEnabled(false); root.setGrantable(false);
+      entityManager.persist(root);
+    }
+    root.setNavigationRevision(command.revision()); root.setNavigationDigest((placeholder ? "#" : "!") + plan.digest.substring(1));
+    entityManager.flush(); return true;
+  }
+
+  private void requireNavigationFence(String owner, TenantResource existing, ManagedTenantResourceCommand command) {
+    if (command.navigationRootKey() == null) {
+      if (command.navigationRevision() != null || existing != null && existing.getNavigationRootKey() != null)
+        throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Navigation declaration requires its current revision");
+      return;
+    }
+    var root = find(owner, command.tenantId(), requiredKey(command.navigationRootKey()), true);
+    var parent = command.parentManagedKey() == null ? null : find(owner, command.tenantId(), command.parentManagedKey(), true);
+    if (parent == null || !command.navigationRootKey().equals(parent.getNavigationRootKey()))
+      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Navigation parent is outside the owning application");
+    if (root == null || command.navigationRevision() == null || root.getNavigationRevision() != command.navigationRevision()
+        || existing != null && existing.getNavigationRootKey() != null && !existing.getNavigationRootKey().equals(command.navigationRootKey()))
+      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Navigation declaration is stale");
   }
 
   @Override
   @Transactional
   public ManagedTenantResourceView prepare(final ManagedTenantResourceCommand command) {
     String owner = callerGuard.requireOwner();
+    org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceOrigin.forManagedOwner(owner);
     Declaration declaration = validate(owner, command);
     lockTenant(declaration.tenantId());
     TenantResource parent = resolveParent(owner, declaration);
-    Resource host = resolveHost(declaration);
+    TenantResource host = resolveHost(declaration);
     TenantResource existing = find(owner, declaration.tenantId(), declaration.managedKey(), true);
+    requireNavigationFence(owner, existing, command);
+    ManagedNavigationPlan.label(command.name(), command.nameLocalization());
     if (existing != null) {
       requireImmutableDeclaration(existing, parent, host, declaration);
+      if (command.nameLocalization() == null && existing.getNameLocalization() != null && !existing.getName().equals(command.name()))
+        throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Localized resource rename requires its complete metadata");
       refreshPresentation(existing, host, declaration);
+      if (command.nameLocalization() != null) existing.setNameLocalization(org.simplepoint.api.locale.LocalizedTexts.validate(command.nameLocalization(), 100, 32));
       entityManager.flush();
       authorizationVersions.refreshTenant(declaration.tenantId());
       return view(existing);
@@ -91,7 +246,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     resource.setManagedOwner(owner);
     resource.setManagedKey(declaration.managedKey());
     resource.setManagedHostResourceId(host == null ? null : host.getId());
-    resource.setParentId(parentId(parent, declaration));
+    resource.setParentId(parentId(parent));
     resource.setCode(declaration.resourceCode());
     resource.setType(declaration.type());
     resource.setPath(declaration.path());
@@ -100,6 +255,8 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     resource.setLocalModified(false);
     resource.setManualDisabled(false);
     refreshPresentation(resource, host, declaration);
+    resource.setNameLocalization(command.nameLocalization());
+    resource.setNavigationRootKey(command.navigationRootKey());
     try {
       entityManager.persist(resource);
       entityManager.flush();
@@ -107,8 +264,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
           "Managed resource identity, code or path conflicts with another resource",
-          exception
-      );
+          exception);
     }
     authorizationVersions.refreshTenant(declaration.tenantId());
     return view(resource);
@@ -136,31 +292,38 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     if (resource == null) {
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_NOT_FOUND,
-          "Managed tenant resource does not exist"
-      );
+          "Managed tenant resource does not exist");
     }
     return view(resource);
   }
 
   @Override
   @Transactional
-  public ManagedTenantResourceView activateGeneration(String tenantId, String managedKey, long generation) {
+  public ManagedTenantResourceView activateGeneration(
+      String tenantId, String managedKey, long generation) {
     return activateWithPermissions(tenantId, managedKey, generation, null);
   }
 
   @Override
   @Transactional
-  public ManagedTenantResourceView activateWithPermissions(String tenantId, String managedKey, long generation,
+  public ManagedTenantResourceView activateWithPermissions(
+      String tenantId,
+      String managedKey,
+      long generation,
       org.simplepoint.core.permission.PermissionPageDescriptor permissions) {
     if (generation < 1) {
-      throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, "Publication generation is required");
+      throw failure(
+          ManagedTenantResourceErrorCode.INVALID_REQUEST, "Publication generation is required");
     }
     String owner = callerGuard.requireOwner();
     lockTenant(tenantId);
     TenantResource resource = find(owner, tenantId, managedKey, true);
-    if (resource == null || generation < resource.getLifecycleGeneration()
+    if (resource == null
+        || generation < resource.getLifecycleGeneration()
         || generation == resource.getLifecycleGeneration() && resource.isFormallyOffline()) {
-      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Publication has been taken offline or superseded");
+      throw failure(
+          ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+          "Publication has been taken offline or superseded");
     }
     storePermissions(resource, generation, permissions);
     for (TenantResource item : subtree(tenantId, owner, resource)) {
@@ -176,22 +339,37 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
 
   @Override
   @Transactional
-  public ManagedTenantResourceView refreshPermissions(String tenantId, String managedKey, long generation,
+  public ManagedTenantResourceView refreshPermissions(
+      String tenantId,
+      String managedKey,
+      long generation,
       org.simplepoint.core.permission.PermissionPageDescriptor permissions) {
     String owner = callerGuard.requireOwner();
     lockTenant(tenantId);
     TenantResource resource = find(owner, tenantId, managedKey, true);
-    boolean legacy = resource != null && resource.getLifecycleGeneration() == 0
-        && resource.getPermissionMetadata() == null && generation > 0;
-    if (resource == null || !resource.isEnabled() || resource.isFormallyOffline() || generation < 1
-        || (!legacy && generation != resource.getLifecycleGeneration()) || permissions == null) {
-      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "The active publication generation has changed");
+    boolean legacy =
+        resource != null
+            && resource.getLifecycleGeneration() == 0
+            && resource.getPermissionMetadata() == null
+            && generation > 0;
+    if (resource == null
+        || !resource.isEnabled()
+        || resource.isFormallyOffline()
+        || generation < 1
+        || (!legacy && generation != resource.getLifecycleGeneration())
+        || permissions == null) {
+      throw failure(
+          ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+          "The active publication generation has changed");
     }
     // Pre-lifecycle publications have generation zero. The trusted owner has verified its
     // active binding; adopt that generation once, without enabling nodes or touching grants.
     List<TenantResource> legacyTree = legacy ? subtree(tenantId, owner, resource) : List.of();
-    if (legacyTree.stream().anyMatch(item -> item.getLifecycleGeneration() != 0 || item.isFormallyOffline())) {
-      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "The legacy resource tree has advanced");
+    if (legacyTree.stream()
+        .anyMatch(item -> item.getLifecycleGeneration() != 0 || item.isFormallyOffline())) {
+      throw failure(
+          ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+          "The legacy resource tree has advanced");
     }
     storePermissions(resource, generation, permissions);
     for (TenantResource item : legacyTree) {
@@ -203,17 +381,27 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     return view(resource);
   }
 
-  private static void storePermissions(TenantResource resource, long generation,
+  private static void storePermissions(
+      TenantResource resource,
+      long generation,
       org.simplepoint.core.permission.PermissionPageDescriptor permissions) {
     if (permissions != null) {
-      if (resource.getType() != ResourceType.PAGE || permissions.models().isEmpty()
+      if (resource.getType() != ResourceType.PAGE
+          || permissions.models().isEmpty()
           || permissions.models().size() > 21
-          || permissions.models().stream().mapToInt(model -> model.properties().size()).sum() > 1000) {
-        throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, "Invalid managed page permission descriptor");
+          || permissions.models().stream().mapToInt(model -> model.properties().size()).sum()
+              > 1000) {
+        throw failure(
+            ManagedTenantResourceErrorCode.INVALID_REQUEST,
+            "Invalid managed page permission descriptor");
       }
-      if (generation == resource.getLifecycleGeneration() && resource.getPermissionMetadata() != null
-          && !permissions.equals(org.simplepoint.core.permission.PermissionPageDescriptor.fromJson(resource.getPermissionMetadata()))) {
-        throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+      if (generation == resource.getLifecycleGeneration()
+          && resource.getPermissionMetadata() != null
+          && !permissions.equals(
+              org.simplepoint.core.permission.PermissionPageDescriptor.fromJson(
+                  resource.getPermissionMetadata()))) {
+        throw failure(
+            ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
             "Permission metadata cannot change within an activated publication generation");
       }
       String metadata = permissions.toJson();
@@ -229,9 +417,14 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   public void offlineFromEvent(org.simplepoint.events.api.EventMessage event) {
     var request = org.simplepoint.platform.resource.ResourceLifecycleEvents.request(event);
     lockTenant(event.tenantId());
-    TenantResource root = find(request.managedOwner(), event.tenantId(), request.managedKey(), true);
-    if (root == null || !root.getId().equals(event.resourceId()) || !root.getCode().equals(request.resourceCode())) {
-      throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT, "Offline request does not own this resource");
+    TenantResource root =
+        find(request.managedOwner(), event.tenantId(), request.managedKey(), true);
+    if (root == null
+        || !root.getId().equals(event.resourceId())
+        || !root.getCode().equals(request.resourceCode())) {
+      throw failure(
+          ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+          "Offline request does not own this resource");
     }
     if (event.generation() < root.getLifecycleGeneration()) {
       return;
@@ -254,16 +447,18 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
 
   private void emRevoke(String tenantId, List<String> codes, Instant now) {
     // Keep shared data/field policies and grant history; remove only effective assignments.
-    entityManager.createQuery("update RoleResourceGrant g set g.deletedAt = :now "
-        + "where g.tenantId = :tenant and g.resourceCode in :codes and g.deletedAt is null")
-        .setParameter("now", now).setParameter("tenant", tenantId).setParameter("codes", codes).executeUpdate();
+    entityManager
+        .createQuery(
+            "update RoleResourceGrant g set g.deletedAt = :now "
+                + "where g.tenantId = :tenant and g.resourceCode in :codes and g.deletedAt is null")
+        .setParameter("now", now)
+        .setParameter("tenant", tenantId)
+        .setParameter("codes", codes)
+        .executeUpdate();
   }
 
   private ManagedTenantResourceView changeState(
-      final String tenantId,
-      final String managedKey,
-      final boolean enabled
-  ) {
+      final String tenantId, final String managedKey, final boolean enabled) {
     String owner = callerGuard.requireOwner();
     String tenant = required(tenantId, 36, "tenantId");
     String key = requiredKey(managedKey);
@@ -272,16 +467,30 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     if (root == null) {
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_NOT_FOUND,
-          "Managed tenant resource does not exist"
-      );
+          "Managed tenant resource does not exist");
     }
     List<TenantResource> subtree = subtree(tenant, owner, root);
     if (enabled) {
       if (subtree.stream().anyMatch(TenantResource::isFormallyOffline)) {
-        throw failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+        throw failure(
+            ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
             "Formal offline requires a newer publication generation");
       }
       requireEnabledManagedAncestors(tenant, owner, root, subtree);
+      // A previously prepared page must revalidate its tenant-local host before activation.
+      var hosts =
+          subtree.stream()
+              .map(TenantResource::getManagedHostResourceId)
+              .filter(Objects::nonNull)
+              .collect(java.util.stream.Collectors.toSet());
+      if (!hosts.isEmpty()
+          && !new TenantResourceReadQuery(entityManager, tenant)
+              .eligibleHostIds(hosts)
+              .containsAll(hosts)) {
+        throw failure(
+            ManagedTenantResourceErrorCode.HOST_NOT_FOUND,
+            "Managed page host is unavailable in this tenant");
+      }
     }
     Instant timestamp = Instant.now();
     boolean changed = false;
@@ -300,10 +509,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   }
 
   private List<TenantResource> subtree(
-      final String tenantId,
-      final String owner,
-      final TenantResource root
-  ) {
+      final String tenantId, final String owner, final TenantResource root) {
     List<TenantResource> resources = new ArrayList<>();
     resources.add(root);
     Set<String> seen = new LinkedHashSet<>();
@@ -312,19 +518,18 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     while (!parents.isEmpty()) {
       List<TenantResource> children = new ArrayList<>();
       for (int start = 0; start < parents.size(); start += 100) {
-        children.addAll(entityManager.createQuery(
-                "from TenantResource resource where resource.tenantId = :tenant "
-                    + "and resource.managedOwner = :owner and resource.parentId in :parents",
-                TenantResource.class
-            )
-            .setParameter("tenant", tenantId)
-            .setParameter("owner", owner)
-            .setParameter(
-                "parents",
-                parents.subList(start, Math.min(start + 100, parents.size()))
-            )
-            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-            .getResultList());
+        children.addAll(
+            entityManager
+                .createQuery(
+                    "from TenantResource resource where resource.tenantId = :tenant "
+                        + "and resource.managedOwner = :owner and resource.parentId in :parents",
+                    TenantResource.class)
+                .setParameter("tenant", tenantId)
+                .setParameter("owner", owner)
+                .setParameter(
+                    "parents", parents.subList(start, Math.min(start + 100, parents.size())))
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList());
       }
       List<String> next = new ArrayList<>();
       for (TenantResource child : children) {
@@ -336,8 +541,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
         if (resources.size() > MAX_SUBTREE_SIZE) {
           throw failure(
               ManagedTenantResourceErrorCode.INVALID_REQUEST,
-              "Managed resource subtree exceeds 5000 entries"
-          );
+              "Managed resource subtree exceeds 5000 entries");
         }
       }
       parents = next;
@@ -349,62 +553,70 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
       final String tenantId,
       final String owner,
       final TenantResource root,
-      final Collection<TenantResource> subtree
-  ) {
-    Set<String> included = subtree.stream().map(TenantResource::getId)
-        .collect(java.util.stream.Collectors.toSet());
+      final Collection<TenantResource> subtree) {
+    Set<String> included =
+        subtree.stream().map(TenantResource::getId).collect(java.util.stream.Collectors.toSet());
     String parentId = root.getParentId();
     Set<String> seen = new LinkedHashSet<>();
     while (parentId != null && !included.contains(parentId) && seen.add(parentId)) {
-      TenantResource parent = entityManager.find(
-          TenantResource.class,
-          new TenantResourceKey(tenantId, parentId),
-          LockModeType.PESSIMISTIC_READ
-      );
-      if (parent == null || !owner.equals(parent.getManagedOwner())) {
+      TenantResource parent =
+          entityManager.find(
+              TenantResource.class,
+              new TenantResourceKey(tenantId, parentId),
+              LockModeType.PESSIMISTIC_READ);
+      if (parent == null) {
+        throw failure(
+            ManagedTenantResourceErrorCode.PARENT_NOT_FOUND, "Tenant parent is unavailable");
+      }
+      if (!owner.equals(parent.getManagedOwner())) {
+        if (tenantReference(tenantId, parent.getCode()) == null) {
+          throw failure(
+              ManagedTenantResourceErrorCode.PARENT_NOT_FOUND, "Tenant parent is unavailable");
+        }
         return;
       }
-      if (!parent.isEnabled()) {
+      if (!parent.isEnabled()
+          || parent.isManualDisabled()
+          || parent.isFormallyOffline()
+          || !parent.isSourceAvailable()) {
         throw failure(
             ManagedTenantResourceErrorCode.PARENT_NOT_FOUND,
-            "Managed parent must be active before its child"
-        );
+            "Managed parent must be active before its child");
       }
       parentId = parent.getParentId();
     }
+    if (parentId != null) {
+      throw failure(
+          ManagedTenantResourceErrorCode.PARENT_NOT_FOUND, "Managed parent hierarchy is cyclic");
+    }
   }
 
-  private Declaration validate(
-      final String owner,
-      final ManagedTenantResourceCommand command
-  ) {
+  private Declaration validate(final String owner, final ManagedTenantResourceCommand command) {
     if (command == null || !TYPES.contains(command.type())) {
       throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, "Unsupported resource type");
     }
-    String tenantId = required(command.tenantId(), 36, "tenantId");
-    String managedKey = requiredKey(command.managedKey());
+    final String tenantId = required(command.tenantId(), 36, "tenantId");
+    final String managedKey = requiredKey(command.managedKey());
     String resourceCode = required(command.resourceCode(), 120, "resourceCode");
     if (!CODE.matcher(resourceCode).matches() || !resourceCode.startsWith(owner + ".")) {
       throw failure(
           ManagedTenantResourceErrorCode.INVALID_REQUEST,
-          "resourceCode must belong to the authenticated owner namespace"
-      );
+          "resourceCode must belong to the authenticated owner namespace");
     }
-    String name = required(command.name(), 100, "name");
+    final String name = required(command.name(), 100, "name");
     String parentManagedKey = optional(command.parentManagedKey(), 160, "parentManagedKey");
     String platformParentCode = optional(command.platformParentCode(), 120, "platformParentCode");
-    String hostResourceCode = optional(command.hostResourceCode(), 120, "hostResourceCode");
-    String path = optional(command.path(), 200, "path");
-    String icon = optional(command.icon(), 100, "icon");
-    String description = optional(command.description(), 255, "description");
+    final String hostResourceCode = optional(command.hostResourceCode(), 120, "hostResourceCode");
+    final String path = optional(command.path(), 200, "path");
+    final String icon = optional(command.icon(), 100, "icon");
+    final String description = optional(command.description(), 255, "description");
     if (parentManagedKey != null && !KEY.matcher(parentManagedKey).matches()) {
       throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, "parentManagedKey is invalid");
     }
     if (parentManagedKey != null && platformParentCode != null) {
       throw failure(
           ManagedTenantResourceErrorCode.INVALID_REQUEST,
-          "Only one managed or platform parent may be declared"
-      );
+          "Only one managed or platform parent may be declared");
     }
     if (managedKey.equals(parentManagedKey)) {
       throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, "A resource cannot own itself");
@@ -413,21 +625,18 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
       if (hostResourceCode == null || path == null || !PATH.matcher(path).matches()) {
         throw failure(
             ManagedTenantResourceErrorCode.INVALID_REQUEST,
-            "Managed pages require a trusted host and a normalized internal path"
-        );
+            "Managed pages require a trusted host and a normalized internal path");
       }
     } else if (hostResourceCode != null || path != null) {
       throw failure(
           ManagedTenantResourceErrorCode.INVALID_REQUEST,
-          "Only managed pages may declare a host or path"
-      );
+          "Only managed pages may declare a host or path");
     }
     if ((command.type() == ResourceType.ACTION || command.type() == ResourceType.FEATURE)
         && parentManagedKey == null) {
       throw failure(
           ManagedTenantResourceErrorCode.INVALID_REQUEST,
-          "Managed actions and features require a managed parent"
-      );
+          "Managed actions and features require a managed parent");
     }
     return new Declaration(
         tenantId,
@@ -441,77 +650,61 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
         path,
         icon,
         command.sort(),
-        description
-    );
+        description);
   }
 
   private TenantResource resolveParent(final String owner, final Declaration declaration) {
     if (declaration.parentManagedKey() != null) {
-      TenantResource parent = find(
-          owner,
-          declaration.tenantId(),
-          declaration.parentManagedKey(),
-          true
-      );
+      TenantResource parent =
+          find(owner, declaration.tenantId(), declaration.parentManagedKey(), true);
       if (parent == null || !validParent(parent.getType(), declaration.type())) {
         throw failure(
             ManagedTenantResourceErrorCode.PARENT_NOT_FOUND,
-            "Managed parent does not exist or cannot contain this resource"
-        );
+            "Managed parent does not exist or cannot contain this resource");
       }
       return parent;
     }
     if (declaration.platformParentCode() == null) {
       return null;
     }
-    Resource platformParent = platform(declaration.platformParentCode());
-    if (platformParent == null || !activeTenantResource(platformParent)
-        || !validParent(platformParent.getType(), declaration.type())) {
+    TenantResource parent =
+        tenantReference(declaration.tenantId(), declaration.platformParentCode());
+    if (parent == null
+        || !parent.isPlatformSource()
+        || !validParent(parent.getType(), declaration.type())) {
       throw failure(
           ManagedTenantResourceErrorCode.PARENT_NOT_FOUND,
-          "Platform parent does not exist or cannot contain this resource"
-      );
+          "Tenant platform parent does not exist or cannot contain this resource");
     }
-    TenantResource reference = new TenantResource();
-    reference.setId(platformParent.getId());
-    reference.setType(platformParent.getType());
-    return reference;
+    return parent;
   }
 
-  private Resource resolveHost(final Declaration declaration) {
+  private TenantResource resolveHost(final Declaration declaration) {
     if (declaration.hostResourceCode() == null) {
       return null;
     }
-    Resource host = platform(declaration.hostResourceCode());
-    if (host == null || !activeTenantResource(host) || host.getType() != ResourceType.PAGE
-        || host.getComponent() == null || host.getComponent().isBlank()) {
+    TenantResource host = tenantReference(declaration.tenantId(), declaration.hostResourceCode());
+    if (host == null
+        || !host.isPlatformSource()
+        || host.getType() != ResourceType.PAGE
+        || host.getComponent() == null
+        || host.getComponent().isBlank()) {
       throw failure(
           ManagedTenantResourceErrorCode.HOST_NOT_FOUND,
-          "Managed page host is unavailable"
-      );
+          "Managed page host is unavailable in this tenant");
     }
     return host;
   }
 
-  private Resource platform(final String code) {
-    Collection<Resource> resources = platformResources.findAllByCodes(List.of(code));
-    return resources == null ? null : resources.stream()
-        .filter(resource -> code.equals(resource.getCode()))
-        .findFirst()
-        .orElse(null);
+  private TenantResource tenantReference(final String tenantId, final String code) {
+    return new TenantResourceReadQuery(entityManager, tenantId)
+        .selectedResources(List.of(code)).stream()
+            .filter(resource -> code.equals(resource.getCode()))
+            .findFirst()
+            .orElse(null);
   }
 
-  private static boolean activeTenantResource(final Resource resource) {
-    return resource.getDeletedAt() == null
-        && !Boolean.TRUE.equals(resource.getDisabled())
-        && ResourceScopePolicy.effectiveScopes(resource.getScopeTypes())
-            .contains(ResourceScopeType.TENANT);
-  }
-
-  private static boolean validParent(
-      final ResourceType parent,
-      final ResourceType child
-  ) {
+  private static boolean validParent(final ResourceType parent, final ResourceType child) {
     if (child == ResourceType.ACTION || child == ResourceType.FEATURE) {
       return parent == ResourceType.PAGE || parent == ResourceType.FEATURE;
     }
@@ -521,10 +714,9 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   private void requireImmutableDeclaration(
       final TenantResource existing,
       final TenantResource parent,
-      final Resource host,
-      final Declaration declaration
-  ) {
-    String expectedParentId = parentId(parent, declaration);
+      final TenantResource host,
+      final Declaration declaration) {
+    String expectedParentId = parentId(parent);
     String expectedHostId = host == null ? null : host.getId();
     if (!Objects.equals(existing.getCode(), declaration.resourceCode())
         || existing.getType() != declaration.type()
@@ -533,16 +725,12 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
         || !Objects.equals(existing.getPath(), declaration.path())) {
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
-          "Managed resource identity cannot be rebound to another code, parent, host or path"
-      );
+          "Managed resource identity cannot be rebound to another code, parent, host or path");
     }
   }
 
   private void refreshPresentation(
-      final TenantResource resource,
-      final Resource host,
-      final Declaration declaration
-  ) {
+      final TenantResource resource, final TenantResource host, final Declaration declaration) {
     resource.setName(declaration.name());
     resource.setIcon(declaration.icon());
     resource.setSort(declaration.sort());
@@ -553,69 +741,61 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   }
 
   private void requireCodeAvailable(final String tenantId, final String resourceCode) {
-    boolean present = !platformResources.findAllByCodes(List.of(resourceCode)).isEmpty()
-        || !entityManager.createQuery(
-            "select resource.id from TenantResource resource "
-                + "where resource.tenantId = :tenant and resource.code = :code",
-            String.class
-        )
-        .setParameter("tenant", tenantId)
-        .setParameter("code", resourceCode)
-        .setMaxResults(1)
-        .getResultList()
-        .isEmpty();
+    boolean present =
+        !entityManager
+            .createQuery(
+                "select resource.id from TenantResource resource "
+                    + "where resource.tenantId = :tenant and resource.code = :code",
+                String.class)
+            .setParameter("tenant", tenantId)
+            .setParameter("code", resourceCode)
+            .setMaxResults(1)
+            .getResultList()
+            .isEmpty();
     if (present) {
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
-          "Resource code is already owned inside this tenant"
-      );
+          "Resource code is already owned inside this tenant");
     }
   }
 
   private void requirePathAvailable(
-      final String tenantId,
-      final String path,
-      final String excludedId
-  ) {
+      final String tenantId, final String path, final String excludedId) {
     if (path == null) {
       return;
     }
-    boolean present = !platformResources.findAllByPaths(List.of(path)).isEmpty()
-        || !entityManager.createQuery(
-            "select resource.id from TenantResource resource "
-                + "where resource.tenantId = :tenant and resource.path = :path "
-                + "and (:excluded is null or resource.id <> :excluded)",
-            String.class
-        )
-        .setParameter("tenant", tenantId)
-        .setParameter("path", path)
-        .setParameter("excluded", excludedId)
-        .setMaxResults(1)
-        .getResultList()
-        .isEmpty();
+    boolean present =
+        !entityManager
+            .createQuery(
+                "select resource.id from TenantResource resource "
+                    + "where resource.tenantId = :tenant and resource.path = :path "
+                    + "and (:excluded is null or resource.id <> :excluded)",
+                String.class)
+            .setParameter("tenant", tenantId)
+            .setParameter("path", path)
+            .setParameter("excluded", excludedId)
+            .setMaxResults(1)
+            .getResultList()
+            .isEmpty();
     if (present) {
       throw failure(
           ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
-          "Resource path is already owned inside this tenant"
-      );
+          "Resource path is already owned inside this tenant");
     }
   }
 
   private TenantResource find(
-      final String owner,
-      final String tenantId,
-      final String managedKey,
-      final boolean lock
-  ) {
-    var query = entityManager.createQuery(
-            "from TenantResource resource where resource.tenantId = :tenant "
-                + "and resource.managedOwner = :owner and resource.managedKey = :key",
-            TenantResource.class
-        )
-        .setParameter("tenant", tenantId)
-        .setParameter("owner", owner)
-        .setParameter("key", managedKey)
-        .setMaxResults(1);
+      final String owner, final String tenantId, final String managedKey, final boolean lock) {
+    var query =
+        entityManager
+            .createQuery(
+                "from TenantResource resource where resource.tenantId = :tenant "
+                    + "and resource.managedOwner = :owner and resource.managedKey = :key",
+                TenantResource.class)
+            .setParameter("tenant", tenantId)
+            .setParameter("owner", owner)
+            .setParameter("key", managedKey)
+            .setMaxResults(1);
     if (lock) {
       query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
     }
@@ -623,19 +803,22 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   }
 
   private void lockTenant(final String tenantId) {
-    Tenant tenant = entityManager.find(Tenant.class, tenantId, LockModeType.PESSIMISTIC_WRITE);
-    if (tenant == null) {
-      throw failure(
-          ManagedTenantResourceErrorCode.TENANT_NOT_FOUND,
-          "Tenant does not exist"
-      );
+    var tenants =
+        entityManager
+            .createQuery(
+                "select t.id from Tenant t where t.id = :tenant and t.deletedAt is null",
+                String.class)
+            .setParameter("tenant", tenantId)
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .setMaxResults(1)
+            .getResultList();
+    if (tenants.isEmpty()) {
+      throw failure(ManagedTenantResourceErrorCode.TENANT_NOT_FOUND, "Tenant does not exist");
     }
+    new TenantResourceReadQuery(entityManager, tenantId).requireReady();
   }
 
-  private static String parentId(
-      final TenantResource parent,
-      final Declaration declaration
-  ) {
+  private static String parentId(final TenantResource parent) {
     return parent == null ? null : parent.getId();
   }
 
@@ -644,14 +827,10 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   }
 
   private static String stableId(
-      final String tenantId,
-      final String owner,
-      final String managedKey
-  ) {
+      final String tenantId, final String owner, final String managedKey) {
     return UUID.nameUUIDFromBytes(
-        (tenantId + "\u0000" + owner + "\u0000" + managedKey)
-            .getBytes(StandardCharsets.UTF_8)
-    ).toString();
+            (tenantId + "\u0000" + owner + "\u0000" + managedKey).getBytes(StandardCharsets.UTF_8))
+        .toString();
   }
 
   private static ManagedTenantResourceView view(final TenantResource resource) {
@@ -669,8 +848,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
         resource.getRouteKind(),
         resource.isEnabled(),
         resource.isGrantable(),
-        resource.getUpdatedAt()
-    );
+        resource.getUpdatedAt());
   }
 
   private static String requiredKey(final String value) {
@@ -681,11 +859,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     return result;
   }
 
-  private static String required(
-      final String value,
-      final int maximum,
-      final String field
-  ) {
+  private static String required(final String value, final int maximum, final String field) {
     String result = optional(value, maximum, field);
     if (result == null) {
       throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, field + " is required");
@@ -693,33 +867,24 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     return result;
   }
 
-  private static String optional(
-      final String value,
-      final int maximum,
-      final String field
-  ) {
+  private static String optional(final String value, final int maximum, final String field) {
     if (value == null || value.isBlank()) {
       return null;
     }
     String result = value.trim();
-    if (result.length() > maximum) {
+    if (result.codePointCount(0, result.length()) > maximum) {
       throw failure(ManagedTenantResourceErrorCode.INVALID_REQUEST, field + " is too long");
     }
     return result;
   }
 
   private static ManagedTenantResourceException failure(
-      final ManagedTenantResourceErrorCode code,
-      final String message
-  ) {
+      final ManagedTenantResourceErrorCode code, final String message) {
     return new ManagedTenantResourceException(code, message);
   }
 
   private static ManagedTenantResourceException failure(
-      final ManagedTenantResourceErrorCode code,
-      final String message,
-      final Throwable cause
-  ) {
+      final ManagedTenantResourceErrorCode code, final String message, final Throwable cause) {
     return new ManagedTenantResourceException(code, message, cause);
   }
 
@@ -735,6 +900,5 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
       String path,
       String icon,
       Integer sort,
-      String description
-  ) {}
+      String description) {}
 }

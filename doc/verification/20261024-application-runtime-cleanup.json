@@ -1,0 +1,146 @@
+{
+  "verifiedAt": "2026-10-24T12:39:37.668796+00:00",
+  "request": "清理应用和流程运行数据，保留应用及流程定义",
+  "cleared": {
+    "businessRowsIncludingDetails": 876,
+    "physicalTablesEmptied": 17,
+    "formSubmissions": 219,
+    "workflowInstances": 218,
+    "runningInstancesTerminated": 1,
+    "workflowPersonalNotifications": 550
+  },
+  "preserved": {
+    "applications": [
+      "人力办公",
+      "计算引擎业务验收"
+    ],
+    "formDefinitions": 10,
+    "workflowDefinitions": 23,
+    "definitionSnapshotsComparedBeforeRestart": 31,
+    "appFormWorkflowVersionsAndBindings": "unchanged",
+    "calculationAndPublicationFences": "unchanged",
+    "resourceIdsNavigationAndGrants": "unchanged",
+    "otherPersonalAndSystemMessages": "unchanged",
+    "objectStorageAndSystemAuditLogs": "not targeted"
+  },
+  "backup": {
+    "bytes": 8278650,
+    "sha256": "6dbec1d5c9a159f7f3c2cc10a8f0c38d2ec12375df7a87f285566c4b0e887ffe",
+    "archiveReadable": true
+  },
+  "method": [
+    "Isolated restored-database rehearsal passed before production deletion.",
+    "Five runtime-writing services stopped; fresh consistent backup verified.",
+    "Flowable RuntimeService and HistoryService deleted only enumerated instances, retaining deployments and definitions.",
+    "Explicit-scope SQL transaction removed business rows, submissions, runtime receipts and linked messages. No application/table/schema definitions dropped.",
+    "Original containers restarted; all 10 services healthy; database and actual API/browser views verified on both origins."
+  ],
+  "startupResourceComparison": {
+    "rowsUpdatedByStartup": 743,
+    "changedFields": {
+      "updated_at": 64,
+      "permission_metadata": 64,
+      "last_synced_at": 743
+    },
+    "semanticChanges": []
+  },
+  "api": {
+    "at": "2026-10-24T12:34:39.901Z",
+    "results": [
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "activeFormPagesEmpty": 10,
+        "submissionsEmpty": 10,
+        "workflowDefinitionsPreserved": 23,
+        "allInstancesAndPersonalTasksEmpty": true,
+        "managerPendingAndCompletedEmpty": true,
+        "officeBusinessMenusRetained": 3
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "activeFormPagesEmpty": 10,
+        "submissionsEmpty": 10,
+        "workflowDefinitionsPreserved": 23,
+        "allInstancesAndPersonalTasksEmpty": true,
+        "managerPendingAndCompletedEmpty": true,
+        "officeBusinessMenusRetained": 3
+      }
+    ]
+  },
+  "browser": [
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T12:38:52.021Z",
+      "officeListsEmpty": 3,
+      "designedFormStillOpens": true,
+      "pendingAndCompletedEmpty": true,
+      "httpErrors": [],
+      "consoleErrors": []
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T12:39:15.335Z",
+      "officeListsEmpty": 3,
+      "designedFormStillOpens": true,
+      "pendingAndCompletedEmpty": true,
+      "httpErrors": [],
+      "consoleErrors": []
+    }
+  ],
+  "remainingRuntimeRows": {
+    "simpoint_app_form_submissions": 0,
+    "simpoint_workflow_instances": 0,
+    "simpoint_workflow_actions": 0,
+    "simpoint_workflow_business_links": 0,
+    "simpoint_workflow_instance_watchers": 0,
+    "simpoint_workflow_engine_signals": 0,
+    "simpoint_workflow_notification_outbox": 0,
+    "simpoint_workflow_operation_receipts": 0,
+    "simpoint_dna_record_create_receipts": 0,
+    "act_hi_taskinst": 0,
+    "act_hi_tsk_log": 0,
+    "act_ru_entitylink": 0,
+    "act_hi_entitylink": 0,
+    "act_hi_identitylink": 0,
+    "act_ru_history_job": 0,
+    "act_ru_job": 0,
+    "act_ru_timer_job": 0,
+    "act_ru_suspended_job": 0,
+    "act_ru_deadletter_job": 0,
+    "act_ru_external_job": 0,
+    "act_ru_variable": 0,
+    "act_hi_varinst": 0,
+    "act_ru_actinst": 0,
+    "act_ru_execution": 0,
+    "act_ru_task": 0,
+    "act_ru_identitylink": 0,
+    "act_ru_event_subscr": 0,
+    "act_hi_procinst": 0,
+    "act_hi_actinst": 0,
+    "act_hi_detail": 0,
+    "act_hi_comment": 0,
+    "act_hi_attachment": 0,
+    "app_forms.spf_01yr77jz6e8mdbqee9ej9rha8d": 0,
+    "app_forms.spf_0gvv60rrc48r6979kc80cpgrvr": 0,
+    "app_forms.spf_1cy57n4z408grs2yxfe7ctg3yn": 0,
+    "app_forms.spf_1kxkfkrre980ztbs5144kzwjmm": 0,
+    "app_forms.spf_2a99sjx28t8tnb26ths4e5demf": 0,
+    "app_forms.spf_2wve4rxtfx8wpayv5qdqx925e4": 0,
+    "app_forms.spf_2x5qde7y8b8gnv1rvvy0azwj0f": 0,
+    "app_forms.spf_2ybb3z12e48gvbdad05ftr3bh5": 0,
+    "app_forms.spf_2zxsknzrf184pbw9c649a4bxnt": 0,
+    "app_forms.spf_31gp3naq7q8t0akh0081jxg84x": 0,
+    "app_forms.spf_3hev0cdwmk944vfm5jh71rgkrd": 0,
+    "app_forms.spf_4zhzgkmbge8yqt4dwrhz26cnv6": 0,
+    "app_forms.spf_57vp6fzhcz8j79aamfgppfqcrq": 0,
+    "app_forms.spf_5rwf1qe2mz9dvbj8997nke57x6": 0,
+    "app_forms.spf_66hfy1ne0x92n94685erwjvs45": 0,
+    "app_forms.spf_7qckhtbbv5923v0q48a15zy35z": 0,
+    "app_forms.spf_7w6fm8y3f89qaavk38d9gj5fv9": 0,
+    "app_forms.simpoint_dna_record_operations_v1": 0,
+    "app_forms.simpoint_dna_record_snapshots_v1": 0,
+    "simpoint_personal_messages:workflow": 0,
+    "simpoint_personal_todos:workflow": 0,
+    "simpoint_system_notifications:workflow": 0
+  }
+}

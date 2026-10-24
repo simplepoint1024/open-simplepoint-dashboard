@@ -403,7 +403,7 @@
       "maxSort": 3,
       "maxDepth": 4,
       "maxNodes": 32,
-      "maxPageSize": 200
+      "maxPageSize": 500
     }
   }
 }

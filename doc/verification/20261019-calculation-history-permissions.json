@@ -1,0 +1,69 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-19T02:55:00.782864+00:00",
+  "changes": [
+    "旧页面使用当前完整公式依赖图执行权限投影，页面字段和布局仍保留旧版本",
+    "旧普通字段切换为计算字段时移除已不适用的默认值和写入策略",
+    "审批快照同时遵守原始与当前公式依赖权限；隐藏来源阻止历史输出，恢复读取权限后保留原始值和布局"
+  ],
+  "quality": {
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 295,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "67eb4b63ff49d2011125cb55da4ad3f84f0680a829204e4460edf12994e3ad62"
+    },
+    "simplepoint-service-app": {
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultsSha256": "9d2a4e1905a50c1bcd8655d5dcdc7bf2df27428754e2ff9d4f6424abaadc6c6c"
+    }
+  },
+  "checkstyleMain": "passed: APP form implementation",
+  "executionLogSha256": "38436f97af0d6c6894f0332ecf957bd43ccdaa706d857f8e2f3eb137512f6a24",
+  "sources": [
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/PublishedApplicationFormResolver.java",
+      "sha256": "12790f0c285f0c010895b9c885a5cb092fbc662782a9637f8919893eef302e53"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWritePolicyProjection.java",
+      "sha256": "42a76dcbe12debc0c865317c49399034594871631e071253da54b2dcf995b7a3"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPermissions.java",
+      "sha256": "dc7614bacbde111f09d9fbd19f3c49a4fa2580f848e9a94ce825b4a017cb0748"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormRuntimeDocumentCompiler.java",
+      "sha256": "451a05d1d66a15ee29578258dbb6db04e0f3366b5cd97cbb26c524fb08689c05"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormSubmissionSnapshotService.java",
+      "sha256": "399a94eaf5bf2434dc0f6ff8abee4a7d3aaa15f27364f86bbd576940728a932a"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationPermissionsTest.java",
+      "sha256": "d5690863e01eb4923725dd0295afeb7d84203796b56d1642039c6bdc98bd1faf"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormWritePolicyProjectionTest.java",
+      "sha256": "641106ab11d777de314698948b275f31cc6f52f9127ad72cd575a5140715838e"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/ApplicationFormRuntimeServiceImplTest.java",
+      "sha256": "251d554172094df14b2bc90b48c3dac33977a776d0451cd8f4b70193f2d49cc0"
+    },
+    {
+      "path": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormSubmissionRecoveryTest.java",
+      "sha256": "75cf291508b027240979dfeff1def13f23e2712f638ac4182475b8e10d65f4c3"
+    }
+  ],
+  "limits": [
+    "本批未部署，不代替真实发布/工作流/权限验收",
+    "176 项最终矩阵保持未终验；公式发布保护仍开启"
+  ]
+}

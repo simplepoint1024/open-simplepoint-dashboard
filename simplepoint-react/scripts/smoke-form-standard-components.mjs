@@ -24,6 +24,7 @@ export async function smokeFormStandardComponents({action, clickReady, clickText
   await clickText(root + ' .sp-form-property-tabs .ant-tabs-tab', '组件配置');
   await fill(root + ' #standard_property_text', '## 中文・日本語\n\n**安全 Markdown**\n\n<script>window.__formUnsafe=true</script>'); commands++;
   await clickReady(root + ' .sp-form-designer-toolbar button[aria-label="表单属性"]');
+  await clickText(drawer + ' .ant-tabs-tab', '基础属性');
   await poll(() => evaluate(`!!document.querySelector('${drawer} #root_labelWidth')`), 'form properties right drawer ready');
   assert.equal(await evaluate(`[...document.querySelectorAll('${drawer} .ant-tabs-nav .ant-tabs-tab')].every(e=>e.querySelector('.anticon'))`), true);
   await fill(drawer + ' #root_labelWidth', '120'); commands++;

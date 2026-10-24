@@ -1,0 +1,143 @@
+{
+  "recordedAt": "2026-10-20T10:01:33.757849+00:00",
+  "scope": "S1 partial: router provider ambiguity and consistent local proxy boundary; not module composition, application integration or standalone acceptance",
+  "wholeGoalComplete": false,
+  "tests": [
+    {
+      "suite": "com.simplepoint.service.router.config.EnableServiceRouterIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.invocation.ClientCredentialsServiceRouterAccessTokenProviderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.invocation.RestClientRemoteInvokerTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.invocation.ServiceInvocationDispatcherTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.loadbalance.RoundRobinLoadBalancerTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.metadata.RoutedServiceMetadataResolverTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.proxy.RemoteBusinessErrorRoutingTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.proxy.ServiceRouterInvocationHandlerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.registry.ApplicationContextLocalServiceRegistryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.simplepoint.service.router.routing.DiscoveryClientServiceDiscoveryTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "checkstyle": {
+    "main": {
+      "violations": 0
+    },
+    "test": {
+      "violations": 0
+    }
+  },
+  "sourceSha256": {
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/EnableServiceRouter.java": "b39b64d8ee9e766c8f3fb0847b3505611b4c1f4ae8799df51a4c94e3357b7d31",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/RoutedMethod.java": "294c175a2e39b2bcdbdb36b9103dc36f3b7a949119ca543ce096e88da1211497",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/annotation/RoutedService.java": "3d9626323c77c9441f34e32d6d6f5a41c83d8c8a565ba7a4f22b948dcd298924",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProperties.java": "7bb6f2ca6b51d943f1a70660cb8a14ec0f3b25146800548cdeec7cd70cf79c11",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProxyBeanDefinitionRegistryPostProcessor.java": "4623d3cac885fe234b3df7af7d4f31f80e65ccb65959cbe393bb58e379a67d50",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRegistrar.java": "51998dbd6ef00da542fe16159a347af0537d3753120cdb0fd9a121305f3ae5be",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterRuntimeConfiguration.java": "38571a7b9bffc01739604715424a6a517131f396c670e5ea9a04c2f2dc6f98e1",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/AmbiguousServiceProviderException.java": "da52ed7c886f59d5f94ac7d9332d65a4e2c8bc8c2a9cd2331af42dc301832ddf",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/ServiceRouteNotFoundException.java": "9135b3ee19eef5c20bc801fdd5a09d6a967ec8fd5261d641040d8edfd338a881",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/exception/ServiceRouterException.java": "582673850eecd42001ef23a561b5c3d069dfa890a0ad6c4c023b2a1ef896a5cd",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ClientCredentialsServiceRouterAccessTokenProvider.java": "4c6e6efd96ac336f002b1780261f4af2babc24c4a75c7010956f04eb37aeadcb",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/NoFallback.java": "f6ea4e29cd490689a31c5547803aefb168956829a599f5b08ab088d6f8de91c3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/NoOpServiceRouterAccessTokenProvider.java": "3c50ddba9a97d26385a53a7306f981bd6346096b9b206f0894233a761eece030",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteInvoker.java": "94e37583d2a586ff7b92c425a3297d8a61e2ad1310387f701eb6d5f4f7792766",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteRequest.java": "d24c90242527384f9ad1345d500c7d74f80066c995ac1d096473890ee2919820",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RemoteResponse.java": "8b80c1388795b5cdba1ec104737d84d8c939f23f7b05d8a2fc0e0603bdff669f",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/RestClientRemoteInvoker.java": "99b4a6f4cfc632710672d2a1ba981d9439b4291760141b6ba2bbc85968059078",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcher.java": "7a49f71dd9d612b8c78f2c8dbdea42b78e0dfa668ccf7bf3a70243540de96f40",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/ServiceRouterAccessTokenProvider.java": "eb1820c94a0bef9ef78fd790cc3c68af74a6c2b6627257b19c3aa13d2c9eb642",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/loadbalance/LoadBalancer.java": "529265657cda0170c106a7ca0b1f20b440c83080f6ee26ac092c395e8531b8d3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/loadbalance/RoundRobinLoadBalancer.java": "6b7753d29e1d1b455e838ad38e61e8029d5cfa3cf0cc7969eb9b5ed28c2cb3f5",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedMethodMetadata.java": "1112c7198687986ca273db88d36746951617860b9bb91fc4b590568729e2256d",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedServiceMetadata.java": "069eb569748541447aea9e2d8a98b205eeee6dfbcd9ce06a7743e2f6881bd952",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/metadata/RoutedServiceMetadataResolver.java": "f4fff7427cea18b481296a4951b9a14de3287948f6035a5672e8420ad73e83df",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandler.java": "0aaabbea6ea3f31b177b341b708528cffb3d549fa7a2bf8c17d74e1939b95680",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/proxy/ServiceRouterProxyFactoryBean.java": "4cbca0d6839b282f27237724be39986f201a247ffe285a66cc5b26c396c831ca",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/ApplicationContextLocalServiceRegistry.java": "17b876162fe6b64bf642f023e2139915fcf3c9ae4a2f8aeaaff05495365af413",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/CapabilityRegistry.java": "edea3c72c971cb986a4f68c96ad8eab484397716c2e1475947e1eee6a03f83fe",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/LocalRoutedService.java": "20fcd6d3da4b230be5dde58180a6658e684573541c36a94f3ffc37fa26abbbd2",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/LocalServiceRegistry.java": "71bbd7e5c928a1d8df0fabc1907a99fc9cd2890d29c0c08e07f131b997a2ce72",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/DiscoveryClientServiceDiscovery.java": "340bf40454c781b2383ce7cb00ab7020668dd8247368b8eafe72b4d1fd49e207",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/ServiceDiscovery.java": "5690a48fa6ecf75523062adfeeff026657e9a36148b2d53d44ac19aa48a2dd08",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/routing/ServiceRoute.java": "468e1896a7e34762968e2fe95c1bfafda306fd0daaf7068f8332a82f9e3591d8",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/tracing/TraceContext.java": "4d4a60a621c288f4ea43d6db6919b9c61bb6adafe030a32af2c2c6df3a64daf4",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/web/ServiceRouterController.java": "40240b3946382a9a84f8c9320f0a1fcb58aea1be80e1d0021e1986c2cab7176d",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/config/EnableServiceRouterIntegrationTest.java": "8c7d1d45c1031785e9ed902f40737134403e6f0c8b2896cb5245b6e492ae13e3",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/ClientCredentialsServiceRouterAccessTokenProviderTest.java": "60162c996536c93e0abb5a9db8a8a9e3e91afedf53a409295adc46cd4dc99339",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/RestClientRemoteInvokerTest.java": "b7ebb57acb05e2baca1901c0fc8e8b68f756bf9ccef90a35ec3a6736c2cec506",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/invocation/ServiceInvocationDispatcherTest.java": "56f1d7deb641a794910750cb8943031ee264fdcdaf2810b9d831e3bd11ed5a68",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/loadbalance/RoundRobinLoadBalancerTest.java": "d99e64cfe6402e188c84c3ca9587477250c97c0ad726afe2e61a17bc81ecf3a1",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/metadata/RoutedServiceMetadataResolverTest.java": "bfab26ee2dac34b4fc4cedfa81eaeeb9d7345f4bb531481d124c48c05a95981e",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/RemoteBusinessErrorRoutingTest.java": "d75e7504ceab703c2960924cbbb150f8faec95e0469ac186520ac669a2f063c7",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/proxy/ServiceRouterInvocationHandlerTest.java": "97c048046202c9e80f4a520538b6f9334e4e33296d35573459034c1c7bac3c29",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/registry/ApplicationContextLocalServiceRegistryTest.java": "29edc2b2a9517851ea1399c7ba08fa52c3315f88c7da9ca443383d918dd8ddf2",
+    "simplepoint-service-router/simplepoint-service-router-core/src/test/java/com/simplepoint/service/router/routing/DiscoveryClientServiceDiscoveryTest.java": "66031f08aeeff5d280778ee55dc0d3a8fab7b6796cf3404ff0cf37774f6ea39d"
+  },
+  "limitations": [
+    "Consul adapter compiled; no tests exist in that module.",
+    "Default topology has duplicated auditing providers; ownership/configuration compatibility remains pending.",
+    "No new deployment or standalone validation performed."
+  ]
+}

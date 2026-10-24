@@ -2,10 +2,11 @@ import {formatDateTime} from '@simplepoint/shared/format/temporal';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {App, Avatar, Descriptions, Divider, Empty, Input, Skeleton, Space, Tag, Typography} from 'antd';
 import type {WidgetProps} from '@rjsf/utils';
-import {ApartmentOutlined, IdcardOutlined, LockOutlined, LinkOutlined, RightOutlined,
+import {ApartmentOutlined, IdcardOutlined, LockOutlined, LinkOutlined,
   SafetyCertificateOutlined, UserOutlined} from '@simplepoint/shared/types/icon';
 import {useQueryClient} from '@tanstack/react-query';
 import SForm from '@simplepoint/components/SForm/Lazy';
+import SettingsLayout from '@simplepoint/components/SettingsLayout';
 import type {SFormHandle} from '@simplepoint/components/SForm';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {OssImageUpload} from '@simplepoint/components/SForm/widgets/OssImageUpload';
@@ -104,8 +105,13 @@ export const Profile: React.FC = () => {
   };
   const actions = (buttons: React.ComponentProps<typeof TableActions>['buttons']) =>
     <TableActions selectedKeys={[]} selectedRows={[]} buttons={buttons}/>;
-  return <div className="profile-page"><div className="profile-shell">
-    <aside className="profile-navigation" aria-label={t('profile.nav.title', '个人资料目录')}>
+  return <SettingsLayout label={t('profile.nav.title', '个人资料目录')} activeKey={section} onChange={setSection}
+    sections={[
+      {key: 'about', icon: <UserOutlined/>, label: t('profile.nav.about', '关于我')},
+      {key: 'access', icon: <SafetyCertificateOutlined/>, label: t('profile.nav.access', '资源权限')},
+      {key: 'organization', icon: <ApartmentOutlined/>, label: t('profile.nav.organization', '所在组织')},
+      {key: 'security', icon: <LockOutlined/>, label: t('profile.nav.security', '账户安全')},
+    ]} identity={<>
       <div className="profile-nav-identity">
         <Avatar size={72} src={data?.picture || undefined} icon={!data?.picture ? <UserOutlined/> : undefined}/>
         <div className="profile-nav-info"><strong>{displayName}</strong><small>{data?.email || t('profile.noEmail', '未绑定邮箱')}</small>
@@ -116,14 +122,7 @@ export const Profile: React.FC = () => {
       </div>
       <div className="profile-nav-bio">{data?.profile || t('profile.about.noBio', '还没有填写个人简介。')}</div>
       {!!roles.length && <div className="profile-nav-roles">{roles.map(role => <Tag key={role} color="blue">{role}</Tag>)}</div>}
-      <div className="profile-nav-label">{t('profile.nav.title', '个人资料目录')}</div>
-      <nav className="profile-nav-links">{([
-        ['about', <UserOutlined/>, t('profile.nav.about', '关于我')], ['access', <SafetyCertificateOutlined/>, t('profile.nav.access', '资源权限')],
-        ['organization', <ApartmentOutlined/>, t('profile.nav.organization', '所在组织')], ['security', <LockOutlined/>, t('profile.nav.security', '账户安全')],
-      ] as const).map(([key, icon, label]) => <button key={key} type="button" className={section === key ? 'active' : ''}
-        aria-current={section === key ? 'page' : undefined} onClick={() => setSection(key)}><span>{icon}</span>{label}<RightOutlined/></button>)}</nav>
-    </aside>
-    <main className="profile-main" aria-label={t('profile.nav.title', '个人资料目录')}>
+    </>}>
       {section === 'about' && <section className="profile-content-section" aria-label={t('profile.nav.about', '关于我')}>
         <div className="profile-content-group">
           <div className="profile-group-heading"><h3><IdcardOutlined/> {t('profile.basic', '基本信息')}</h3>
@@ -181,6 +180,5 @@ export const Profile: React.FC = () => {
             loading: busy === 'password', disabled: !!busy, onClick: () => {if (!busyRef.current) pwdForm.current?.submit();}}])}
         </div>
       </section>}
-    </main>
-  </div></div>;
+  </SettingsLayout>;
 };

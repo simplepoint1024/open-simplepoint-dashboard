@@ -3,14 +3,15 @@ package org.simplepoint.plugin.rbac.core.service.impl;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.RoleScopeAssignmentVo;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.DataScopeRepository;
 import org.simplepoint.plugin.rbac.core.api.repository.FieldScopeRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
+import org.simplepoint.plugin.rbac.core.api.repository.RoleScopeBindingRepository;
 import org.simplepoint.security.entity.RoleResourceGrant;
 import org.simplepoint.security.entity.RoleScopeBinding;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -59,9 +60,11 @@ class RoleScopeBindingServiceTest {
 
   @Test
   void conflictingLegacyBindingsRequireExplicitConfirmation() {
-    when(grants.findByRoleIdIn(List.of("r1"))).thenReturn(List.of(grant("t1", "a"), grant("t1", "b"), grant("t2", "foreign")));
+    when(grants.findByRoleIdIn(List.of("r1")))
+        .thenReturn(List.of(grant("t1", "a"), grant("t1", "b"), grant("t2", "foreign")));
     assertThat(service.read("t1", "r1").getLegacyDataScopeIds()).containsExactly("a", "b");
-    assertThatThrownBy(() -> service.save("t1", assignment())).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.save("t1", assignment()))
+        .isInstanceOf(IllegalArgumentException.class);
     verify(bindings, never()).save(any());
     var assignment = assignment();
     assignment.setConfirmLegacyReplacement(true);
@@ -77,7 +80,8 @@ class RoleScopeBindingServiceTest {
     when(bindings.findByTenantIdAndRoleId("t1", "r1")).thenReturn(Optional.of(binding));
     var assignment = assignment();
     assignment.setRevision(1L);
-    assertThatThrownBy(() -> service.save("t1", assignment)).isInstanceOf(OptimisticLockingFailureException.class);
+    assertThatThrownBy(() -> service.save("t1", assignment))
+        .isInstanceOf(OptimisticLockingFailureException.class);
     verify(bindings, never()).save(any());
   }
 
@@ -85,9 +89,11 @@ class RoleScopeBindingServiceTest {
   void policyValidatorRejectsForeignDeletedAndUnknownPolicies() {
     DataScopeRepository data = mock(DataScopeRepository.class);
     FieldScopeRepository fields = mock(FieldScopeRepository.class);
-    ScopePolicyValidator realValidator = new ScopePolicyValidator(data, fields);
-    assertThatThrownBy(() -> realValidator.validate("t1", "foreign", null)).isInstanceOf(AccessDeniedException.class);
-    assertThatThrownBy(() -> realValidator.validate("t1", null, "deleted")).isInstanceOf(AccessDeniedException.class);
+    ScopePolicyValidator realValidator = new ScopePolicyValidator(data, fields, null);
+    assertThatThrownBy(() -> realValidator.validate("t1", "foreign", null))
+        .isInstanceOf(AccessDeniedException.class);
+    assertThatThrownBy(() -> realValidator.validate("t1", null, "deleted"))
+        .isInstanceOf(AccessDeniedException.class);
     verify(data).findByIdAndTenantIdAndDeletedAtIsNull("foreign", "t1");
     verify(fields).findByIdAndTenantIdAndDeletedAtIsNull("deleted", "t1");
   }

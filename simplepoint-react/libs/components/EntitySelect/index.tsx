@@ -1,5 +1,8 @@
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
-import {Button, Select, Spin, Typography} from 'antd';
+import {Button, Input, Select, Spin, Typography} from 'antd';
+import {CheckOutlined, SearchOutlined} from '@simplepoint/shared/types/icon';
+import TableActions from '../Table/Actions';
+import './style.css';
 import {useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import {get, useData} from '@simplepoint/shared/api/methods';
 import {scopedQueryOptions} from '@simplepoint/shared/api/queryScope';
@@ -41,6 +44,8 @@ interface EntitySelectBaseProps {
   maxTagCount?: number | 'responsive';
   autoFocus?: boolean;
   defaultOpen?: boolean;
+  /** A single-selection directory panel using the same authorized paging and hydration contract. */
+  presentation?: 'select' | 'list';
   onBlur?: () => void;
   onFocus?: () => void;
 }
@@ -62,7 +67,7 @@ type EntityRow = {id: string; name?: string | null};
 export default function EntitySelect(props: EntitySelectProps) {
   const scope = useQueryScope();
   return <EntitySelectSession key={JSON.stringify([scope, props.endpoint, props.source?.key, props.source?.pageSize,
-    props.source?.debounceMs, props.source?.minSearchLength, props.filters, props.lookupFilters])} {...props}/>;
+    props.source?.debounceMs, props.source?.minSearchLength, props.filters, props.lookupFilters, props.presentation])} {...props}/>;
 }
 
 function EntitySelectSession(props: EntitySelectProps) {
@@ -73,7 +78,8 @@ function EntitySelectSession(props: EntitySelectProps) {
   const client = useQueryClient();
   const pageSize = Number.isSafeInteger(source?.pageSize) && source!.pageSize! > 0 ? Math.min(source!.pageSize!, 100) : 20;
   const debounceMs = Number.isSafeInteger(source?.debounceMs) && source!.debounceMs! > 0 ? Math.min(source!.debounceMs!, 60000) : 250;
-  const [open, setOpen] = useState(props.defaultOpen ?? false);
+  const inline = props.presentation === 'list' && !props.multiple;
+  const [open, setOpen] = useState(inline || props.defaultOpen || false);
   const [search, setSearch] = useState('');
   const [keyword, setKeyword] = useState('');
   const [selected, setSelected] = useState<EntityOption[]>([]);
@@ -130,6 +136,41 @@ function EntitySelectSession(props: EntitySelectProps) {
   const loadPrevious = () => {if (mayBrowse && !pages.isFetching && pages.hasPreviousPage) void pages.fetchPreviousPage();};
   const failure = pages.error;
   const unavailable = values.filter(id => !resolved.has(id));
+  if (inline && !props.multiple) return <div className={`sp-entity-list ${className ?? ''}`}>
+    <Input id={id} autoFocus={props.autoFocus} prefix={<SearchOutlined/>} allowClear disabled={disabled}
+      aria-label={ariaLabel} placeholder={placeholder} value={search} onChange={event => setSearch(event.target.value)}
+      onKeyDown={event => {if (event.key === 'ArrowDown') {
+        const first = event.currentTarget.closest('.sp-entity-list')?.querySelector<HTMLButtonElement>('[role="option"]:not(:disabled)');
+        if (first) {event.preventDefault(); first.focus();}
+      }}}/>
+    <div className="sp-entity-list-options" role="listbox" aria-label={ariaLabel} aria-busy={pages.isFetching || search !== keyword}
+      onKeyDown={event => {
+        const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]:not(:disabled)')];
+        const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+          : event.key === 'ArrowDown' ? Math.min(index + 1, buttons.length - 1) : event.key === 'ArrowUp' ? Math.max(index - 1, 0) : undefined;
+        if (next !== undefined) {event.preventDefault(); buttons[next]?.focus();}
+      }}>
+      {visible.map(option => <button key={option.value} type="button" role="option" aria-selected={value === option.value}
+        disabled={disabled || !active || !!failure || search !== keyword || option.disabled}
+        onClick={() => {if (active && !disabled && !failure) {setSelected([option]); props.onChange?.(option.value, option);}}}>
+        <span>{props.renderOption?.(option) ?? option.label}</span>{value === option.value && <CheckOutlined aria-hidden="true"/>}
+      </button>)}
+      {!visible.length && <div className="sp-entity-list-state" role="status">{pages.isFetching || search !== keyword ? <Spin size="small"/>
+        : failure ? t('table.loadFail', '加载失败') : t('form.remoteSelect.empty', '没有匹配的数据')}</div>}
+    </div>
+    {failure && visible.length > 0 && <Typography.Text type="danger" role="alert">{t('table.loadFail', '加载失败')}</Typography.Text>}
+    {unavailable.length > 0 && lookup.error && <Typography.Text type="warning" role="status">
+      {t('form.remoteSelect.selectedLoadFailed', '已选项加载失败，原值已保留')}
+    </Typography.Text>}
+    <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+      ...(failure ? [{key: 'retry', sort: 0, icon: 'ReloadOutlined', text: t('table.retry', '重试'),
+        disabled: !mayBrowse || pages.isFetching, onClick: () => void (pages.isFetchNextPageError ? pages.fetchNextPage() : pages.refetch())}] : [
+        ...(pages.hasPreviousPage ? [{key: 'previous', sort: 0, icon: 'UpOutlined', text: t('form.remoteSelect.previous', '加载更早的结果'), disabled: pages.isFetching, onClick: loadPrevious}] : []),
+        ...(pages.hasNextPage ? [{key: 'more', sort: 1, icon: 'DownOutlined', text: t('form.remoteSelect.more', '加载更多'), disabled: pages.isFetching, onClick: loadMore}] : []),
+      ]),
+    ]}/>
+  </div>;
   return <><Select<string | string[]>
     id={id} className={className} aria-label={ariaLabel} style={{width: '100%'}} showSearch filterOption={false} autoFocus={props.autoFocus}
     allowClear={allowClear} disabled={disabled} value={value || undefined} placeholder={placeholder} status={props.status}

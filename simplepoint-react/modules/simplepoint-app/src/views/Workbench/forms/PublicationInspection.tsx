@@ -17,7 +17,7 @@ export default function PublicationInspection({inspection, onViewData}: {
     <Typography.Text type="secondary">{t('app.publication.checkedAt', '检查时间：{time}',
       {time: formatDateTime(inspection.checkedAt)})}</Typography.Text>
     <DataTable rowKey="id" storageKey="app.form.publication.inspection" dataSource={inspection.issues}
-      pagination={{pageSize: 10}} settings={false} columns={[
+      pagination={{defaultPageSize: 50}} settings={false} columns={[
         {key: 'fields', title: t('app.publication.issueFields', '字段'), dataIndex: 'fields', render: (fields: string[]) => fields.join('、')},
         {key: 'kind', title: t('app.publication.issueKind', '问题'), dataIndex: 'kind', render: (kind: string) => kind === 'REQUIRED'
           ? t('app.publication.issueRequired', '缺少必填值') : t('app.publication.issueInvalid', '值不符合允许范围')},

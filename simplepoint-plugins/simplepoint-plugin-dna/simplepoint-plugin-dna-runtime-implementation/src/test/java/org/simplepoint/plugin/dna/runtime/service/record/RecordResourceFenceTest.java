@@ -1,6 +1,7 @@
 package org.simplepoint.plugin.dna.runtime.service.record;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -50,6 +51,29 @@ class RecordResourceFenceTest {
   @AfterEach
   void cleanup() {
     ResourcePolicyContext.clear(); factory.close();
+  }
+
+  @Test
+  void backendReadsRejectOfflineAndStaleGenerationsBeforeOpeningTheTarget() {
+    var provider = mock(org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider.class);
+    var engine = mock(org.simplepoint.data.calcite.core.query.CalciteQueryEngine.class);
+    var backend = new RuntimeCalciteRecordBackend(provider, engine);
+    backend.setResourceFence(fence);
+    var model = mock(RuntimeRecordModel.class);
+    when(model.physicalModelId()).thenReturn("model");
+    var access = mock(RecordAccessContext.class);
+    when(access.actor()).thenReturn(new org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor("tenant", "actor"));
+    when(access.resourceGeneration()).thenReturn(1L);
+    tx.executeWithoutResult(status -> em.find(PhysicalResourceProjectionEntity.class, "projection").setFormallyOffline(true));
+    assertThatThrownBy(() -> backend.read(model, java.util.List.of(), access, 30_000,
+        session -> {throw new AssertionError("An offline read must not run");})).isInstanceOf(AccessDeniedException.class);
+    tx.executeWithoutResult(status -> {
+      var row = em.find(PhysicalResourceProjectionEntity.class, "projection");
+      row.setFormallyOffline(false); row.setGeneration(2);
+    });
+    assertThatThrownBy(() -> backend.read(model, java.util.List.of(), access, 30_000,
+        session -> {throw new AssertionError("A stale read must not run");})).isInstanceOf(AccessDeniedException.class);
+    verifyNoInteractions(provider, engine);
   }
 
   @Test

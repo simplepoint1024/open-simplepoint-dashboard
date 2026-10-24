@@ -2,11 +2,12 @@ package org.simplepoint.plugin.workflow.api.model;
 
 import java.time.Instant;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 
 /** A personal matter with server-derived row operations, independent of management navigation. */
 @TableQuery(
-    maxPageSize = 100,
+    maxPageSize = TablePagination.MAX_PAGE_SIZE,
     value = {
       @QueryField("title"), @QueryField("definitionName"), @QueryField("definitionVersion"),
       @QueryField("businessKey"), @QueryField("starterName"), @QueryField("status"),

@@ -19,7 +19,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.sql.DataSource;
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.data.calcite.core.query.CalciteQueryRequest;
 import org.simplepoint.data.calcite.core.query.CalciteSchemaConfigurer;
@@ -41,6 +40,7 @@ import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotC
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PostgresqlRuntimeSchemaDialect;
 import org.simplepoint.plugin.dna.runtime.service.schema.RecordWriteFenceProvisioner;
+import org.simplepoint.plugin.dna.runtime.service.schema.RecordCalculationProvisioner;
 import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
@@ -79,6 +79,12 @@ class RecordWriteFenceDatabaseTest {
       verifyCancellationWins(fixture);
       verifyPublicationWins(fixture);
       verifyUncommittedCancellation(fixture);
+      RecordCalculationDatabaseAssertions.verify(fixture.source(), fixture.fence(),
+          connection -> catalog(fixture, connection));
+      RecordPublicationDatabaseAssertions.verify(fixture.source(), fixture.fence(),
+          connection -> catalog(fixture, connection));
+      RecordPublicationStagesDatabaseAssertions.verify(fixture.source(), fixture.fence(),
+          connection -> catalog(fixture, connection));
     } finally {
       try (Connection connection = source.getConnection(); var statement = connection.createStatement()) {
         statement.execute("DROP " + (postgres ? "SCHEMA " : "DATABASE ") + namespace + (postgres ? " CASCADE" : ""));
@@ -109,12 +115,15 @@ class RecordWriteFenceDatabaseTest {
     var provisioner = new RecordWriteFenceProvisioner(new JdbcPhysicalSchemaBackend(provider, codec));
     provisioner.prepare(target);
     provisioner.prepare(target);
+    var calculations = new RecordCalculationProvisioner(new JdbcPhysicalSchemaBackend(provider, codec));
+    calculations.prepare(target);
+    calculations.prepare(target);
     String records = core.qualifyName(postgres ? null : namespace, postgres ? namespace : null, "records", context);
     try (Connection connection = source.getConnection(); var statement = connection.createStatement()) {
       statement.execute("CREATE TABLE " + records + " (id INTEGER PRIMARY KEY)");
     }
     return new Fixture(source, new RecordWriteFence(dialect.recordWriteFenceSql(core, context, target)),
-        catalog, postgres ? namespace : null);
+        catalog, postgres ? namespace : null, dialect);
   }
 
   private static void verifyTransactionAndOwnership(final Fixture fixture) throws Exception {
@@ -376,8 +385,17 @@ class RecordWriteFenceDatabaseTest {
   }
 
   private static CalciteSchemaConfigurer catalog(final Fixture fixture, final Connection connection) {
-    return root -> root.add("runtime", JdbcSchema.create(root, "runtime", new TransactionConnectionDataSource(connection),
-        fixture.catalog(), fixture.schema()));
+    try {
+      fixture.dialect().prepareRecordTransaction(connection);
+    } catch (SQLException failure) {
+      throw new IllegalStateException("Cannot prepare the physical record transaction", failure);
+    }
+    return new RuntimeRecordCatalog(new TransactionConnectionDataSource(connection), fixture.dialect(),
+        fixture.catalog(), fixture.schema(), java.util.Set.of("records",
+            org.simplepoint.plugin.dna.runtime.service.schema.RecordCalculationSchema.TABLE,
+            org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationSchema.TABLE,
+            org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationStageSchema.TABLE,
+            org.simplepoint.plugin.dna.runtime.service.schema.RecordPublicationStageSchema.CHUNKS));
   }
 
   private static long recordCount(final Fixture fixture, final Connection connection) {
@@ -386,6 +404,6 @@ class RecordWriteFenceDatabaseTest {
     return ((Number) rows.rows().getFirst().getFirst()).longValue();
   }
 
-  private record Fixture(DataSource source, RecordWriteFence fence, String catalog, String schema) {
+  private record Fixture(DataSource source, RecordWriteFence fence, String catalog, String schema, RuntimeSchemaDialect dialect) {
   }
 }

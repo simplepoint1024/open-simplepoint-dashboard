@@ -1,8 +1,10 @@
 package com.simplepoint.service.router.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.simplepoint.service.router.config.ServiceRouterProperties;
+import com.simplepoint.service.router.exception.AmbiguousServiceProviderException;
 import com.simplepoint.service.router.metadata.RoutedServiceMetadata;
 import java.net.URI;
 import java.util.List;
@@ -143,6 +145,69 @@ class DiscoveryClientServiceDiscoveryTest {
     ).get(0);
 
     assertThat(route.serviceId()).isEqualTo("sample");
+  }
+
+  @Test
+  void rejectsCompetingHostsAcrossMappingAndCapabilityAdvertisements() {
+    var client = new FakeDiscoveryClient(Map.of(
+        "standalone", List.of(fakeInstance("standalone",
+            Map.of("sp-router-mappings", "sample.GreetingService:1.0=standalone"))),
+        "sample", List.of(fakeInstance("sample",
+            Map.of("sp-router-capabilities", "sample.GreetingService:1.0")))));
+
+    assertThatThrownBy(() -> new DiscoveryClientServiceDiscovery(
+        client, new ServiceRouterProperties()).discover(greeting()))
+        .isInstanceOf(AmbiguousServiceProviderException.class)
+        .hasMessage("Ambiguous providers for sample.GreetingService:1.0: [sample, standalone]");
+  }
+
+  @Test
+  void retainsAllReplicasOfOneHostAndExcludesIncompatibleVersions() {
+    Map<String, String> capability =
+        Map.of("sp-router-capabilities", "sample.GreetingService:1.0");
+    var client = new FakeDiscoveryClient(Map.of(
+        "standalone", List.of(
+            new FakeServiceInstance("standalone", "one", "127.0.0.1", 8080,
+                false, URI.create("http://127.0.0.1:8080"), capability),
+            new FakeServiceInstance("standalone", "two", "127.0.0.1", 8081,
+                false, URI.create("http://127.0.0.1:8081"), capability),
+            fakeInstance("standalone",
+                Map.of("sp-router-capabilities", "sample.GreetingService:2.0"))),
+        "other-version", List.of(fakeInstance("other-version",
+            Map.of("sp-router-capabilities", "sample.GreetingService:2.0")))));
+
+    assertThat(new DiscoveryClientServiceDiscovery(
+        client, new ServiceRouterProperties()).discover(greeting()))
+        .extracting(ServiceRoute::instanceId).containsExactly("one", "two");
+  }
+
+  @Test
+  void rejectsMappingThatNamesAnotherHost() {
+    var client = new FakeDiscoveryClient(Map.of(
+        "wrong-host", List.of(fakeInstance("wrong-host",
+            Map.of("sp-router-mappings", "sample.GreetingService:1.0=another-host"))),
+        "sample", List.of(fakeInstance("sample", Map.of()))));
+
+    assertThat(new DiscoveryClientServiceDiscovery(
+        client, new ServiceRouterProperties()).discover(greeting()))
+        .extracting(ServiceRoute::serviceId).containsExactly("sample");
+  }
+
+  @Test
+  void explicitVersionSelectionWinsWithoutFallingBackToAnotherHost() {
+    var properties = new ServiceRouterProperties();
+    properties.getRoutes().put("sample.GreetingService:1.0", "unavailable-host");
+    var client = new FakeDiscoveryClient(Map.of(
+        "sample", List.of(fakeInstance("sample",
+            Map.of("sp-router-capabilities", "sample.GreetingService:1.0")))));
+
+    assertThat(new DiscoveryClientServiceDiscovery(client, properties).discover(greeting()))
+        .isEmpty();
+  }
+
+  private static RoutedServiceMetadata greeting() {
+    return new RoutedServiceMetadata(
+        "org.sample.GreetingService", "sample.GreetingService", "1.0", 3000L, 0, "", List.of());
   }
 
   private static ServiceInstance fakeInstance(final String serviceId, final Map<String, String> metadata) {

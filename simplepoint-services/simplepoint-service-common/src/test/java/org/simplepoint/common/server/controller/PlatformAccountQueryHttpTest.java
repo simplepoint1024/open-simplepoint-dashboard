@@ -22,7 +22,7 @@ import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.*;
 import org.simplepoint.core.handler.GlobalExceptionHandler;
 import org.simplepoint.data.json.schema.configuration.JsonSchemaAutoConfiguration;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.core.rest.controller.PlatformAccountController;
 import org.simplepoint.plugin.rbac.core.service.impl.PlatformAccountServiceImpl;
 import org.simplepoint.plugin.rbac.core.service.impl.PlatformStepUpService;
@@ -118,7 +118,7 @@ class PlatformAccountQueryHttpTest {
     var service =
         new PlatformAccountServiceImpl(
             em,
-            mock(UsersService.class),
+            mock(UserManagementService.class),
             mock(PlatformStepUpService.class),
             mock(TenantRepository.class),
             mock(ResourceAuthorizationVersionService.class),
@@ -251,7 +251,7 @@ class PlatformAccountQueryHttpTest {
 
   @Test
   void rolesAreLoadedInOneBoundedPageBatchAndAccountsAreNotHydrated() throws Exception {
-    for (int size : List.of(20, 50)) {
+    for (int size : List.of(50, 100, 200, 500)) {
       em.clear();
       factory.getStatistics().clear();
       statements.clear();
@@ -262,7 +262,7 @@ class PlatformAccountQueryHttpTest {
                   .param("sort", "revision,desc"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.totalElements").value(240))
-          .andExpect(jsonPath("$.content.length()").value(size))
+          .andExpect(jsonPath("$.content.length()").value(Math.min(size, 240)))
           .andExpect(jsonPath("$.content[0].name").value("Account239"));
       assertTrue(
           factory.getStatistics().getPrepareStatementCount() <= 5,
@@ -368,7 +368,7 @@ class PlatformAccountQueryHttpTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("INVALID_QUERY"));
       }
-      mvc.perform(query(suffix).param("size", "51")).andExpect(status().isBadRequest());
+      mvc.perform(query(suffix).param("size", "501")).andExpect(status().isBadRequest());
       mvc.perform(query(suffix).param("page", "100001")).andExpect(status().isBadRequest());
       mvc.perform(query(suffix).param("sort", "id,asc", "id,desc"))
           .andExpect(status().isBadRequest());
@@ -445,7 +445,7 @@ class PlatformAccountQueryHttpTest {
       var result =
           mvc.perform(query(name.endsWith("Audit") ? "/audit/schema" : "/schema"))
               .andExpect(status().isOk())
-              .andExpect(jsonPath("$.schema['x-query'].maxPageSize").value(50))
+              .andExpect(jsonPath("$.schema['x-query'].maxPageSize").value(500))
               .andExpect(jsonPath("$.schema['x-query'].fields.password").doesNotExist())
               .andReturn();
       String json = result.getResponse().getContentAsString(StandardCharsets.UTF_8);

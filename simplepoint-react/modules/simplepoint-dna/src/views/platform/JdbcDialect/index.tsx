@@ -423,7 +423,7 @@ const App = () => {
                   loading={loading}
                   columns={dialectColumns}
                   dataSource={loadedDialects}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
+                  pagination={{ defaultPageSize: 50, showSizeChanger: true }}
                   scroll={{ x: 1600 }}
                 />
               </>
@@ -467,7 +467,7 @@ const App = () => {
                   }}
                   columns={sourceColumns}
                   dataSource={sources}
-                  pagination={{ pageSize: 10, showSizeChanger: true }}
+                  pagination={{ defaultPageSize: 50, showSizeChanger: true }}
                   scroll={{ x: 1600 }}
                 />
               </>

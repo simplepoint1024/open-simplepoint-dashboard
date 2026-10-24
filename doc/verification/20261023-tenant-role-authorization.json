@@ -1,0 +1,124 @@
+{
+  "verifiedAt": "2026-10-23T07:42:08.424657+00:00",
+  "status": "partial-S4-tenant-role-configuration-and-direct-grants",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Role resource list, SQL filtering/counts, subtree preview/write and bounded context rows now use only the eligible tenant directory; no platform Resource or old package relation query",
+    "Eligible executable entries and structural ancestors are computed by the tenant directory readiness, scope, lifecycle, hierarchy and time balance rules; empty groups are excluded",
+    "Role editor permission descriptors and display field policies bind to TenantResource; policy selections retain tenant and policy ownership validation",
+    "Direct grants require tenant-local eligibility and never use a platform fallback; granting and revoking use tenant then role locks and check the role lock result",
+    "Tenant grant lock rejects deleted tenants even when a stale entity is present in the persistence context and rejects unprepared directories",
+    "Role resource management scope resolution and grant read/write endpoints require explicit TENANT/PERSONAL selection with tenant ID and valid user; no default-personal-space lookup from platform/missing context",
+    "No resource synchronization version, old/new resource comparison or resource rollback was added; existing role-edit conflict checks remain"
+  ],
+  "validation": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation": {
+      "suites": [
+        {
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "name": "org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest",
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.RolesServiceImplTest.xml",
+          "reportSha256": "3dc52b061db482c39e81156599e125e011aa6fea55bb9145e0a0ebbc03b35566"
+        }
+      ],
+      "database": "Unit tests with mocked repositories"
+    },
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation": {
+      "suites": [
+        {
+          "tests": 20,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+          "reportSha256": "808c3595ff4fd60019a216227507f423dd287c5c0be19cc04c0b3c28e06b5a19"
+        },
+        {
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+          "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest.xml",
+          "reportSha256": "2abf1f2775415d1a810d040c54911f2da64749a1036fad5f6ce1348961e0e6b8"
+        }
+      ],
+      "database": "PostgreSQL 17, exact identity V1-V16 migrations and Hibernate validate"
+    },
+    "simplepoint-services/simplepoint-service-common": {
+      "suites": [
+        {
+          "tests": 26,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "name": "org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest",
+          "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.RoleResourceConfigurationHttpTest.xml",
+          "reportSha256": "8013b25abb75b4a2cc08efa873e15630debf9d8c9c667b1db739a6f49ddcd414"
+        },
+        {
+          "tests": 12,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "name": "org.simplepoint.common.server.controller.OrganizationSelectionHttpTest",
+          "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.OrganizationSelectionHttpTest.xml",
+          "reportSha256": "c1d43b43a5d6312a0e77d34cbe094fa163c935664c5e6e8ab36533e5c4af4a12"
+        }
+      ],
+      "database": "H2 MockMvc fixture"
+    }
+  },
+  "totals": {
+    "tests": 93,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "postgresTests": 35,
+  "postgresLockEvidence": "Two independent database connections: tenant scalar pessimistic write lock causes competing SELECT FOR UPDATE NOWAIT to fail with SQLSTATE 55P03; after release the same competitor succeeds.",
+  "qualityGates": {
+    "checkstyle": "Passed for nine listed Java files using scoped Gradle source configuration",
+    "scopedFiles": [
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/RoleResourceConfigurationService.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RoleResourceConfigurationServiceImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RolesServiceImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/RolesServiceImplTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java",
+      "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/RoleResourceConfigurationHttpTest.java"
+    ],
+    "verifyModuleBoundaries": "Passed",
+    "fixtureOutsideScopedStyle": "OrganizationSelectionHttpTest changed only to supply the tenant authorization catalog and current constructor; its 12 tests passed"
+  },
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 SP_TENANT_PACKAGE_TEST_POSTGRES_URL=jdbc:postgresql://127.0.0.1:33279/postgres SP_TENANT_PACKAGE_TEST_POSTGRES_USER=postgres ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test --tests \"*TenantResourceCatalogReadTest\" --tests \"*TenantResourceCatalogImplTest\" :simplepoint-services:simplepoint-service-common:test --tests \"*RoleResourceConfigurationHttpTest\" --tests \"*OrganizationSelectionHttpTest\" :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test --tests \"*RolesServiceImplTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test --tests \"*RolesServiceImplTest\" :simplepoint-services:simplepoint-service-common:test --tests \"*RoleResourceConfigurationHttpTest\" --tests \"*OrganizationSelectionHttpTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew -I /tmp/simplepoint-role-checkstyle.init.gradle :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-api:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:checkstyleTest :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:checkstyleTest :simplepoint-services:simplepoint-service-common:checkstyleTest verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "limitations": [
+    "RoleResourceConfigurationHttpTest uses real SQL queries and HTTP serialization but mocks RoleService grant mutations; this does not prove the complete role write transaction or deployment topology",
+    "Tenant lock is exercised on PostgreSQL; direct role service repositories are mocked separately",
+    "FieldScopeCatalog and RegisteredPermissionPages still require migration for field and expression discovery; runtime resource matching, managed registration, lifecycle event and UI paths remain incomplete",
+    "No production database migration, deployment, commit or push; intermediate state is not deployable",
+    "Counts are the five latest selected suites, not an accumulated count of repeated H2/PostgreSQL runs"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-api/src/main/java/org/simplepoint/plugin/rbac/core/api/service/RoleResourceConfigurationService.java": "c1610ce289324ffc22bab0393d58c2f863ed8e51854ba7b4b6e9ea0e82c2c020",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RoleResourceConfigurationServiceImpl.java": "15805e3b3ddf48a443799b00447bd1695c71a37c184d43365253406b77d5c88e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RolesServiceImpl.java": "69c99226da64deaf679574fe52f5dc4dec60431d3dd4d45eb1f751cd2fc8aa3f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/RolesServiceImplTest.java": "28f93122fcdd284b15693bc5cd0cbe960530144b1a8b5726ab003e4f2c4c8b7d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java": "a0f9d4dd6a4767ae78aa75f9e4cc2f89e70bc6d93556d18b00cc61cb02da6293",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "808400b51f083a0d335f372cc2650a0e3cd968ba5d002d7b30aecb43bfb2867c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "37a87bf6cd45111f0290a1c5d900e04daf0b17a55c16cc26597cbcb2e914074f",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "7c4cf5b6fae9aafdadce5440d7b3b5e578d083431a8d9c2813b6acafb377fc78",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/RoleResourceConfigurationHttpTest.java": "312de8ac215bed423bccacf2c43e1309ccfda82276dfbc0fa0fdfe34064d6f77",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/OrganizationSelectionHttpTest.java": "69485661f1ae84bbacff5437387cf739a8f3aeedc36e8553dbd128f34eaa673b"
+  }
+}

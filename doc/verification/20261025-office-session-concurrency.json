@@ -1,0 +1,293 @@
+{
+  "date": "2026-10-25",
+  "task": "人力办公偶发跳回登录、500 与首次并发 CSRF 请求竞态修复",
+  "status": "implemented_deployed_verified",
+  "rootCauses": [
+    {
+      "deployment": "microservices",
+      "cause": "登录后首次 /csrf 保存令牌时轮换 Redis 会话 ID；并发结构/数据请求持有旧 ID，出现登录重定向或 Session was invalidated 500。",
+      "beforeFixReproduction": {
+        "200": 42,
+        "302": 9,
+        "500": 9
+      }
+    },
+    {
+      "deployment": "standalone",
+      "cause": "认证清除登录前令牌后，多个首次 /csrf 请求各自生成令牌，互相覆盖造成后续合法查询偶发 403。",
+      "beforeFixReproduction": [
+        {
+          "round": 0,
+          "distinctSessionTokens": 1,
+          "queryStatus": 200
+        },
+        {
+          "round": 1,
+          "distinctSessionTokens": 3,
+          "queryStatus": 403
+        },
+        {
+          "round": 2,
+          "distinctSessionTokens": 4,
+          "queryStatus": 403
+        },
+        {
+          "round": 3,
+          "distinctSessionTokens": 4,
+          "queryStatus": 403
+        },
+        {
+          "round": 4,
+          "distinctSessionTokens": 4,
+          "queryStatus": 403
+        }
+      ]
+    }
+  ],
+  "fixes": [
+    "WebFlux 在登录成功重定向之前通过配置的同一个 CSRF repository 生成并保存新令牌，保留框架会话 ID 轮换。",
+    "Servlet 登录完成处理器解析实际 CSRF 过滤器的延迟令牌后再保存完成状态，保持原 repository、令牌掩码和校验。",
+    "两端会话完成标记升级到 completedAt.v2；旧会话需重新登录一次，初始化失败不建立完成状态。"
+  ],
+  "tests": {
+    "gateway": {
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "authorization": {
+      "tests": 100,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gatewayRedisConcurrency": {
+      "isolatedRealRedis": true,
+      "parallelRequests": 48,
+      "reproducesOldFailure": true
+    },
+    "servletSecurityFilterConcurrency": {
+      "parallelRequests": 24,
+      "realPasswordLogin": true,
+      "preLoginTokenRejected": true
+    },
+    "frontendPackaging": "Both installDist builds used frontend packaging and passed verifyFrontendDistribution."
+  },
+  "liveAcceptance": [
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "at": "2026-10-24T17:15:25.404Z",
+      "invalidAndMissingCsrfRejected": true,
+      "logoutInvalidatesSession": true,
+      "freshLoginRounds": 20,
+      "actors": [
+        "admin",
+        "employee"
+      ],
+      "parallelReads": 220,
+      "readOnlyListQueries": 60,
+      "sessionRemainsStable": true,
+      "browser": {
+        "origin": "https://home.simplepoint.online:8000",
+        "at": "2026-10-24T17:16:40.752Z",
+        "freshLoginWithoutPreflightCsrf": true,
+        "pages": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "navigationRounds": 3,
+        "formDrawersOpened": 9,
+        "savedUrlReloads": 2,
+        "loginRedirects": [],
+        "httpErrors": [],
+        "consoleErrors": [],
+        "businessWrites": 0
+      }
+    },
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "at": "2026-10-24T17:15:26.640Z",
+      "invalidAndMissingCsrfRejected": true,
+      "logoutInvalidatesSession": true,
+      "freshLoginRounds": 20,
+      "actors": [
+        "admin",
+        "employee"
+      ],
+      "parallelReads": 220,
+      "readOnlyListQueries": 60,
+      "sessionRemainsStable": true,
+      "browser": {
+        "origin": "https://single.simplepoint.online:8000",
+        "at": "2026-10-24T17:15:52.645Z",
+        "freshLoginWithoutPreflightCsrf": true,
+        "pages": [
+          "会议室申请",
+          "日报填写",
+          "财务报销"
+        ],
+        "navigationRounds": 3,
+        "formDrawersOpened": 9,
+        "savedUrlReloads": 2,
+        "loginRedirects": [],
+        "httpErrors": [],
+        "consoleErrors": [],
+        "businessWrites": 0
+      }
+    }
+  ],
+  "deployment": {
+    "updatedServices": [
+      "host",
+      "authorization",
+      "standalone"
+    ],
+    "health": [
+      {
+        "service": "standalone",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "common",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "authorization",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "host",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "app",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "dna",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "workflow",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "ai",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "auditing",
+        "healthy": true,
+        "imageMatches": true
+      },
+      {
+        "service": "mcp-gateway",
+        "healthy": true,
+        "imageMatches": true
+      }
+    ],
+    "credentials": {
+      "currentDeploymentAuthenticates": true,
+      "previousDeploymentCredentialRejected": true
+    },
+    "previousDeploymentCredentialsRetired": 21
+  },
+  "preservation": {
+    "resourceIdsParentsAndOwnersUnchanged": 322,
+    "roleGrantsUnchanged": 332,
+    "customizedTenantResourcesUnchanged": 2
+  },
+  "assets": [
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "hostFilesVerified": 350,
+      "remotes": [
+        {
+          "module": "common",
+          "assetCount": 109
+        },
+        {
+          "module": "audit",
+          "assetCount": 49
+        },
+        {
+          "module": "dna",
+          "assetCount": 79
+        },
+        {
+          "module": "ai",
+          "assetCount": 53
+        },
+        {
+          "module": "app",
+          "assetCount": 50
+        },
+        {
+          "module": "workflow",
+          "assetCount": 61
+        }
+      ],
+      "passed": true
+    },
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "hostFilesVerified": 350,
+      "remotes": [
+        {
+          "module": "common",
+          "assetCount": 109
+        },
+        {
+          "module": "audit",
+          "assetCount": 49
+        },
+        {
+          "module": "dna",
+          "assetCount": 79
+        },
+        {
+          "module": "ai",
+          "assetCount": 53
+        },
+        {
+          "module": "app",
+          "assetCount": 50
+        },
+        {
+          "module": "workflow",
+          "assetCount": 61
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "serverLogs": [
+    {
+      "service": "simplepoint203-host-1",
+      "sessionInvalidatedErrors": 0,
+      "loggedErrorEntries": 0
+    },
+    {
+      "service": "simplepoint203-authorization-1",
+      "sessionInvalidatedErrors": 0,
+      "loggedErrorEntries": 0
+    },
+    {
+      "service": "simplepoint-single",
+      "sessionInvalidatedErrors": 0,
+      "loggedErrorEntries": 1,
+      "otherObservedError": "页面刷新/关闭通知 SSE 连接后，心跳清理尝试完成已结束的 AsyncContext；与本次会话失效不同，未造成验收页面的 HTTP 错误，本次未修改通知模块。"
+    }
+  ],
+  "scope": "验证首次登录并发、三个办公业务列表、表单抽屉、保存 URL 刷新、CSRF 拒绝和退出；未创建/修改/删除业务记录，未重新执行完整审批流程。"
+}

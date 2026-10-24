@@ -8,6 +8,7 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.simplepoint.core.query.TablePagination;
 
 /** Durable personal inbox entry with an idempotent business-source identity. */
 @Data
@@ -32,7 +33,7 @@ import lombok.EqualsAndHashCode;
       @org.simplepoint.core.query.QueryField("source"),
       @org.simplepoint.core.query.QueryField("createdAt")
     },
-    maxPageSize = 100)
+    maxPageSize = TablePagination.MAX_PAGE_SIZE)
 public class PersonalMessage extends OwnedRecord {
   @Column(nullable = false, length = 200)
   private String title;

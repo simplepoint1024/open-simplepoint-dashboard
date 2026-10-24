@@ -156,6 +156,28 @@ class ApplicationFormRuntimeServiceImplTest {
   }
 
   @Test
+  void historicalResolverRetainsCompleteCurrentCalculationScopeWithoutExposingNewInputs() throws Exception {
+    authorize(Set.of("app.runtime.page.one"));
+    var calculated = new FormFieldDefinition("name-field", "name", "New name", "Name", FormFieldType.STRING,
+        FormStorageMode.COMPUTED, false, false, 120, null, null, null, List.of(), null, null, null,
+        new org.simplepoint.plugin.app.form.api.model.FormCalculation("1", "UPPER([new-source])"));
+    var dependency = new FormFieldDefinition("new-source", "source", "Source", "Source", FormFieldType.STRING,
+        FormStorageMode.STORED, false, false, 120, null, null, null, List.of());
+    var original = document();
+    var governing = new ApplicationFormDocument("1", List.of(calculated, dependency), List.of(), original.scenes(), List.of());
+    persistPolicyVersion(2, governing, true);
+    session.clear();
+    var resolved = resolver.resolve("app-a", "page-a");
+    assertThat(resolved.calculationDocument()).isEqualTo(governing);
+    assertThat(resolved.document().fields()).extracting(FormFieldDefinition::fieldId).containsExactly("name-field");
+    var view = runtime.page("app-a", "page-a");
+    assertThat(view.document().fields()).singleElement().satisfies(field -> {
+      assertThat(field.fieldId()).isEqualTo("name-field"); assertThat(field.calculated()).isTrue();
+    });
+    assertThat(new ObjectMapper().writeValueAsString(view)).doesNotContain("new-source", "UPPER", "calculationDocument");
+  }
+
+  @Test
   void missingActivatedPolicyFailsClosedRatherThanReopeningHistoricalWrites() {
     authorize(Set.of("app.runtime.page.one"));
     for (Integer policyVersion : Arrays.asList(null, 0, 2)) {
@@ -169,16 +191,19 @@ class ApplicationFormRuntimeServiceImplTest {
   }
 
   private void persistPolicyVersion(final int number, final FormFieldWritePolicy policy, final boolean active) {
+    var original = document();
+    persistPolicyVersion(number, new ApplicationFormDocument("1", policyFields(policy, "New label"),
+        original.indexes(), original.scenes(), original.rules()), active);
+  }
+
+  private void persistPolicyVersion(final int number, final ApplicationFormDocument document, final boolean active) {
     session.beginTransaction();
     var version = new ApplicationFormVersionEntity();
     version.setId("version-" + number);
     version.setTenantId("tenant-a");
     version.setFormId("form-a");
     version.setVersionNumber(number);
-    var original = document();
-    var encoded = codec.encode(new ApplicationFormDocument("1",
-        policyFields(policy, "New label"),
-        original.indexes(), original.scenes(), original.rules()));
+    var encoded = codec.encode(document);
     version.setDocumentJson(encoded.json());
     version.setChecksum(encoded.checksum());
     version.setStorageSchemaJson("{}");

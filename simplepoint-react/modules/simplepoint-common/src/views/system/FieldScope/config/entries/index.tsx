@@ -25,7 +25,7 @@ function ResourceBranch({parentId, selected, choose, disabled, canInteract, dept
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const query = useOwnedData(['field-resource-tree', parentId, page], ({signal}) => fetchFieldResourceNodes(parentId, page - 1, signal),
     {enabled: !disabled, staleTime: 30_000, retry: false});
-  const labels = useMemo(() => permissionLabels(t), [t]);
+  const labels = useMemo(() => permissionLabels(t, undefined, locale), [t, locale]);
   const current = () => !disabled && active && operation.current() && operation.isSelected() && pageRef.current === page && canInteract();
   const expand = (id: string) => {
     if (!current()) return;
@@ -68,7 +68,7 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
   const operation = useOperationScope(selected?.pageCode), active = usePageActive();
   const selectedPage = useOwnedData(['field-page-fields', selected?.pageCode], ({signal}) => fetchPageFields(selected!.pageCode!, signal),
     {enabled: !disabled && !!selected?.pageCode, staleTime: 30_000, retry: false});
-  const labels = useMemo(() => permissionLabels(t), [t]);
+  const labels = useMemo(() => permissionLabels(t, undefined, locale), [t, locale]);
   const current = () => !disabled && active && operation.current() && operation.isSelected() && canInteract();
   const choose = (node: FieldResourceNode) => {if (current()) {selectedRef.current = node; setSelected(node);}};
   const container = useRef<HTMLDivElement>(null);

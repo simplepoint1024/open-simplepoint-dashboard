@@ -20,6 +20,7 @@ import org.simplepoint.plugin.app.form.entity.FormWritePolicyPublicationStatus;
 import org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateService.BindingWork;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyProgress;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationView;
 import org.springframework.stereotype.Service;
@@ -35,15 +36,17 @@ public class FormWritePolicyPublicationStateService {
   private final FormRequestContext context;
   private final ObjectMapper mapper;
   private final Clock clock;
+  private final FormCalculationPublicationProjection calculations;
 
   /** Uses the existing catalog/page locking order and immutable form version metadata. */
   public FormWritePolicyPublicationStateService(final EntityManager entityManager, final ApplicationPageAccessPort pages,
-      final FormRequestContext context, final ObjectMapper mapper, final Clock clock) {
+      final FormRequestContext context, final ObjectMapper mapper, final Clock clock, final FormCalculationPublicationProjection calculations) {
     this.entityManager = entityManager;
     this.pages = pages;
     this.context = context;
     this.mapper = mapper;
     this.clock = clock;
+    this.calculations = calculations;
   }
 
   /** Freezes service-compiled checks exactly once; retries return the original persisted intent. */
@@ -58,6 +61,7 @@ public class FormWritePolicyPublicationStateService {
     requireAttempt(locked.binding(), work);
     FormWritePolicyPublicationGuard.requireAvailable(entityManager, work.tenantId(), work.formId(), work.pageId(), work.bindingId());
     if (existing != null) {
+      armRecovery(existing);
       return view(existing);
     }
     if (work.policyProtocolVersion() != 1 || !entityManager.createQuery(
@@ -88,10 +92,16 @@ public class FormWritePolicyPublicationStateService {
     if (version.getPhysicalModelVersion() == null) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The governing schema is not ready");
     }
+    boolean previouslyInstalled = FormInstalledCalculation.at(entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
+    var calculation = calculations.compile(version, work.physicalModelId(), previouslyInstalled, impact.validations());
+    if (calculation != null && impact.validations() == null) {
+      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "Calculation publication requires the complete observed page requirements");
+    }
     long target = Math.addExact(form.getWritePolicyVersion(), 1);
     var command = new RecordWritePolicyPublicationCommand(work.physicalModelId(), work.applicationId(), work.formId(),
         new RecordSchemaReference(version.getPhysicalModelVersion(), version.getStorageChecksum()),
-        form.getWritePolicyVersion(), target, "app-policy:" + work.bindingId(), version.getChecksum(), impact.checks(), 30_000, impact.valueChecks());
+        form.getWritePolicyVersion(), target, "app-policy:" + work.bindingId(), version.getChecksum(),
+        impact.checks(), 30_000, impact.valueChecks(), calculation);
     var intent = new ApplicationFormWritePolicyPublicationEntity();
     intent.setId(UUID.randomUUID().toString());
     intent.setTenantId(work.tenantId());
@@ -105,6 +115,7 @@ public class FormWritePolicyPublicationStateService {
     intent.setCommandJson(encode(command));
     intent.setStatus(FormWritePolicyPublicationStatus.PREPARED);
     intent.setCreatedBy(context.requireActor().actorId());
+    armRecovery(intent);
     intent.setCreatedAt(clock.instant());
     intent.setUpdatedAt(clock.instant());
     entityManager.persist(intent);
@@ -123,9 +134,7 @@ public class FormWritePolicyPublicationStateService {
     if (result == null || result.version() != (result.published() ? intent.getTargetVersion() : intent.getExpectedVersion())) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_FAILED, "The target policy result does not match the persisted intent");
     }
-    String knownFingerprint = intent.getTargetFingerprint() != null ? intent.getTargetFingerprint()
-        : intent.getInspectionJson() == null ? null
-        : decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class).publicationFingerprint();
+    String knownFingerprint = publicationFingerprint(intent);
     if (knownFingerprint != null && !knownFingerprint.equals(result.publicationFingerprint())) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target publication fingerprint changed");
     }
@@ -137,12 +146,42 @@ public class FormWritePolicyPublicationStateService {
       intent.setStatus(FormWritePolicyPublicationStatus.TARGET_READY);
       intent.setTargetFingerprint(result.publicationFingerprint());
       intent.setInspectionJson(null);
+      intent.setCancellationJson(null);
     } else if (intent.getStatus() == FormWritePolicyPublicationStatus.PREPARED) {
+      if (intent.getInspectionJson() != null && result.progress() != null) {
+        var previous = decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class);
+        if (previous.progress() != null && previous.progress().sequence() == result.progress().sequence() && !previous.equals(result)) {
+          throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target inspection changed at the same sequence");
+        }
+      }
+      if (staleProgress(intent, result.progress())) {
+        return view(intent);
+      }
       intent.setInspectionJson(encode(result));
     }
     intent.setUpdatedAt(clock.instant());
+    if (intent.getRecoveryActorId() != null) {
+      intent.setRecoveryFailures(0);
+      intent.setRecoveryNotBefore(result.published() || view(intent).targetInProgress() ? clock.instant() : null);
+    }
     entityManager.flush();
     return view(intent);
+  }
+
+  /** Hands off only a durably acknowledged nonterminal batch; the next claim receives a new token. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void releaseBatch(final BindingWork work) {
+    var locked = lock(work);
+    requireAttempt(locked.binding(), work);
+    var intent = requireIntent(work);
+    if (!view(intent).targetInProgress()) {
+      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "Only an acknowledged nonterminal target batch can release its execution lease");
+    }
+    locked.binding().setExecutionToken(null);
+    locked.binding().setLeaseUntil(null);
+    locked.binding().setUpdatedAt(clock.instant());
+    entityManager.flush();
   }
 
   /** Persists the cancellation decision before any remote call; unknown outcomes keep the publication protected. */
@@ -157,13 +196,18 @@ public class FormWritePolicyPublicationStateService {
     final LockedPublication locked = lock(work);
     var intent = requireIntent(work);
     if (intent.getStatus() == FormWritePolicyPublicationStatus.CANCELLED
-        || intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE
-        || intent.getStatus() == FormWritePolicyPublicationStatus.TARGET_READY) {
+        || intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE) {
       return view(intent);
     }
     requireAttempt(locked.binding(), work);
+    if (intent.getStatus() == FormWritePolicyPublicationStatus.TARGET_READY) {
+      armRecovery(intent);
+      entityManager.flush();
+      return view(intent);
+    }
     FormWritePolicyPublicationGuard.requireAvailable(entityManager, work.tenantId(), work.formId(), work.pageId(), work.bindingId());
     intent.setStatus(FormWritePolicyPublicationStatus.CANCELLING);
+    armRecovery(intent);
     intent.setUpdatedAt(clock.instant());
     entityManager.flush();
     return view(intent);
@@ -175,6 +219,9 @@ public class FormWritePolicyPublicationStateService {
     var locked = lock(work);
     requireAttempt(locked.binding(), work);
     var intent = find(work.tenantId(), work.bindingId());
+    if (intent != null) {
+      armRecovery(intent);
+    }
     return intent == null ? null : view(intent);
   }
 
@@ -186,12 +233,11 @@ public class FormWritePolicyPublicationStateService {
     if (intent.getStatus() == FormWritePolicyPublicationStatus.CANCELLED) {
       return view(intent);
     }
-    if (result == null || result.version() != intent.getTargetVersion()) {
+    boolean restoring = result != null && result.progress() != null;
+    if (result == null || result.version() != (restoring ? intent.getExpectedVersion() : intent.getTargetVersion())) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_FAILED, "The cancellation result does not match the target version");
     }
-    String known = intent.getTargetFingerprint() != null ? intent.getTargetFingerprint()
-        : intent.getInspectionJson() == null ? null
-        : decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class).publicationFingerprint();
+    String known = publicationFingerprint(intent);
     if (known != null && !known.equals(result.publicationFingerprint())) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The cancelled publication identity changed");
     }
@@ -209,12 +255,27 @@ public class FormWritePolicyPublicationStateService {
     if (locked.form().getWritePolicyVersion() != intent.getExpectedVersion()) {
       throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The form admission version changed during cancellation");
     }
+    if (restoring) {
+      if (staleProgress(intent, result.progress())) {
+        return view(intent);
+      }
+      // An undo batch does not consume the target version or release APP publication protection.
+      intent.setCancellationJson(encode(result));
+      if (intent.getRecoveryActorId() != null) {
+        intent.setRecoveryFailures(0);
+        intent.setRecoveryNotBefore(clock.instant());
+      }
+      intent.setUpdatedAt(clock.instant());
+      entityManager.flush();
+      return view(intent);
+    }
     intent.setTargetFingerprint(result.targetFingerprint());
     intent.setInspectionJson(null);
     intent.setUpdatedAt(clock.instant());
     if (result.cancelled()) {
       intent.setCancellationJson(encode(result));
       intent.setStatus(FormWritePolicyPublicationStatus.CANCELLED);
+      intent.setRecoveryNotBefore(null);
       locked.form().setWritePolicyVersion(intent.getTargetVersion());
       locked.form().setUpdatedAt(clock.instant());
       locked.binding().setStatus(ApplicationFormPageBindingStatus.CANCELLED);
@@ -223,7 +284,12 @@ public class FormWritePolicyPublicationStateService {
       locked.binding().setErrorCode(null);
       locked.binding().setUpdatedAt(clock.instant());
     } else {
+      intent.setCancellationJson(null);
       intent.setStatus(FormWritePolicyPublicationStatus.TARGET_READY);
+      if (intent.getRecoveryActorId() != null) {
+        intent.setRecoveryFailures(0);
+        intent.setRecoveryNotBefore(clock.instant());
+      }
     }
     entityManager.flush();
     return view(intent);
@@ -262,8 +328,65 @@ public class FormWritePolicyPublicationStateService {
     locked.form().setWritePolicyVersion(intent.getTargetVersion());
     locked.form().setUpdatedAt(clock.instant());
     intent.setStatus(FormWritePolicyPublicationStatus.ACTIVE);
+    intent.setRecoveryNotBefore(null);
+    intent.setRecoveryError(null);
     intent.setUpdatedAt(clock.instant());
     entityManager.flush();
+  }
+
+  /** Deterministic calculation failures require repair, never a timer-driven retry of identical data. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void recordDataFailure(final BindingWork work) {
+    var locked = lock(work);
+    var intent = requireIntent(work);
+    requireAttempt(locked.binding(), work);
+    if (intent.getStatus() != FormWritePolicyPublicationStatus.PREPARED) {
+      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The publication direction changed");
+    }
+    intent.setRecoveryNotBefore(null);
+    intent.setRecoveryError(ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT.name());
+    intent.setUpdatedAt(clock.instant());
+    entityManager.flush();
+  }
+
+  /** Records a failed worker attempt only while its claim number still owns the failed binding. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void deferRecoveryAttempt(final BindingWork work, final int attempt, final boolean forbidden) {
+    var locked = lock(work);
+    var intent = requireIntent(work);
+    if (locked.binding().getAttempt() != attempt || locked.binding().getStatus() != ApplicationFormPageBindingStatus.FAILED
+        || intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE || intent.getStatus() == FormWritePolicyPublicationStatus.CANCELLED
+        || ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT.name().equals(intent.getRecoveryError())) {
+      return;
+    }
+    int failures = Math.min(5, intent.getRecoveryFailures() + 1);
+    intent.setRecoveryFailures(failures);
+    intent.setRecoveryNotBefore(forbidden || failures >= 5 ? null : clock.instant().plusSeconds(30L * failures));
+    intent.setRecoveryError((forbidden ? ApplicationFormErrorCode.RESOURCE_ACCESS_DENIED : ApplicationFormErrorCode.PUBLICATION_FAILED).name());
+    intent.setUpdatedAt(clock.instant());
+    entityManager.flush();
+  }
+
+  private void armRecovery(final ApplicationFormWritePolicyPublicationEntity intent) {
+    if (decode(intent.getCommandJson(), RecordWritePolicyPublicationCommand.class).calculation() == null
+        || intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE || intent.getStatus() == FormWritePolicyPublicationStatus.CANCELLED) {
+      return;
+    }
+    var actor = context.requireActor();
+    var authorization = org.simplepoint.core.AuthorizationContextHolder.getContext();
+    String role = authorization == null ? null : authorization.getAttribute("X-Role-Id");
+    role = role == null || role.isBlank() ? null : role.trim();
+    if (actor.actorId().length() > 64 || role != null && role.length() > 64) {
+      throw failure(ApplicationFormErrorCode.ACTOR_CONTEXT_REQUIRED, "Publication recovery identity is invalid");
+    }
+    if (!actor.actorId().equals(intent.getRecoveryActorId()) || !java.util.Objects.equals(role, intent.getRecoveryRoleId())
+        || intent.getRecoveryNotBefore() == null) {
+      intent.setRecoveryFailures(0);
+    }
+    intent.setRecoveryActorId(actor.actorId());
+    intent.setRecoveryRoleId(role);
+    intent.setRecoveryNotBefore(clock.instant().plusSeconds(30));
+    intent.setRecoveryError(null);
   }
 
   private LockedPublication lock(final BindingWork work) {
@@ -347,10 +470,46 @@ public class FormWritePolicyPublicationStateService {
   private record LockedPublication(ApplicationFormEntity form, ApplicationFormPageBindingEntity binding) {
   }
 
+  private String publicationFingerprint(final ApplicationFormWritePolicyPublicationEntity intent) {
+    if (intent.getTargetFingerprint() != null) {
+      return intent.getTargetFingerprint();
+    }
+    if (intent.getInspectionJson() != null) {
+      return decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class).publicationFingerprint();
+    }
+    return intent.getCancellationJson() == null ? null
+        : decode(intent.getCancellationJson(), RecordWritePolicyCancellationView.class).publicationFingerprint();
+  }
+
+  private boolean staleProgress(final ApplicationFormWritePolicyPublicationEntity intent, final RecordWritePolicyProgress next) {
+    RecordWritePolicyProgress previous = intent.getCancellationJson() == null ? null
+        : decode(intent.getCancellationJson(), RecordWritePolicyCancellationView.class).progress();
+    if (previous == null && intent.getInspectionJson() != null) {
+      previous = decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class).progress();
+    }
+    if (previous == null) {
+      return false;
+    }
+    if (next == null || next.sequence() < previous.sequence()) {
+      return true;
+    }
+    if (next.sequence() == previous.sequence() && !next.equals(previous)) {
+      throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target publication progress sequence changed");
+    }
+    return next.sequence() == previous.sequence();
+  }
+
   /** Server-only immutable work; callers never recreate the DNA command from a changed draft. */
   public record PreparedPolicy(String id, FormWritePolicyPublicationStatus status,
       RecordWritePolicyPublicationCommand command, String targetFingerprint, RecordWritePolicyPublicationView inspection,
       RecordWritePolicyCancellationView cancellation) {
+
+    /** A durable target batch is neither a failed precheck nor a committed target decision. */
+    public boolean targetInProgress() {
+      return status == FormWritePolicyPublicationStatus.PREPARED && inspection != null && inspection.progress() != null
+          && inspection.violations().isEmpty() && inspection.valueViolations().isEmpty()
+          || status == FormWritePolicyPublicationStatus.CANCELLING && cancellation != null && cancellation.progress() != null;
+    }
 
     /** Retains the publication-only coordination contract. */
     public PreparedPolicy(final String id, final FormWritePolicyPublicationStatus status,

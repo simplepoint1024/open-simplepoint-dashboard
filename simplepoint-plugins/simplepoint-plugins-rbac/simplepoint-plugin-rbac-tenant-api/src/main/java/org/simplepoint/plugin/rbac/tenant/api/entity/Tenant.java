@@ -25,65 +25,59 @@ import org.simplepoint.core.constants.PublicButtonKeys;
 import org.simplepoint.plugin.rbac.tenant.api.constants.TenantDictionaryCodes;
 import org.springframework.core.annotation.Order;
 
-/**
- * Represents a tenant entity.
- */
+/** Represents a tenant entity. */
 @Data
 @Entity
 @Table(name = "simpoint_saas_tenants")
 @EqualsAndHashCode(callSuper = true)
 @ButtonDeclarations({
-    @ButtonDeclaration(
-        title = PublicButtonKeys.ADD_TITLE,
-        key = PublicButtonKeys.ADD_KEY,
-        icon = Icons.PLUS_CIRCLE,
-        sort = 0,
-        argumentMaxSize = 1,
-        argumentMinSize = 0,
-        authority = "tenants.create"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.EDIT_TITLE,
-        key = PublicButtonKeys.EDIT_KEY,
-        color = "orange",
-        icon = Icons.EDIT,
-        sort = 1,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "tenants.edit"
-    ),
-    @ButtonDeclaration(
-        title = PublicButtonKeys.DELETE_TITLE,
-        key = PublicButtonKeys.DELETE_KEY,
-        color = "danger",
-        icon = Icons.MINUS_CIRCLE,
-        sort = 2,
-        argumentMinSize = 1,
-        argumentMaxSize = 10,
-        danger = true,
-        authority = "tenants.delete"
-    ),
-    @ButtonDeclaration(
-        title = "i18n:tenants.button.config.package",
-        key = "config.package",
-        color = "orange",
-        icon = Icons.SAFETY_OUTLINED,
-        sort = 3,
-        argumentMinSize = 1,
-        argumentMaxSize = 1,
-        authority = "tenants.config.package"
-    )
+  @ButtonDeclaration(
+      title = PublicButtonKeys.ADD_TITLE,
+      key = PublicButtonKeys.ADD_KEY,
+      icon = Icons.PLUS_CIRCLE,
+      sort = 0,
+      argumentMaxSize = 1,
+      argumentMinSize = 0,
+      authority = "tenants.create"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.EDIT_TITLE,
+      key = PublicButtonKeys.EDIT_KEY,
+      color = "orange",
+      icon = Icons.EDIT,
+      sort = 1,
+      argumentMinSize = 1,
+      argumentMaxSize = 1,
+      authority = "tenants.edit"),
+  @ButtonDeclaration(
+      title = PublicButtonKeys.DELETE_TITLE,
+      key = PublicButtonKeys.DELETE_KEY,
+      color = "danger",
+      icon = Icons.MINUS_CIRCLE,
+      sort = 2,
+      argumentMinSize = 1,
+      argumentMaxSize = 10,
+      danger = true,
+      authority = "tenants.delete"),
+  @ButtonDeclaration(
+      title = "i18n:tenants.button.config.package",
+      key = "config.package",
+      color = "orange",
+      icon = Icons.SAFETY_OUTLINED,
+      sort = 3,
+      argumentMinSize = 1,
+      argumentMaxSize = 1,
+      authority = "tenants.config.package")
 })
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "租户对象", description = "用于管理系统中的租户")
 @Schema(title = "租户对象", description = "用于管理系统中的租户")
 @org.simplepoint.core.query.TableQuery({
-    @org.simplepoint.core.query.QueryField("id"),
-    @org.simplepoint.core.query.QueryField("name"),
-    @org.simplepoint.core.query.QueryField("description"),
-    @org.simplepoint.core.query.QueryField("ownerId"),
-    @org.simplepoint.core.query.QueryField("tenantType")
+  @org.simplepoint.core.query.QueryField("id"),
+  @org.simplepoint.core.query.QueryField("name"),
+  @org.simplepoint.core.query.QueryField("description"),
+  @org.simplepoint.core.query.QueryField("ownerId"),
+  @org.simplepoint.core.query.QueryField("tenantType")
 })
 public class Tenant extends BaseEntityImpl<String> {
 
@@ -94,17 +88,17 @@ public class Tenant extends BaseEntityImpl<String> {
       directory = "tenants/logos",
       sourceServiceName = "tenant-branding",
       maxSizeMb = 5,
-      shape = "square"
-  )
+      shape = "square")
   @Schema(
       title = "i18n:tenants.title.logo",
       description = "i18n:tenants.description.logo",
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   @Column(length = 1024)
   private String logo;
 
@@ -115,23 +109,21 @@ public class Tenant extends BaseEntityImpl<String> {
       directory = "tenants/backgrounds",
       sourceServiceName = "tenant-branding",
       maxSizeMb = 10,
-      shape = "square"
-  )
+      shape = "square")
   @Schema(
       title = "i18n:tenants.title.backgroundImage",
       description = "i18n:tenants.description.backgroundImage",
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
-          })
-      }
-  )
+            })
+      })
   @Column(length = 1024)
   private String backgroundImage;
 
-  /**
-   * The name of the tenant.
-   */
+  /** The name of the tenant. */
   @Order(0)
   @Schema(
       title = "i18n:tenants.title.name",
@@ -140,17 +132,16 @@ public class Tenant extends BaseEntityImpl<String> {
       maxLength = 128,
       minLength = 1,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   @Column(length = 128, nullable = false, unique = true)
   private String name;
 
-  /**
-   * The description of the tenant.
-   */
+  /** The description of the tenant. */
   @Order(3)
   @Schema(
       title = "i18n:tenants.title.description",
@@ -158,17 +149,16 @@ public class Tenant extends BaseEntityImpl<String> {
       example = "Default tenant",
       maxLength = 512,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   @Column(length = 512)
   private String description;
 
-  /**
-   * Version marker for tenant-scoped authorization snapshots.
-   */
+  /** Version marker for tenant-scoped authorization snapshots. */
   @Column(name = "authorization_version", nullable = false)
   @Schema(
       title = "i18n:tenants.title.authorizationVersion",
@@ -176,14 +166,15 @@ public class Tenant extends BaseEntityImpl<String> {
       example = "0",
       hidden = true,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
-          })
-      }
-  )
+            })
+      })
   private Long authorizationVersion;
 
-  /** PLATFORM is the safe default for all existing tenants. */
+  /** Historical adoption input only; never selects runtime resource storage. */
   @DictionaryField(TenantDictionaryCodes.TENANT_RESOURCE_MODE)
   @Enumerated(EnumType.STRING)
   @Column(name = "resource_mode", length = 16, nullable = false)
@@ -192,8 +183,8 @@ public class Tenant extends BaseEntityImpl<String> {
   private TenantResourceMode resourceMode = TenantResourceMode.PLATFORM;
 
   /**
-   * The ID of the tenant owner.
-   * This field is used to identify the user who owns the tenant and has administrative privileges over it.
+   * The ID of the tenant owner. This field is used to identify the user who owns the tenant and has
+   * administrative privileges over it.
    */
   @Order(2)
   @Schema(
@@ -201,20 +192,21 @@ public class Tenant extends BaseEntityImpl<String> {
       description = "i18n:tenants.description.ownerId",
       example = "admin",
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "false"),
               @ExtensionProperty(name = "widget", value = "UserPicker"),
               @ExtensionProperty(
                   name = "options",
-                  value = "{\"selectionMode\":\"single\","
-                      + "\"endpoint\":\"/common/users/picker/items\","
-                      + "\"resolveEndpoint\":\"/common/users/picker/selected\","
-                      + "\"pageSize\":20,\"debounceMs\":350,\"minSearchLength\":3}",
-                  parseValue = true
-              ),
-          })
-      }
-  )
+                  value =
+                      "{\"selectionMode\":\"single\","
+                          + "\"endpoint\":\"/common/users/picker/items\","
+                          + "\"resolveEndpoint\":\"/common/users/picker/selected\","
+                          + "\"pageSize\":20,\"debounceMs\":350,\"minSearchLength\":3}",
+                  parseValue = true),
+            })
+      })
   @Column(nullable = false)
   private String ownerId;
 
@@ -225,11 +217,12 @@ public class Tenant extends BaseEntityImpl<String> {
       title = "i18n:tenants.title.ownerName",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   private String ownerName;
 
   /** Decorated gender of the tenant administrator. */
@@ -239,11 +232,12 @@ public class Tenant extends BaseEntityImpl<String> {
       title = "i18n:tenants.title.ownerGender",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   private String ownerGender;
 
   /** Decorated phone number of the tenant administrator. */
@@ -253,11 +247,12 @@ public class Tenant extends BaseEntityImpl<String> {
       title = "i18n:tenants.title.ownerPhoneNumber",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   private String ownerPhoneNumber;
 
   /** Decorated email address of the tenant administrator. */
@@ -267,11 +262,12 @@ public class Tenant extends BaseEntityImpl<String> {
       title = "i18n:tenants.title.ownerEmail",
       accessMode = Schema.AccessMode.READ_ONLY,
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   private String ownerEmail;
 
   /** Decorated avatar of the tenant administrator. */
@@ -284,9 +280,19 @@ public class Tenant extends BaseEntityImpl<String> {
   @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
   private Boolean profileEditable;
 
-  /**
-   * The type of the tenant (PERSONAL or ORGANIZATION).
-   */
+  /** Current owner capability for this workspace's independent resource directory. */
+  @Transient
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  private Boolean resourceManageable;
+
+  /** Current owner capability for viewing and activating this workspace's package instances. */
+  @Transient
+  @Schema(hidden = true, accessMode = Schema.AccessMode.READ_ONLY)
+  @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+  private Boolean packageManageable;
+
+  /** The type of the tenant (PERSONAL or ORGANIZATION). */
   @Order(1)
   @DictionaryField(TenantDictionaryCodes.TENANT_TYPE)
   @Schema(
@@ -294,18 +300,17 @@ public class Tenant extends BaseEntityImpl<String> {
       description = "i18n:tenants.description.tenantType",
       example = "ORGANIZATION",
       extensions = {
-          @Extension(name = "x-ui", properties = {
+        @Extension(
+            name = "x-ui",
+            properties = {
               @ExtensionProperty(name = "x-list-visible", value = "true"),
-          })
-      }
-  )
+            })
+      })
   @Enumerated(EnumType.STRING)
   @Column(length = 32, nullable = false)
   private TenantType tenantType;
 
-  /**
-   * Lifecycle callback to set default values before persisting the entity.
-   */
+  /** Lifecycle callback to set default values before persisting the entity. */
   @Override
   public void prePersist() {
     if (this.resourceMode == null) {

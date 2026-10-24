@@ -201,7 +201,9 @@ class RecordServicesDatabaseTest {
         audit,
         admission,
         observer,
-        new RecordRequestFingerprint(new ObjectMapper())
+        new RecordRequestFingerprint(new ObjectMapper()),
+        new RecordCalculationWriteSupport(modelResolver,
+            new org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec(new ObjectMapper()), compiler)
     );
     RecordQueryServiceImpl queries = new RecordQueryServiceImpl(
         requestContext,
@@ -211,7 +213,8 @@ class RecordServicesDatabaseTest {
         backend,
         audit,
         admission,
-        observer
+        observer,
+        RecordCalculationTestSupport.access(modelResolver, accessPolicy, compiler)
     );
     RecordRequestFingerprint fingerprints = new RecordRequestFingerprint(new ObjectMapper());
     RecordCreateReceiptStore receipts = inMemoryReceipts();

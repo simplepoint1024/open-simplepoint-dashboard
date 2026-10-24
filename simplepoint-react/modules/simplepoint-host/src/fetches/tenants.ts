@@ -26,7 +26,8 @@ export type CurrentTenantProfile = {
     ownerEmail?: string;
     ownerPicture?: string;
     profileEditable?: boolean;
-    resourceMode?: 'PLATFORM' | 'CUSTOM';
+    resourceManageable?: boolean;
+    packageManageable?: boolean;
 };
 
 export type CurrentRole = {

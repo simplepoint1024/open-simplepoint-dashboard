@@ -101,7 +101,7 @@ class RuntimeCalciteRecordBackendTest {
     assertThat(fixture.backend().query(fixture.model(), local, 10_000).rows()).hasSize(1);
   }
 
-  private static Fixture fixture() throws Exception {
+  static Fixture fixture() throws Exception {
     JdbcDataSource h2 = new JdbcDataSource();
     h2.setURL("jdbc:h2:mem:record-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     h2.setUser("sa");
@@ -143,7 +143,7 @@ class RuntimeCalciteRecordBackendTest {
     );
   }
 
-  private static RecordSqlStatement insert(final String id, final String tenant) {
+  static RecordSqlStatement insert(final String id, final String tenant) {
     return new RecordSqlStatement(
         "INSERT INTO \"runtime\".\"records\" "
             + "(\"id\", \"tenant_id\", \"record_version\", \"title\") VALUES (?, ?, ?, ?)",
@@ -155,7 +155,7 @@ class RuntimeCalciteRecordBackendTest {
     );
   }
 
-  private record Fixture(
+  record Fixture(
       RuntimeCalciteRecordBackend backend,
       RuntimeRecordModel model,
       SimpleDataSource dataSource

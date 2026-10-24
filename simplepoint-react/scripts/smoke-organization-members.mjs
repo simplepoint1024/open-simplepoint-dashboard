@@ -5,7 +5,7 @@ export async function smokeOrganizationMembers({clickMenu, clickReady, clickText
   if (await evaluate(`!!document.querySelector('${root} .organization-workspace-list button[aria-label="清除全部筛选"]')`))
     await clickReady(`${root} .organization-workspace-list button[aria-label="清除全部筛选"]`);
   await poll(() => evaluate(`!!document.querySelector('${root} tr[data-row-key="root-0"]')`), 'organization membership source');
-  if (!await evaluate(`document.querySelector('${panel} h5')?.textContent==='root-000'`)) await clickReady(`${root} tr[data-row-key="root-0"] td:nth-child(2)`);
+  if (!await evaluate(`document.querySelector('${panel} h5')?.textContent.includes('root-000')`)) await clickReady(`${root} tr[data-row-key="root-0"] td:nth-child(2)`);
   await poll(() => evaluate(`!!document.querySelector('${panel} tr[data-row-key="org-user-0"]') && !document.querySelector('${panel} .ant-spin-spinning')`), 'member page fully loaded');
   await clickReady(`${panel} .ant-pagination-item-2`);
   await poll(() => evaluate(`!!document.querySelector('${panel} tr[data-row-key="org-user-21"]') && !document.querySelector('${panel} .ant-spin-spinning')`), 'descendant organization member');
@@ -13,7 +13,7 @@ export async function smokeOrganizationMembers({clickMenu, clickReady, clickText
   const type = '.organization-member-type .ant-modal';
   await poll(() => evaluate(`!!document.querySelector('${type} form.rjsf #root_userType')`), 'typed member-type SForm');
   await clickReady(`${root} tr[data-row-key="root-1"] td:nth-child(2)`);
-  assert.equal(await evaluate(`document.querySelector('${panel} h5')?.textContent`), 'root-000', 'target cannot change during a member edit');
+  assert.equal(await evaluate(`document.querySelector('${panel} h5')?.textContent.includes('root-000')`), true, 'target cannot change during a member edit');
   const chooseType = async (modal, label) => {
     await evaluate(`document.querySelector('${modal} #root_userType').closest('.ant-select').dispatchEvent(new MouseEvent('mousedown',{bubbles:true}))`);
     await clickText('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option', label);

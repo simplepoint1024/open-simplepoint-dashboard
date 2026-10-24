@@ -7,13 +7,14 @@ const fields = [
 ] as const;
 
 /** Only server-projected metadata is displayed; it never joins the editable form's values. */
-export default function RecordMetadata({values}: {values?: Record<string, unknown>}) {
+export default function RecordMetadata({values, labels}: {values?: Record<string, unknown>; labels?: Record<string, unknown>}) {
   const {t} = useI18n();
   const visible = fields.filter(([field]) => Object.prototype.hasOwnProperty.call(values ?? {}, field));
   if (!visible.length) return null;
   return <SForm hideSubmit disabled formData={values} schema={{type: 'object', additionalProperties: false,
     properties: Object.fromEntries(visible.map(([field, label]) => [field, {
       type: ['string', 'null'], title: t(`app.runtime.record.${field}`, label), readOnly: true, 'x-display-only': true,
+      'x-reference-label': labels?.[field],
       ...(['createdAt', 'updatedAt', 'deletedAt'].includes(field) ? {format: 'date-time'} : {}),
     }])),
   }} formContext={{labelCol: {flex: '140px'}, wrapperCol: {flex: '1 1 0'}, descriptionLocation: 'tooltip'}}/>;

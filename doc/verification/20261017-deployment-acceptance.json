@@ -1,0 +1,927 @@
+{
+  "date": "2026-10-17",
+  "verifiedAt": "2026-10-17T10:53:56.968Z",
+  "deploymentVerified": true,
+  "wholeGoalComplete": false,
+  "scope": "Current form/workflow integration, calculator draft preview, platform authorization boundary and frontend distribution integrity",
+  "version": "20261017-workflow-form5",
+  "baseCommit": "269032ea3b9d6efe3de22ea0831df2d99d5c9ba6",
+  "workingTreeBuild": true,
+  "sourceDigest": "8e06f8001632394d9eb860edf0f1b5480d1e76b2f2ae5c042142fdde77ff91ef",
+  "services": [
+    {
+      "service": "common",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 317,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "auditing",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 246,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "dna",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 294,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "ai",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 326,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "app",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 262,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "workflow",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 298,
+      "jarHashesMatch": true
+    },
+    {
+      "service": "host",
+      "version": "20261017-workflow-form5",
+      "health": "healthy",
+      "consul": "passing",
+      "jarCount": 226,
+      "jarHashesMatch": true
+    }
+  ],
+  "allNineServiceHealth": "passing",
+  "rabbitmq": "healthy",
+  "schemaMigrations": [],
+  "rollbackImagesRetained": true,
+  "databaseBackup": {
+    "format": "pg_dump custom",
+    "validation": "pg_restore --list",
+    "restorePerformed": false
+  },
+  "fixes": [
+    {
+      "id": "workflow-participant-progress-403",
+      "origin": "existing authorization integration",
+      "detail": "Unrelated page policies no longer cause ambiguity. Explicit domain data authorization preserves functional/workspace gates while workflow services enforce tenant and participant/manager boundaries. Standard CRUD and PermissionPage controllers cannot opt out."
+    },
+    {
+      "id": "frontend-distribution-integrity",
+      "origin": "deployment procedure",
+      "detail": "A backend-only test flag removed bundled UI resources during patch packaging. Full distributions restored all assets. Seven UI services now require verifyFrontendDistribution; test-only flag is rejected, entry and declared JS/CSS existence checked. Live HTTPS manifests and entries match artifact hashes."
+    },
+    {
+      "id": "readonly-attachment-picker",
+      "origin": "existing shared widget",
+      "detail": "The hidden file selector now follows read-only, disabled, uploading and capacity states, preventing labels from opening a picker in an immutable snapshot; downloads remain available."
+    },
+    {
+      "id": "missing-demo-tenant-logo",
+      "origin": "existing environment reference",
+      "detail": "Confirmed missing image and object metadata; removed only the broken logo reference through the authorized profile API. Original profile retained privately; default branding used."
+    }
+  ],
+  "automated": {
+    "calculationFormAndApp": {
+      "passed": 355,
+      "skipped": 2,
+      "failures": 0,
+      "evidence": "20261017-form-calculation-adapter.json"
+    },
+    "securityResourceModule": {
+      "passed": 28,
+      "skipped": 0,
+      "failures": 0
+    },
+    "workflowHttpModule": {
+      "passed": 12,
+      "skipped": 0,
+      "failures": 0
+    },
+    "frontendTypecheckProjects": 8,
+    "nativeUiAudit": {
+      "reviewed": 40,
+      "unreviewed": 0
+    },
+    "bundleLimits": "passed",
+    "packagedFrontendServices": 7,
+    "missingFrontendFlagGate": "negative case rejected as expected",
+    "workflowBrowserFixture": "passed"
+  },
+  "acceptance": {
+    "fixturePrefix": "【1017部署验收】",
+    "roles": [
+      "employee",
+      "manager",
+      "administration",
+      "finance",
+      "director"
+    ],
+    "grantsChanged": false,
+    "cases": [
+      {
+        "code": "office_meeting_room",
+        "title": "【1017部署验收】平台季度方案评审",
+        "submissionId": "4e8a7b3b4a3960362d8ed93df83fcd8c7d1f41e690b889f8e7d78532855bd055",
+        "recordId": "664db165-6578-526d-9aec-4ab40e65a22a",
+        "processInstanceId": "a1448ea7-ca13-11f1-be93-960132c0ff22",
+        "status": "COMPLETED",
+        "detailRows": 0,
+        "approvals": [
+          {
+            "role": "administration",
+            "taskName": "行政核实场地及会务安排"
+          }
+        ]
+      },
+      {
+        "code": "office_daily_report",
+        "title": "【1017部署验收】平台研发工作日报",
+        "submissionId": "40151050f337f7ca261a739cfe642b9bb1c26acda00fe6d66c4c692eb46337be",
+        "recordId": "c0336b12-aedb-571c-a21d-79c2d202c2d2",
+        "processInstanceId": "afbaa518-ca13-11f1-be93-960132c0ff22",
+        "status": "COMPLETED",
+        "detailRows": 2,
+        "approvals": [
+          {
+            "role": "manager",
+            "taskName": "部门负责人确认日报"
+          }
+        ]
+      },
+      {
+        "code": "office_expense_claim",
+        "title": "【1017部署验收】客户现场交付差旅报销（普通）",
+        "submissionId": "ebe23d6be7fe57e44dd4708d45bacafa910c12cfc5b22eefacbcc76549fa5d62",
+        "recordId": "9fbc7a14-62e0-54d1-916e-aafc77a73cf8",
+        "processInstanceId": "7cd12b69-ca16-11f1-a2bc-3ece022d9517",
+        "status": "COMPLETED",
+        "detailRows": 2,
+        "approvals": [
+          {
+            "role": "manager",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "role": "finance",
+            "taskName": "财务复核"
+          }
+        ]
+      },
+      {
+        "code": "office_expense_claim",
+        "title": "【1017部署验收】客户现场交付差旅报销（大额）",
+        "submissionId": "be22ba38b8206ba8bae6b90019c854a387cc8c7fee6dec3d559d55efba519752",
+        "recordId": "415c540d-91bb-5848-aa4b-7142b3ed9a72",
+        "processInstanceId": "98bc50bf-ca18-11f1-ae93-62f76fb4f5a0",
+        "status": "COMPLETED",
+        "detailRows": 2,
+        "approvals": [
+          {
+            "role": "manager",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "role": "director",
+            "taskName": "分管负责人审批"
+          },
+          {
+            "role": "finance",
+            "taskName": "财务复核"
+          }
+        ]
+      },
+      {
+        "code": "office_expense_claim",
+        "title": "【1017部署验收】报销驳回与修订申请",
+        "submissionId": "0559db6ee269a2f6818475be0dea3bd9870c51eabda11e539a16f2ee5813a3ce",
+        "recordId": "257329f9-04c7-55ba-88da-9b0093546324",
+        "processInstanceId": "a64ce943-ca18-11f1-ae93-62f76fb4f5a0",
+        "status": "REJECTED",
+        "detailRows": 2
+      },
+      {
+        "code": "office_expense_claim",
+        "title": "【1017部署验收】报销补充材料后重新申请",
+        "submissionId": "ccb0d117c796fab7313dbef1196414bc8cda174f43489d12b420a38b70e6f568",
+        "recordId": "b04da477-a5b4-5e10-83df-b12180520a33",
+        "processInstanceId": "b4e0e7f3-ca18-11f1-ae93-62f76fb4f5a0",
+        "status": "COMPLETED",
+        "detailRows": 2,
+        "approvals": [
+          {
+            "role": "manager",
+            "taskName": "部门负责人审核"
+          },
+          {
+            "role": "finance",
+            "taskName": "财务复核"
+          }
+        ]
+      }
+    ],
+    "checks": [
+      "meeting end must follow start",
+      "daily report requires detail rows",
+      "daily hours must equal exact detail sum",
+      "expense cannot tamper with routing amount",
+      "expense requires attachments",
+      "expense rejects forged storage reference",
+      "meeting: employee → administration → completed, immutable record",
+      "daily: parent + two detail rows → manager → completed",
+      "expense <= 5000: manager → finance, attachment bytes verified",
+      "expense > 5000: manager → director → finance, exact amount routing",
+      "rejection → linked new revision → completed; original business evidence preserved",
+      "administration cannot access financial form; applicant cannot approve any stage"
+    ],
+    "completed": 5,
+    "rejected": 1,
+    "pendingTestTasks": 0,
+    "physicalTables": [
+      {
+        "name": "会议室申请",
+        "activeRows": 2
+      },
+      {
+        "name": "日报填写",
+        "activeRows": 2
+      },
+      {
+        "name": "财务报销",
+        "activeRows": 9
+      },
+      {
+        "name": "费用明细",
+        "activeRows": 18,
+        "orphans": 0
+      },
+      {
+        "name": "工作明细",
+        "activeRows": 4,
+        "orphans": 0
+      }
+    ],
+    "aggregateCrud": {
+      "unicodeRoundTrip": true,
+      "detailPrependEditDelete": true,
+      "newestBeforePagination": true,
+      "updatingOlderRecordDoesNotMoveItFirst": true,
+      "activeTemporaryRecords": 0
+    },
+    "authorization": {
+      "passed": true,
+      "at": "2026-10-17T10:49:38.645Z",
+      "noGrantChanges": true,
+      "checks": [
+        {
+          "role": "manager",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "manager",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "manager",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/progress",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/diagram",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/actions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "node",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "employee",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "employee",
+          "endpoint": "business-form",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "administration",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "administration",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "finance",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "finance",
+          "endpoint": "business-form",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/progress",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/diagram",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/actions",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "node",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/runtime/permissions",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/copied/schema",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "/workflow/matters/started?size=5",
+          "status": 200
+        },
+        {
+          "role": "director",
+          "endpoint": "all-matters",
+          "status": 403
+        },
+        {
+          "role": "director",
+          "endpoint": "business-form",
+          "status": 403
+        }
+      ]
+    },
+    "assets": {
+      "passed": true,
+      "at": "2026-10-17T10:49:35.398Z",
+      "services": [
+        {
+          "service": "common",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "3ab11eb9926f7935538d94bb3c2e7b6a39f8e5030973b394ac2b4eb8a4286efc",
+          "entrySha256": "8c2c6189972b672176ca92134b41f3950e14ddde2e8c78bf7681515be3fb50e5"
+        },
+        {
+          "service": "auditing",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "95f3291c51eb1871043f1db005540c48aec529f2f0952b423f3a9451a080cc53",
+          "entrySha256": "9aa7097bd60fd9b86b6185eee749bd5dd8d0c5eba8d1c38990e7d6a8a7e95564"
+        },
+        {
+          "service": "dna",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "dc542609ec0f2f8922702a36eca8643e05d9862466bfef6b4b12df364a6d04a3",
+          "entrySha256": "35532cb19e57c42e436dc89d4f3dbee54f1855af66aaecdf1fedacebb14d958b"
+        },
+        {
+          "service": "ai",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "0a7ed6270819118b81ebb50d5514fb4003d46dbb4aa27dd784a109667304046a",
+          "entrySha256": "f0bbbce2857342129d56dfe9fe8ec5fcff13adb40812369605baa85df7e52d2c"
+        },
+        {
+          "service": "app",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "bc99ddc3875d794ca1a4a15ab8273d29b56cf55a33ddcadb90adc787e7cedc73",
+          "entrySha256": "886bd1ca4172d85459733f11db0a8b533b7f02da0c6b531daf8d1cf49c0f4245"
+        },
+        {
+          "service": "workflow",
+          "manifestStatus": 200,
+          "entryStatus": 200,
+          "manifestSha256": "1c7c6616ba4a76523fefb2071100a31c4fd9d290e10e42374d66081486c097c2",
+          "entrySha256": "9e2e4151dece6fe7cf3cb291856484aa7004cd9be79f9c1dae2bd53191593e43"
+        }
+      ]
+    },
+    "browser": [
+      {
+        "passed": true,
+        "at": "2026-10-17T10:17:38.038Z",
+        "actor": "manager",
+        "mode": "pending",
+        "taskId": "afbacc31-ca13-11f1-be93-960132c0ff22",
+        "widths": [
+          {
+            "viewport": 1440
+          },
+          {
+            "viewport": 768
+          },
+          {
+            "viewport": 390
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": false,
+        "transports": [],
+        "responsiveEvidence": "Screenshots visually reviewed; early resize geometry discarded. Final completed views revalidated with viewport containment."
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T10:53:39.773Z",
+        "actor": "manager",
+        "mode": "completed",
+        "taskId": "afbacc31-ca13-11f1-be93-960132c0ff22",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1700,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": false,
+        "diagram": true,
+        "downloadVerified": false,
+        "transports": [],
+        "viewportContainment": "revalidated after resize settled"
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T10:51:34.875Z",
+        "actor": "finance",
+        "mode": "pending",
+        "taskId": "b5243297-ca18-11f1-ae93-62f76fb4f5a0",
+        "widths": [
+          {
+            "viewport": 1440
+          },
+          {
+            "viewport": 768
+          },
+          {
+            "viewport": 390
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": false,
+        "downloadVerified": false,
+        "transports": [],
+        "responsiveEvidence": "Screenshots visually reviewed; early resize geometry discarded. Final completed views revalidated with viewport containment."
+      },
+      {
+        "passed": true,
+        "at": "2026-10-17T10:53:41.217Z",
+        "actor": "finance",
+        "mode": "completed",
+        "taskId": "b5243297-ca18-11f1-ae93-62f76fb4f5a0",
+        "widths": [
+          {
+            "viewport": 1440,
+            "body": 1185,
+            "scroll": 1185,
+            "detailScrollers": [
+              {
+                "width": 1121,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 768,
+            "body": 722,
+            "scroll": 722,
+            "detailScrollers": [
+              {
+                "width": 658,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          },
+          {
+            "viewport": 390,
+            "body": 359,
+            "scroll": 359,
+            "detailScrollers": [
+              {
+                "width": 295,
+                "scroll": 1620,
+                "height": 138
+              }
+            ]
+          }
+        ],
+        "readOnly": true,
+        "detailsVisible": true,
+        "attachmentVisible": true,
+        "diagram": true,
+        "downloadVerified": true,
+        "transports": [],
+        "viewportContainment": "revalidated after resize settled"
+      }
+    ],
+    "inlineDetails": {
+      "passed": true,
+      "at": "2026-10-17T10:50:54.343Z",
+      "forms": [
+        {
+          "code": "office_daily_report",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1021,
+            "scrollWidth": 1860,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        },
+        {
+          "code": "office_expense_claim",
+          "inlineAddEditDelete": true,
+          "newestFirst": true,
+          "unicodeDraftPreserved": true,
+          "iconTextActions": true,
+          "scroll": {
+            "width": 1021,
+            "scrollWidth": 1780,
+            "height": 305,
+            "scrollHeight": 627
+          }
+        }
+      ],
+      "propertyTabsWithIcons": true,
+      "businessMutations": 0
+    },
+    "modelDefinition": {
+      "passed": true,
+      "at": "2026-10-17T10:50:42.191Z",
+      "fieldCount": 11,
+      "structuredSchema": true,
+      "indexesTab": true,
+      "rawJsonTextarea": false,
+      "dnaWrites": 0
+    },
+    "eventJobs": [
+      {
+        "owner": "app",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 90
+      },
+      {
+        "owner": "app",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 45
+      },
+      {
+        "owner": "common",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 45
+      },
+      {
+        "owner": "common",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 45
+      },
+      {
+        "owner": "dna",
+        "direction": "INBOX",
+        "state": "DONE",
+        "count": 45
+      },
+      {
+        "owner": "dna",
+        "direction": "OUTBOX",
+        "state": "DONE",
+        "count": 45
+      }
+    ],
+    "quarantinedEvents": 0,
+    "workflowNotifications": [
+      {
+        "status": "SENT",
+        "count": 35
+      }
+    ],
+    "calculation": {
+      "catalogFunctions": 63,
+      "checks": [
+        "live catalog: 63 functions, version 1",
+        "exact decimal aggregate preview: 28.53 + 15.68 = 44.21",
+        "reject forged output",
+        "reject unknown reference",
+        "reject dependency cycle",
+        "reject division by zero",
+        "reject too many rows",
+        "ordinary business user cannot use designer calculator",
+        "form ownership resolved before trial",
+        "preview leaves saved business form draft unchanged"
+      ],
+      "result": {
+        "values": {
+          "total": "44.21"
+        },
+        "details": {
+          "lines": [
+            {
+              "amount": "28.53"
+            },
+            {
+              "amount": "15.68"
+            }
+          ]
+        }
+      },
+      "previewOnly": true,
+      "publicationEnabled": false
+    }
+  },
+  "limitations": [
+    "Calculated-field publication remains blocked: atomic DNA main/detail computation, trusted activation/backfill and designer/runtime integration are not finished.",
+    "Real acceptance covers the existing three human-office businesses and the scenarios recorded here; it does not certify every component, function or workflow topology.",
+    "Two existing environment-dependent backend tests remain skipped; this is targeted module verification, not a claim that the entire repository test suite ran."
+  ],
+  "artifacts": [
+    "20261017-approval-desktop.png",
+    "20261017-approval-phone.png"
+  ],
+  "privateEvidence": [
+    {
+      "file": "final-check.json",
+      "sha256": "b96431aadfd240ff6f93c2bdad5941bacba008bb573438765506c28ea64eb0ac"
+    },
+    {
+      "file": "calculation-live.json",
+      "sha256": "985302f731b2c6f3e304a01881f31c9ba169163fce121a7d24ead98507e9b8f1"
+    },
+    {
+      "file": "live-records.json",
+      "sha256": "63e8fa221a14b729a14a518363bbe774a4f6efae0fb1e64b8e6ac807eb759a06"
+    },
+    {
+      "file": "live-details.json",
+      "sha256": "0ef8e21cb0d6b8972953b08671bcfd91f0eaff290aaf7e19c546788ffd9bde59"
+    },
+    {
+      "file": "model-definition.json",
+      "sha256": "acbc9f8b5120f89ee1fc7dd2248962f279382226ed451f98f138d3cafda5d896"
+    },
+    {
+      "file": "scope-live.json",
+      "sha256": "d2c2cfe5261e441c4b429fa5350c57499b7649df175f5cb6133efe0f4ee516a4"
+    },
+    {
+      "file": "assets-live.json",
+      "sha256": "6b6aaf47f863f315ac52629c666abcb555d974fc20945c8cbc71db659af8b0ee"
+    },
+    {
+      "file": "branding.json",
+      "sha256": "5e21cc24bdd3ded079931fe3540f4705cfa58c1e4b465735d28e8e99a7a33101"
+    },
+    {
+      "file": "office_daily_report-pending-browser.json",
+      "sha256": "e6f19a26fe9697b2f073a08e400bce78ffb2f634c205e5fd96cdac978e1a8b67"
+    },
+    {
+      "file": "office_daily_report-completed-browser.json",
+      "sha256": "4b1cab410b11fe987e0f12c37ff704ed54fdce394763c85c4c6c793c62c0582c"
+    },
+    {
+      "file": "office_expense_claim-pending-browser.json",
+      "sha256": "92ec5c4f3d7dc29c6b758cb501384a6626a53d0b02f2adbdd8e286ef4c1886cb"
+    },
+    {
+      "file": "office_expense_claim-completed-browser.json",
+      "sha256": "a423306853d109e9aa50151037ce101555a31739d269c5a8ce8be32b4fdbe29f"
+    }
+  ]
+}

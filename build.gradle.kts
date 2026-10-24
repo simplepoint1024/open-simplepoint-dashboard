@@ -94,6 +94,11 @@ subprojects {
 
     apply(plugin = "java-library")
     apply(from = rootProject.file("gradle/project-conventions.gradle.kts"))
+    if (name in setOf("simplepoint-service-host", "simplepoint-service-common",
+            "simplepoint-service-auditing", "simplepoint-service-dna", "simplepoint-service-ai",
+            "simplepoint-service-app", "simplepoint-service-workflow", "simplepoint-service-standalone")) {
+        apply(from = rootProject.file("gradle/frontend-distribution.gradle.kts"))
+    }
     apply(plugin = "idea")
     apply(plugin = "jacoco")
     extensions.configure<JavaPluginExtension> {
@@ -108,7 +113,13 @@ subprojects {
 
     dependencies {
         // Standalone libraries must not inherit platform runtime dependencies.
-        if (project.name != "simplepoint-calculation") {
+        if (project.name !in setOf("simplepoint-calculation", "simplepoint-platform-composition",
+                "simplepoint-platform-dictionary-api", "simplepoint-platform-dictionary-registration",
+                "simplepoint-platform-installation", "simplepoint-platform-installation-jdbc",
+                "simplepoint-platform-installation-dictionary", "simplepoint-platform-bootstrap-registry-api",
+                "simplepoint-remoting-core", "simplepoint-data-migrations", "simplepoint-data-migrations-api",
+                "simplepoint-events-api", "simplepoint-events-migrations",
+                "simplepoint-plugin-workflow-migrations")) {
             implementation(platform("org.springframework.boot:spring-boot-dependencies:${rootProject.libs.versions.spring.boot.get()}"))
             implementation(platform("org.springframework.cloud:spring-cloud-dependencies:${rootProject.libs.versions.spring.cloud.get()}"))
             implementation(platform("org.springframework.security:spring-security-bom:${rootProject.libs.versions.spring.security.get()}"))

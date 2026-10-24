@@ -21,11 +21,10 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.core.authority.RoleGrantedAuthority;
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Organization;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceMode;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantUserRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantResourceCatalog;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
 import org.simplepoint.security.entity.Resource;
@@ -39,21 +38,30 @@ class CurrentUserAccessServiceImplTest {
   private SessionFactory factory;
   private Session em;
   private final TenantService tenants = mock(TenantService.class);
-  private final UsersService users = mock(UsersService.class);
+  private final UserManagementService users = mock(UserManagementService.class);
   private final ResourceService resources = mock(ResourceService.class);
   private CurrentUserAccessServiceImpl service;
 
   @BeforeEach
   void setup() {
-    var registry = new StandardServiceRegistryBuilder()
-        .applySetting("hibernate.connection.url", "jdbc:h2:mem:profile-access-" + UUID.randomUUID())
-        .applySetting("hibernate.connection.driver_class", "org.h2.Driver")
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop")
-        .applySetting("hibernate.physical_naming_strategy", "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy")
-        .build();
-    factory = new MetadataSources(registry).addAnnotatedClass(Organization.class)
-        .addAnnotatedClass(Resource.class).addAnnotatedClass(TenantResource.class)
-        .addAnnotatedClass(TenantUserRelevance.class).buildMetadata().buildSessionFactory();
+    var registry =
+        new StandardServiceRegistryBuilder()
+            .applySetting(
+                "hibernate.connection.url", "jdbc:h2:mem:profile-access-" + UUID.randomUUID())
+            .applySetting("hibernate.connection.driver_class", "org.h2.Driver")
+            .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+            .applySetting(
+                "hibernate.physical_naming_strategy",
+                "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy")
+            .build();
+    factory =
+        new MetadataSources(registry)
+            .addAnnotatedClass(Organization.class)
+            .addAnnotatedClass(Resource.class)
+            .addAnnotatedClass(TenantResource.class)
+            .addAnnotatedClass(TenantUserRelevance.class)
+            .buildMetadata()
+            .buildSessionFactory();
     em = factory.openSession();
     em.beginTransaction();
     service = new CurrentUserAccessServiceImpl(em, tenants, users, resources);
@@ -64,10 +72,14 @@ class CurrentUserAccessServiceImplTest {
   void cleanup() {
     RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     if (em != null) {
-      if (em.getTransaction().isActive()) em.getTransaction().rollback();
+      if (em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
       em.close();
     }
-    if (factory != null) factory.close();
+    if (factory != null) {
+      factory.close();
+    }
   }
 
   private void context(String tenant, AuthorizationScopeType scope) {
@@ -80,30 +92,54 @@ class CurrentUserAccessServiceImplTest {
   }
 
   @Test
+  void missingTenantCatalogNeverFallsBackToPlatformMetadata() {
+    assertThatThrownBy(() -> service.resources(null, "", "ALL", PageRequest.of(0, 24)))
+        .isInstanceOf(AccessDeniedException.class);
+    org.mockito.Mockito.verifyNoInteractions(resources);
+  }
+
+  @Test
   void separatesEffectiveAccessFromOwnedRoleGrants() {
     Resource named = new Resource();
-    named.setCode("users.view"); named.setName("Users"); named.setType(ResourceType.PAGE);
-    em.persist(named); em.flush();
-    when(resources.findAllByCodes(anyCollection())).thenReturn(List.of(named));
-    when(tenants.getCurrentUserRoles("tenant-a")).thenReturn(List.of(
-        new RoleGrantedAuthority("role-a", "Reader", "READER")));
+    named.setCode("users.view");
+    named.setName("Users");
+    named.setType(ResourceType.PAGE);
+    em.persist(named);
+    em.flush();
+    final var catalog = mock(TenantResourceCatalog.class);
+    var tenantPage = new TenantResource();
+    tenantPage.setId(named.getId());
+    tenantPage.setTenantId("tenant-a");
+    tenantPage.setCode(named.getCode());
+    tenantPage.setName(named.getName());
+    tenantPage.setType(named.getType());
+    when(catalog.selectedResources(org.mockito.ArgumentMatchers.eq("tenant-a"), anyCollection()))
+        .thenReturn(List.of(tenantPage));
+    service.setTenantResourceCatalog(catalog);
+    when(tenants.getCurrentUserRoles("tenant-a"))
+        .thenReturn(List.of(new RoleGrantedAuthority("role-a", "Reader", "READER")));
     when(users.loadResourcesInRoleIds(List.of("role-a")))
         .thenReturn(Set.of("users.view", "disabled.edit"));
 
     var effective = service.resources(null, "", "ALL", PageRequest.of(0, 24));
-    assertThat(effective.getContent()).extracting(row -> row.code())
+    assertThat(effective.getContent())
+        .extracting(row -> row.code())
         .containsExactlyInAnyOrder("users.view", "public.view");
     assertThat(effective.getContent()).allMatch(row -> row.effective());
-    assertThat(effective.getContent()).filteredOn(row -> row.code().equals("public.view"))
+    assertThat(effective.getContent())
+        .filteredOn(row -> row.code().equals("public.view"))
         .allMatch(row -> !row.available());
 
     var role = service.resources("role-a", "", "ALL", PageRequest.of(0, 24));
-    assertThat(role.getContent()).extracting(row -> row.code())
+    assertThat(role.getContent())
+        .extracting(row -> row.code())
         .containsExactlyInAnyOrder("users.view", "disabled.edit");
-    assertThat(role.getContent()).filteredOn(row -> row.code().equals("disabled.edit"))
+    assertThat(role.getContent())
+        .filteredOn(row -> row.code().equals("disabled.edit"))
         .allMatch(row -> !row.effective() && !row.available());
-    assertThat(service.resources("role-a", "users", "PAGE", PageRequest.of(0, 24))
-        .getContent()).extracting(row -> row.code()).containsExactly("users.view");
+    assertThat(service.resources("role-a", "users", "PAGE", PageRequest.of(0, 24)).getContent())
+        .extracting(row -> row.code())
+        .containsExactly("users.view");
     assertThatThrownBy(() -> service.resources("foreign-role", "", "ALL", PageRequest.of(0, 24)))
         .isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> service.resources(null, "", "ALL", PageRequest.of(0, 61)))
@@ -113,27 +149,49 @@ class CurrentUserAccessServiceImplTest {
   @Test
   void pageListAndDetailUseResourceHierarchyWithoutShowingOtherPages() {
     Resource directory = new Resource();
-    directory.setCode("admin"); directory.setName("管理"); directory.setType(ResourceType.GROUP);
+    directory.setCode("admin");
+    directory.setName("管理");
+    directory.setType(ResourceType.GROUP);
     em.persist(directory);
     Resource page = new Resource();
-    page.setCode("users.view"); page.setName("用户管理"); page.setType(ResourceType.PAGE);
-    page.setParentId(directory.getId()); em.persist(page);
+    page.setCode("users.view");
+    page.setName("用户管理");
+    page.setType(ResourceType.PAGE);
+    page.setParentId(directory.getId());
+    em.persist(page);
     Resource action = new Resource();
-    action.setCode("users.edit"); action.setName("编辑用户"); action.setType(ResourceType.ACTION);
-    action.setParentId(page.getId()); em.persist(action);
+    action.setCode("users.edit");
+    action.setName("编辑用户");
+    action.setType(ResourceType.ACTION);
+    action.setParentId(page.getId());
+    em.persist(action);
     Resource sibling = new Resource();
-    sibling.setCode("other.view"); sibling.setName("其他页面"); sibling.setType(ResourceType.PAGE);
-    sibling.setParentId(directory.getId()); em.persist(sibling);
+    sibling.setCode("other.view");
+    sibling.setName("其他页面");
+    sibling.setType(ResourceType.PAGE);
+    sibling.setParentId(directory.getId());
+    em.persist(sibling);
     em.flush();
-    Map<String, Resource> visible = Map.of(directory.getCode(), directory, page.getCode(), page,
-        action.getCode(), action, sibling.getCode(), sibling);
-    when(resources.findAllByCodes(anyCollection())).thenAnswer(invocation ->
-        ((java.util.Collection<String>) invocation.getArgument(0)).stream()
-            .map(visible::get).filter(java.util.Objects::nonNull).toList());
+    Map<String, Resource> visible =
+        Map.of(
+            directory.getCode(),
+            directory,
+            page.getCode(),
+            page,
+            action.getCode(),
+            action,
+            sibling.getCode(),
+            sibling);
+    when(resources.findAllByCodes(anyCollection()))
+        .thenAnswer(
+            invocation ->
+                ((java.util.Collection<String>) invocation.getArgument(0))
+                    .stream().map(visible::get).filter(java.util.Objects::nonNull).toList());
     AuthorizationContext ctx = new AuthorizationContext();
-    ctx.setUserId("user-a"); ctx.setScopeType(AuthorizationScopeType.TENANT);
+    ctx.setUserId("user-a");
+    ctx.setScopeType(AuthorizationScopeType.PLATFORM);
     ctx.setResources(Set.of("users.view", "users.edit", "other.view"));
-    ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+    ctx.setAttributes(Map.of());
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
 
     var list = service.resources(null, "", "PAGE", PageRequest.of(0, 1));
@@ -154,25 +212,39 @@ class CurrentUserAccessServiceImplTest {
     TenantResourceCatalog catalog = mock(TenantResourceCatalog.class);
     service.setTenantResourceCatalog(catalog);
     TenantResource platformPage = new TenantResource();
-    platformPage.setTenantId("tenant-a"); platformPage.setId("platform-page");
+    platformPage.setTenantId("tenant-a");
+    platformPage.setId("platform-page");
     platformPage.setPlatformResourceId("platform-page");
-    platformPage.setCode("users.view"); platformPage.setName("Platform users");
-    platformPage.setType(ResourceType.PAGE); platformPage.setEnabled(true);
+    platformPage.setCode("users.view");
+    platformPage.setName("Platform users");
+    platformPage.setType(ResourceType.PAGE);
+    platformPage.setEnabled(true);
     TenantResource action = new TenantResource();
-    action.setTenantId("tenant-a"); action.setId("platform-action");
-    action.setPlatformResourceId("platform-action"); action.setParentId(platformPage.getId());
-    action.setCode("users.edit"); action.setName("Edit users");
-    action.setType(ResourceType.ACTION); action.setEnabled(true);
+    action.setTenantId("tenant-a");
+    action.setId("platform-action");
+    action.setPlatformResourceId("platform-action");
+    action.setParentId(platformPage.getId());
+    action.setCode("users.edit");
+    action.setName("Edit users");
+    action.setType(ResourceType.ACTION);
+    action.setEnabled(true);
     TenantResource alias = new TenantResource();
-    alias.setTenantId("tenant-a"); alias.setId("alias");
+    alias.setTenantId("tenant-a");
+    alias.setId("alias");
     alias.setTargetResourceId(platformPage.getId());
-    alias.setCode("tenant.tenant-a.alias"); alias.setName("My users");
-    alias.setType(ResourceType.PAGE); alias.setEnabled(true);
-    when(catalog.mode("tenant-a")).thenReturn(TenantResourceMode.CUSTOM);
-    em.persist(platformPage); em.persist(action); em.persist(alias); em.flush();
-    when(catalog.selectedResources(org.mockito.ArgumentMatchers.eq("tenant-a"), anyCollection())).thenReturn(List.of(platformPage, action, alias));
+    alias.setCode("tenant.tenant-a.alias");
+    alias.setName("My users");
+    alias.setType(ResourceType.PAGE);
+    alias.setEnabled(true);
+    em.persist(platformPage);
+    em.persist(action);
+    em.persist(alias);
+    em.flush();
+    when(catalog.selectedResources(org.mockito.ArgumentMatchers.eq("tenant-a"), anyCollection()))
+        .thenReturn(List.of(platformPage, action, alias));
     AuthorizationContext ctx = new AuthorizationContext();
-    ctx.setUserId("user-a"); ctx.setScopeType(AuthorizationScopeType.TENANT);
+    ctx.setUserId("user-a");
+    ctx.setScopeType(AuthorizationScopeType.TENANT);
     ctx.setResources(Set.of(platformPage.getCode(), alias.getCode(), action.getCode()));
     ctx.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, ctx);
@@ -180,26 +252,42 @@ class CurrentUserAccessServiceImplTest {
     var pages = service.resources(null, "", "PAGE", PageRequest.of(0, 10));
     assertThat(pages.getContent()).extracting(row -> row.code()).containsExactly(alias.getCode());
     assertThat(service.pageDetail(null, alias.getCode()).operations())
-        .extracting(row -> row.code()).containsExactly(action.getCode());
+        .extracting(row -> row.code())
+        .containsExactly(action.getCode());
   }
 
   @Test
   void resolvesOnlyActiveMembershipAndSameTenantOrganizationPath() {
     Organization root = new Organization();
-    root.setTenantId("tenant-a"); root.setCode("hq"); root.setName("HQ"); root.setEnabled(true);
+    root.setTenantId("tenant-a");
+    root.setCode("hq");
+    root.setName("HQ");
+    root.setEnabled(true);
     em.persist(root);
     Organization child = new Organization();
-    child.setTenantId("tenant-a"); child.setCode("team"); child.setName("Team");
-    child.setParentId(root.getId()); child.setEnabled(true); em.persist(child);
+    child.setTenantId("tenant-a");
+    child.setCode("team");
+    child.setName("Team");
+    child.setParentId(root.getId());
+    child.setEnabled(true);
+    em.persist(child);
     Organization foreign = new Organization();
-    foreign.setTenantId("tenant-b"); foreign.setCode("foreign"); foreign.setName("Foreign");
-    foreign.setEnabled(true); em.persist(foreign);
+    foreign.setTenantId("tenant-b");
+    foreign.setCode("foreign");
+    foreign.setName("Foreign");
+    foreign.setEnabled(true);
+    em.persist(foreign);
     TenantUserRelevance member = new TenantUserRelevance();
-    member.setTenantId("tenant-a"); member.setUserId("user-a"); member.setOrgId(child.getId());
+    member.setTenantId("tenant-a");
+    member.setUserId("user-a");
+    member.setOrgId(child.getId());
     em.persist(member);
     TenantUserRelevance other = new TenantUserRelevance();
-    other.setTenantId("tenant-b"); other.setUserId("user-a"); other.setOrgId(foreign.getId());
-    em.persist(other); em.flush();
+    other.setTenantId("tenant-b");
+    other.setUserId("user-a");
+    other.setOrgId(foreign.getId());
+    em.persist(other);
+    em.flush();
 
     assertThat(service.organization().path()).containsExactly("HQ", "Team");
     assertThat(service.organization().id()).isEqualTo(child.getId());

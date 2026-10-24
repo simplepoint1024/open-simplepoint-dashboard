@@ -1,0 +1,236 @@
+{
+  "date": "2026-10-20",
+  "phase": "G21 module-owned bootstrap, stable ledger scope and guarded execution; full goal remains incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-composition:check :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-platform:simplepoint-platform-bootstrap:check :simplepoint-platform:simplepoint-platform-bootstrap-registry:check :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-api:test :simplepoint-plugins:simplepoint-plugins-i18n:simplepoint-plugin-i18n-service:test :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-api:test :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries verifyCompositionBootstrapStyle -I /tmp/simplepoint-bootstrap-checkstyle.gradle -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-bootstrap",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-bootstrap-registry",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-api",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-service",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-api",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 487,
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-bootstrap-registry/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build/reports/checkstyle/compositionBootstrap.xml",
+      "violations": 0
+    }
+  ],
+  "scopedStyleFiles": [
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/repository/PlatformContributionRepository.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/service/impl/PlatformContributionServiceImpl.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/ModuleBootstrapRegistryTest.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/BootstrapExecution.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/ModuleBootstrapContributions.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/ModuleBootstrapScope.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapAutoConfiguration.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapExecutor.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapModuleInitializer.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/properties/PlatformBootstrapProperties.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/service/PlatformContributionService.java",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/test/java/org/simplepoint/platform/bootstrap/BootstrapExecutionTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleInitializationRunner.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/BootstrapEffects.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstrapone/BootstrapOneModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstraptwo/BootstrapTwoModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstrapundeclared/BootstrapUndeclaredModule.java",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleBootstrapBootTest.java",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedInitializationTest.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitialization.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationStage.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationTask.java",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializer.java",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java"
+  ],
+  "scopedStyleProcedure": "The temporary Gradle init script registers Checkstyle tasks over scopedStyleFiles, using each owning project test compile classpath, unchanged repository checkstyle/google_checks.xml and maxWarnings=0. Standard checks run for composition, Spring adapter, architecture verification, bootstrap and registry.",
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "verified": [
+    "Bootstrap providers resolve ownership from their actual Spring factory/component and the selected module package/ClassLoader. Unowned providers and modules missing the bootstrap initializer fail startup.",
+    "Identity, i18n and storage declare the bootstrap initializer; its registry contract automatically participates in module routing and credential planning.",
+    "Boot tests preserve module-owned credentials and stable module/{id} ledger keys across combined and split host names. The registry transport is a fixture, not a deployed remote service.",
+    "BOOTSTRAP tasks retain contribution priorities across modules and precede REGISTRATION tasks. Preparation of every selected initializer completes before effects.",
+    "Duplicate contribution identities fail before registry/business work. Modular execution uses module policy independently of the legacy common-service allowlist and rejects fail-fast=false for enabled bootstrap.",
+    "Execution failure preserves its original cause and suppresses secondary registry failures; persisted summaries contain exception type rather than payload text. Failed start acknowledgements do not run actions. Failed completion acknowledgements never mark successful actions failed.",
+    "Actual Spring Data JPA, transactions and H2 verify completed-state reuse, explicit legacy migration guard, RUNNING replay rejection and revision checks on completion/failure.",
+    "Two concurrent workers cannot both acquire one module contribution, both for initially absent records and existing FAILED records; H2 uniqueness or the locked state transition rejects the loser before business execution.",
+    "Legacy Common/Authorization and the existing declaration initialization tests pass."
+  ],
+  "limitations": [
+    "No full standalone/distributed/mixed domain topology, frontend distribution, production deployment or real OAuth server was run in this phase.",
+    "H2 concurrency tests do not prove PostgreSQL/other production dialect behavior; those database gates remain pending.",
+    "Old host-keyed bootstrap records need a controlled migration while old executors are stopped; installer migration automation is not implemented. Existing historical keys/checksums are preserved.",
+    "RUNNING recovery, execution generation/lease fencing and coordinated revision upgrades remain pending. No automatic reset or exactly-once guarantee is claimed.",
+    "Business effects and remote ledger updates are separate transactions. Recoverable actions must tolerate partial business success; full domain recovery acceptance remains pending.",
+    "Common-host dictionary contributions, shared locale queries, legacy user management/credential RPC, storage/events and HTTP/frontend ownership remain incomplete; no standalone service has been delivered."
+  ],
+  "sourceSha256": {
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/build.gradle.kts": "62e3ea3039d6d7fe7d8c7407e192a2e7b5a0e4b702144e3062de7202ea326b4a",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/repository/PlatformContributionRepository.java": "eeaf6e4fe17ff0cf2b97a6fdee07e7811cebe4af6c74d7c268c41fba6a7441ad",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/main/java/org/simplepoint/platform/bootstrap/registry/service/impl/PlatformContributionServiceImpl.java": "dd229150b6a6d924f8f1996a1cfe2de2b9956697a8db0058f1f677fc0524c9d5",
+    "simplepoint-platform/simplepoint-platform-bootstrap-registry/src/test/java/org/simplepoint/platform/bootstrap/registry/ModuleBootstrapRegistryTest.java": "144e1b75d33b1c4b03217e8c2fd5426c14ff7e56a96b9667d7babf6b2ccd952e",
+    "simplepoint-platform/simplepoint-platform-bootstrap/build.gradle.kts": "0f3805bbf43a2a7b69a0c820c5656b0123ae4345f5e3defbdbf58109bdf960fb",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/BootstrapExecution.java": "7dc1735a3a27da895efaf085fb85262f35f038e505b9c906bbc46058e07d5e25",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/ModuleBootstrapContributions.java": "db0666822332217e37851cd84257d36768413bdee15b22997ecb1af929e30eca",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/ModuleBootstrapScope.java": "223cd693c5da0c2e6a11d72aaf91fe68a83a5f65f1cf6c11c68eace86b8bc0a7",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapAutoConfiguration.java": "6de0a886c0fcf72522d7541ab2322f8a575922a53285f60bf3ae767b7858cf6d",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapExecutor.java": "d8474726a747a67fa1414614e33bfd5ba56348d34a03987dd2c3e91adee3cae0",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/PlatformBootstrapModuleInitializer.java": "93ea7b0f096e349c630e0e01970ad9982db7516fe037cbba96c690770d3b4128",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/properties/PlatformBootstrapProperties.java": "812f6aca6664e934e86911414621b007960c8aae344ebb1bec73a57bebe816db",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/main/java/org/simplepoint/platform/bootstrap/service/PlatformContributionService.java": "a4ebb014147b6d5759cc1ea088f19a0252db42da91645a00479218d94acd0754",
+    "simplepoint-platform/simplepoint-platform-bootstrap/src/test/java/org/simplepoint/platform/bootstrap/BootstrapExecutionTest.java": "8fafb456e8d27b4009bc40a9696276bf0df40af34d52351706f640ddf66fb62f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/build.gradle.kts": "3cf0a62c30142f13830dd1aea753c9ae428a29fabfcc187cee68504e0e7c15a4",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleInitializationRunner.java": "cc35f0e2aee76655f9e9174ff1c8f0a74e143784283ba4d7d3cb6279fe595fa0",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/BootstrapEffects.java": "6d3882a21ec976ac625658215aec0f1e321ec4e6315662b7b9d0a64bdb54fd9f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstrapone/BootstrapOneModule.java": "f2bf87b7f238d5f5ab85a8b92c0b9c6b5bb490c7fa0d49a92e9072595469106a",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstraptwo/BootstrapTwoModule.java": "6da193355d786ea1c7ad9bdc67acb73fdacc90fc16c67230ffd5afe09e50c14f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/bootstrapundeclared/BootstrapUndeclaredModule.java": "8c34787d4c8a32ab38978934b892a5cbae4df39f8c6d1a6374f6f259b9956245",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleBootstrapBootTest.java": "ccda9f4c318a1ba1fa8127856b3789ccbe0f9500bb0c69140e2584c8246678c5",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules.imports": "16dadf09c58ff9d814fae4da6d9876013b6341508b06d322c1e0717f891b4abf",
+    "simplepoint-platform/simplepoint-platform-composition-verification/build.gradle.kts": "5b3af72f805770250e8b8dce2f96223ae8f29d410ff4c6c5636cf6b60a3b2b81",
+    "simplepoint-platform/simplepoint-platform-composition-verification/src/test/java/org/simplepoint/platform/composition/verification/PackagedInitializationTest.java": "cb15124cad5f7d9d55b1f8b6b036d567157541837647b6fd26bffd098ef66bfa",
+    "simplepoint-platform/simplepoint-platform-composition/build.gradle.kts": "7a2640d19bd3262587ccde8281a28e0d260301faf34d13c3419f0923a45e6c0b",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitialization.java": "27b861233763b307be11325640ee0304865a51fb51d6d841651b08e17790d5e2",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationStage.java": "565c81f8dd284320635d4e8c66f3d20f9a734b773f77377ecfc5eb3f76399b9e",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializationTask.java": "0aa871aa18d03b1ffaafaca533caa5384bc0de4d8903aa59cf54e1c712af8275",
+    "simplepoint-platform/simplepoint-platform-composition/src/main/java/org/simplepoint/platform/composition/ModuleInitializer.java": "b8d6ed174db9ab3ed654578cf19bb2b8dff9b42fffa77498cbfbd9317a336af3",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/build.gradle.kts": "6c1d35dcc2c35cfbefb1e247dc178b9669bf80da6ea30b8136e2c6fa6030d004",
+    "simplepoint-plugins/simplepoint-plugins-i18n/simplepoint-plugin-i18n-module/src/main/java/org/simplepoint/plugin/i18n/module/I18nModule.java": "7b38450718d0b4532dcb292b68875a762d05889178f911dd1ddad26ebcfc5029",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/build.gradle.kts": "ea68a89db21d3bf7ffc49310340a7003b12dbac110b2032ae355d9d9bb4b1874",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-module/src/main/java/org/simplepoint/plugin/rbac/module/IdentityModule.java": "3d2b4a397c684ce92a9198aedfa5e80e61977341527511edd911af642099f8d1",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/build.gradle.kts": "54072d672aeef4235655fea142f99daf3b844b72408bc049a1c8b05942aea74d",
+    "simplepoint-plugins/simplepoint-plugins-storage/simplepoint-plugin-storage-implementation/src/main/java/org/simplepoint/plugin/storage/module/StorageModule.java": "f190c90f0eb914e5d232cd97a3875579981b9b273a7cde2a884fc5b25597a39a"
+  }
+}

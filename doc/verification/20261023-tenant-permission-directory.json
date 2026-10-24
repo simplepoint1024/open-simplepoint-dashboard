@@ -1,0 +1,159 @@
+{
+  "verifiedAt": "2026-10-23T07:59:18.583198+00:00",
+  "status": "partial-S4-tenant-field-and-expression-directory",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Exactly one resource namespace is selected from verified PLATFORM/TENANT/PERSONAL context; tenant metadata no longer merges or falls back to the platform catalog",
+    "Tenant eligiblePermissionCodes checks only requested codes and dependency edges, including public non-grantable executables, without adding permissions; metadata requests intersect current caller grants before eligibility",
+    "Field page lists, legacy field catalogs and canonical-name resolution use tenant page descriptors; local ORM entities alone no longer permit tenant legacy field writes",
+    "Field trees use one database ordering/paging source, preserve bounded metadata batches, native null ordering and tenant-qualified counts; source field policies use the matching Resource/TenantResource namespace",
+    "Expression catalog and validation recheck current tenant eligibility while retaining a targeted metadata read",
+    "Existing unchanged historical field entries remain preservable/removable; newly changed entries are validated",
+    "Frontend masked/hidden permission contract fixtures now identify TenantResource source fields"
+  ],
+  "validation": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation": [
+      {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.FieldScopeCatalogDatabaseTest.xml",
+        "reportSha256": "b2db936abafbbc0eaa20fb93f1f8a02c433cf561b7ece7ecf3e4d5aa0febc0af"
+      },
+      {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.PermissionMetadataQueryDatabaseTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.PermissionMetadataQueryDatabaseTest.xml",
+        "reportSha256": "20956d7bcf2227c4ab0f0be7da57e19bde683166ff79ae7aa33736f8f60f5f47"
+      },
+      {
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.core.service.impl.ScopePolicyDatabaseTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.core.service.impl.ScopePolicyDatabaseTest.xml",
+        "reportSha256": "225f95ba382e74aeccf55de7817e2336057746b9588d34e4124e2b588725e1d9"
+      }
+    ],
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation": [
+      {
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest.xml",
+        "reportSha256": "7e5a267858c6053989beb5d301b7fe3189ba744f83db5d510c9ffea172adabe1"
+      },
+      {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest.xml",
+        "reportSha256": "f2f883f485a27316e7c6cc783c4a991f269632e6147ce85efa69d730f24d9094"
+      }
+    ],
+    "simplepoint-services/simplepoint-service-common": [
+      {
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.PermissionExpressionHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.PermissionExpressionHttpTest.xml",
+        "reportSha256": "695218aebd3175195a9fea96095d0e959d9a222262092932a8f5c8ee97a73add"
+      },
+      {
+        "tests": 51,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.FieldScopeLifecycleHttpTest.xml",
+        "reportSha256": "5e4bbfea53ed038329ef15acc5612309ba39ce2fca9fe7cd32379de56f6a7e40"
+      },
+      {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "name": "org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.DataScopeLifecycleHttpTest.xml",
+        "reportSha256": "4d83ca9b6ec342f35bef4000fe11736e8eb82928ae6af7f5fd88042e50febe9e"
+      }
+    ]
+  },
+  "totals": {
+    "tests": 158,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "postgresTests": 36,
+  "qualityGates": {
+    "scopedCheckstyle": "passed",
+    "scopedJavaFiles": [
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RegisteredPermissionPages.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/FieldScopeCatalog.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/PermissionExpressionService.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/TenantPermissionFixture.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/FieldScopeCatalogDatabaseTest.java",
+      "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantPermissionFixture.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java"
+    ],
+    "verifyModuleBoundaries": "passed",
+    "frontendTypecheck": "pnpm typecheck passed for all configured workspaces",
+    "frontendModelTests": {
+      "command": "node --experimental-strip-types --test modules/simplepoint-common/src/views/system/DataScope/model.test.mjs",
+      "tests": 5,
+      "passed": 5
+    }
+  },
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 SP_TENANT_PACKAGE_TEST_POSTGRES_URL=jdbc:postgresql://127.0.0.1:33280/postgres SP_TENANT_PACKAGE_TEST_POSTGRES_USER=postgres ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test --tests \"*TenantResourceCatalogReadTest\" --tests \"*TenantResourceCatalogImplTest\" :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test --tests \"*FieldScopeCatalogDatabaseTest\" --tests \"*PermissionMetadataQueryDatabaseTest\" --tests \"*ScopePolicyDatabaseTest\" :simplepoint-services:simplepoint-service-common:test --tests \"*PermissionExpressionHttpTest\" --tests \"*FieldScopeLifecycleHttpTest\" --tests \"*DataScopeLifecycleHttpTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test --tests \"*FieldScopeCatalogDatabaseTest\" --tests \"*PermissionMetadataQueryDatabaseTest\" --tests \"*ScopePolicyDatabaseTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew -I /tmp/simplepoint-field-checkstyle.init.gradle :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:checkstyleTest :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-api:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:checkstyleMain :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:checkstyleTest :simplepoint-services:simplepoint-service-common:checkstyleTest verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+    "cd simplepoint-react && pnpm typecheck",
+    "cd simplepoint-react && node --experimental-strip-types --test modules/simplepoint-common/src/views/system/DataScope/model.test.mjs"
+  ],
+  "boundaries": [
+    "PostgreSQL validates tenant eligibility and catalog services using exact identity V1-V16 migrations and Hibernate validate; metadata SQL paging and HTTP business fixtures execute on H2",
+    "All three HTTP suites use real TenantResourceCatalogImpl and omit the platform Resource mapping/table; no route fallback can silently satisfy them",
+    "FieldScopeCatalogDatabaseTest uses a controlled eligibility provider for namespace/paging tests; lifecycle filtering is covered separately by the real HTTP and tenant database fixtures",
+    "Coverage includes current-context expiry, future entitlement, manual disable, source unavailability, formal offline, incompatible scope, missing parent, unknown manager, same tenant/platform IDs, cross-tenant same codes and APP/REPORT in organization/personal scopes",
+    "Only the explicitly listed ten Java files are covered by the scoped style gate; legacy HTTP/other test formatting is not claimed as a repository-wide style pass",
+    "Runtime resource matching/navigation, managed registration, lifecycle events, standard pages, final migration and deployment/browser validation remain incomplete",
+    "No production database change, deployment, commit or push; intermediate state remains unsuitable for release"
+  ],
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/RegisteredPermissionPages.java": "f0a84cf62776dbbd0e06b1497882051686d5d4f899c70d438e9a4ab8b6c3fb65",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/FieldScopeCatalog.java": "0bf52b13f6e5660b6ad29aec892bf90ea452fdd1fe24b789bde53cd43d6f090d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/PermissionExpressionService.java": "abab592b642dbec391f19c54c4032728a2853381da1b4ab6692657734a36cf32",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java": "d1d845dd77a8a8d2add323ce2b0cfe5a560475719593b6cfe21dc1a24ce02aab",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "fb7b9a56a413cd97e1cdd41b7d8c219cd6e10ee70a2433bfb135e140d22aa6c4",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "3e67944f209f6f9b9da396573be8185244b76dcad079359e38c0065e8825b389",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/TenantPermissionFixture.java": "66b72ff0b7b772c7681ab6d78f7c855b7e69c0bcffe84f593a176929bc5f87a6",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/FieldScopeCatalogDatabaseTest.java": "e8f1c20fc891ac39a926f98d919158d0c11d084c68f169fdde525e40b42d871c",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantPermissionFixture.java": "be625f6dbd7af99aa97e953c5c09d58f9e4f26df4b0fd814cf13ade3654c883d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "9024b574ffe827661e7946634e20bee8feb152e370ad67929f4145a962b6eeac",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/build.gradle.kts": "c637553069ee84f031cf21b19a1921b6c51d5e5a6d7497438594b5b6211ee542",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/ScopePolicyDatabaseTest.java": "773d39413d857ed7a195c05be6642f003f5df98e88e237ddb0ac92a1c460df52",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/PermissionMetadataQueryDatabaseTest.java": "ac93757bd72d13543c8470dc1b9183dce320f89471ece34e7556d88ee08c1dca",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/PermissionExpressionHttpTest.java": "0ae1d8eff7094ba831cad423a64bd1ce22838c38e59ce4f89358b1225e53ab05",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/FieldScopeLifecycleHttpTest.java": "497cf089e7c4110f635d0bba7fb5713d5e2785af7391bd3d2e0c5d16654dfcdd",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/DataScopeLifecycleHttpTest.java": "2c8cfe3fb47dbaf023f208fd20eb20da759d18b18a7d6736d357a814a5e341ad",
+    "simplepoint-react/scripts/data-scope-contracts/hidden-effective.json": "b3b3672e67b0dd9c8e4954973843cedfc52391ffe346608d703f881abf039a84",
+    "simplepoint-react/scripts/data-scope-contracts/masked-effective.json": "8af546de1224890f09e46f6c93ca6b5889bd23fde36e70c1c15474e539c9fae5"
+  }
+}

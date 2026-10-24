@@ -57,6 +57,8 @@ class OrganizationServiceImplTest {
   @Mock
   org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService authorizationVersions;
 
+  @Mock OrganizationLeaderPolicy leaders;
+
   @InjectMocks
   OrganizationServiceImpl service;
 
@@ -486,4 +488,51 @@ class OrganizationServiceImplTest {
       verify(authorizationVersions).refreshTenant("t1");
     }
   }
+
+  @Test
+  void leaderAssociationDistinguishesLegacyOmissionClearAndProtectedInput() throws Exception {
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    try (var mocked = mockStatic(AuthorizationContextHolder.class)) {
+      var context = ctxWithTenant("t1");mocked.when(AuthorizationContextHolder::getContext).thenReturn(context);
+      var current = org("org1", "Organization", "HQ", "group");current.setTenantId("t1");current.setLeaderId("leader");
+      when(repository.findByIdAndTenantId("org1", "t1")).thenReturn(Optional.of(current));
+      when(repository.findById("org1")).thenReturn(Optional.of(current));
+      when(repository.getDomainClass()).thenReturn(Organization.class);
+      when(dictionaryItemRepository.options(TenantDictionaryCodes.ORGANIZATION_TYPE)).thenReturn(List.of(new DictionaryOptionVo("group", "集团")));
+      when(repository.updateById(any())).thenAnswer(call -> call.getArgument(0));
+      stubBaseServiceSchema(detailsProviderService);
+      var schema = mapper.createObjectNode();
+      var props = schema.putObject("properties");
+      for (var name : List.of("id","name","code","type","leaderId","tenantId")) props.putObject(name).put("type","string");
+      when(detailsProviderService.getDialect(org.simplepoint.api.security.generator.JsonSchemaGenerator.class).generateSchema(any())).thenReturn(schema);
+      String json = "{\"id\":\"org1\",\"name\":\"Organization\",\"code\":\"HQ\",\"type\":\"group\"";
+      assertThat(service.modifyById(mapper.readValue(json+"}", Organization.class)).getLeaderId()).isEqualTo("leader");
+      assertThat(service.modifyById(mapper.readValue(json+",\"leaderId\":null}", Organization.class)).getLeaderId()).isNull();
+      context.setFieldPermissions(Map.of(Organization.class.getName()+"#leaderId", "VISIBLE"));
+      assertThat(service.modifyById(mapper.readValue(json+",\"leaderId\":\"another\"}", Organization.class)).getLeaderId()).isEqualTo("leader");
+      verify(leaders, never()).validate("t1", "another");
+      assertThat(mapper.writeValueAsString(current)).doesNotContain("leaderIdSupplied", "hasLeaderIdInput");
+    }
+  }
+
+  @Test
+  void hiddenAndMaskedLeaderFieldsNeverResolveNamesAndForeignOrganizationsAreDenied() {
+    var row=org("org1","Name","CODE","group");row.setTenantId("t1");row.setLeaderId("leader");
+    try (var mocked=mockStatic(AuthorizationContextHolder.class)) {
+      var context=ctxWithTenant("t1");mocked.when(AuthorizationContextHolder::getContext).thenReturn(context);
+      when(repository.findById("org1")).thenReturn(Optional.of(row));
+      for (String access: List.of("HIDDEN","MASKED")) {
+        context=ctxWithTenant("t1");context.setFieldPermissions(Map.of(Organization.class.getName()+"#leaderId",access));
+        mocked.when(AuthorizationContextHolder::getContext).thenReturn(context);
+        var detail=service.details("org1");
+        assertThat(detail.references()).doesNotContainKey("leaderId");
+        if(access.equals("HIDDEN"))assertThat(detail.record()).doesNotContainKey("leaderId");
+        else assertThat(detail.record().get("leaderId")).isEqualTo("***");
+      }
+      verify(leaders, never()).label(any(),any());
+      row.setTenantId("foreign");
+      assertThatThrownBy(()->service.details("org1")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+  }
+
 }

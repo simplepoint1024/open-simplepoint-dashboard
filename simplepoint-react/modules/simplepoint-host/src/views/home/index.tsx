@@ -62,7 +62,7 @@ function HomeSession({routes, tenantType, remoteRegistryKey}: HomeProps) {
     </header>
     <div className="sp-home-layout">
       <div className="sp-home-main">
-        <PersonalOverview />
+        <PersonalOverview availablePaths={new Set(apps.map(app => app.path))}/>
         <section className="sp-home-panel" aria-label={t('home.apps', '常用应用')}>
           <div className="sp-home-section-heading"><h2><AppstoreOutlined /> {t('home.apps', '常用应用')}</h2><span className="sp-home-muted">{favorites} / {apps.length}</span></div>
           {prefs.isError && <Alert type="error" showIcon title={t('home.loadError', '首页设置加载失败，为避免覆盖已有设置，请先重试。')}

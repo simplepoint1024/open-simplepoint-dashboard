@@ -127,3 +127,26 @@ test('detail field edits validate their data model independently of form scenes'
   const full = {...document, fields: Array.from({length: 48}, (_, i) => ({...base, fieldId: `detail-${i}`, storageCode: `d_${i}`}))};
   fails(() => applyFieldEdit(full, base, fieldEdit(base), components, [], true, 'detail'), 'limit');
 });
+
+test('calculated fields retain storage identity, validation and index capabilities while rejecting input defaults', () => {
+  const document = source(), base = document.fields[0];
+  const next = apply(document, {calculationMode: 'calculated', expression: 'UPPER("日本語")', storageRequired: true,
+    validation: {minLength: 2, maxLength: 60}, defaultMode: 'VALUE', defaultText: 'ignored', writePolicy: 'CREATE_ONLY'});
+  const computed = next.fields[0];
+  assert.equal(computed.fieldId, base.fieldId);
+  assert.equal(computed.storageCode, base.storageCode);
+  assert.equal(computed.storageLabel, base.storageLabel);
+  assert.equal(computed.storageMode, 'COMPUTED');
+  assert.deepEqual(computed.calculation, {languageVersion: '1', expression: 'UPPER("日本語")'});
+  assert.equal(computed.defaultValue, null);
+  assert.equal(computed.writePolicy, undefined);
+  assert.deepEqual(computed.validation, {minLength: 2, maxLength: 60});
+  const index = newIndex();
+  assert.equal(applyIndexEdit(next, index, {unique: false, fieldIds: [computed.fieldId]}, true).indexes.length, 1);
+  fails(() => apply(next, {calculationMode: 'stored'}), 'defaultValue');
+  const stored = apply(next, {calculationMode: 'stored', defaultMode: 'VALUE', defaultText: '恢复'});
+  assert.equal(stored.fields[0].storageMode, 'STORED');
+  assert.equal(Object.hasOwn(stored.fields[0], 'calculation'), false);
+  assert.equal(stored.fields[0].fieldId, base.fieldId);
+  fails(() => apply(document, {calculationMode: 'calculated', expression: '1+'}), 'calculation');
+});

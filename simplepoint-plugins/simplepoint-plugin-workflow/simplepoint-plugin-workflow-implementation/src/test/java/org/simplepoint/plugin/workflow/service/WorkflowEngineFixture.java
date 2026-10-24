@@ -21,7 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
-import org.simplepoint.plugin.rbac.tenant.api.service.TenantService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantDirectory;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PublishDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.UpdateDraftCommand;
@@ -35,9 +35,7 @@ import org.simplepoint.plugin.workflow.entity.WorkflowInboxReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceWatcherEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowMatterReadModel;
-import org.simplepoint.plugin.workflow.entity.WorkflowMemberReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowNotificationOutboxEntity;
-import org.simplepoint.plugin.workflow.entity.WorkflowRoleReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowStartableReadModel;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -54,7 +52,8 @@ abstract class WorkflowEngineFixture {
   private StaticApplicationContext context;
   protected TransactionTemplate transaction;
   protected WorkflowCenterServiceImpl service;
-  protected TenantService tenants;
+  protected TenantDirectory tenants;
+  protected org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory auditIdentities;
   protected JpaTransactionManager manager;
   protected DriverManagerDataSource source;
   private DriverManagerDataSource postgresAdmin;
@@ -63,11 +62,34 @@ abstract class WorkflowEngineFixture {
   @BeforeEach
   void setup() throws SQLException {
     source = testDataSource();
+    if (postgresSchema != null) {
+      var modules =
+          org.simplepoint.platform.composition.ModuleCatalog.discover(getClass().getClassLoader())
+              .plan(java.util.List.of("workflow"));
+      var binding =
+          new org.simplepoint.platform.composition.ModuleStorageBindings.Binding(
+              "default", "source", "factory", "entityManager", "transactionManager", "jdbc");
+      var plan =
+          org.simplepoint.data.migration.ModuleMigrationPlan.discover(
+              modules,
+              new org.simplepoint.platform.composition.ModuleStorageBindings(
+                  java.util.Map.of("workflow", binding)));
+      new org.simplepoint.data.migration.ModuleMigrationEngine()
+          .migrate(plan, java.util.Map.of("default", source));
+    }
+    if (postgresSchema == null) {
+      new org.springframework.jdbc.datasource.init.ResourceDatabasePopulator(
+              new org.springframework.core.io.ClassPathResource(
+                  "META-INF/simplepoint/modules/workflow/db/postgresql/V2__member_label_projection.sql"))
+          .execute(source);
+    }
     factory =
         new MetadataSources(
                 new StandardServiceRegistryBuilder()
                     .applySetting("hibernate.connection.datasource", source)
-                    .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+                    .applySetting(
+                        "hibernate.hbm2ddl.auto",
+                        postgresSchema == null ? "create-drop" : "validate")
                     .applySetting("hibernate.hbm2ddl.halt_on_error", "true")
                     .build())
             .addAnnotatedClass(WorkflowDefinitionEntity.class)
@@ -76,16 +98,17 @@ abstract class WorkflowEngineFixture {
             .addAnnotatedClass(WorkflowInstanceWatcherEntity.class)
             .addAnnotatedClass(WorkflowNotificationOutboxEntity.class)
             .addAnnotatedClass(WorkflowActionEntity.class)
-            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowOperationReceiptEntity.class)
-            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowBusinessLinkEntity.class)
-            .addAnnotatedClass(org.simplepoint.plugin.workflow.entity.WorkflowFormBindingEntity.class)
+            .addAnnotatedClass(
+                org.simplepoint.plugin.workflow.entity.WorkflowOperationReceiptEntity.class)
+            .addAnnotatedClass(
+                org.simplepoint.plugin.workflow.entity.WorkflowBusinessLinkEntity.class)
+            .addAnnotatedClass(
+                org.simplepoint.plugin.workflow.entity.WorkflowFormBindingEntity.class)
             .addAnnotatedClass(WorkflowEngineSignalEntity.class)
             .addAnnotatedClass(WorkflowInboxReadModel.class)
             .addAnnotatedClass(WorkflowCandidateReadModel.class)
             .addAnnotatedClass(WorkflowMatterReadModel.class)
             .addAnnotatedClass(WorkflowStartableReadModel.class)
-            .addAnnotatedClass(WorkflowMemberReadModel.class)
-            .addAnnotatedClass(WorkflowRoleReadModel.class)
             .buildMetadata()
             .buildSessionFactory();
     manager = new JpaTransactionManager(factory);
@@ -99,7 +122,7 @@ abstract class WorkflowEngineFixture {
     configuration.setDataSource(source);
     configuration.setTransactionManager(manager);
     configuration.setApplicationContext(context);
-    configuration.setDatabaseSchemaUpdate("true");
+    configuration.setDatabaseSchemaUpdate(postgresSchema == null ? "true" : "false");
     if (postgresSchema != null) {
       configuration.setDatabaseSchema(postgresSchema);
     }
@@ -116,8 +139,10 @@ abstract class WorkflowEngineFixture {
         .workflowEngineSignals(new WorkflowEngineSignalListener(source, workflowProvider))
         .configure(configuration);
     engine = configuration.buildProcessEngine();
-    var entityManager = SharedEntityManagerCreator.createSharedEntityManager(factory);
-    tenants = mock(TenantService.class);
+    final var entityManager = SharedEntityManagerCreator.createSharedEntityManager(factory);
+    tenants = mock(TenantDirectory.class);
+    auditIdentities =
+        mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class);
     when(tenants.resolveActiveMemberIds(eq("tenant"), anyCollection()))
         .thenAnswer(
             invocation -> {
@@ -142,6 +167,7 @@ abstract class WorkflowEngineFixture {
             new BpmnDefinitionValidator(),
             new ObjectMapper(),
             tenants,
+            auditIdentities,
             formProviders());
     var authorization = new AuthorizationContext();
     authorization.setScopeType(AuthorizationScopeType.TENANT);
@@ -167,6 +193,14 @@ abstract class WorkflowEngineFixture {
           context.close();
         }
       } finally {
+        // Inline mock answers can retain the fixture and its closed engine/ORM graphs.
+        // Release only this fixture's mocks; other tests may own separate mock lifecycles.
+        if (auditIdentities != null) {
+          org.mockito.Mockito.framework().clearInlineMock(auditIdentities);
+        }
+        if (tenants != null) {
+          org.mockito.Mockito.framework().clearInlineMock(tenants);
+        }
         if (postgresAdmin != null && postgresSchema != null) {
           if (!postgresSchema.matches("workflow_test_[0-9a-f]{32}")) {
             throw new IllegalStateException("Invalid disposable test schema");
@@ -193,15 +227,25 @@ abstract class WorkflowEngineFixture {
       return new DriverManagerDataSource(
           "jdbc:h2:mem:assignment-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
     }
-    String url = "jdbc:postgresql://127.0.0.1:45439/workflow_test";
-    postgresAdmin = new DriverManagerDataSource(url, "workflow_test", "workflow_test");
+    String url =
+        System.getenv()
+            .getOrDefault(
+                "WORKFLOW_TEST_POSTGRES_URL", "jdbc:postgresql://127.0.0.1:45439/workflow_test");
+    if (!url.matches(
+        "jdbc:postgresql://127\\.0\\.0\\.1:[0-9]{1,5}/(?:workflow_test|dna_runtime)")) {
+      throw new IllegalArgumentException(
+          "Workflow tests require an isolated localhost test database");
+    }
+    String user = System.getenv().getOrDefault("WORKFLOW_TEST_POSTGRES_USER", "workflow_test");
+    String password =
+        System.getenv().getOrDefault("WORKFLOW_TEST_POSTGRES_PASSWORD", "workflow_test");
+    postgresAdmin = new DriverManagerDataSource(url, user, password);
     postgresSchema = "workflow_test_" + UUID.randomUUID().toString().replace("-", "");
     try (var connection = postgresAdmin.getConnection();
         var statement = connection.createStatement()) {
       statement.execute("create schema " + postgresSchema);
     }
-    return new DriverManagerDataSource(
-        url + "?currentSchema=" + postgresSchema, "workflow_test", "workflow_test");
+    return new DriverManagerDataSource(url + "?currentSchema=" + postgresSchema, user, password);
   }
 
   protected String publishRole(final String candidates) {

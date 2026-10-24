@@ -1,0 +1,78 @@
+{
+  "status": "SOURCE_VERIFIED_DEPLOYMENT_PENDING",
+  "at": "2026-10-19T02:34:30.740206+00:00",
+  "changes": [
+    "流程消费字段要求在提交受理时冻结，最终物理事务内对授权快照验证必填/类型适用性/文本传输上限/有界 RE2 与角色格式",
+    "旧受理记录缺省元数据继续使用原请求结构；恢复重试复用冻结约束，幂等指纹包含新要求",
+    "真实 PostgreSQL/MySQL 验证最终计算快照不满足流程要求时回滚数据、快照及回执，复用同键可重新提交",
+    "运行时仅增加可选 calculated 标记，不公开公式或依赖"
+  ],
+  "quality": {
+    "simplepoint-plugin-dna-runtime-api": {
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "4813b954e7b5e1eba20e6bb41898ca0af424b43d7323ff0ab6021cafab027532",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-plugin-dna-runtime-implementation": {
+      "tests": 194,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "78ad6e79daf88150540e8ae9891242648b059f47beb7bd0f89c8d21304fe0390",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-plugin-app-form-api": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testTask": "NO-SOURCE",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-plugin-app-form-implementation": {
+      "tests": 292,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "8672250e6b7d306676492e50e87c1258da31a8e42d463e0bd6cc5b6e627cdc53",
+      "checkstyleMain": "passed"
+    },
+    "simplepoint-service-app": {
+      "tests": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "testResultSha256": "98629ec14bde5518a9c03277a496f32ed99d2d97544519b2c4aa3c3475c8cbdf"
+    }
+  },
+  "totalTests": 594,
+  "sourceSha256": {
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/test/java/org/simplepoint/plugin/dna/runtime/api/record/RecordSnapshotFieldRequirementTest.java": "faae9e3716d5894b8bbceb8a6c0045c4c1d975fd96b305a55fd67df863373569",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/RecordSnapshotFieldRequirement.java": "47377875e4b52bb2fab570fba0b1a741c2379d97ad01ef5dd4e3617bff174920",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-api/src/main/java/org/simplepoint/plugin/dna/runtime/api/record/OwnedRecordSnapshotRequest.java": "78796808bf484074552e585c2028270e0acbac92ead243715034d3e07a99a434",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordRealDatabaseTest.java": "eb262042aae02fe93d01211deaad304c5f3efc5ad96ac63017e9175619dde3ff",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordSnapshotValidationTest.java": "6b4c6d1669fa7120a639d964e4a04f5455c006db4e57c3231f0cd4d95e79d02b",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/test/java/org/simplepoint/plugin/dna/runtime/service/record/RecordRequestFingerprintTest.java": "34f4a0b96e890141e75d795131c829b48debb945f603a84e5863f2dc652ffb69",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordSnapshotValidation.java": "7c4fda1c9c9e87313c1c0e4f55e89833c3d3426708b533f4e70345ff28b8221f",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/RecordSnapshotPlan.java": "c41a59997d81e69e9846ff8760d5db350bf9705df96babbe15d16d2b70a31f41",
+    "simplepoint-plugins/simplepoint-plugin-dna/simplepoint-plugin-dna-runtime-implementation/src/main/java/org/simplepoint/plugin/dna/runtime/service/record/OwnedRecordService.java": "2ffc151f33707f1921b035e0684ddfbc5cc1d59179f7f6b59bcfffe158e1d8f6",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-api/src/main/java/org/simplepoint/plugin/app/form/api/model/ApplicationFormRuntimeFieldDefinition.java": "bb74888676c16b8d04796707bbf8382e94ee713dde45d3205706822b820851b1",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormSubmissionRecoveryTest.java": "c0cdcb3fc96e5e3f9c6243c050127f4a658b0a58d50913bd405290c673afe552",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationRuntimeProjectionTest.java": "7022a2a23589b302323f47c15b4eab51463572365ca45dd53c5794e03e339a6c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormRuntimeDocumentCompiler.java": "4d46f5688f90587051e75001dd18036ca4e34256ebcd14d75f4fb7e254a2eebb",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormSubmissionProcessor.java": "6657e5a8350dbf281b5c469108326929ef0e861dc1e3f3d0de73c40001058320",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/ApplicationFormSubmissionService.java": "5af92f72dc65d9ce2bba9da8d96e143e192b93741b982819982da13d26a689c3",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormSubmissionMapping.java": "1ec487fd1e1dbfca654420e59d81dc293bcf360c7ff184f15f8f2ae9b9443104",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormDetailRecordCoordinator.java": "f3130be94638a1f002a6779bf8c4e2c88deeba9ab77493aef837cb2da5a39ee0",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/AcceptedFormSubmission.java": "57e9c4dda0af2b4bae1578dd50457b70cc2c4b0604796c3b65528ca0e808b8c8",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/ApplicationFormRecordServiceImpl.java": "a679ebd9584e08b139a3f8ccbee2a49a867140a9c9c77489199e476b78fd5179"
+  },
+  "limitations": [
+    "未部署，公式发布保护仍保留",
+    "前端设计器与运行时当前正在集成，本报告不作为浏览器验证证据",
+    "B1–B5 和 176 项最终业务验收尚未完成"
+  ]
+}

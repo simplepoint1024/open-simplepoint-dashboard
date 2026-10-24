@@ -8,13 +8,13 @@
 
 package org.simplepoint.cloud.oauth.server.expansion.oidc;
 
-import org.simplepoint.plugin.rbac.core.api.service.UsersService;
+import org.simplepoint.plugin.rbac.core.api.service.UserManagementService;
 
 /**
  * Abstract implementation of OIDC user info authentication expansion.
- * Provides a base class for handling user authentication with {@link UsersService}.
+ * Provides a base class for handling user authentication with {@link UserManagementService}.
  * OIDC 用户信息认证扩展的抽象实现
- * 提供一个用于处理用户认证的基类，依赖于 {@link UsersService}
+ * 提供一个用于处理用户认证的基类，依赖于 {@link UserManagementService}
  */
 public abstract class AbstractOidcUserInfoAuthentication implements
     OidcUserInfoAuthenticationExpansion {
@@ -23,7 +23,7 @@ public abstract class AbstractOidcUserInfoAuthentication implements
    * Users service dependency for retrieving user information.
    * 用户服务，用于获取用户信息
    */
-  protected final UsersService usersService;
+  protected final UserManagementService usersService;
 
   /**
    * Constructs an authentication expansion instance using the specified user service.
@@ -32,7 +32,7 @@ public abstract class AbstractOidcUserInfoAuthentication implements
    * @param usersService The service responsible for managing user information.
    *                     用户服务，负责管理用户信息
    */
-  protected AbstractOidcUserInfoAuthentication(UsersService usersService) {
+  protected AbstractOidcUserInfoAuthentication(UserManagementService usersService) {
     this.usersService = usersService;
   }
 }

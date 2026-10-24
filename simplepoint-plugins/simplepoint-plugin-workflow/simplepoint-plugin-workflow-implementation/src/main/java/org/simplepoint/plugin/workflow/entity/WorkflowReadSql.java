@@ -1,28 +1,20 @@
 package org.simplepoint.plugin.workflow.entity;
 
-import org.simplepoint.security.identity.UserDisplayName;
-
 /**
- * Read-only adapter for the pinned Flowable 8 / shared platform database schema. No engine table is
+ * Read-only adapter for the pinned Flowable 8 / workflow-owned database schema. No engine table is
  * written here. SQL is static; scope, filters and paging are always bound by Criteria. Keep this
  * adapter covered by real engine schema tests when upgrading Flowable.
  */
 final class WorkflowReadSql {
   private WorkflowReadSql() {}
 
-  // A scalar, unique tenant/user directory using the shared name-first/email-fallback contract.
-  // Removed or disabled identities are deliberately unavailable; do not invent historical names.
+  // Only a complete generation is joined. Public list callers additionally fence source freshness.
   static final String MEMBERS =
       """
-      (select t.id as tenant_id, u.id as user_id,
-      """ + UserDisplayName.SQL + """
-       as name
-       from simpoint_saas_tenants t join simpoint_ac_users u
-         on (u.id = t.owner_id or exists (
-           select 1 from simpoint_saas_tenant_user_rel m
-           where m.tenant_id = t.id and m.user_id = u.id
-             and m.deleted_at is null and coalesce(m.enabled, true) = true))
-       where t.deleted_at is null and u.deleted_at is null and coalesce(u.enabled, true) = true)
+      (select l.tenant_id, l.user_id, l.name
+       from simpoint_workflow_member_labels l join simpoint_workflow_member_label_state s
+         on s.tenant_id=l.tenant_id and s.active_generation=l.generation
+       where s.tenant_active=true)
       """;
 
   private static final String TASKS =
@@ -76,11 +68,11 @@ final class WorkflowReadSql {
           + " union all "
           + PROCESS_ACTIONS
           + """
-            ) w join simpoint_workflow_instances i
-              on i.process_instance_id = w.process_instance_id and i.tenant_id = w.tenant_id
-            join ACT_HI_PROCINST h on h.ID_ = i.process_instance_id and h.TENANT_ID_ = i.tenant_id
-            left join
-            """
+          ) w join simpoint_workflow_instances i
+            on i.process_instance_id = w.process_instance_id and i.tenant_id = w.tenant_id
+          join ACT_HI_PROCINST h on h.ID_ = i.process_instance_id and h.TENANT_ID_ = i.tenant_id
+          left join
+          """
           + MEMBERS
           + " starter on starter.tenant_id = i.tenant_id and starter.user_id = i.starter_id "
           + " left join "
@@ -92,22 +84,22 @@ final class WorkflowReadSql {
 
   static final String MATTERS =
       """
-select i.process_instance_id as id, i.tenant_id, i.definition_id, i.title, i.definition_name,
-  i.definition_version, i.business_key, i.starter_id, starter.name as starter_name,
-  case when h.END_TIME_ is not null and i.status = 'RUNNING' then
-    case when h.DELETE_REASON_ is null then 'COMPLETED' else 'CANCELED' end
-    else i.status end as status,
-  i.started_at, coalesce(i.ended_at, h.END_TIME_) as ended_at,
-  i.previous_instance_id, successor.process_instance_id as next_instance_id,
-  case when p.ID_ is not null and p.SUSPENSION_STATE_ = 1 and h.END_TIME_ is not null
-    then true else false end as resubmission_version_available
-from simpoint_workflow_instances i
-left join simpoint_workflow_instances successor
-  on successor.previous_instance_id = i.process_instance_id and successor.tenant_id = i.tenant_id
-left join ACT_HI_PROCINST h on h.ID_ = i.process_instance_id and h.TENANT_ID_ = i.tenant_id
-left join simpoint_workflow_definition_versions v on v.id = i.definition_version_id and v.tenant_id = i.tenant_id
-left join ACT_RE_PROCDEF p on p.ID_ = v.flowable_process_definition_id and p.TENANT_ID_ = i.tenant_id
-left join
+      select i.process_instance_id as id, i.tenant_id, i.definition_id, i.title, i.definition_name,
+        i.definition_version, i.business_key, i.starter_id, starter.name as starter_name,
+        case when h.END_TIME_ is not null and i.status = 'RUNNING' then
+          case when h.DELETE_REASON_ is null then 'COMPLETED' else 'CANCELED' end
+          else i.status end as status,
+        i.started_at, coalesce(i.ended_at, h.END_TIME_) as ended_at,
+        i.previous_instance_id, successor.process_instance_id as next_instance_id,
+        case when p.ID_ is not null and p.SUSPENSION_STATE_ = 1 and h.END_TIME_ is not null
+          then true else false end as resubmission_version_available
+      from simpoint_workflow_instances i
+      left join simpoint_workflow_instances successor
+        on successor.previous_instance_id = i.process_instance_id and successor.tenant_id = i.tenant_id
+      left join ACT_HI_PROCINST h on h.ID_ = i.process_instance_id and h.TENANT_ID_ = i.tenant_id
+      left join simpoint_workflow_definition_versions v on v.id = i.definition_version_id and v.tenant_id = i.tenant_id
+      left join ACT_RE_PROCDEF p on p.ID_ = v.flowable_process_definition_id and p.TENANT_ID_ = i.tenant_id
+      left join
       """
           + MEMBERS
           + " starter on starter.tenant_id = i.tenant_id and starter.user_id = i.starter_id ";

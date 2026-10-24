@@ -151,7 +151,7 @@ class CollectionQueryTest {
     assertThatThrownBy(
             () ->
                 CollectionQuery.prepare(
-                    Row.class, Map.of(), PageRequest.of(0, 201), Comparator.comparingInt(Row::id)))
+                    Row.class, Map.of(), PageRequest.of(0, 501), Comparator.comparingInt(Row::id)))
         .isInstanceOf(InvalidQueryException.class);
     assertThatThrownBy(
             () ->

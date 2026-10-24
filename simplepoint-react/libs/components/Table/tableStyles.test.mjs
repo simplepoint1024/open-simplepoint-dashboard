@@ -26,7 +26,7 @@ test('bounded DataTables shrink the row area, not the toolbar or pagination', ()
 });
 
 test('table height propagates through both current and legacy loading wrappers', () => {
-  assert.match(css, /\.sp-table-fill \.ant-spin-nested-loading,\s*\.sp-data-table-fit > \.sp-table-fill > \.ant-spin,\s*\.sp-data-table-root:fullscreen > \.sp-table-fill > \.ant-spin,\s*\.sp-table-fill \.ant-spin-container\s*\{\s*height:\s*100%;\s*min-height:\s*0;/);
+  assert.match(css, /\.sp-table-fill \.ant-spin-nested-loading,\s*\.sp-table-stage > \.sp-table-fill > \.ant-spin,\s*\.sp-data-table-fit > \.sp-table-fill > \.ant-spin,\s*\.sp-data-table-root:fullscreen > \.sp-table-fill > \.ant-spin,\s*\.sp-table-fill \.ant-spin-container\s*\{\s*height:\s*100%;\s*min-height:\s*0;/);
   assert.doesNotMatch(css, /^\.sp-table-fill > \.ant-spin[,\s{]/m, 'existing pixel-measured and natural-flow tables retain their own loading-wrapper layout');
 });
 

@@ -30,8 +30,8 @@ export default function FormProperties({document, disabled, open, onClose, onCha
   };
   const choice = (key: 'create' | 'edit', value: string, label: string) => ({key: `${key}-${value}`, title: label, width: 72,
     render: (_: unknown, row: typeof fields[number]) => <Checkbox aria-label={`${row.group} ${row.field.label} ${key === 'create' ? t('app.designer.createMode', '新增') : t('app.designer.editMode', '编辑')} ${label}`}
-      disabled={locked || row.field.storageMode === 'COMPUTED' || value === 'WRITE' && row.field.access?.readOnly}
-      checked={(row.field.access?.[key] ?? 'WRITE') === value}
+      disabled={locked || key === 'edit' && value === 'WRITE' && (row.field.storageMode === 'COMPUTED' || row.field.access?.readOnly)}
+      checked={(key === 'edit' && row.field.storageMode === 'COMPUTED' && row.field.access?.edit !== 'HIDDEN' ? 'READ' : row.field.access?.[key] ?? 'WRITE') === value}
       onChange={() => patch(row.owner, row.field.fieldId, {...row.field.access, [key]: value})}/>});
   return <ResourceDrawer rootClassName="sp-form-properties-drawer" placement="right" collapsible open={open} onClose={onClose}
     title={t('app.designer.formProperties', '表单属性')}>
@@ -52,7 +52,7 @@ export default function FormProperties({document, disabled, open, onClose, onCha
               aria-label={`${row.group} ${row.field.label} ${t('app.designer.accessReadOnly', '只读')}`} disabled={locked || row.field.storageMode === 'COMPUTED'}
               checked={Boolean(row.field.access?.readOnly) || row.field.storageMode === 'COMPUTED'}
               onChange={event => patch(row.owner, row.field.fieldId, {...row.field.access, readOnly: event.target.checked})}/>},
-            {key: 'create', title: t('app.designer.createMode', '新增'), children: [choice('create', 'WRITE', t('app.designer.accessWrite', '写')), choice('create', 'HIDDEN', t('app.designer.accessHidden', '隐藏'))]},
+            {key: 'create', title: t('app.designer.createMode', '新增'), children: [choice('create', 'WRITE', t('app.designer.accessShow', '显示')), choice('create', 'HIDDEN', t('app.designer.accessHidden', '隐藏'))]},
             {key: 'edit', title: t('app.designer.editMode', '编辑'), children: [choice('edit', 'READ', t('app.designer.accessRead', '读')), choice('edit', 'WRITE', t('app.designer.accessWrite', '写')), choice('edit', 'HIDDEN', t('app.designer.accessHidden', '隐藏'))]},
           ]}/></>},
       {key: 'list', icon: createIcon('OrderedListOutlined'), label: t('app.designer.listDefaults', '列表默认顺序'), children:

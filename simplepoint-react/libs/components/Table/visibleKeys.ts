@@ -10,3 +10,8 @@ export function visibleKeySignature(properties: Record<string, any>): string {
   }
   return JSON.stringify(declared ? visible : keys);
 }
+
+/** A saved preference can choose an available column, never revive a server-excluded one. */
+export function isListColumnVisible(available: boolean, property: any, saved?: boolean): boolean {
+  return available && (saved ?? (property?.['x-ui']?.['x-list-default-visible'] !== false));
+}

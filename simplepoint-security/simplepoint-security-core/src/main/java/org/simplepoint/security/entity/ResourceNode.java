@@ -7,15 +7,20 @@ import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * Tree node representation for resource management and authorization UI.
- */
+/** Tree node representation for resource management and authorization UI. */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @org.simplepoint.core.annotation.PermissionResource(Resource.class)
 public class ResourceNode extends Resource {
   private List<ResourceNode> children = new ArrayList<>();
   private Boolean hasChildren;
+
+  /** Server-derived template delivery capability, separate from ordinary role grants. */
+  @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+  @org.simplepoint.core.annotation.PermissionFields(
+      resource = Resource.class,
+      value = {"code", "scopeTypes", "type", "disabled"})
+  private Boolean distributable;
 
   /** Scope boundary inherited from the direct parent, used by resource management forms. */
   @Schema(hidden = true)

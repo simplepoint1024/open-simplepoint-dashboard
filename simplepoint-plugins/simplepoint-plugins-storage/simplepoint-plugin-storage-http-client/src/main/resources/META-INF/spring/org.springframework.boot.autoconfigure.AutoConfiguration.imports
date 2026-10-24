@@ -1,1 +1,2 @@
 org.simplepoint.plugin.storage.client.configuration.ObjectStorageHttpClientAutoConfiguration
+org.simplepoint.plugin.storage.client.configuration.ObjectStorageDirectClientAutoConfiguration

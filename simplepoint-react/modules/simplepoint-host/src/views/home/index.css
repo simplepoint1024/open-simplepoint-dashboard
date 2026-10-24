@@ -63,7 +63,7 @@
 .sp-home-location-fields label { display: grid; gap: 8px; }
 @media (max-width: 1100px) { .sp-home-layout { grid-template-columns: minmax(0, 1fr); } .sp-home-aside { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .sp-home { padding: 12px; } .sp-home-welcome { align-items: start; flex-direction: column; } .sp-home-aside, .sp-home-location-fields { grid-template-columns: minmax(0, 1fr); } .sp-home-panel { padding: 16px; } }
-.sp-home-personal {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.sp-home-personal {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;}
 .sp-home-personal > .sp-home-panel {min-height: 280px;}
 .sp-home-personal > .ant-alert {grid-column:1/-1;}
 .sp-home-personal .sp-home-section-heading {flex-wrap:wrap;gap:8px;}

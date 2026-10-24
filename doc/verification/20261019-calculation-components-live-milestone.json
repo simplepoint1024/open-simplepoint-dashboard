@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "passed": true,
+  "wholeGoalComplete": false,
+  "recordedAt": "2026-10-19T06:42:31.134624+00:00",
+  "deployment": ".simplepoint/deploy203/release-20261019-calculation-integration10/deployment.json",
+  "checks": {
+    "allComponents": {
+      "passed": true,
+      "count": 38,
+      "types": [
+        "action.apply",
+        "action.close",
+        "action.open-dialog",
+        "action.open-drawer",
+        "action.reset",
+        "action.save",
+        "action.submit",
+        "data.detail",
+        "display.alert",
+        "display.divider",
+        "display.icon",
+        "display.image",
+        "display.markdown",
+        "display.progress",
+        "display.text",
+        "field.attachment",
+        "field.cascader",
+        "field.date",
+        "field.datetime",
+        "field.json",
+        "field.number",
+        "field.organization",
+        "field.rating",
+        "field.role",
+        "field.select",
+        "field.switch",
+        "field.tenant",
+        "field.text",
+        "field.textarea",
+        "field.time",
+        "field.transfer",
+        "field.user",
+        "layout.cell",
+        "layout.form",
+        "layout.grid",
+        "layout.group",
+        "layout.matrix",
+        "layout.tabs"
+      ],
+      "pageId": "065e2ac8-9055-400c-a261-73b35c3aa0fa",
+      "formId": "010d9a57-343a-4b0d-98b8-2921ab296519",
+      "recordId": "37f01779-53e3-5899-b211-884493a2699a",
+      "submissionId": "00ecc8a9d898aaf4028f4a6f17ecd4f6b093a916f120c6339ff43e37a985b71a",
+      "processInstanceId": "4f7188fd-cb87-11f1-85c1-7aba513c2f43",
+      "taskId": "4f730fa6-cb87-11f1-85c1-7aba513c2f43",
+      "stages": [
+        "actual designer palette/property configuration and persisted reload",
+        "immutable publication and ordinary account standard resource list",
+        "create, Unicode/typed selections, authenticated upload, dialog/drawer apply and cancel, reset",
+        "edit, owned-row add/edit/delete/newest-first order, recalculation and persisted reload",
+        "read-only detail",
+        "actual employee submission",
+        "manager pending and completed immutable snapshots"
+      ],
+      "editableWidths": [
+        {
+          "width": 1440,
+          "bodyWidth": 1085,
+          "bodyScroll": 1085,
+          "transferWidth": 917,
+          "transferScroll": 917
+        },
+        {
+          "width": 768,
+          "bodyWidth": 707,
+          "bodyScroll": 707,
+          "transferWidth": 539,
+          "transferScroll": 539
+        },
+        {
+          "width": 390,
+          "bodyWidth": 352,
+          "bodyScroll": 352,
+          "transferWidth": 184,
+          "transferScroll": 302
+        }
+      ],
+      "approvalWidths": [
+        {
+          "kind": "pending",
+          "width": 1440,
+          "bounded": true
+        },
+        {
+          "kind": "pending",
+          "width": 768,
+          "bounded": true
+        },
+        {
+          "kind": "pending",
+          "width": 390,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 1440,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 768,
+          "bounded": true
+        },
+        {
+          "kind": "completed",
+          "width": 390,
+          "bounded": true
+        }
+      ],
+      "snapshotUnchanged": true,
+      "formSubmitActionRecordId": "f31fa656-3482-5c8f-8d10-b9a8006a3598",
+      "calculation": {
+        "created": [
+          "13",
+          "23"
+        ],
+        "editedAndApproved": [
+          "21",
+          "31"
+        ]
+      },
+      "visualReview": "Inspected real 390px screenshots: drawer body stays bounded; transfer scroll remains inside its field; declared selection labels replace JSON in read-only form views."
+    },
+    "safeDisplaysAndAttachments": {
+      "passed": true,
+      "downloads": [
+        {
+          "kind": "pending",
+          "bytes": 42,
+          "sha256": "f77df1d906bb535277b6b7d37db1365bc784ddc84f2182f93137ab2e2bc07813"
+        },
+        {
+          "kind": "completed",
+          "bytes": 42,
+          "sha256": "f77df1d906bb535277b6b7d37db1365bc784ddc84f2182f93137ab2e2bc07813"
+        }
+      ],
+      "assertions": [
+        "Image successfully decodes from the allowed local source",
+        "Markdown does not execute HTML/scripts or unsafe URLs",
+        "Read-only views expose no writable controls or mutation actions",
+        "Downloaded browser files match 42 uploaded UTF-8 bytes and SHA-256 in pending and completed views",
+        "Current scoped organization read permission configured separately for the two acceptance roles; no administrator grant"
+      ]
+    }
+  },
+  "privateArtifacts": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/component-candidate.json": "552e5bdd442cc0091f922b9169906b19f1793e68a43317148d4ba9f06f32a1f6",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/component-business.json": "c9f291d0d80469ceb46e93acc120bd388cdcaa6064b54b912d0118f7deec2752",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/component-grants.json": "7526fd938aced85f69c89d362d6b53bb66b8804e5083d05a16c5c5ee37a1da48",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/component-directory-grants.json": "f01da9ff0039aa80b5952e74d5e731edfc7e124eca742483b6784ace0bb970b6",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/browser-component-runtime.json": "592e2a23a9836911729a110e9c4ab63f9ace3efe697c4d4eca7e4b605a9ba2bb",
+    ".simplepoint/deploy203/release-20261019-calculation-integration9/browser-component-workflow.json": "c3ccf1c060ea3ae14c5ce66fb17896d5e85048af3761a603e18bbb47d04bfae8"
+  },
+  "screenshots": {
+    ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-all-component-candidate.png": "eada28b78f57de58c7a29398fc2868732e44302df466ed23d1bbec97cc449d25",
+    ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-all-components-transfer-390.png": "5c6db9e7a99a2a47c9c88fb6ca7b7c0b4f5d868a1a44daf8e7589ac7f0f0284e",
+    ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-all-components-detail-390.png": "8f087881fdae7728b6fc6d8d561133d55f3319dc68e72fbcb8ab4073270533dd",
+    ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-all-components-pending-390.png": "6d8775ef0b72207a585a7d82c0a7925d8bafa8041dbc583796df4c520853b1ba",
+    ".simplepoint/deploy203/release-20261019-calculation-integration1/calculation-all-components-completed-390.png": "d666fd52cfe820aa0d67d60afd06855513e1731e2286c35fc4e5685baec79b47"
+  },
+  "sources": {
+    "scripts/business/calculation-acceptance/browser-component-candidate.mjs": "227d8ce6053227036a998d93cfdb89f3193a36ba6832893c434f563240178721",
+    "scripts/business/calculation-acceptance/browser-component-runtime.mjs": "917f690b0eeb007078c6c0a1262c6c4cb72cf1726df07973ea90a3e471bfec97",
+    "scripts/business/calculation-acceptance/browser-component-workflow.mjs": "508f53910e7af4ae0537e441632d50cb58e114f09c3af41ba574823e0fae5736",
+    "simplepoint-react/libs/components/SForm/displayOnly.ts": "53498960059580561d038733f53cb65faa92cc21ff0c95b3c6315e3d3d64697b",
+    "simplepoint-react/libs/components/SForm/fields/DisplayValue.tsx": "25d83f90a66d0502b493d11f279fc3d236a150d7fc2f7b2cc3b4baaeb76711b8",
+    "simplepoint-react/libs/components/FormRuntime/fieldSchema.ts": "62431e6dd05b31d2142942f9bbf6e4d290a16ce4bd53d76f1bab35f93074eac7",
+    "simplepoint-react/libs/components/FormComponents/Standard/style.css": "bf3f60925f1715bc4b1a4a19521768dc5d615c58bd655ef799df9c2544e442c0"
+  }
+}

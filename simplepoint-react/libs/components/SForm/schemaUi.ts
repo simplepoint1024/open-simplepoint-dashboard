@@ -6,6 +6,8 @@ export function schemaUi(schema: unknown): UiSchema {
   if (!object(schema)) return {};
   const result: UiSchema = {};
   const xui = object(schema['x-ui']) ? schema['x-ui'] : {};
+  if (schema['x-localized']?.version === 1) result['ui:field'] = 'LocalizedText';
+  else if (typeof xui['ui:field'] === 'string') result['ui:field'] = xui['ui:field'];
   const widget = xui['ui:widget'] ?? xui.widget, options = xui['ui:options'] ?? xui.options;
   if (typeof widget === 'string') {
     result['ui:widget'] = widget;

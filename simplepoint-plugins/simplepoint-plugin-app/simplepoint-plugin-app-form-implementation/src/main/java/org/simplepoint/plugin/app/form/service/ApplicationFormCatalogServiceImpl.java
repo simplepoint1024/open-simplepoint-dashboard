@@ -11,6 +11,7 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.PermissionResource;
 import org.simplepoint.core.query.QueryField;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.core.query.TableQuery;
 import org.simplepoint.core.schema.ProjectionTableSchema;
 import org.simplepoint.data.jpa.ProjectionPages;
@@ -62,7 +63,7 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
       final List<String> sorts
   ) {
     String tenant = authorize(applicationId);
-    if (page < 0 || size < 1 || size > 100 || (long) page * size > Integer.MAX_VALUE) {
+    if (page < 0 || size < 1 || size > TablePagination.MAX_PAGE_SIZE || (long) page * size > Integer.MAX_VALUE) {
       throw invalid("Invalid form catalog page");
     }
     var result = ProjectionPages.query(
@@ -187,7 +188,7 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
       @QueryField("code"), @QueryField("name"), @QueryField("description"),
       @QueryField("status"), @QueryField("draftRevision"), @QueryField("latestVersion"),
       @QueryField("publishedVersion"), @QueryField("updatedAt")
-  }, maxPageSize = 100)
+  }, maxPageSize = TablePagination.MAX_PAGE_SIZE)
   public record QueryFields(String code, String name, String description, ApplicationFormStatus status,
       long draftRevision, int latestVersion, Integer publishedVersion, Instant updatedAt) {
   }

@@ -39,7 +39,7 @@
     },
     "x-query": {
       "maxNodes": 32,
-      "maxPageSize": 200,
+      "maxPageSize": 500,
       "version": 1,
       "relations": [],
       "fields": {

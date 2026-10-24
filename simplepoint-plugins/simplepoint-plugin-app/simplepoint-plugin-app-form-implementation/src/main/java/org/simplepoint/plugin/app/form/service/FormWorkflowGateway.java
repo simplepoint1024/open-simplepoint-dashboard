@@ -84,7 +84,8 @@ public class FormWorkflowGateway {
             case NOT_FOUND -> ApplicationFormErrorCode.RECORD_NOT_FOUND;
             case CONFLICT -> ApplicationFormErrorCode.RECORD_CONFLICT;
             case VALIDATION -> ApplicationFormErrorCode.RECORD_INVALID;
-            case ENGINE_FAILURE -> ApplicationFormErrorCode.RECORD_OPERATION_FAILED;
+            case ENGINE_FAILURE, DIRECTORY_PREPARING, DIRECTORY_UNAVAILABLE ->
+                ApplicationFormErrorCode.RECORD_OPERATION_FAILED;
           };
       throw new ApplicationFormException(code, failure.getMessage(), failure);
     } catch (RuntimeException unavailable) {

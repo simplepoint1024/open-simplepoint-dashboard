@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeCapabilities;
@@ -16,7 +17,6 @@ import org.simplepoint.plugin.app.form.api.model.FormChoiceOption;
 import org.simplepoint.plugin.app.form.api.model.FormComponentDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormFieldType;
-import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.api.model.FormValue;
 import org.simplepoint.plugin.app.form.api.model.FormValueKind;
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordSchemaService;
@@ -74,9 +74,9 @@ public class ApplicationFormRecordSchemaServiceImpl
     PublishedApplicationForm form = resolver.resolve(applicationId, pageId);
     final ApplicationFormRuntimeDocument document = documents.compile(form);
     final ApplicationFormRuntimeCapabilities capabilities = resolver.capabilities(form);
-    final DnaInvocationContext context = contexts.forResource(form.resourceCode());
+    final DnaInvocationContext context = contexts.forForm(form);
     final Map<String, FormFieldDefinition> storedFields = form.document().fields().stream()
-        .filter(ApplicationFormRecordSchemaServiceImpl::persistent)
+        .filter(FormFieldDefinition::persistent)
         .collect(java.util.stream.Collectors.toUnmodifiableMap(
             FormFieldDefinition::fieldId,
             field -> field
@@ -99,8 +99,12 @@ public class ApplicationFormRecordSchemaServiceImpl
           "i18n:app.runtime.record." + field.property(), "string", order++));
       property.put("type", List.of("string", "null"));
       property.put("x-display-only", true);
-      property.put("x-ui", Map.of("x-list-visible",
-          field == RecordSystemField.CREATED_AT || field == RecordSystemField.UPDATED_AT));
+      boolean identity = Set.of("tenantId", "createdBy", "updatedBy", "createOrgDeptId").contains(field.property());
+      if (identity && !"MASKED".equals(permission)) {
+        property.put("x-reference-labels", "$displayLabels");
+      }
+      boolean defaultVisible = field == RecordSystemField.CREATED_AT || field == RecordSystemField.UPDATED_AT;
+      property.put("x-ui", Map.of("x-list-visible", identity || defaultVisible, "x-list-default-visible", defaultVisible));
       if (field.type() == org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType.DATETIME
           && !"MASKED".equals(permission)) {
         property.put("format", "date-time");
@@ -153,7 +157,7 @@ public class ApplicationFormRecordSchemaServiceImpl
         "maxNodes", 32,
         "maxDepth", 4,
         "maxSort", 3,
-        "maxPageSize", 100
+        "maxPageSize", TablePagination.MAX_PAGE_SIZE
     ));
     return Map.of(
         "schema", immutable(schema),
@@ -169,6 +173,7 @@ public class ApplicationFormRecordSchemaServiceImpl
     Map<String, Object> property = new LinkedHashMap<>();
     property.put("type", List.of(jsonType(field.type()), "null"));
     property.put("title", field.label());
+    if (field.labelLocalization() != null) property.put("x-title-localization", field.labelLocalization());
     property.put("x-order", order);
     property.put("x-ui", Map.of("x-list-visible", true));
     if (readOnly) {
@@ -296,9 +301,8 @@ public class ApplicationFormRecordSchemaServiceImpl
     if (capabilities.canStartProcess() && capabilities.canEdit()) {
       buttons.add(button("startProcess", "i18n:app.submission.start", "SendOutlined", 1, 1, 30, false));
     }
-    if (capabilities.canStartProcess()) {
-      buttons.add(button("history", "i18n:app.runtime.approvalHistory", "HistoryOutlined", 0, 0, 40, false));
-    }
+    // Viewing authorized record evidence does not grant permission to start or retry a process.
+    buttons.add(button("history", "i18n:app.runtime.approvalHistory", "HistoryOutlined", 1, 1, 40, false));
     return List.copyOf(buttons);
   }
 
@@ -328,7 +332,11 @@ public class ApplicationFormRecordSchemaServiceImpl
   private static Map<String, Object> choice(
       final FormFieldType type, final FormChoiceOption option
   ) {
-    return Map.of("const", FormChoiceValues.wireValue(type, option.value()), "title", option.label());
+    Map<String, Object> result = new LinkedHashMap<>();
+    result.put("const", FormChoiceValues.wireValue(type, option.value()));
+    result.put("title", option.label());
+    if (option.labelLocalization() != null) result.put("x-title-localization", option.labelLocalization());
+    return Map.copyOf(result);
   }
 
   private static Object defaultValue(final FormValue value) {
@@ -389,12 +397,6 @@ public class ApplicationFormRecordSchemaServiceImpl
       fields.add(component.fieldId());
     }
     component.children().forEach(child -> collectEditableFields(child, fields));
-  }
-
-  private static boolean persistent(final FormFieldDefinition field) {
-    return field.storageMode() == FormStorageMode.STORED
-        || field.storageMode() == FormStorageMode.REFERENCE
-        || field.storageMode() == FormStorageMode.ATTACHMENT;
   }
 
   private static Map<String, Object> immutable(final Map<String, Object> source) {

@@ -179,7 +179,7 @@
         },
         "relations" : [ ],
         "version" : 1,
-        "maxPageSize" : 100
+        "maxPageSize" : 500
       }
     },
     "buttons" : [ {
@@ -429,7 +429,7 @@
         },
         "relations" : [ ],
         "version" : 1,
-        "maxPageSize" : 100
+        "maxPageSize" : 500
       }
     },
     "buttons" : [ {
@@ -585,7 +585,7 @@
         },
         "relations" : [ ],
         "version" : 1,
-        "maxPageSize" : 100
+        "maxPageSize" : 500
       }
     },
     "buttons" : [ {

@@ -43,14 +43,20 @@ test('primary personal routes own workflow handling and retain only explicit leg
 });
 
 test('my workspace is ordered immediately after home across all declared root menus', () => {
-  const common = JSON.parse(read('../../simplepoint-services/simplepoint-service-common/src/main/resources/META-INF/simplepoint/resources/common.json'));
+  const common = JSON.parse(read('../../simplepoint-plugins/simplepoint-plugin-common-ui/src/main/resources/META-INF/simplepoint/modules/common-ui/resources.json'));
   const home = common.resources.find(route => route.code === 'dashboard.view');
   const mine = common.resources.find(route => route.code === 'personal.view');
   assert.equal(home.sort, 0);
   assert.equal(mine.sort, 1);
   assert.deepEqual(mine.children.map(route => route.path), ['/my/items', '/my/todos', '/my/messages']);
-  for (const service of ['common', 'dna', 'ai', 'auditing']) {
-    const declaration = JSON.parse(read(`../../simplepoint-services/simplepoint-service-${service}/src/main/resources/META-INF/simplepoint/resources/${service}.json`));
+  const resourceModules = [
+    ['simplepoint-plugin-common-ui', 'common-ui'],
+    ['simplepoint-plugin-dna/simplepoint-plugin-dna-http', 'dna-http'],
+    ['simplepoint-plugin-ai/simplepoint-plugin-ai-http', 'ai-http'],
+    ['simplepoint-plugins-auditing/simplepoint-plugin-auditing-http', 'auditing-http'],
+  ];
+  for (const [project, module] of resourceModules) {
+    const declaration = JSON.parse(read(`../../simplepoint-plugins/${project}/src/main/resources/META-INF/simplepoint/modules/${module}/resources.json`));
     for (const route of declaration.resources.filter(route => !['dashboard.view', 'personal.view'].includes(route.code))) {
       assert.ok(route.sort > mine.sort, route.code);
     }
@@ -58,7 +64,7 @@ test('my workspace is ordered immediately after home across all declared root me
 });
 
 test('all personal schema buttons are registered action resources with unique codes', () => {
-  const common = JSON.parse(read('../../simplepoint-services/simplepoint-service-common/src/main/resources/META-INF/simplepoint/resources/common.json'));
+  const common = JSON.parse(read('../../simplepoint-plugins/simplepoint-plugin-common-ui/src/main/resources/META-INF/simplepoint/modules/common-ui/resources.json'));
   const declarations = read('../../simplepoint-plugins/simplepoint-plugin-personal/simplepoint-plugin-personal-api/src/main/java/org/simplepoint/plugin/personal/api/PersonalTableModels.java');
   const codes = [];
   const visit = resource => {codes.push(resource.code); resource.children?.forEach(visit);};

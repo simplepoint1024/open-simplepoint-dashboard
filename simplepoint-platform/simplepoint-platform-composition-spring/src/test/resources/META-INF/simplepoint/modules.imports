@@ -1,0 +1,16 @@
+org.simplepoint.composition.fixture.first.FirstModule
+org.simplepoint.composition.fixture.second.SecondModule
+org.simplepoint.composition.fixture.unused.UnusedModule
+org.simplepoint.composition.fixture.missing.MissingModule
+org.simplepoint.composition.fixture.undeclared.UndeclaredModule
+org.simplepoint.composition.fixture.remote.RemoteModule
+org.simplepoint.composition.fixture.callerone.CallerOneModule
+org.simplepoint.composition.fixture.callertwo.CallerTwoModule
+org.simplepoint.composition.fixture.callee.CalleeModule
+org.simplepoint.composition.fixture.startupone.StartupOneModule
+org.simplepoint.composition.fixture.startuptwo.StartupTwoModule
+org.simplepoint.composition.fixture.startupbroken.StartupBrokenModule
+org.simplepoint.composition.fixture.bootstrapone.BootstrapOneModule
+org.simplepoint.composition.fixture.bootstraptwo.BootstrapTwoModule
+org.simplepoint.composition.fixture.bootstrapundeclared.BootstrapUndeclaredModule
+org.simplepoint.composition.fixture.startupduplicate.StartupDuplicateModule

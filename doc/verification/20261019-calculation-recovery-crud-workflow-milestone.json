@@ -1,0 +1,1198 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-19T04:25:00.707401+00:00",
+  "scope": "Integrated calculation recovery, standard CRUD, resource lifecycle and every function through real workflow",
+  "wholeGoalComplete": false,
+  "deployment": {
+    "passed": true,
+    "at": "2026-10-19T04:13:15.967Z",
+    "version": "20261019-calculation-integration4",
+    "sourceDigest": "ae549f3d8aef4a67ed1655e5e8c913bb5476e67f29924810c139b471570e7a83",
+    "services": [
+      {
+        "service": "dna",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 296,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "app",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 262,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "host",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 226,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "workflow",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 298,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "common",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 317,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "auditing",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 246,
+        "jarHashesMatch": true
+      },
+      {
+        "service": "ai",
+        "version": "20261019-calculation-integration4",
+        "health": "healthy",
+        "consul": "passing",
+        "jarCount": 326,
+        "jarHashesMatch": true
+      }
+    ],
+    "allNineServiceHealth": "passing",
+    "rabbitmq": "healthy"
+  },
+  "quality": {
+    "passed": true,
+    "modules": {
+      "simplepoint-plugin-dna-runtime-api": {
+        "tests": 56,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "1661281d73ec40605bedf6cfb4317f66fdbd2d3d37228e611274f83e9e28f9fa"
+      },
+      "simplepoint-plugin-dna-runtime-implementation": {
+        "tests": 196,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "c56b939e5052bd87b4221fb11ffcdef1d090fb051108e4b8f84b252d3e0ac2b7"
+      },
+      "simplepoint-plugin-app-form-implementation": {
+        "tests": 302,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "fd86dc003788f67d3ac4dd61b28d56afe9138ca9d055180e0a8ea5bfea568df5"
+      },
+      "simplepoint-service-app": {
+        "tests": 54,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "3e9b1e1c58f4b49b6f09a00a0d597a0352de636edb838a94d9558a4563586e77"
+      },
+      "simplepoint-calculation": {
+        "tests": 79,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "19188fb6cfc03fc28edb5ca0f7e18f3ea8f7add92df74b61188212f064867008"
+      },
+      "simplepoint-service-dna": {
+        "tests": 41,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "9882fe403652e9a2f49c38f213b45b59f0501fd7db5a0a9fb390ca52e22f5ec6"
+      },
+      "simplepoint-service-workflow": {
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "testResultsSha256": "4c414404797d0977fa2f748095cb6c10548bec1f5479ad7d209f606066abf0b0"
+      }
+    },
+    "totalTests": 740,
+    "frontendModels": 9,
+    "browser": "Full production designer/CRUD fixture passed with server-owned detail audit envelopes; real inline save retry pending",
+    "newMigrations": [
+      "doc/deployment/sql/20261019-app-form-cancellation-progress.sql"
+    ],
+    "migrationVerified": {
+      "passed": true,
+      "at": "2026-10-19T03:51:37.756Z",
+      "source": "doc/deployment/sql/20261019-app-form-cancellation-progress.sql",
+      "sha256": "f758b425dde7b51a59482fb4060f2338bb7026589acda75853b4be64ad185ebc",
+      "beforeRows": 12,
+      "constraintVerified": true
+    }
+  },
+  "privateArtifacts": {
+    "deployment": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration4/deployment.json",
+      "sha256": "d26e7c25ca8d4f0993b54527e35ee260cd2174148cd83ab8f8b36080ee9f990c"
+    },
+    "quality": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration4/quality.json",
+      "sha256": "fbc536b2c6cdc669c5f24f756c756585fc074b5a74738ef8c5cae2a5b89daeaa"
+    },
+    "recovery": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration2/recovery.json",
+      "sha256": "cef5137240a1224c9118a2031a73c550511f56db4af1572a22172d84553050c8"
+    },
+    "crud": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration2/crud.json",
+      "sha256": "379289ed385a7887802a84c4d7fda830e4b0d602c6c6e53852e4c1b284c72b52"
+    },
+    "lifecycle": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration2/lifecycle.json",
+      "sha256": "41ed1307242025db75c0d5461d22b65ab866364548e88684a1a099a895a594bc"
+    },
+    "functions": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/function-workflows.json",
+      "sha256": "5c104009c371f8b9bf2b3b47415aca59884607cf74117d17ed3680fe4674e761"
+    },
+    "inline": {
+      "path": ".simplepoint/deploy203/release-20261019-calculation-integration1/browser-inline.json",
+      "sha256": "110e53317f605511b12ae489eb920cfa9cd488224410ae4c26a118dedadcb31c"
+    }
+  },
+  "checks": {
+    "publicationRecovery": [
+      {
+        "name": "ordinary-to-computed backfill of 65 existing rows",
+        "version": 2
+      },
+      {
+        "name": "cancel partial apply restores exact values, versions and audit metadata",
+        "releaseId": "79a2818b-e8d9-4f3a-875f-4d16fe9373e1",
+        "maintenance": {
+          "status": 409,
+          "code": "PUBLICATION_IN_PROGRESS"
+        }
+      },
+      {
+        "name": "failing existing row prevents activation and cancellation preserves prior data"
+      },
+      {
+        "name": "service restart resumes original intent and backfills each row exactly once"
+      }
+    ],
+    "aggregateCrud": [
+      "detail-edit",
+      "detail-add",
+      "root-recalculates-all-owned-rows",
+      "detail-remove",
+      "draft-may-clear-detail-and-recalculate-empty-sum",
+      "detail-readd-after-clear",
+      "submission-requires-detail-rows",
+      "invalid-submission-range-rolls-back-child-calculations",
+      "invalid-child-type-rolls-back-aggregate",
+      "computed-child-value-cannot-be-forged",
+      "concurrent-partial-edits-have-one-winner-and-no-lost-owned-rows",
+      "same-idempotency-key-with-changed-body-is-rejected",
+      "aggregate-delete-and-retry-remove-the-parent-and-owned-detail-projection"
+    ],
+    "resourceLifecycle": [
+      {
+        "name": "durable offline completes all participants and revokes cached ordinary grants",
+        "operation": {
+          "operationId": "d4878cc5-c112-42c0-a16b-f030ed42ec04",
+          "pageId": "20706f4d-c959-497b-b302-82657a83620a",
+          "generation": 6,
+          "state": "OFFLINE",
+          "unfinishedSubmissions": 0,
+          "requiredParticipants": [
+            "common",
+            "dna"
+          ],
+          "completedParticipants": [
+            "common",
+            "dna"
+          ]
+        },
+        "deniedStatus": 409
+      },
+      {
+        "name": "re-online preserves data, fences the old generation and requires a new explicit grant",
+        "generation": 7,
+        "deniedStatus": 403
+      }
+    ],
+    "inlineEditor": {
+      "passed": true,
+      "at": "2026-10-19T04:14:34.937Z",
+      "recordId": "f5860057-0524-578e-b2ae-2bbbe748c0b4",
+      "totals": [
+        "44.21",
+        "53.72",
+        "44.21"
+      ],
+      "commits": 2,
+      "computedOutputsNotSubmitted": true
+    },
+    "functionWorkflows": {
+      "IF": {
+        "status": "COMPLETED",
+        "submissionId": "1a48c107825b8bd13a9e4a23b4d263621c51fe58f514e859e7cf55eec61ffeae",
+        "recordId": "51b4a95e-0b1f-5fb7-b0c5-a5690cb98b72",
+        "processInstanceId": "d2312daf-cb70-11f1-b1c6-ca62369a9387",
+        "actual": "yes",
+        "approvals": [
+          {
+            "taskId": "d23154c8-cb70-11f1-b1c6-ca62369a9387",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "IFERROR": {
+        "status": "COMPLETED",
+        "submissionId": "3f343053dfcc8e862e8cdc799637def6bf73d33b9de1b4896d81a95591005fe9",
+        "recordId": "f64c897f-8141-5d27-bcc5-1ce5fd0b8d34",
+        "processInstanceId": "e1171cf0-cb70-11f1-b1c6-ca62369a9387",
+        "actual": "fallback",
+        "approvals": [
+          {
+            "taskId": "e1171cf9-cb70-11f1-b1c6-ca62369a9387",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "AND": {
+        "status": "COMPLETED",
+        "submissionId": "b043089676dbe41bf6ae8b41b587eda3afafeef84ad15be1e020ad6a7fd3c88c",
+        "recordId": "4bf75570-4d13-52cc-a1c7-cd5b67db605b",
+        "processInstanceId": "f0252da1-cb70-11f1-b1c6-ca62369a9387",
+        "actual": "FALSE",
+        "approvals": [
+          {
+            "taskId": "f02554ba-cb70-11f1-b1c6-ca62369a9387",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "OR": {
+        "status": "COMPLETED",
+        "submissionId": "bd6325b94dc2c6efb7d84664e402e61b03152aa14251ad17a8ff719ba6f84d28",
+        "recordId": "9bc5ae58-67b8-58dc-856f-fa2a4e86178f",
+        "processInstanceId": "fed91062-cb70-11f1-b1c6-ca62369a9387",
+        "actual": "TRUE",
+        "approvals": [
+          {
+            "taskId": "fed9377b-cb70-11f1-b1c6-ca62369a9387",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "NOT": {
+        "status": "COMPLETED",
+        "submissionId": "ada7216e8ec31fecdc56b553c42c2e91a6bd6f9e09bd49c5cbb1e35e63485564",
+        "recordId": "adbddeaa-2719-5bbd-bd21-db95bf26a76a",
+        "processInstanceId": "94c7903b-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "TRUE",
+        "approvals": [
+          {
+            "taskId": "94c7b754-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ISBLANK": {
+        "status": "COMPLETED",
+        "submissionId": "9db982cbcd9fc70bdd2c7ec3bbefdd0d2cfe3854c45b09af484f21a9522e1ecc",
+        "recordId": "5a8dda5c-96ac-5c7a-a31c-e5079cf417f6",
+        "processInstanceId": "94902c75-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "TRUE",
+        "approvals": [
+          {
+            "taskId": "9492013e-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ISNUMBER": {
+        "status": "COMPLETED",
+        "submissionId": "546793d22fc8137c91c624a1ede3cf96de7601431f50f061b2d5814f08ca7b39",
+        "recordId": "851b39bb-c9ba-5094-9ec4-be56ab182573",
+        "processInstanceId": "94a7fa40-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "FALSE",
+        "approvals": [
+          {
+            "taskId": "94a86f79-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ISTEXT": {
+        "status": "COMPLETED",
+        "submissionId": "08be48ee8c61a66027e777197b221321436788116d44575a5c8e28e6b7bc9f6b",
+        "recordId": "a54bd1e3-6195-5fe4-9af6-5b4d2a9c6350",
+        "processInstanceId": "a30d6ef8-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "TRUE",
+        "approvals": [
+          {
+            "taskId": "a30d9611-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "COALESCE": {
+        "status": "COMPLETED",
+        "submissionId": "f8ea617fd8464b7cf205fd348d6f5d5e8af9a6c3199cb84764c4314d4e04024e",
+        "recordId": "553c0d64-9e90-51c8-a45e-8214b264ed5a",
+        "processInstanceId": "a3258ae3-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "available",
+        "approvals": [
+          {
+            "taskId": "a325b1fc-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SUM": {
+        "status": "COMPLETED",
+        "submissionId": "c0b30fbae90ef9fb3ae42eba4e3a6c120133d1a9e85dc489580887edb54e0978",
+        "recordId": "ec99461b-3d68-5739-a0fd-d8c8dea561b3",
+        "processInstanceId": "a32f27de-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "6",
+        "approvals": [
+          {
+            "taskId": "a32f27e7-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "AVERAGE": {
+        "status": "COMPLETED",
+        "submissionId": "1dd1bbc7d3fa6402598d8a4c542481ce6bc2afc3977765116da60666c03dc39e",
+        "recordId": "414e5566-28c0-5165-95d1-254ecf939ff2",
+        "processInstanceId": "b21f9e7b-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "b21fc594-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "MIN": {
+        "status": "COMPLETED",
+        "submissionId": "e224db21a9e42243c562e2afacc87991f2e561a980c543c5e9a7bdf7d8243e8f",
+        "recordId": "6e52a06e-75a1-5ee9-b59a-2944e711e8e6",
+        "processInstanceId": "b2459d16-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-2",
+        "approvals": [
+          {
+            "taskId": "b245c42f-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "MAX": {
+        "status": "COMPLETED",
+        "submissionId": "d8141e575bacbdcaca3244ce4e87eb2f6f58c5395e9d9d0af7d775f3aeb2932d",
+        "recordId": "02c0fcc3-f591-5e4c-a068-5be8d7844654",
+        "processInstanceId": "b27537a7-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "3",
+        "approvals": [
+          {
+            "taskId": "b2755ec0-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "COUNT": {
+        "status": "COMPLETED",
+        "submissionId": "b0bbe01c88b62eec4c28ea9b19516b2190820dc445300be602baf7281e93aef3",
+        "recordId": "bcb4159f-b5e2-5b82-bb7c-902af2cc53b2",
+        "processInstanceId": "c0e7f2be-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "c0e7f2c7-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "COUNTA": {
+        "status": "COMPLETED",
+        "submissionId": "7ac4404c1e77d33a3c74f564c615793c0463ce54e177d1e69d854bda3cb12268",
+        "recordId": "8d8a6c84-d3f0-5662-89ce-1e22c640f592",
+        "processInstanceId": "c10fc624-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "c10fed3d-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "PRODUCT": {
+        "status": "COMPLETED",
+        "submissionId": "e5207669e0d89db4b42bd3342e97a3ddeda123a23242fbf0d902abdc788bb5c9",
+        "recordId": "3a559ab5-ad24-5bb8-9756-29ceef6183d5",
+        "processInstanceId": "c1089a29-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "3.6",
+        "approvals": [
+          {
+            "taskId": "c108c142-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ABS": {
+        "status": "COMPLETED",
+        "submissionId": "dad07ffad382743805d43de32612e2f80ff30c259035d0d1ec74f8b7fe97ee2d",
+        "recordId": "f7aaa4fb-373e-5754-9d88-d2c96710d2cb",
+        "processInstanceId": "d0f59941-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "1.25",
+        "approvals": [
+          {
+            "taskId": "d0f60e7a-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SIGN": {
+        "status": "COMPLETED",
+        "submissionId": "0c36e89af107ace5b4f99b77efa3b6ccc407cf3542a599816b1cffe2dd107f5e",
+        "recordId": "964149ac-757d-5298-8c0d-36813fb260d5",
+        "processInstanceId": "d109214c-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-1",
+        "approvals": [
+          {
+            "taskId": "d1094865-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "INT": {
+        "status": "COMPLETED",
+        "submissionId": "09b900a7481c8e92a7ecb9aa29061263adc2454c9ad62d1623b2bd003e7b92c7",
+        "recordId": "856192ca-5a48-5ff0-8fe4-9d20d6ed73c0",
+        "processInstanceId": "d1216447-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-2",
+        "approvals": [
+          {
+            "taskId": "d1218b60-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ROUND": {
+        "status": "COMPLETED",
+        "submissionId": "bb2b22b86c104839a4b8a094913340bb90d6435cc4e945cbd3331a6039c71d03",
+        "recordId": "e067c2a0-92fb-566d-82f9-de5ad8a981d3",
+        "processInstanceId": "decc1474-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "1.24",
+        "approvals": [
+          {
+            "taskId": "decc3b8d-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ROUNDUP": {
+        "status": "COMPLETED",
+        "submissionId": "81ff8dbcf18cf9e737778070ac9513201622f5ae46da0162e3fb06111e7de2a6",
+        "recordId": "f07556ea-4451-5b64-a4bc-fe63534cc781",
+        "processInstanceId": "deef2cdf-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-1.24",
+        "approvals": [
+          {
+            "taskId": "deef2ce8-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "ROUNDDOWN": {
+        "status": "COMPLETED",
+        "submissionId": "bbef40953fdb83be00917088990fad1a58961c0b65230be22c10e1494c5bad15",
+        "recordId": "238979cd-3215-59ca-900d-06666caf4cab",
+        "processInstanceId": "df0a7d20-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-1.23",
+        "approvals": [
+          {
+            "taskId": "df0aa439-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TRUNC": {
+        "status": "COMPLETED",
+        "submissionId": "2d2d43905d005a5a388d688b506e0d92cbe3ab788e1affee599885d84593ab4d",
+        "recordId": "d85e3928-b60f-55df-82dd-0babdbcf33bd",
+        "processInstanceId": "edd01327-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "-1",
+        "approvals": [
+          {
+            "taskId": "edd03a40-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "MOD": {
+        "status": "COMPLETED",
+        "submissionId": "b93daaf82c16bf439d8d6a607ea5184f9b72d9c737e9aeb543cd1f8c6ab257a0",
+        "recordId": "7a977031-2da7-5555-9f47-2fdc77efbd92",
+        "processInstanceId": "edd9b022-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "1",
+        "approvals": [
+          {
+            "taskId": "edd9b02b-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "POWER": {
+        "status": "COMPLETED",
+        "submissionId": "3247977ea54cb6df6b35d731a2f152c3b1e685d3eaf776ee18d8f750a6d01da9",
+        "recordId": "0b22bda1-b8a0-5b99-bdb7-415dbd948f79",
+        "processInstanceId": "edecc2fd-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "0.125",
+        "approvals": [
+          {
+            "taskId": "edecea16-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SQRT": {
+        "status": "COMPLETED",
+        "submissionId": "9e847f01df65fa5201b94d73138e5bed78c504c9a454cd33fb4f62f4abd178e5",
+        "recordId": "a2511c93-4734-5468-ac33-a6904f762dda",
+        "processInstanceId": "fca81fda-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "3",
+        "approvals": [
+          {
+            "taskId": "fca81fe3-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "PI": {
+        "status": "COMPLETED",
+        "submissionId": "939c3ad8d304a1b75d69dae86956eaa72cba9d5ba874ebf1460bb8ed72f68c5d",
+        "recordId": "80594a7f-fd07-56e6-b41a-853950680bf2",
+        "processInstanceId": "fcee28a6-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "3.1415926535897932384626433832795028842",
+        "approvals": [
+          {
+            "taskId": "fcee4fbf-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SIN": {
+        "status": "COMPLETED",
+        "submissionId": "47cef1f5659c0e50b75e5e15acfddd72f913270ff9067b1b52543411a679e1e4",
+        "recordId": "cda5894f-d45a-5169-acda-e329d2c50652",
+        "processInstanceId": "fce8844b-cb73-11f1-bd32-166ff1d6ba7b",
+        "actual": "0",
+        "approvals": [
+          {
+            "taskId": "fce88454-cb73-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "COS": {
+        "status": "COMPLETED",
+        "submissionId": "2a3152925457550693c8a2728f01060eedea060a9fe03f2ed967e621a468cd74",
+        "recordId": "aba456e2-3c59-5dc4-ab00-fe7e0e4dc11d",
+        "processInstanceId": "0b9f2548-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "1",
+        "approvals": [
+          {
+            "taskId": "0b9f2551-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TAN": {
+        "status": "COMPLETED",
+        "submissionId": "25553297f0ecb44d2813ce0887d21a77e3b7e149c6ce848f642ab17e1b72c4e3",
+        "recordId": "c4ae09d1-b31f-5beb-afc0-2641672a1fd2",
+        "processInstanceId": "0b98958d-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "0",
+        "approvals": [
+          {
+            "taskId": "0b98bca6-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "EXP": {
+        "status": "COMPLETED",
+        "submissionId": "661eaf17adc35c3f388ac5bfb8ceb57086325107e5fe4e0d33fd09bd00979531",
+        "recordId": "3151d494-0208-5b58-b0e8-eac35086bdc3",
+        "processInstanceId": "0ba93773-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "1",
+        "approvals": [
+          {
+            "taskId": "0ba9377c-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "LN": {
+        "status": "COMPLETED",
+        "submissionId": "8de611a34ea1a12226a44d908292b4835ebda10439cab55d5b51c3ba916f3f17",
+        "recordId": "6e0056e2-fecc-5981-acd7-b11bcfaccb29",
+        "processInstanceId": "1a962bab-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "0",
+        "approvals": [
+          {
+            "taskId": "1a9652c4-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "LOG10": {
+        "status": "COMPLETED",
+        "submissionId": "77a867307a763decab2fe247c884a35ca6755ffc7b87ef7fbc7375d0c9c7db73",
+        "recordId": "13b29c74-88b7-5703-9856-f987787cbc56",
+        "processInstanceId": "1a90d470-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "1a90d479-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "VALUE": {
+        "status": "COMPLETED",
+        "submissionId": "98e4a48ffd7de49b9bb15e171c7cfc90f5b958dc9e4432190082c0a3fca70673",
+        "recordId": "d0496575-77c9-55bc-ad69-48ec60ae2c9c",
+        "processInstanceId": "1aa34b16-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "1.25",
+        "approvals": [
+          {
+            "taskId": "1aa3722f-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "NUMBER": {
+        "status": "COMPLETED",
+        "submissionId": "0c8061a886e7ac0715492f701df791787b544a9fb1e3810273c56bbb26e24b49",
+        "recordId": "dafdc75c-1202-5ed2-9b19-a5db22440b39",
+        "processInstanceId": "29839513-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "1",
+        "approvals": [
+          {
+            "taskId": "2983bc2c-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "BOOLEAN": {
+        "status": "COMPLETED",
+        "submissionId": "6a854b0c47506e03987137bb546de0769bad956c676d4aa51ba93135b7bc885d",
+        "recordId": "5e4cfd04-7c86-5f25-a81e-9a6b84d26416",
+        "processInstanceId": "2989d6ae-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "FALSE",
+        "approvals": [
+          {
+            "taskId": "2989d6b7-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "STRING": {
+        "status": "COMPLETED",
+        "submissionId": "2e0be6d31ba5a7fb6d3591035e642873e4006ff51eeb3552d0c634a7dda9b74d",
+        "recordId": "7ee0c879-7534-515f-9da8-125ab36ae08b",
+        "processInstanceId": "29a6ad89-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "TRUE",
+        "approvals": [
+          {
+            "taskId": "29a6ad92-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TEXT": {
+        "status": "COMPLETED",
+        "submissionId": "6c2ab382e6fdc8a1d65fb361179906eed303364c09936c68d5fbaac17c7f4f0b",
+        "recordId": "eab5bee1-f1a4-578d-82d0-878e7d2b0abc",
+        "processInstanceId": "38828ab6-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "12.5%",
+        "approvals": [
+          {
+            "taskId": "3882b1cf-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "LEN": {
+        "status": "COMPLETED",
+        "submissionId": "e4be5f38ca38aac528a211be5e6144f9403289e18dd600f04b7f38c0d8eea7e2",
+        "recordId": "d56e6fc0-cd5c-53f8-975f-4ce4354f59d1",
+        "processInstanceId": "3887e1f1-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "3",
+        "approvals": [
+          {
+            "taskId": "3888090a-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "LOWER": {
+        "status": "COMPLETED",
+        "submissionId": "144959cd4e023ca606baf864f357add1efb00c8e4fffce15d72d39bdf996f034",
+        "recordId": "5e1e33f6-7830-5e40-9879-9540589eaebb",
+        "processInstanceId": "389ffddc-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "abc汉",
+        "approvals": [
+          {
+            "taskId": "389ffde5-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "UPPER": {
+        "status": "COMPLETED",
+        "submissionId": "904963de0ef59ab770ebde2bcf08c4edcbf81d32ee365136865090268c60473e",
+        "recordId": "0edfa46e-8a34-5c1e-b492-94c8607fb9ff",
+        "processInstanceId": "474b7c39-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "ABC汉",
+        "approvals": [
+          {
+            "taskId": "474ba352-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TRIM": {
+        "status": "COMPLETED",
+        "submissionId": "84b4ea574a20319ba52b2acb44f52dd4f06a93ecae65af25e6de10fa9026cba1",
+        "recordId": "825f96d1-1b6c-513b-a5f5-a661e0ec4ff7",
+        "processInstanceId": "47944425-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "a b",
+        "approvals": [
+          {
+            "taskId": "47946b3e-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "CLEAN": {
+        "status": "COMPLETED",
+        "submissionId": "182eb977c3bb7fc1852eaa1bad34750da6e7f3adbda85fe68ae45a130d00606a",
+        "recordId": "04a60ea8-f4be-5c17-9768-ca3ce06ed686",
+        "processInstanceId": "478d8e5a-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "ab",
+        "approvals": [
+          {
+            "taskId": "478db573-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "EXACT": {
+        "status": "COMPLETED",
+        "submissionId": "7c3e42938004a382f505c89d396b67f2d69e5d2dc4a16745ce36e55f1eb985c4",
+        "recordId": "3821d486-016f-58aa-b195-58c290b4b281",
+        "processInstanceId": "5664135c-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "FALSE",
+        "approvals": [
+          {
+            "taskId": "56643a75-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "CONCAT": {
+        "status": "COMPLETED",
+        "submissionId": "073f749ba22f8b50e5c19804acd5f1a294bac907178800b115c4c154fb34d3b4",
+        "recordId": "71a66327-357a-5668-ae51-c93d4b95a55d",
+        "processInstanceId": "567837a7-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "a1TRUE",
+        "approvals": [
+          {
+            "taskId": "56785ec0-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "CONCATENATE": {
+        "status": "COMPLETED",
+        "submissionId": "3413812bf0c669865681bbaf0da7916c562924a516a4edb993bc18ddd4aed165",
+        "recordId": "d160316c-260f-5b02-8e65-b058e2cbacd7",
+        "processInstanceId": "5690a1b2-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "ab",
+        "approvals": [
+          {
+            "taskId": "5690c8cb-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TEXTJOIN": {
+        "status": "COMPLETED",
+        "submissionId": "fe520166fd22ac703b07204b99047d30cd1536488b2e4c952046f1619ef4dbb4",
+        "recordId": "a7983c47-8243-55b6-be80-fdd3ec39d14d",
+        "processInstanceId": "654791bf-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "a,b",
+        "approvals": [
+          {
+            "taskId": "6547b8d8-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "LEFT": {
+        "status": "COMPLETED",
+        "submissionId": "72f117baeac9cf4ecfc11d7561f35fd2540419457e867ce75fc9bd03d6cf86b7",
+        "recordId": "87cd9d9f-f324-5635-b000-037a8c028ef8",
+        "processInstanceId": "6561f79a-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "😀汉",
+        "approvals": [
+          {
+            "taskId": "65621eb3-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "RIGHT": {
+        "status": "COMPLETED",
+        "submissionId": "2a9576a52308317468307dc96d00e241ffcc6a197bddbd29dc3c6494879811e3",
+        "recordId": "a9517f47-577e-5be7-9991-34f13bd9f8eb",
+        "processInstanceId": "656f8c38-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "😀",
+        "approvals": [
+          {
+            "taskId": "656fb351-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "MID": {
+        "status": "COMPLETED",
+        "submissionId": "75f854dff72f031bde50398c55a831f650e9435f39c2332f6886305d0add0361",
+        "recordId": "965e7bf6-a1d6-52e3-8357-026e22354ee4",
+        "processInstanceId": "74089402-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "😀",
+        "approvals": [
+          {
+            "taskId": "7408bb1b-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "REPT": {
+        "status": "COMPLETED",
+        "submissionId": "f3dd3149579797d8f36f4c48b34a51880f8d7ad4a9ca4997bce4dc9cac108298",
+        "recordId": "73858578-4b64-5794-9c6a-abf09164e4a0",
+        "processInstanceId": "740deb3d-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "汉汉汉",
+        "approvals": [
+          {
+            "taskId": "740e1256-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SUBSTITUTE": {
+        "status": "COMPLETED",
+        "submissionId": "64c3ee25572d8fefb03c75ef7f7f4833f2ef50dcd9a5c19493c8a4cd1fe2b2c9",
+        "recordId": "99ffbd6d-1ba8-5c56-9920-4af68401214b",
+        "processInstanceId": "74466074-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "a-b-x",
+        "approvals": [
+          {
+            "taskId": "7446607d-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "REPLACE": {
+        "status": "COMPLETED",
+        "submissionId": "e3329320a78f3cea419deeeb891af4aba993e26febd7b24782b92ff84a76f75a",
+        "recordId": "4e9b2525-2281-501a-b50b-4db561caccbd",
+        "processInstanceId": "83201ab5-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "汉字日",
+        "approvals": [
+          {
+            "taskId": "832041ce-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "FIND": {
+        "status": "COMPLETED",
+        "submissionId": "8cb4abbd618044e72f6406ace4b177c37be9b192d16e318f7d1e99c341eb51da",
+        "recordId": "c7a5603c-7169-55bd-88ef-5c7932d44a11",
+        "processInstanceId": "8339e450-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "3",
+        "approvals": [
+          {
+            "taskId": "8339e459-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "SEARCH": {
+        "status": "COMPLETED",
+        "submissionId": "72aeddffa7a368166f8681d207ec17a5ed1c332074afe9dc2e15ffb5f86ac8e1",
+        "recordId": "f60a1d2f-1e72-5123-beaf-d1e1ac93f9fd",
+        "processInstanceId": "835115db-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "3",
+        "approvals": [
+          {
+            "taskId": "83513cf4-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "DATE": {
+        "status": "COMPLETED",
+        "submissionId": "69046cebfc9e6168902307ff1f9cf9097de6926910ce2a6313d537c6804ca8d6",
+        "recordId": "45685c60-e3a2-5664-88e9-aeac3b2f1bb8",
+        "processInstanceId": "9208c938-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2024-03-01",
+        "approvals": [
+          {
+            "taskId": "9208f051-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "DATEVALUE": {
+        "status": "COMPLETED",
+        "submissionId": "0624bb1265edf0cb5a505e0cf376875b47d9e5396ade1bc65e791eb2ca645fcc",
+        "recordId": "9182f200-89ce-5574-9b8e-d00598a7fbb0",
+        "processInstanceId": "922af743-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2024-02-29",
+        "approvals": [
+          {
+            "taskId": "922b1e5c-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "TODAY": {
+        "status": "COMPLETED",
+        "submissionId": "84b302d0450e0f052b6fef0539a004113d8a104fb6f4d8ebd0440370d3d0256a",
+        "recordId": "6baf9506-af48-56b2-bc37-31853ef806cc",
+        "processInstanceId": "9257d2b2-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2026-10-19",
+        "approvals": [
+          {
+            "taskId": "9257f9cb-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "NOW": {
+        "status": "COMPLETED",
+        "submissionId": "64f6a5ee5eb55e68e48959a0567edb174a3ced5a1bffd23e8a5b49cd07846a86",
+        "recordId": "0dcdb2f8-ebad-5e2d-b3ab-fd16105bc580",
+        "processInstanceId": "a0d8496b-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2026-10-19T04:21:59.884084",
+        "approvals": [
+          {
+            "taskId": "a0d84974-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "YEAR": {
+        "status": "COMPLETED",
+        "submissionId": "8ba90293fc105e166d1eb4abb6eb772a254f235bf02304a2ea02f811b5f9f0fa",
+        "recordId": "3f0746e9-54b7-5b90-8873-98931253cc57",
+        "processInstanceId": "a1257f1c-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2024",
+        "approvals": [
+          {
+            "taskId": "a125a635-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "MONTH": {
+        "status": "COMPLETED",
+        "submissionId": "e8b61b769dc6c58f18f23b8797d539720e2df8009a2a801df3f0a5428ee40184",
+        "recordId": "1841a3e6-68ab-5b7d-a693-b247cfc61917",
+        "processInstanceId": "a13c3b77-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "a13c3b80-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "DAY": {
+        "status": "COMPLETED",
+        "submissionId": "c6720f0c8f4b5471818f9227c8d2f4e4941b34dbd18481cf9a2078158c7a38ae",
+        "recordId": "bff3d0c7-666e-5bc6-b2ac-96b26b2dd6e7",
+        "processInstanceId": "afbd004e-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "29",
+        "approvals": [
+          {
+            "taskId": "afbd2767-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      },
+      "DAYS": {
+        "status": "COMPLETED",
+        "submissionId": "4c821de33b59f0b7c52b6ea85a672f44a0fe7a3794fc6940b7bc4f2a0323cf94",
+        "recordId": "6e873f3f-16b2-5c05-99d2-7fbf552d1c2f",
+        "processInstanceId": "b0044289-cb74-11f1-bd32-166ff1d6ba7b",
+        "actual": "2",
+        "approvals": [
+          {
+            "taskId": "b0044292-cb74-11f1-bd32-166ff1d6ba7b",
+            "actor": "manager",
+            "completed": true,
+            "recoveredCommittedReceipt": false
+          }
+        ]
+      }
+    }
+  },
+  "remaining": [
+    "Required computed column schema review and live tightening verification",
+    "Every function through actual standard create/edit UI",
+    "Full component and workflow capability matrix with real UI evidence",
+    "Final scope, failure recovery, deployment and comprehensive quality gates"
+  ]
+}

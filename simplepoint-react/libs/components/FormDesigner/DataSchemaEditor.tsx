@@ -12,18 +12,18 @@ import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts
 import type {FormFieldWritePolicy} from '../FormRuntime/contracts.ts';
 import {newDataField} from './model.ts';
 import {sameDesignValue} from './draftState.ts';
-import FieldEditor from './FieldEditor';
-import {applyFieldEdit, applyIndexEdit, DataEditError, fieldEdit, newIndex, persistentField, removeIndex,
+import FieldDefinitionDialog from './FieldDefinitionDialog';
+import {applyIndexEdit, DataEditError, fieldEdit, newIndex, persistentField, removeIndex,
   type DesignIndex, type FieldEdit} from './dataModel.ts';
 
 type IndexEdit = {unique: boolean; fields: {fieldId: string}[]};
 type Session = {kind: 'field'; base: DesignField; value: FieldEdit; creating: boolean}
   | {kind: 'index'; base: DesignIndex; value: IndexEdit; creating: boolean}
   | {kind: 'remove'; base: DesignIndex};
-type Props = {modelScope?: 'form' | 'detail'; section?: 'fields' | 'indexes'; compact?: boolean; document: DesignDocument; components: readonly ComponentDescriptor[]; writePolicies: readonly FormFieldWritePolicy[];
+type Props = {calculationScope?: string; modelScope?: 'form' | 'detail'; section?: 'fields' | 'indexes'; compact?: boolean; document: DesignDocument; components: readonly ComponentDescriptor[]; writePolicies: readonly FormFieldWritePolicy[];
   disabled: boolean; onChange: (document: DesignDocument) => void; onReuse?: (field: DesignField) => void; maxFields?: number; maxIndexes?: number};
 
-export default function DataSchemaEditor({document, components, writePolicies, disabled, onChange, onReuse, maxFields = 300, maxIndexes = 50, section, compact = false, modelScope = 'form'}: Props) {
+export default function DataSchemaEditor({document, components, writePolicies, disabled, onChange, onReuse, maxFields = 300, maxIndexes = 50, section, compact = false, modelScope = 'form', calculationScope = 'parent'}: Props) {
   const {t} = useI18n(), selected = usePageSelected();
   const [tab, setTab] = useState('fields'), [session, setSession] = useState<Session>();
   const [failure, setFailure] = useState('');
@@ -45,6 +45,7 @@ export default function DataSchemaEditor({document, components, writePolicies, d
     try {onChange(action()); setSession(undefined); setFailure('');}
     catch (error) {
       const messages: Record<DataEditError['code'], string> = {
+        calculation: t('app.calculation.invalid', '表达式无效'),
         conflict: t('app.designer.dataConflict', '该定义已发生变化，请关闭后重新编辑。'),
         fieldType: t('app.designer.dataFieldType', '此类型与已有控件或规则不兼容。'),
         constraints: t('app.designer.dataConstraints', '请检查字段名称、长度、精度和写入规则。'),
@@ -71,7 +72,7 @@ export default function DataSchemaEditor({document, components, writePolicies, d
       {key: 'fields', icon: createIcon('UnorderedListOutlined'), label: t('app.designer.fields', '字段')}, {key: 'indexes', icon: createIcon('DatabaseOutlined'), label: t('app.designer.indexes', '索引')},
     ]}/>}
     {(section ?? tab) === 'fields' ? <DataTable<DesignField> cards={compact ? false : undefined} settings={!compact} selectable={!compact} scroll={compact ? {x: 300} : undefined} rowKey="fieldId" storageKey="app.form.designer.fields" dataSource={document.fields}
-      pagination={compact && document.fields.length <= 20 ? false : {pageSize: 20, simple: compact}} query={compact ? undefined : {mode: 'local', scope: 'complete', contextKey: 'fields',
+      pagination={compact && document.fields.length <= 20 ? false : {defaultPageSize: 50, simple: compact}} query={compact ? undefined : {mode: 'local', scope: 'complete', contextKey: 'fields',
         fields: {label: {type: 'string'}, storageCode: {type: 'string'}, type: {type: 'string'}}}}
       toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'addField', icon: 'PlusOutlined', sort: 0, text: t('app.designer.addField', '新增字段'), disabled: locked || document.fields.length >= maxFields},
@@ -87,7 +88,7 @@ export default function DataSchemaEditor({document, components, writePolicies, d
           ...(onReuse ? [{key: 'reuse', icon: 'PlusOutlined', sort: 1, text: t('app.designer.reuse', '添加到当前场景'), disabled: locked}] : []),
         ]} onButtonEvents={{edit: () => open({kind: 'field', base: structuredClone(field), value: fieldEdit(field), creating: false}),
           reuse: () => {if (!locked) onReuse?.(field);}}}/>},
-      ].filter(column => !compact || !['storageCode', 'default'].includes(column.key))}/> : <DataTable<DesignIndex> cards={compact ? false : undefined} settings={!compact} selectable={!compact} scroll={compact ? {x: 370} : undefined} rowKey="indexId" storageKey="app.form.designer.indexes" dataSource={document.indexes} pagination={compact ? false : {pageSize: 20}}
+      ].filter(column => !compact || !['storageCode', 'default'].includes(column.key))}/> : <DataTable<DesignIndex> cards={compact ? false : undefined} settings={!compact} selectable={!compact} scroll={compact ? {x: 370} : undefined} rowKey="indexId" storageKey="app.form.designer.indexes" dataSource={document.indexes} pagination={compact ? false : {defaultPageSize: 50}}
       toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'addIndex', icon: 'PlusOutlined', sort: 0, text: t('app.designer.addIndex', '新增索引'), disabled: locked || document.indexes.length >= maxIndexes || !document.fields.some(persistentField)},
       ]} onButtonEvents={{addIndex: () => editIndex(newIndex(), true)}}/>}
@@ -101,7 +102,11 @@ export default function DataSchemaEditor({document, components, writePolicies, d
           {key: 'remove', icon: 'DeleteOutlined', sort: 1, text: compact ? t('table.button.delete', '删除') : t('app.designer.removeIndex', '移除索引'), danger: true, disabled: locked},
         ]} onButtonEvents={{edit: () => editIndex(structuredClone(index)), remove: () => open({kind: 'remove', base: structuredClone(index)})}}/>},
       ].filter(column => !compact || column.key !== 'code')}/>}
-    <Modal open={Boolean(session) && selected} width={720} destroyOnHidden maskClosable={false} onCancel={close}
+    {session?.kind === 'field' && <FieldDefinitionDialog key={session.base.fieldId} field={session.base}
+      scope={calculationScope} modelScope={modelScope} creating={session.creating} className="sp-form-data-modal" document={document}
+      components={components} writePolicies={writePolicies} disabled={locked} onDocumentChange={onChange}
+      onClose={() => {setSession(undefined); setFailure('');}}/>}
+    <Modal open={Boolean(session && session.kind !== 'field') && selected} width={session?.kind === 'field' && session.value.calculationMode === 'calculated' ? 1040 : 720} destroyOnHidden maskClosable={false} onCancel={close}
       wrapClassName="sp-form-data-modal" title={session?.kind === 'field' ? t('app.designer.editField', '编辑字段') : t('app.designer.editIndex', '编辑索引')}
       footer={<TableActions selectedKeys={[]} selectedRows={[]} buttons={session?.kind === 'remove' ? [
         {key: 'cancel', icon: 'CloseOutlined', sort: 0, text: t('app.designer.cancelData', '取消')},
@@ -110,10 +115,6 @@ export default function DataSchemaEditor({document, components, writePolicies, d
         apply: () => {if (!locked && session) session.kind === 'remove' ? apply(() => removeIndex(document, session.base)) : form.current?.submit();}}}/>}
     >
       {failure && <Alert type="error" showIcon title={failure}/>}
-      {session?.kind === 'field' && <FieldEditor document={document} field={session.base} value={session.value}
-        components={components} writePolicies={writePolicies} disabled={locked} formRef={form}
-        onChange={value => setSession({...session, value})}
-        onSubmit={value => apply(() => applyFieldEdit(document, session.base, value, components, writePolicies, session.creating, modelScope))}/>}
       {session?.kind === 'index' && <SForm formContext={designerFormContext} ref={form} idPrefix="data_index" hideSubmit disabled={locked}
         schema={{type: 'object', required: ['fields'], properties: {
           unique: {type: 'boolean', title: t('app.designer.uniqueIndex', '唯一索引')},

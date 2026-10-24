@@ -1,3 +1,4 @@
+import {createPackageAdministrationFixture} from './tenant-package-administration-fixture.mjs';
 import {readFileSync} from 'node:fs';
 import {compileLocalQuery} from '../libs/components/DataTable/localQuery.ts';
 
@@ -32,12 +33,14 @@ export function createConfigurationLifecycleFixture() {
   const memberGrants = new Map([[tenants[0].id, new Set(members.slice(0, 120).map(row=>row.id))], [tenants[1].id, new Set([members[1].id])]]);
   const packageGrants = new Map([[tenants[0].id, new Set(packages.slice(0, 120).map(row=>row.code))], [tenants[1].id, new Set([packages[1].code])]]);
   const applicationGrants = new Map([['parent-a', new Set(applications.slice(0, 120).map(row=>row.code))], ['parent-b', new Set([applications[1].code])]]);
+  const administration = createPackageAdministrationFixture(tenants, packages, packageSchema, page);
   const reads = [], writes = [];
   let active = false, mode = 'all', failure, capabilityFailure = false;
-  return {tenants, parentPackages, members, packages, applications, memberGrants, packageGrants, applicationGrants, reads, writes,
+  return {administration, tenants, parentPackages, members, packages, applications, memberGrants, packageGrants, applicationGrants, reads, writes,
     enable() {active = true;}, mode(next) {mode = next;}, failWrite() {failure = true;}, failCapability() {capabilityFailure = true;},
     async handle(req, url, respond, expectedFailure) {
       if (!active) return false;
+      if (await administration.handle(req, url, respond, expectedFailure, mode)) return true;
       const path = url.pathname, currentMode = mode;
       if (path === '/common/platform/dictionaries/options' && url.searchParams.get('dictionaryCode') === 'tenant.type') {
         respond([{value: 'PERSONAL', label: '个人'}, {value: 'ORGANIZATION', label: '组织'}]); return true;

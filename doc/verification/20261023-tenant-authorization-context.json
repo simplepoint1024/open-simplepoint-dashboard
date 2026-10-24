@@ -1,0 +1,275 @@
+{
+  "verifiedAt": "2026-10-23T07:13:46.294533+00:00",
+  "status": "partial-S4-tenant-authorization-and-entitlement-deadlines",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Tenant and personal login permissions now come from the tenant authorization selection; no platform public resources, legacy package relation or persisted resource-mode branch is consulted in that path",
+    "Only the selected tenant role namespace participates; platform permission resolution remains in the platform branch",
+    "Tenant authorization selection validates local resource scope, hierarchy, lifecycle, entitlement, public entries and alias targets using bounded scalar queries",
+    "Explicit baseline application membership can distribute non-grantable public executable entries such as My Items; unrelated public resources remain excluded",
+    "Exclusive next entitlement transition is carried in AuthorizationContext and preserved across the actual RPC codec and application JSON mapper",
+    "Cache validation enforces the exclusive deadline independently of invalidation revisions; TTL is bounded, subsecond results are not cached, expired provider results are re-evaluated once then rejected",
+    "Authorization revision is captured before membership/owner/role reads so concurrent ownership transfer does not stamp old policy with the new revision",
+    "Deleted tenants are explicitly excluded from personal resolution and cache revision queries"
+  ],
+  "validation": {
+    "simplepoint-core": {
+      "totals": {
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.core.AuthorizationContextTest",
+          "tests": 39,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "simplepoint-security/simplepoint-security-core": {
+      "totals": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.security.context.AuthorizationContextCacheSecurityTest",
+          "tests": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.security.context.AuthorizationContextRejectionTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.security.context.AuthorizationContextResolverTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "simplepoint-security/simplepoint-security-oauth2-resource": {
+      "totals": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.security.context.AuthorizationContextExpiryHttpTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.security.oauth2.resourceserver.AuthorizationContextFilterTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.security.oauth2.resourceserver.ServiceRouterLocalAuthenticationTest",
+          "tests": 1,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.security.oauth2.resourceserver.composition.ModuleAuthorizationContextsTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation": {
+      "totals": {
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextServiceImplTest",
+          "tests": 31,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.core.service.impl.AuthorizationContextWireTest",
+          "tests": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessReadQueryTest",
+          "tests": 9,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.core.service.impl.CurrentUserAccessServiceImplTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation": {
+      "totals": {
+        "tests": 131,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": [
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImplTest",
+          "tests": 25,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogImplTest",
+          "tests": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceCatalogReadTest",
+          "tests": 16,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantResourceProvisioningServiceImplTest",
+          "tests": 19,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "name": "org.simplepoint.plugin.rbac.tenant.service.impl.TenantServiceImplTest",
+          "tests": 56,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    }
+  },
+  "distinctSelectedTests": 252,
+  "postgres": {
+    "image": "postgres:17",
+    "isolation": "Disposable loopback-only container; separate random schema per database fixture; removed after tests",
+    "migrations": "Exact identity manifest V1-V16, followed by Hibernate schema validation",
+    "tests": 75,
+    "suites": [
+      "TenantPackageActivationServiceImplTest",
+      "TenantResourceCatalogImplTest",
+      "TenantResourceCatalogReadTest",
+      "TenantResourceProvisioningServiceImplTest"
+    ],
+    "noProductionDatabaseAccess": true
+  },
+  "httpBoundaryEvidence": {
+    "suite": "AuthorizationContextExpiryHttpTest",
+    "cases": [
+      "same bearer identity before/at deadline",
+      "same browser session with stale stored permission before/at deadline"
+    ],
+    "components": "Actual AuthorizationContextResolver, AuthorizationContextFilter and Spring Security AuthorizationFilter; deterministic clock; cache retains expired entries intentionally",
+    "assertions": "200 before exclusive deadline; 403 at deadline; protected business callback not invoked; request context cleared; unchanged login identity and invalidation counters",
+    "limits": "Authorization domain provider is controlled test fixture. Database eligibility, real context assembly and RPC/cache serialization have separate tests; not a production browser end-to-end acceptance."
+  },
+  "quality": {
+    "checkstyle": "Passed for exact listed changed source/test files, not a whole-repository claim",
+    "moduleBoundaries": "verifyModuleBoundaries passed",
+    "files": [
+      "simplepoint-core/src/main/java/org/simplepoint/core/AuthorizationContext.java",
+      "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextResolver.java",
+      "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextCacheSecurityTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImpl.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImplTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextWireTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceDistributionPolicy.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourcePlatformImporter.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceProvisioningServiceImplTest.java",
+      "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/repository/JpaTenantRepository.java",
+      "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/context/AuthorizationContextExpiryHttpTest.java"
+    ],
+    "initScript": "gradle.projectsEvaluated {\n  allprojects {\n    tasks.withType(org.gradle.api.plugins.quality.Checkstyle).configureEach { task ->\n      def selected = new File('/tmp/simplepoint-auth-checkstyle-files.txt').readLines().findAll { path ->\n        path.startsWith(project.projectDir.absolutePath + '/') && (task.name.endsWith('Test') == path.contains('/src/test/'))\n      }\n      task.setSource(project.files(selected))\n    }\n  }\n}\n",
+    "logs": [
+      "/tmp/simplepoint-tenant-auth-final.log",
+      "/tmp/simplepoint-tenant-auth-http-final.log",
+      "/tmp/simplepoint-tenant-auth-quality-final.log"
+    ],
+    "logNotes": "Database and other selected suites passed in the combined run; its owner-transfer test fixture reported unused Mockito stubbing. The fixture was corrected and affected core/HTTP suites plus final scoped quality gates passed in subsequent runs."
+  },
+  "commands": [
+    "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 SP_TENANT_PACKAGE_TEST_POSTGRES_URL=jdbc:postgresql://127.0.0.1:<disposable-port>/postgres ./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation:test --tests \"*TenantResourceCatalogReadTest\" --tests \"*TenantResourceProvisioningServiceImplTest\" --tests \"*TenantPackageActivationServiceImplTest\" --tests \"*TenantResourceCatalogImplTest\" --tests \"*TenantServiceImplTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew :simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-core-implementation:test --tests \"*AuthorizationContext*\" --tests \"*CurrentUserAccess*\" :simplepoint-security:simplepoint-security-oauth2-resource:test --tests \"*AuthorizationContext*\" --tests \"*ModuleAuthorizationContextsTest\" -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew :simplepoint-core:test --tests \"*AuthorizationContextTest\" :simplepoint-security:simplepoint-security-core:test --tests \"*AuthorizationContext*\" -Psimplepoint.frontend.skip=true --console=plain",
+    "./gradlew -I /tmp/simplepoint-auth-checkstyle.init.gradle <listed-files-owning-projects>:checkstyleMain <listed-files-owning-projects>:checkstyleTest verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain"
+  ],
+  "fileSha256": {
+    "simplepoint-core/src/main/java/org/simplepoint/core/AuthorizationContext.java": "45a91f6b0d254c9bc0452a3f1eaed884ec47941b576ce9abd3d18ac28766abdf",
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/context/AuthorizationContextResolver.java": "d6f5c528501575c00536220bc1b5407dde9012bce0b0672908d3ca04fd120f96",
+    "simplepoint-security/simplepoint-security-core/src/test/java/org/simplepoint/security/context/AuthorizationContextCacheSecurityTest.java": "f1476a1a0afb837b79811020fa88c6f05aaef0e83dc92b39b643db20c04afab1",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-api/src/main/java/org/simplepoint/plugin/rbac/tenant/api/service/TenantResourceCatalog.java": "92c9274a319c5bfeed0b76470fcbfcf49ca53d24ac56993699ab899016894553",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceReadQuery.java": "c39030afe7b8d85e54cb3c0e8b00933d273dc3bb7c9f008d19a91a4f709bc955",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogImpl.java": "814cc70fa93d10918ef052ee4bb4a60da00f7346b5038dfd3530f4db10c9c6ed",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceCatalogReadTest.java": "8c78b94d245961f0959b6fa86c944dcff0cee8c4a87c05c21750b4d7bbcb6923",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/main/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImpl.java": "5ba2d2d98bf8c6dcd9a3c6b083cb558f6f895a799fefbc07427d2264f46f61c1",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextServiceImplTest.java": "495b9c4528fb81c0ee50f7b908fa03d896f0dc90d78ade60b2c60c3e51f32cf0",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-core-implementation/src/test/java/org/simplepoint/plugin/rbac/core/service/impl/AuthorizationContextWireTest.java": "6f5c2b1c3a6b649d1d26e811937184ce1ad23eb456fe31ebe0120a98ecb0ad0e",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceDistributionPolicy.java": "cf177c71b47881226c1a42e06c382ac99ac3ea46b0f3da96f007b1b3c32a9aaf",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourcePlatformImporter.java": "ced06137ad6cf08e44228107911b5e260af8464131bc09865355705c27d35065",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/TenantResourceProvisioningServiceImplTest.java": "5c48138644475bce011da3e053035c6d2c4293bd2b2a0e79e8d7846e43e1a14a",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/repository/JpaTenantRepository.java": "8b29d6c4ca4b6176e2b31e016e47fe295befb6b70834fcb22d657908ca5ccafe",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/test/java/org/simplepoint/security/context/AuthorizationContextExpiryHttpTest.java": "7656b4a7a07ff843a9eb21947c40e5052d0fe0c8536541d6b1ff03f84cd05b36"
+  },
+  "notCompleted": [
+    "Complete role configuration/data/field permission and navigation migration",
+    "Managed resource tenant-side parent/host registration and revocation event integration",
+    "Removal of old resource mode HTTP/UI",
+    "S5 standard resource/My Packages pages and package lifecycle HTTP entry points",
+    "S6 production migration, packaged frontend and standalone/microservice end-to-end acceptance"
+  ],
+  "operations": {
+    "deployed": false,
+    "productionDataChanged": false,
+    "committed": false,
+    "pushed": false,
+    "testContainerRemoved": true
+  }
+}

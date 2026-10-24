@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import org.simplepoint.core.query.InvalidQueryException;
 import org.simplepoint.core.query.QueryCapabilities;
+import org.simplepoint.core.query.TablePagination;
 import org.simplepoint.data.jpa.ProjectionQuery;
 import org.simplepoint.plugin.rbac.core.api.pojo.vo.PlatformAccountView;
 import org.simplepoint.security.entity.PlatformRole;
@@ -192,7 +193,7 @@ final class PlatformAccountQueries {
   }
 
   private void validatePage(Pageable pageable) {
-    if (pageable.isUnpaged() || pageable.getPageNumber() > 100000 || pageable.getPageSize() > 50) {
+    if (pageable.isUnpaged() || pageable.getPageNumber() > 100000 || pageable.getPageSize() > TablePagination.MAX_PAGE_SIZE) {
       throw new InvalidQueryException("分页范围超限");
     }
   }

@@ -233,7 +233,7 @@ function ProvidersSession() {
                   inputTokenPrice: {type: 'number', path: ['pricing', 'inputTokenPrice'], columnKey: 'pricing.inputTokenPrice'},
                   outputTokenPrice: {type: 'number', path: ['pricing', 'outputTokenPrice'], columnKey: 'pricing.outputTokenPrice'},
                 }}} style={{marginTop: 16}} size="small" rowKey="modelId" dataSource={result} columns={discoveryColumns}
-                pagination={{pageSize: 10, hideOnSinglePage: true}} scroll={{y: 420, x: 960}}/>
+                pagination={{defaultPageSize: 50, hideOnSinglePage: true}} scroll={{y: 420, x: 960}}/>
                 : attempted && <Alert className="ai-provider-operation-interrupted" type="warning" showIcon style={{marginTop: 12}}
                   title={t('ai.providers.page.operation.interrupted', '模型发现已中断，请重试。')}/>}
     </Modal>}

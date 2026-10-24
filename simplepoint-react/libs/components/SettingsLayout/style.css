@@ -1,0 +1,14 @@
+.sp-settings-layout {display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 20px; height: 100%; min-height: 0; width: 100%; box-sizing: border-box; padding: 24px; overflow: hidden; background: var(--ant-color-bg-container);}
+.sp-settings-navigation, .sp-settings-main {min-width: 0; min-height: 0; box-sizing: border-box; border: 1px solid var(--ant-color-border-secondary); border-radius: 12px; background: var(--ant-color-bg-container); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable;}
+.sp-settings-navigation {padding: 20px 14px;}
+.sp-settings-main {padding: 26px 30px;}
+.sp-settings-nav-label {padding: 18px 12px 9px; color: var(--ant-color-text-tertiary); font-size: 12px; font-weight: 600;}
+.sp-settings-nav-links {display: flex; flex-direction: column; gap: 4px;}
+.sp-settings-nav-links button {display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 9px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--ant-color-text); text-align: left; cursor: pointer; font: inherit;}
+.sp-settings-nav-links button > .anticon:last-child {margin-left: auto; color: var(--ant-color-text-tertiary); font-size: 11px;}
+.sp-settings-nav-links button:hover {background: var(--ant-color-fill-tertiary);}
+.sp-settings-nav-links button[aria-current] {background: var(--ant-color-primary-bg); color: var(--ant-color-primary); font-weight: 600;}
+.sp-settings-nav-links button:focus-visible {outline: 2px solid var(--ant-color-primary); outline-offset: -2px;}
+.sp-settings-nav-links button:disabled {opacity: .5; cursor: not-allowed;}
+@media (max-width: 900px) {.sp-settings-layout {grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, auto) minmax(0, 1fr); gap: 16px;}.sp-settings-navigation {max-height: 38vh;}.sp-settings-nav-links {flex-direction: row; flex-wrap: wrap;}.sp-settings-nav-links button {width: auto;}.sp-settings-nav-links button > .anticon:last-child {display: none;}}
+@media (max-width: 600px) {.sp-settings-layout {padding: 12px;}.sp-settings-main {padding: 20px 16px;}}

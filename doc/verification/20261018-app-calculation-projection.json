@@ -1,0 +1,138 @@
+{
+  "verifiedAt": "2026-10-17T18:41:07.179531+00:00",
+  "phase": "P3 immutable APP calculation publication projection",
+  "passed": true,
+  "deployed": false,
+  "wholeGoalComplete": false,
+  "totalTests": 302,
+  "modules": [
+    {
+      "module": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation",
+      "tests": 255,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": {
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateServiceTest.xml": "e996ddced8118e0817605a3f717384ece147fbf8779a9f7625142eebf71dcb61",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormPostgresSchemaTest.xml": "8b7d78238243cef03178e47d6f87676e9afd040beba8f201ba33a14902e503c7",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormPublicationServiceImplTest.xml": "924130b8d0cdffe17b72ef606e29c295b295b5561f6c02de2085e4f808fee7db",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormPublicationStateServiceTest.xml": "c1a46eb6c24417a00d8612bdd4049296b5f2aee6ecf091dbd404a76005162db0",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormRecordSchemaServiceImplTest.xml": "55d28ce51a48ae4a5311d7aa289297dd75b466463f76d4c0e7b4a60b76e4dc1e",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormRecordServiceImplTest.xml": "982402e52aaaca668cf05ccb26ea5acd4f8bb589d88d7fe0962be35e342ebb39",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormRuntimeServiceImplTest.xml": "3251c010931602e6f0cc51d0d09272f9bc1c6841845be95e3c451fb93884570e",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationFormServiceDatabaseTest.xml": "9fc1f0d2910ac41964a451ca3189ae0620d6d0598f8f67c1081058f8a931165d",
+        "TEST-org.simplepoint.plugin.app.form.service.ApplicationResourceLifecycleTest.xml": "4004cc945ddbdb5414415b078a4b38422c32836c9d54f438d03173b521e02d12",
+        "TEST-org.simplepoint.plugin.app.form.service.DefaultFormComponentRegistryTest.xml": "2d80abc5d144ab100a26bb26d098ef4b977dbdd913ea0fdb3150cfe818163cec",
+        "TEST-org.simplepoint.plugin.app.form.service.DnaInvocationContextFactoryTest.xml": "7746a7771a1877ea2fdf93d03b7ad1980df874eb0f733cefa0ce415779320c58",
+        "TEST-org.simplepoint.plugin.app.form.service.FormAggregateValidationTest.xml": "e20af532d111977a2a372f2a6e3e323297eaac86776f8b39061a2675fe5f1952",
+        "TEST-org.simplepoint.plugin.app.form.service.FormAttachmentReferenceValidatorTest.xml": "84e5276b7211fd2ffc1778a81b4b3ef944079b9dd79db9858ce8f4eadacb5926",
+        "TEST-org.simplepoint.plugin.app.form.service.FormCalculationCompilerTest.xml": "351d06068015d2e465ba7e88d3b1a4b0777731a6f2a2f269678dcdd878e73af5",
+        "TEST-org.simplepoint.plugin.app.form.service.FormCalculationDefinitionTest.xml": "c057ff91304f0b7a1395a8f6a26d4ff869835412d152af18b11eb40d858988d9",
+        "TEST-org.simplepoint.plugin.app.form.service.FormCalculationPermissionsTest.xml": "e9895300b427be73f168b7c1b9d378f8fe37d4d4b1a0849882db9e59c2475fbb",
+        "TEST-org.simplepoint.plugin.app.form.service.FormCalculationPublicationProjectionTest.xml": "8d1b6197c001bf6dc300a78780d811766db88edfcac929833882a09400ede62c",
+        "TEST-org.simplepoint.plugin.app.form.service.FormChoiceValuesTest.xml": "35c1dab1b07ef3082711c56b62cad961d55a82386c359f60aec73ed3e1542a4f",
+        "TEST-org.simplepoint.plugin.app.form.service.FormDetailEngineTest.xml": "2308e3c6710450202c2e03f312253ee35c305b69005003d53c0820aa2b549f10",
+        "TEST-org.simplepoint.plugin.app.form.service.FormDnaResourceBindingCoordinatorTest.xml": "1e8eedef09ee00f55ed349d03f15b3c310065b210e53c2d15174c91311d2a18b",
+        "TEST-org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinatorTest.xml": "5207acd42793290d820bed8ac0b7895e3c105f391b0df35a058ca1849015f339",
+        "TEST-org.simplepoint.plugin.app.form.service.FormDocumentCodecTest.xml": "2c1791e42640ce55cb91552451ef5af8bd74e9162a6fbf105f1954fef9bf5740",
+        "TEST-org.simplepoint.plugin.app.form.service.FormDocumentValidatorTest.xml": "c13d4c5ffc9ed52a8c674896454e445668af576b916f054c35219597f1a8d709",
+        "TEST-org.simplepoint.plugin.app.form.service.FormFieldValidationsTest.xml": "f325acd8289b4f2129bcd3bbd5061a54a0e585fbeda12bc716617cf82be3e1bb",
+        "TEST-org.simplepoint.plugin.app.form.service.FormFieldWritePolicyTest.xml": "18e57b4986afad09497aaa80159ea0574af8af5ccc07e527321dbba623f41c1e",
+        "TEST-org.simplepoint.plugin.app.form.service.FormJsonContractTest.xml": "872a78cf0d18866201c7ba0254f432f46d4736d41c28b236ce1b43fa3ec17b55",
+        "TEST-org.simplepoint.plugin.app.form.service.FormPageResourceCoordinatorTest.xml": "6d5b5e252432727e781c4d924ecc49d5a88cb141dc5b439028d8156140f0eabc",
+        "TEST-org.simplepoint.plugin.app.form.service.FormPresentationAndAccessTest.xml": "4a8a6a3f89360ff019b870b007e153d7da661d8a3fbc27bf31b403e97260f89c",
+        "TEST-org.simplepoint.plugin.app.form.service.FormPublicationImpactServiceTest.xml": "a51b439bfa6f68be186f35110ccf5683c33ab632e9f2b10a7d1be8539a1cc415",
+        "TEST-org.simplepoint.plugin.app.form.service.FormPublicationRequirementsCompilerTest.xml": "0a753c32128910a49e50239b65b6cee506cd3197d6260e04eb1816169d2548ed",
+        "TEST-org.simplepoint.plugin.app.form.service.FormPublicationValidatorTest.xml": "06cf687a4f55e310071a3211888be8efd37e5163f96d5970bfeab1d01a209692",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRecordIdentityLabelsTest.xml": "07a6589705927304755394cda5772c73cbe85a83c4aea61c167af262d9e26bf4",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRecordInvariantValidatorTest.xml": "e150a723d6776b21fb5d5424a5046c727803066c06fa11eda5811d4786810408",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRecordPayloadCompilerTest.xml": "c1724b47b2b0b72138cbffe904ced7202b8c48e08f034d01326ae57d1be96e12",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRecordProjectionReadsTest.xml": "c173aa4dd88ced3e01e829002e6d934f0fbbbb07d39beba9af1bfb8c0f037d0b",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRecordSystemFieldsTest.xml": "56f35aeb0ee8d29e00c7773bc14b5545afbe6a3d15fba234c7f6feb965676b9e",
+        "TEST-org.simplepoint.plugin.app.form.service.FormResubmissionModeTest.xml": "b9ee8fed0c43614a6b0cea1fce3c2c8d00f00e3aa3dc2043773c7f14a4906426",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRuleEvaluatorTest.xml": "cfedae0147bdc8a60d33d8b10f5d912915363aaafd0343758ed5fb7cf0a8c74d",
+        "TEST-org.simplepoint.plugin.app.form.service.FormRuntimeDocumentCompilerTest.xml": "02363ec9610008feeb2e637073ca071e95b336efb2d50a0d500c303d34ca6816",
+        "TEST-org.simplepoint.plugin.app.form.service.FormSceneGraphValidatorTest.xml": "0c2976d5d2d3cef84fbcacacaed5b52491c9bce4229ffc0866e2542220bf6c6e",
+        "TEST-org.simplepoint.plugin.app.form.service.FormStandardComponentsTest.xml": "b0c8463af15a5813d9b18d885de895498f0806d95ef9f72503df2085ddf3fe5d",
+        "TEST-org.simplepoint.plugin.app.form.service.FormStorageProjectionCompilerTest.xml": "2105efe19f93b37cd01670cc5c650bae0171cc42a4d56bfb1d306a961e45ffea",
+        "TEST-org.simplepoint.plugin.app.form.service.FormSubmissionRecoveryTest.xml": "1bc592f27b3b23825908dae58693a272a9a66388eee9068d9734eb90c725570e",
+        "TEST-org.simplepoint.plugin.app.form.service.FormSubmissionRequirementsTest.xml": "c9749257f5229e04c55539344abe001ecb87eb0e368f21654522a803d3253329",
+        "TEST-org.simplepoint.plugin.app.form.service.FormTemporalContractTest.xml": "6c42c7b48f94e373150f129ace481ab61629ad1a07e2a1349caf2bd9385eb52f",
+        "TEST-org.simplepoint.plugin.app.form.service.FormWritePolicyProjectionTest.xml": "19dba1379bf3e5219ab8f015d0183e41561d1c4cc165ebe41d5df59cca6e496c",
+        "TEST-org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationCoordinatorTest.xml": "f15786f6c0db84651b1109856017c849467b2334b21fef7d234e36b175da656a"
+      }
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-app",
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xmlSha256": {
+        "TEST-org.simplepoint.app.catalog.service.WorkspaceApplicationCatalogTest.xml": "3414ec6173112aebb7f9285d991c57a596f0b2250471d6cd45a354e58aff5fc2",
+        "TEST-org.simplepoint.app.catalog.service.WorkspaceApplicationQueriesTest.xml": "e869819c576108e9ace8bee811958832cb8ded17af2dc7830c928b5d77087dea",
+        "TEST-org.simplepoint.app.form.controller.ApplicationFormCalculationControllerTest.xml": "e0e4c32ea09ce144793e026cfe8171588057e932aaab3511b413135236bdbb45",
+        "TEST-org.simplepoint.app.form.controller.ApplicationFormControllerHttpTest.xml": "c02f8ae833798ad1b0f932443dcbfbd166817485ee98de5ec664f5da12e1bb8d",
+        "TEST-org.simplepoint.app.form.controller.ApplicationFormExceptionHandlerTest.xml": "aba943dc2746480dea8437981b0c2ba72d76e69805de2ea64251b142cf58e169",
+        "TEST-org.simplepoint.app.form.controller.ApplicationFormWorkflowHttpTest.xml": "614cb27e46955a27c0bfe9bb6077e06e537eb4e2a491217764dd26c66255811f",
+        "TEST-org.simplepoint.app.form.controller.ApplicationResourceLifecycleSecurityTest.xml": "eea854f7ea68037115dc7ae580c8482b0863e6363d50744db821d4838d4d41b5",
+        "TEST-org.simplepoint.app.form.service.ApplicationFormReleaseCatalogTest.xml": "0645b8298dac7a337a67a7d784f5d3e6f30259beacf7a9c71203f233a366ef80",
+        "TEST-org.simplepoint.app.form.service.ApplicationFormWorkflowCatalogTest.xml": "352a6f872d0460dda02955c154673e7cae37527b7624ccfb47e59ac61e67991f",
+        "TEST-org.simplepoint.app.form.service.WorkspaceApplicationPageAccessPortTest.xml": "e95fb04b455d18d3781529e262c9ce21d96015085068b4131cd44e55858c4f41"
+      }
+    }
+  ],
+  "checkstyle": {
+    "module": "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation",
+    "violations": 0,
+    "sha256": "4e352c4f9792ae7e22fffc4d2eca1ab78849ee6febfc4000f1e1b90d09133c35"
+  },
+  "checks": [
+    "Compiled stable parent/detail formula identities and immutable physical model/schema references into the original persisted write-policy intent.",
+    "Verified document checksum and matching storage projection; rejected missing/duplicate/extra/wrong-owner detail binding metadata.",
+    "Included computed main columns and indexes; preserved legacy nonpersistent placeholders.",
+    "Projected Unicode length/RE2 and exact scalar choice constraints without UI labels or regex hint text.",
+    "Preserved null for ordinary legacy policy publications; emitted explicit definition after calculation installation, including removals.",
+    "H2 persistence/context reload tests prove retries retain the original command after a newer immutable version exists.",
+    "H2 tests prove cancelled removal retains installed mode and publishing an older page cannot resurrect removed formulas.",
+    "Added coverage for ten scalar choice kinds, including INTEGER wire kind for INT32/INT64 and precision-safe values.",
+    "Calculated temporal choices now enforce the same stored microsecond boundary as ordinary fields.",
+    "Complete APP implementation and APP service suites passed; real PostgreSQL schema tests enabled by the verification harness."
+  ],
+  "databases": {
+    "appSchema": "PostgreSQL 17 isolated test database",
+    "publicationIntent": "H2 persistence/reload/transaction tests",
+    "harnessTargets": [
+      "PostgreSQL 17",
+      "MySQL 8.4"
+    ],
+    "note": "MySQL was provisioned by the shared harness but this APP-only run does not claim new MySQL publication coverage.",
+    "temporaryHarnessContainersRemoved": true
+  },
+  "limitations": [
+    "APP formula publication remains guarded until continuous recovery and runtime integration are complete.",
+    "This batch is not deployed; current live DNA/APP are 20261018-publication-service1.",
+    "No live APP formula publication/backfill or B1–B5 final business acceptance claimed.",
+    "Final acceptance matrix still has 176 unaccepted entries; prior tenant Checkstyle findings remain outside this gate."
+  ],
+  "sourceFilesSha256": {
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjection.java": "90cef5f6efd4631dd00d39da6d4857529e1cf4342417ceebbc040003ab7dceff",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormWritePolicyPublicationStateService.java": "04d55077f0a4d75b1bb1a64ffa51a61b6942ae5b48e7ac4e6d578eb92472b696",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormStorageProjectionCompiler.java": "48fbee9a9bb0ad633137befc91ada3043ee4ad4f397f665b09d2fdf340993474",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormChoiceValues.java": "b2d1857c2041881cff2f558b783a0dcc19c6c6e0718f2813bb296d181e69e60a",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/main/java/org/simplepoint/plugin/app/form/service/FormDocumentValidator.java": "67938e95eab78d42282507e728759aeb31f539f9f8a8c9a20ed542caa1ddb624",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationPublicationProjectionTest.java": "2df7ca42b0b426ccd27869f2347dc73f48107e92586231835c2eb86549f7dd6c",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/ApplicationFormPageBindingStateServiceTest.java": "c30186461be6fd1955e8dbf035742edbebee6b37a7a21059f0bc4d654ce70e59",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormPublicationImpactServiceTest.java": "0088e3f8defb97188bd1d977ddb74aa8f915dfbc6c7fa4f1c1696b3bb12b199d",
+    "simplepoint-plugins/simplepoint-plugin-app/simplepoint-plugin-app-form-implementation/src/test/java/org/simplepoint/plugin/app/form/service/FormCalculationDefinitionTest.java": "55189d966b5f577f1161fe5e88f0801113e6726a6d8d619009f2434cc75b4d96"
+  },
+  "liveSnapshotCompatibility": {
+    "passed": true,
+    "activeVersions": 3,
+    "readOnly": true,
+    "canonicalChecksumsMatch": true,
+    "legacyCalculationAbsent": true,
+    "at": "2026-10-17T18:41:54.892Z",
+    "scope": "Local new projector with read-only snapshots of active live versions; not a deployed HTTP/RPC call."
+  }
+}

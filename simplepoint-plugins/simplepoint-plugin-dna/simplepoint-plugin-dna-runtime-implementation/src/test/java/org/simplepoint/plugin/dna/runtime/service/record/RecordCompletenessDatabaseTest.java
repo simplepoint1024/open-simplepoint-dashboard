@@ -166,18 +166,45 @@ class RecordCompletenessDatabaseTest {
   }
 
   private static RecordInspectionServiceImpl service(final DriverManagerDataSource source, final String catalog,
-      final String schema, final RuntimeSchemaDialect dialect, final String table) {
+      final String schema, final RuntimeSchemaDialect dialect, final String table) throws Exception {
     var requested = schema("title");
     var model = new RuntimeRecordModel("model-1", "app-1", "form-1", 2, schema("caption"), 1, requested,
         new PhysicalSchemaTarget("model-1", new RuntimeMetadataTarget("source-1", catalog, schema, table)));
     var resolver = mock(RuntimeRecordModelResolver.class);
     when(resolver.resolve(any(), any(), any())).thenReturn(model);
     var provider = mock(ManagedRuntimeDataSourceProvider.class);
-    when(provider.open(model.target())).thenReturn(new ManagedRuntimeDataSource(new SimpleDataSource(source),
-        false, null, null, dialect, null, catalog, schema));
+    org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect core = null;
+    org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect.SupportContext context = null;
+    org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity identity = null;
+    if (source.getUrl().startsWith("jdbc:h2:")) {
+      var locks = H2RecordWriteFenceFixture.prepare(source, "tenant-a", model.physicalModelId());
+      org.mockito.Mockito.doReturn(locks.recordWriteFenceSql(null, null, model.target())).when(dialect)
+          .recordWriteFenceSql(any(), any(), any());
+    } else {
+      core = dialect instanceof PostgresqlRuntimeSchemaDialect
+          ? new org.simplepoint.plugin.dna.core.service.dialect.PostgresqlJdbcDatabaseDialect()
+          : new org.simplepoint.plugin.dna.core.service.dialect.MysqlJdbcDatabaseDialect();
+      try (var connection = source.getConnection()) {
+        var metadata = connection.getMetaData();
+        context = new org.simplepoint.plugin.dna.core.api.spi.JdbcDatabaseDialect.SupportContext(core.code(), metadata.getDriverName(),
+            metadata.getDatabaseProductName(), metadata.getDatabaseProductVersion(), catalog, schema, metadata.getIdentifierQuoteString(), Map.of());
+        identity = new org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity(metadata.getDatabaseProductName(),
+            metadata.getDatabaseProductVersion(), metadata.getDatabaseMajorVersion(), metadata.getDatabaseMinorVersion());
+      }
+    }
+    when(provider.open(any())).thenReturn(new ManagedRuntimeDataSource(new SimpleDataSource(source),
+        false, context, core, dialect, identity, catalog, schema));
+    if (core != null) {
+      var ddl = new org.simplepoint.plugin.dna.runtime.service.schema.JdbcPhysicalSchemaBackend(provider, codec());
+      new org.simplepoint.plugin.dna.runtime.service.schema.RecordWriteFenceProvisioner(ddl).prepare(model.target());
+      new RuntimeCalciteRecordBackend(provider, new DefaultCalciteQueryEngine())
+          .initializeWriteFence(new RuntimeRequestContext.RuntimeActor("tenant-a", "manager"), model.target());
+    }
     var engine = spy(new DefaultCalciteQueryEngine());
     doAnswer(invocation -> {
       CalciteQueryResult result = (CalciteQueryResult) invocation.callRealMethod();
+      if (((org.simplepoint.data.calcite.core.query.CalciteQueryRequest) invocation.getArgument(0)).sql()
+          .contains("simpoint_dna_record_publications_v1")) return result;
       assertThat(result.analysis().planText()).doesNotContain("EnumerableAggregate");
       if (result.analysis().pushedSqls().isEmpty()) {
         assertThat(result.analysis().planText()).contains("Values").doesNotContain("TableScan");

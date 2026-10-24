@@ -4,18 +4,18 @@ import {fileURLToPath} from 'node:url';
 import test from 'node:test';
 import {collectPageExposes} from './module.exposes.ts';
 
-for (const [module, service] of [
-  ['common', 'common'],
-  ['audit', 'auditing'],
-  ['dna', 'dna'],
-  ['ai', 'ai'],
-  ['app', 'app'],
-  ['workflow', 'workflow'],
+for (const [module, service, contribution, project] of [
+  ['common', 'common', 'common-ui', 'simplepoint-plugin-common-ui'],
+  ['audit', 'auditing', 'auditing-http', 'simplepoint-plugins-auditing/simplepoint-plugin-auditing-http'],
+  ['dna', 'dna', 'dna-http', 'simplepoint-plugin-dna/simplepoint-plugin-dna-http'],
+  ['ai', 'ai', 'ai-http', 'simplepoint-plugin-ai/simplepoint-plugin-ai-http'],
+  ['app', 'app', 'app-http', 'simplepoint-plugin-app/simplepoint-plugin-app-http'],
+  ['workflow', 'workflow', 'workflow-http', 'simplepoint-plugin-workflow/simplepoint-plugin-workflow-http'],
 ]) {
   test(`${service}: every declared backend route remains exposed; private drawers do not`, () => {
     const directory = fileURLToPath(new URL(`../../../modules/simplepoint-${module}/`, import.meta.url));
     const exposes = collectPageExposes(directory);
-    const resources = JSON.parse(readFileSync(new URL(`../../../../simplepoint-services/simplepoint-service-${service}/src/main/resources/META-INF/simplepoint/resources/${service}.json`, import.meta.url)));
+    const resources = JSON.parse(readFileSync(new URL(`../../../../simplepoint-plugins/${project}/src/main/resources/META-INF/simplepoint/modules/${contribution}/resources.json`, import.meta.url)));
     const walk = value => {
       if (!value || typeof value !== 'object') return;
       if (typeof value.component === 'string' && value.component.startsWith(`${service}/`)) {

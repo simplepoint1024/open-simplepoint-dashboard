@@ -27,8 +27,7 @@ public class ResourceLifecycleSubscriptions {
     return new EventHandler() {
       @Override
       public EventSubscription subscription() {
-        return new EventSubscription("resource-offline." + producer, producer,
-            ResourceLifecycleEvents.OFFLINE_COMPLETED, 1);
+        return ResourceLifecycleEvents.completionSubscription(producer);
       }
 
       @Override

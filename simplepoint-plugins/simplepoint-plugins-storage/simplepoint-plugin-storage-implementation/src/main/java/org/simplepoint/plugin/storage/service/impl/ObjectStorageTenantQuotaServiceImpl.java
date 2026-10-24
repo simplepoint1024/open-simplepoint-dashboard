@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.core.base.service.impl.BaseServiceImpl;
@@ -42,22 +41,20 @@ public class ObjectStorageTenantQuotaServiceImpl
 
   private final TenantRepository tenantRepository;
 
-  @jakarta.persistence.PersistenceContext
-  private jakarta.persistence.EntityManager entityManager;
+  private final jakarta.persistence.EntityManager entityManager;
 
-  /**
-   * Object Storage Tenant Quota Service Impl.
-   */
+  /** Object Storage Tenant Quota Service Impl. */
   public ObjectStorageTenantQuotaServiceImpl(
       final ObjectStorageTenantQuotaRepository repository,
       final DetailsProviderService detailsProviderService,
       final ObjectStorageObjectRepository objectRepository,
-      final TenantRepository tenantRepository
-  ) {
+      final TenantRepository tenantRepository,
+      final jakarta.persistence.EntityManager entityManager) {
     super(repository, detailsProviderService);
     this.repository = repository;
     this.objectRepository = objectRepository;
     this.tenantRepository = tenantRepository;
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -80,7 +77,10 @@ public class ObjectStorageTenantQuotaServiceImpl
       normalized.putAll(attributes);
     }
     String tenantId = normalized.get("tenantId");
-    if (tenantId != null && !tenantId.isBlank() && !tenantId.startsWith("{") && !tenantId.contains(":")) {
+    if (tenantId != null
+        && !tenantId.isBlank()
+        && !tenantId.startsWith("{")
+        && !tenantId.contains(":")) {
       normalized.put("tenantId", "like:" + tenantId.trim());
     }
     return (Page<S>) new StorageListQueries(entityManager).quotas(normalized, pageable);
@@ -124,7 +124,9 @@ public class ObjectStorageTenantQuotaServiceImpl
       throw new IllegalArgumentException("租户ID不能为空");
     }
     entity.setTenantId(tenantId);
-    tenantRepository.findById(tenantId).orElseThrow(() -> new IllegalArgumentException("租户不存在: " + tenantId));
+    tenantRepository
+        .findById(tenantId)
+        .orElseThrow(() -> new IllegalArgumentException("租户不存在: " + tenantId));
     repository.findActiveByTenantId(tenantId)
         .filter(existing -> currentId == null || !existing.getId().equals(currentId))
         .ifPresent(existing -> {

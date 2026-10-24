@@ -43,6 +43,8 @@ class DnaRuntimeAssemblyTest {
           DnaRuntimeAuditEventRepository.class,
           () -> mock(DnaRuntimeAuditEventRepository.class)
       );
+      context.registerBean(org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl.class,
+          () -> mock(org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl.class));
       context.register(
           DnaRuntimeConfiguration.class,
           StandardLogicalValueConverter.class,

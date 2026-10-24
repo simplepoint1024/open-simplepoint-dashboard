@@ -13,6 +13,13 @@ import java.util.Set;
  * use local [field] or [parent.field]. Hosts supply authorized, version-consistent input snapshots.
  */
 public final class FormulaAggregatePlan {
+  /** Host-owned result validation or coercion applied before dependent expressions run. */
+  @FunctionalInterface
+  public interface ResultAdapter {
+    /** Receives a stable scope and field identity, without a row's submitted source values. */
+    Object adapt(String scope, String field, Object value);
+  }
+
   /** Immutable declarations for one record scope, without storage or platform metadata. */
   public record Scope(Set<String> inputs, Map<String, String> formulas) {
     /** Copies declarations and prevents ambiguous cross-scope identifiers. */
@@ -58,13 +65,21 @@ public final class FormulaAggregatePlan {
   private final Map<String, Field> identities;
   private final Map<String, FormulaEngine.CompiledFormula> compiled;
   private final FormulaPlan graph;
+  private final ResultAdapter results;
 
   /** Compiles and validates local, parent and aggregate dependencies before any evaluation. */
   public FormulaAggregatePlan(FormulaEngine engine, Scope parent, Map<String, Scope> details) {
+    this(engine, parent, details, (scope, field, value) -> value);
+  }
+
+  /** Adds typed host semantics while keeping evaluation independent from storage and frameworks. */
+  public FormulaAggregatePlan(
+      FormulaEngine engine, Scope parent, Map<String, Scope> details, ResultAdapter results) {
     if (details.size() > 32) {
       throw new FormulaException("PLAN_SIZE");
     }
     this.engine = engine;
+    this.results = java.util.Objects.requireNonNull(results);
     this.parent = parent;
     this.details = Map.copyOf(details);
     var scopes = new LinkedHashMap<String, Scope>();
@@ -91,7 +106,12 @@ public final class FormulaAggregatePlan {
               .forEach(
                   (id, expression) -> {
                     var field = new Field(scope, id);
-                    var formula = engine.compile(expression);
+                    FormulaEngine.CompiledFormula formula;
+                    try {
+                      formula = engine.compile(expression);
+                    } catch (FormulaException failure) {
+                      throw failure.atField(scope, id, null);
+                    }
                     fields.put(field.key(), field);
                     formulas.put(field.key(), formula);
                     expressions.put(
@@ -152,34 +172,46 @@ public final class FormulaAggregatePlan {
       Field field = identities.get(key);
       var formula = compiled.get(key);
       if (field.scope().equals("parent")) {
-        Object result =
-            formula.evaluate(
-                reference -> {
-                  Field source = reference(reference, "parent");
-                  if (source.scope().equals("parent")) {
-                    return required(parentValues, source.id());
-                  }
-                  return detailValues.get(source.scope()).stream()
-                      .map(row -> required(row, source.id()))
-                      .toList();
-                }, clock);
-        budget.accept(result);
-        parentValues.put(field.id(), result);
-        parentResults.put(field.id(), result);
+        try {
+          Object result =
+              formula.evaluate(
+                  reference -> {
+                    Field source = reference(reference, "parent");
+                    if (source.scope().equals("parent")) {
+                      return required(parentValues, source.id());
+                    }
+                    return detailValues.get(source.scope()).stream()
+                        .map(row -> required(row, source.id()))
+                        .toList();
+                  },
+                  clock);
+          result = engine.checkedResult(results.adapt(field.scope(), field.id(), result));
+          budget.accept(result);
+          parentValues.put(field.id(), result);
+          parentResults.put(field.id(), result);
+        } catch (FormulaException failure) {
+          throw failure.atField(field.scope(), field.id(), null);
+        }
       } else {
         var rows = detailValues.get(field.scope());
         for (int index = 0; index < rows.size(); index++) {
           Map<String, Object> row = rows.get(index);
-          Object result =
-              formula.evaluate(
-                  reference -> {
-                    Field source = reference(reference, field.scope());
-                    return required(
-                        source.scope().equals("parent") ? parentValues : row, source.id());
-                  }, clock);
-          budget.accept(result);
-          row.put(field.id(), result);
-          detailResults.get(field.scope()).get(index).put(field.id(), result);
+          try {
+            Object result =
+                formula.evaluate(
+                    reference -> {
+                      Field source = reference(reference, field.scope());
+                      return required(
+                          source.scope().equals("parent") ? parentValues : row, source.id());
+                    },
+                    clock);
+            result = engine.checkedResult(results.adapt(field.scope(), field.id(), result));
+            budget.accept(result);
+            row.put(field.id(), result);
+            detailResults.get(field.scope()).get(index).put(field.id(), result);
+          } catch (FormulaException failure) {
+            throw failure.atField(field.scope(), field.id(), index);
+          }
         }
       }
     }

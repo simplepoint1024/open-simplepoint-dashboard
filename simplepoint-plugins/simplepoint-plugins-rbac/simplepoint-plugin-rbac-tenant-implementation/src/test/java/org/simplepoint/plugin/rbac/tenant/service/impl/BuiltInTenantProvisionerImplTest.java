@@ -9,70 +9,43 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleRepository;
-import org.simplepoint.plugin.rbac.core.api.repository.RoleResourceGrantRepository;
 import org.simplepoint.plugin.rbac.tenant.api.constants.BuiltInTenantCodes;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Application;
 import org.simplepoint.plugin.rbac.tenant.api.entity.ApplicationResourceRelevance;
-import org.simplepoint.plugin.rbac.tenant.api.entity.Package;
-import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageRelevance;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationRepository;
 import org.simplepoint.plugin.rbac.tenant.api.repository.ApplicationResourceRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.PackageRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantPackageRelevanceRepository;
-import org.simplepoint.plugin.rbac.tenant.api.repository.TenantRepository;
-import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
-import org.simplepoint.plugin.rbac.tenant.service.properties.BuiltInTenantBootstrapProperties;
 
 class BuiltInTenantProvisionerImplTest {
 
   private ApplicationRepository applicationRepository;
-  private PackageRepository packageRepository;
-  private TenantRepository tenantRepository;
   private ApplicationResourceRelevanceRepository applicationResourceRepository;
-  private TenantPackageRelevanceRepository tenantPackageRepository;
-  private RoleRepository roleRepository;
-  private RoleResourceGrantRepository roleResourceGrantRepository;
-  private ResourceAuthorizationVersionService authorizationVersions;
   private BuiltInTenantProvisionerImpl provisioner;
+  private BuiltInTenantResourcePreparation preparation;
 
   @BeforeEach
   void setUp() {
     applicationRepository = mock(ApplicationRepository.class);
-    packageRepository = mock(PackageRepository.class);
-    tenantRepository = mock(TenantRepository.class);
     applicationResourceRepository = mock(ApplicationResourceRelevanceRepository.class);
-    tenantPackageRepository = mock(TenantPackageRelevanceRepository.class);
-    roleRepository = mock(RoleRepository.class);
-    roleResourceGrantRepository = mock(RoleResourceGrantRepository.class);
-    authorizationVersions = mock(ResourceAuthorizationVersionService.class);
-    provisioner = new BuiltInTenantProvisionerImpl(
-        applicationRepository,
-        packageRepository,
-        tenantRepository,
-        applicationResourceRepository,
-        tenantPackageRepository,
-        roleRepository,
-        roleResourceGrantRepository,
-        new BuiltInTenantBootstrapProperties(),
-        authorizationVersions
-    );
-    when(applicationRepository.findAll(anyMap())).thenAnswer(invocation -> {
-      Map<String, String> attributes = invocation.getArgument(0);
-      Application application = new Application();
-      application.setId("app-" + attributes.get("code"));
-      application.setCode(attributes.get("code"));
-      return List.of(application);
-    });
+    preparation = mock(BuiltInTenantResourcePreparation.class);
+    provisioner =
+        new BuiltInTenantProvisionerImpl(
+            applicationRepository, applicationResourceRepository, preparation);
+    when(applicationRepository.findAll(anyMap()))
+        .thenAnswer(
+            invocation -> {
+              Map<String, String> attributes = invocation.getArgument(0);
+              Application application = new Application();
+              application.setId("app-" + attributes.get("code"));
+              application.setCode(attributes.get("code"));
+              return List.of(application);
+            });
     when(applicationResourceRepository.authorized(any())).thenReturn(List.of());
-    when(tenantRepository.findAll(anyMap())).thenReturn(List.of());
   }
 
   @Test
@@ -80,22 +53,23 @@ class BuiltInTenantProvisionerImplTest {
     provisioner.provisionApplicationResources(
         "common",
         Set.of("dashboard.view", "storage.objects.view"),
-        Set.of("dashboard.view", "storage.objects.view")
-    );
+        Set.of("dashboard.view", "storage.objects.view"));
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
+    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor =
+        ArgumentCaptor.forClass(Iterable.class);
     verify(applicationResourceRepository, org.mockito.Mockito.times(2)).saveAll(captor.capture());
     List<ApplicationResourceRelevance> saved = new ArrayList<>();
     captor.getAllValues().forEach(items -> items.forEach(saved::add));
     assertThat(saved)
-        .extracting(ApplicationResourceRelevance::getApplicationCode, ApplicationResourceRelevance::getResourceCode)
+        .extracting(
+            ApplicationResourceRelevance::getApplicationCode,
+            ApplicationResourceRelevance::getResourceCode)
         .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple(BuiltInTenantCodes.CORE_APPLICATION, "dashboard.view"),
-            org.assertj.core.groups.Tuple.tuple(BuiltInTenantCodes.STORAGE_APPLICATION, "storage.objects.view")
-        );
-    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.CORE_APPLICATION));
-    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.STORAGE_APPLICATION));
+            org.assertj.core.groups.Tuple.tuple(
+                BuiltInTenantCodes.CORE_APPLICATION, "dashboard.view"),
+            org.assertj.core.groups.Tuple.tuple(
+                BuiltInTenantCodes.STORAGE_APPLICATION, "storage.objects.view"));
   }
 
   @Test
@@ -103,19 +77,21 @@ class BuiltInTenantProvisionerImplTest {
     provisioner.provisionApplicationResources(
         "app",
         Set.of("app.workbench.view", "app.templates.view", "app.marketplace.view"),
-        Set.of()
-    );
+        Set.of());
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
+    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor =
+        ArgumentCaptor.forClass(Iterable.class);
     verify(applicationResourceRepository).saveAll(captor.capture());
     List<ApplicationResourceRelevance> saved = new ArrayList<>();
     captor.getValue().forEach(saved::add);
-    assertThat(saved).extracting(ApplicationResourceRelevance::getApplicationCode)
+    assertThat(saved)
+        .extracting(ApplicationResourceRelevance::getApplicationCode)
         .containsOnly(BuiltInTenantCodes.APP_APPLICATION);
-    assertThat(saved).extracting(ApplicationResourceRelevance::getResourceCode)
-        .containsExactlyInAnyOrder("app.workbench.view", "app.templates.view", "app.marketplace.view");
-    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.APP_APPLICATION));
+    assertThat(saved)
+        .extracting(ApplicationResourceRelevance::getResourceCode)
+        .containsExactlyInAnyOrder(
+            "app.workbench.view", "app.templates.view", "app.marketplace.view");
   }
 
   @Test
@@ -123,19 +99,20 @@ class BuiltInTenantProvisionerImplTest {
     provisioner.provisionApplicationResources(
         "dna",
         Set.of("dna.runtime.models.view", "dna.runtime.models.retry", "dna.data-sources.view"),
-        Set.of()
-    );
+        Set.of());
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
+    ArgumentCaptor<Iterable<ApplicationResourceRelevance>> captor =
+        ArgumentCaptor.forClass(Iterable.class);
     verify(applicationResourceRepository).saveAll(captor.capture());
     List<ApplicationResourceRelevance> saved = new ArrayList<>();
     captor.getValue().forEach(saved::add);
-    assertThat(saved).extracting(ApplicationResourceRelevance::getApplicationCode)
+    assertThat(saved)
+        .extracting(ApplicationResourceRelevance::getApplicationCode)
         .containsOnly(BuiltInTenantCodes.APP_APPLICATION);
-    assertThat(saved).extracting(ApplicationResourceRelevance::getResourceCode)
+    assertThat(saved)
+        .extracting(ApplicationResourceRelevance::getResourceCode)
         .containsExactlyInAnyOrder("dna.runtime.models.view", "dna.runtime.models.retry");
-    verify(authorizationVersions).refreshByApplicationCodes(Set.of(BuiltInTenantCodes.APP_APPLICATION));
   }
 
   @Test
@@ -143,35 +120,30 @@ class BuiltInTenantProvisionerImplTest {
     when(applicationResourceRepository.authorized(BuiltInTenantCodes.AI_APPLICATION))
         .thenReturn(List.of("ai.knowledge-bases.view"));
 
-    provisioner.provisionApplicationResources(
-        "ai",
-        Set.of("ai.knowledge-bases.view"),
-        Set.of()
-    );
+    provisioner.provisionApplicationResources("ai", Set.of("ai.knowledge-bases.view"), Set.of());
 
     verify(applicationResourceRepository, never()).saveAll(any());
-    verify(authorizationVersions, never()).refreshByApplicationCodes(any());
   }
 
   @Test
-  void personalPackageAssignmentIsIdempotent() {
-    Package personalPackage = new Package();
-    personalPackage.setId("package-personal");
-    when(packageRepository.findAll(Map.of("code", BuiltInTenantCodes.PERSONAL_PACKAGE)))
-        .thenReturn(List.of(personalPackage));
-    when(tenantPackageRepository.authorized("personal-tenant")).thenReturn(List.of());
+  void unrelatedDeclarationsDoNotCompletePendingTenants() {
+    provisioner.provisionApplicationResources("app", Set.of("app.workbench.view"), Set.of());
+    verify(preparation, never()).completePending();
+  }
 
-    provisioner.provisionPersonalTenant("personal-tenant");
+  @Test
+  void emptyCommonDeclarationStillValidatesPendingReadiness() {
+    provisioner.provisionApplicationResources("common", Set.of(), Set.of());
+    verify(applicationResourceRepository, never()).saveAll(any());
+    verify(preparation).completePending();
+  }
 
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<Iterable<TenantPackageRelevance>> captor = ArgumentCaptor.forClass(Iterable.class);
-    verify(tenantPackageRepository).saveAll(captor.capture());
-    Collection<TenantPackageRelevance> saved = new ArrayList<>();
-    captor.getValue().forEach(saved::add);
-    assertThat(saved).singleElement().satisfies(relevance -> {
-      assertThat(relevance.getTenantId()).isEqualTo("personal-tenant");
-      assertThat(relevance.getPackageCode()).isEqualTo(BuiltInTenantCodes.PERSONAL_PACKAGE);
-    });
-    verify(authorizationVersions).refreshTenant("personal-tenant");
+  @Test
+  void commonRegistrationRechecksPendingPreparationEvenWhenMembershipsAlreadyExist() {
+    when(applicationResourceRepository.authorized(BuiltInTenantCodes.CORE_APPLICATION))
+        .thenReturn(List.of("dashboard.view"));
+    provisioner.provisionApplicationResources("common", Set.of("dashboard.view"), Set.of());
+    verify(applicationResourceRepository, never()).saveAll(any());
+    verify(preparation).completePending();
   }
 }

@@ -98,7 +98,7 @@ import org.springframework.security.core.GrantedAuthority;
 @NoArgsConstructor
 @AllArgsConstructor
 @Tag(name = "用户对象", description = "用于管理系统中的用户")
-@org.simplepoint.core.permission.PermissionModel(owner="id", department="orgId")
+@org.simplepoint.core.permission.PermissionModel(owner = "id", department = "orgId")
 public class User extends BaseEntityImpl<String> implements BaseUser {
 
   @Transient
@@ -116,6 +116,7 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
           @ExtensionProperty(name = "widget", value = "password"),
       })
   })
+  @lombok.ToString.Exclude
   private String password;
 
   /**
@@ -429,12 +430,18 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
 
   /**
    * The TOTP secret key associated with this user for two-factor authentication.
-   * Stored as a Base32-encoded string. Only used on the server side for TOTP verification.
+   * Versioned ciphertext bound to this user id. Only authentication services decrypt it.
    */
   @Schema(hidden = true)
   @JsonIgnore
-  @Column(length = 128)
+  @Column(length = 512)
+  @lombok.ToString.Exclude
   private String twoFactorSecret;
+
+  /** Expiration of an unconfirmed enrollment; active enrollments have no pending deadline. */
+  @Schema(hidden = true)
+  @JsonIgnore
+  private java.time.Instant twoFactorPendingUntil;
 
   /**
    * The primary organization (department) this user belongs to.
@@ -532,16 +539,24 @@ public class User extends BaseEntityImpl<String> implements BaseUser {
   }
 
   @Override
-  public boolean isEnabled() { return !Boolean.FALSE.equals(enabled); }
+  public boolean isEnabled() {
+    return !Boolean.FALSE.equals(enabled);
+  }
 
   @Override
-  public boolean isAccountNonLocked() { return !Boolean.FALSE.equals(accountNonLocked); }
+  public boolean isAccountNonLocked() {
+    return !Boolean.FALSE.equals(accountNonLocked);
+  }
 
   @Override
-  public boolean isAccountNonExpired() { return !Boolean.FALSE.equals(accountNonExpired); }
+  public boolean isAccountNonExpired() {
+    return !Boolean.FALSE.equals(accountNonExpired);
+  }
 
   @Override
-  public boolean isCredentialsNonExpired() { return !Boolean.FALSE.equals(credentialsNonExpired); }
+  public boolean isCredentialsNonExpired() {
+    return !Boolean.FALSE.equals(credentialsNonExpired);
+  }
 
   @Override
   public Boolean superAdmin() {

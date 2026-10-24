@@ -24,7 +24,7 @@ class WorkflowMatterQueriesTest extends WorkflowDirectoryFixture {
 
   @BeforeEach
   void queries() {
-    matters = new WorkflowMatterQueries(em);
+    matters = new WorkflowMatterQueries(em, labelReader());
   }
 
   @Test

@@ -31,19 +31,32 @@ public class OpenApiModule implements Module {
         .forTypesInGeneral()
         .withTypeAttributeOverride(
             (attributes, type, context) -> {
-              if (type.getType().getErasedType() != BigDecimal.class) return;
+              if (type.getType().getErasedType() != BigDecimal.class) {
+                return;
+              }
               boolean nullable =
                   attributes.path("type").isArray()
                       && java.util.stream.StreamSupport.stream(
                               attributes.path("type").spliterator(), false)
                           .anyMatch(item -> "null".equals(item.asText()));
-              if (nullable) attributes.putArray("type").add("string").add("null");
-              else attributes.put("type", "string");
+              if (nullable) {
+                attributes.putArray("type").add("string").add("null");
+              } else {
+                attributes.put("type", "string");
+              }
               attributes.put(
                   "pattern", "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$");
             });
     builder
         .forFields()
+        .withCustomDefinitionProvider((field, context) -> {
+          var localized = field.getAnnotationConsideringFieldAndGetterIfSupported(org.simplepoint.api.schema.LocalizedField.class);
+          if (localized == null) return null;
+          if (field.getType().getErasedType() != org.simplepoint.api.locale.LocalizedText.class)
+            throw new IllegalArgumentException("@LocalizedField requires LocalizedText");
+          return new com.github.victools.jsonschema.generator.CustomPropertyDefinition(
+              MAPPER.createObjectNode());
+        })
         .withInstanceAttributeOverride(
             (attributes, field, context) -> {
               // x-order from Spring's @Order
@@ -65,8 +78,9 @@ public class OpenApiModule implements Module {
                               && !keyword.equals("enum")
                               && !keyword.equals("items")
                               && !(keyword.equals("format")
-                                  && field.getAnnotation(UploadField.class) != null))
+                                  && field.getAnnotation(UploadField.class) != null)) {
                             attributes.set(keyword, MAPPER.valueToTree(value));
+                          }
                         });
               }
               if (field.getType().getErasedType() == BigDecimal.class) {
@@ -83,6 +97,17 @@ public class OpenApiModule implements Module {
                 applyUploadField(attributes, uploadField);
               }
               BeanValidationMetadata.apply(attributes, field);
+              var localized = field.getAnnotationConsideringFieldAndGetterIfSupported(org.simplepoint.api.schema.LocalizedField.class);
+              if (localized != null) {
+                if (field.getType().getErasedType() != org.simplepoint.api.locale.LocalizedText.class)
+                  throw new IllegalArgumentException("@LocalizedField requires LocalizedText");
+                org.simplepoint.api.schema.LocalizedFieldSchema.describe(localized)
+                    .forEach((key, value) -> {
+                      if ("x-ui".equals(key) && attributes.get(key) instanceof ObjectNode existing) {
+                        existing.setAll((ObjectNode) MAPPER.valueToTree(value));
+                      } else attributes.set(key, MAPPER.valueToTree(value));
+                    });
+              }
             })
         .withRequiredCheck(
             field -> {
@@ -97,7 +122,9 @@ public class OpenApiModule implements Module {
               var rules =
                   SchemaConstraints.keywords(
                       field.getAnnotation(Schema.class), field.getType().getErasedType());
-              if (!(rules.get("enum") instanceof java.util.List<?> values)) return null;
+              if (!(rules.get("enum") instanceof java.util.List<?> values)) {
+                return null;
+              }
               var column = field.getAnnotation(Column.class);
               if (field.getType().getErasedType() == String.class
                   && !BeanValidationMetadata.nonNullable(field)
@@ -149,7 +176,9 @@ public class OpenApiModule implements Module {
               var column = field.getAnnotation(Column.class);
               if (SchemaConstraints.required(
                       schema, field.getType().getErasedType(), column != null && !column.nullable())
-                  || BeanValidationMetadata.nonNullable(field)) return false;
+                  || BeanValidationMetadata.nonNullable(field)) {
+                return false;
+              }
               // 1) Respect @Schema(nullable = true)
               if (schema != null && schema.nullable()) {
                 return true;
@@ -165,10 +194,13 @@ public class OpenApiModule implements Module {
         .withDefaultResolver(
             field -> {
               Schema schema = field.getAnnotation(Schema.class);
-              if (schema == null || schema.defaultValue().isEmpty()) return null;
+              if (schema == null || schema.defaultValue().isEmpty()) {
+                return null;
+              }
               Class<?> type = field.getType().getErasedType();
-              if (type == String.class || type == BigDecimal.class || type.isEnum())
+              if (type == String.class || type == BigDecimal.class || type.isEnum()) {
                 return schema.defaultValue();
+              }
               try {
                 return MAPPER.readTree(schema.defaultValue());
               } catch (com.fasterxml.jackson.core.JsonProcessingException error) {
@@ -194,7 +226,8 @@ public class OpenApiModule implements Module {
   private static void applyDecimalField(ObjectNode attributes, Column column, Schema schema) {
     ObjectNode decimal = attributes.putObject("x-decimal");
     if (column != null && column.precision() > 0) {
-      int precision = column.precision(), scale = column.scale();
+      int precision = column.precision();
+      int scale = column.scale();
       decimal.put("precision", precision);
       decimal.put("scale", scale);
       BigDecimal limit =
@@ -205,14 +238,24 @@ public class OpenApiModule implements Module {
       decimal.put("maximum", limit.toPlainString());
     }
     if (schema != null) {
-      if (!schema.minimum().isEmpty()) decimal.put("minimum", schema.minimum());
-      if (!schema.maximum().isEmpty()) decimal.put("maximum", schema.maximum());
-      if (schema.exclusiveMinimum()) decimal.put("exclusiveMinimum", true);
-      if (schema.exclusiveMaximum()) decimal.put("exclusiveMaximum", true);
+      if (!schema.minimum().isEmpty()) {
+        decimal.put("minimum", schema.minimum());
+      }
+      if (!schema.maximum().isEmpty()) {
+        decimal.put("maximum", schema.maximum());
+      }
+      if (schema.exclusiveMinimum()) {
+        decimal.put("exclusiveMinimum", true);
+      }
+      if (schema.exclusiveMaximum()) {
+        decimal.put("exclusiveMaximum", true);
+      }
     }
     ObjectNode ui =
         attributes.get("x-ui") instanceof ObjectNode object ? object : attributes.putObject("x-ui");
-    if (!ui.hasNonNull("widget")) ui.put("widget", "Decimal");
+    if (!ui.hasNonNull("widget")) {
+      ui.put("widget", "Decimal");
+    }
   }
 
   private static void applyExtensions(ObjectNode attributes, Schema schema) {

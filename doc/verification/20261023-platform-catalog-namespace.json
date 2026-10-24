@@ -1,0 +1,147 @@
+{
+  "date": "2026-10-23",
+  "scope": "platform-catalog-namespace-and-immutable-template-entitlements",
+  "plan": "doc/design/tenant_resource_entitlement_plan.md",
+  "implemented": [
+    "Platform directory rejects tenant/personal/ambiguous contexts before SQL, including administrators; removed personal fallback and all legacy package joins and injected legacy repositories.",
+    "Platform administrator authoring remains cross-scope; ordinary platform directory intersects held/public codes and ancestors before pagination. Tenant runtime navigation continues exclusively through tenant catalog.",
+    "Package/application template list/schema/detail/candidate operations require explicit platform context. Template mutations require platform administrator, and schema actions obey the same boundary.",
+    "Template mutations no longer update legacy tenant/package relations or refresh entitlements derived from old relation chains. Purchase snapshots and credits remain owned by instance services.",
+    "Historical package assignment picker explicitly returns HTTP 410; application-to-package membership remains supported.",
+    "Existing directory paging, masking, query validation, native collation, complete ancestors and protected-field tests retained and adapted to platform grants. Browser fixtures regenerated from real current schemas."
+  ],
+  "validation": {
+    "jvm": [
+      {
+        "name": "org.simplepoint.common.server.controller.ResourceDirectoryHttpTest",
+        "tests": "51",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceDirectoryHttpTest.xml",
+        "sha256": "2652caf9166ffebb948e1a9d4e50e04fcee1905055f26b9fd13d0a0d8101ae20"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.TenantResourceQueryHttpTest",
+        "tests": "2",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantResourceQueryHttpTest.xml",
+        "sha256": "4cb2dd559d6272e3e4acaad38ea0d459401ef8cfa6042e95ba8c2f8d0564259c"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+        "tests": "25",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+        "sha256": "54a74097f687bac8a78cfec833a25e3b5fd64525adc5183c5ce8ff5953d4f0f6"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.ResourceQueryHttpTest",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.ResourceQueryHttpTest.xml",
+        "sha256": "911b3d3ddefaaf0c37d21bfa7845dbd2f58e293b358a0951aab4e0b5500ec435"
+      },
+      {
+        "name": "org.simplepoint.common.server.controller.CurrentUserAccessHttpTest",
+        "tests": "26",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.CurrentUserAccessHttpTest.xml",
+        "sha256": "f793ef86a2203bfc2d102b42d9334446ff19d318cd9272f7aaabe4287064f3c4"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.PackageServiceImplTest",
+        "tests": "16",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.PackageServiceImplTest.xml",
+        "sha256": "8a828b91191d12c546414191aa5dbde59f523af06bee40a1863f0a649ba9dcd1"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest",
+        "tests": "16",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.tenant.service.impl.ApplicationServiceImplTest.xml",
+        "sha256": "36adef22c5a95b69ac20597f4d16d48decce7cf1024c882b465e0af460ec9b31"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceServiceImplTest.xml",
+        "sha256": "274d52d83f0b0c9a8f084e29f18f25383361fa3ef1d2efa380754910dffdcaf1"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest",
+        "tests": "6",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ManagedTenantResourceRoutesTest.xml",
+        "sha256": "21d7dbc64f2d9013d74914831a2d0a79f0de1d3187e8fc1fb0d287f88426c204"
+      },
+      {
+        "name": "org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest",
+        "tests": "15",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/build/test-results/test/TEST-org.simplepoint.plugin.rbac.resource.service.impl.ResourceCatalogConcurrencyTest.xml",
+        "sha256": "484a46a7de2163347fa6a846b218f3e8228e3f5e62e73ed33c597a04bdfc2a58"
+      }
+    ],
+    "isolatedPostgresql17": [
+      {
+        "name": "org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest",
+        "tests": "25",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "report": "simplepoint-services/simplepoint-service-common/build/test-results/test/TEST-org.simplepoint.common.server.controller.TenantCatalogQueryHttpTest.xml",
+        "sha256": "bb6ec80706646afa624dc8e35394b56810014d9eb396a7d96bea548dee076b93"
+      }
+    ],
+    "quality": [
+      "10 selected Java source/test files Checkstyle passed; verifyModuleBoundaries passed",
+      "Built-artifact Chrome configuration lifecycle passed using regenerated actual schemas"
+    ],
+    "notes": [
+      "172 JVM/HTTP executions passed; combined test/style invocation initially failed only on test formatting, then the selected style gate passed separately",
+      "PostgreSQL 25 HTTP template-query tests use a dedicated database in the isolated container; do not validate production migration or authentication",
+      "No frontend source behavior changed in this increment; production common/host artifacts are those verified in previous checkpoint"
+    ]
+  },
+  "limitations": [
+    "No local-service deployment or existing-database changes",
+    "Owner-only capability alignment, distribution vs role grant semantics, resource validity presentation, lifecycle propagation and full rollout acceptance are still pending"
+  ],
+  "sourceSha256": {
+    "simplepoint-security/simplepoint-security-core/src/main/java/org/simplepoint/security/service/ResourceService.java": "ebec54eebf347b7ccbeb78c6b6ad52409e9de19bf42555e319a53e7d541bd734",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/ResourceDirectoryHttpTest.java": "06505f79b2e0fafbfa32296bc17a48b8befa52a91201fd6e792268bff33ed537",
+    "simplepoint-services/simplepoint-service-common/src/test/java/org/simplepoint/common/server/controller/TenantCatalogQueryHttpTest.java": "2c7d5d5e6fe3f3a4db4c9cb0a24fe63ad47f4a82af8eeb7d6d6672a79f602194",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceDirectoryQuery.java": "973e74d7e80521e467ef2497c0ba70fba4d40eb02b0050bffdfa019b9ae0e665",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-router-implementation/src/main/java/org/simplepoint/plugin/rbac/resource/service/impl/ResourceServiceImpl.java": "034a36a61a7575d9492d065a26a5476c7a39d2d09c88fff2f720b7668f8ec11c",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/PackageServiceImpl.java": "76aed809c8937409d493fe68bc0c8bfb60ac197ec5ac42e45f1eca63608757d8",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/PlatformTemplateBoundary.java": "a9e76fbcb3dc70ecea9f187f98bff6c2d2b95c9d7931a6fc30a5f81bfcc31081",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/PackageServiceImplTest.java": "c52646d97f874d9b23f0a902d7619c7e464f54e14ee22939f042c5988fc10c3d",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/main/java/org/simplepoint/plugin/rbac/tenant/service/impl/ApplicationServiceImpl.java": "b0bf50c33281c337863fd5c784a3051dac0693bb84e88df383472a072d91a4a2",
+    "simplepoint-plugins/simplepoint-plugins-rbac/simplepoint-plugin-rbac-tenant-implementation/src/test/java/org/simplepoint/plugin/rbac/tenant/service/impl/ApplicationServiceImplTest.java": "727cc6ccbaf43e2ac60fef77157f91b02bef588ff950d092f64a890a34d05c82",
+    "simplepoint-react/scripts/configuration-tenant-schema.fixture.json": "d27be9e3195fe8fd151ab0fa6721e9e0ae897d0dcabe9176a69b742360bfb347",
+    "simplepoint-react/scripts/configuration-package-schema.fixture.json": "7527849133530e18ecf83994bd296739bf0cebc643230f699e5febe615462f7d",
+    "simplepoint-react/scripts/configuration-application-schema.fixture.json": "7beec22e1419d334ae87616cfb2a93f6f1115807ce83df2550929476bff5d7f7",
+    "simplepoint-react/scripts/application-resource-root-schema.fixture.json": "7beec22e1419d334ae87616cfb2a93f6f1115807ce83df2550929476bff5d7f7"
+  }
+}

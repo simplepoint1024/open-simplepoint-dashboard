@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-20",
+  "phase": "S2 module-bound RPC client identity; full standalone objective remains incomplete",
+  "command": "JAVA_HOME=/home/ymsl/.jdks/ms-21.0.12.1 ./gradlew :simplepoint-platform:simplepoint-platform-composition-spring:check :simplepoint-service-router:simplepoint-service-router-core:check :simplepoint-security:simplepoint-security-oauth2-resource:check :simplepoint-platform:simplepoint-platform-composition-verification:check :simplepoint-services:simplepoint-service-common:test :simplepoint-services:simplepoint-service-authorization:test verifyModuleBoundaries -Psimplepoint.frontend.skip=true --console=plain",
+  "result": "BUILD SUCCESSFUL",
+  "testReports": [
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-spring",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-service-router/simplepoint-service-router-core",
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-security/simplepoint-security-oauth2-resource",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-platform/simplepoint-platform-composition-verification",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-common",
+      "tests": 370,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "module": "simplepoint-services/simplepoint-service-authorization",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "testsPassed": 501,
+  "checkstyleReports": [
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-spring/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-service-router/simplepoint-service-router-core/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-service-router/simplepoint-service-router-core/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/reports/checkstyle/main.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-security/simplepoint-security-oauth2-resource/build/reports/checkstyle/test.xml",
+      "violations": 0
+    },
+    {
+      "report": "simplepoint-platform/simplepoint-platform-composition-verification/build/reports/checkstyle/test.xml",
+      "violations": 0
+    }
+  ],
+  "moduleBoundaries": "passed",
+  "workingTreeWhitespace": "git diff --check passed",
+  "verified": [
+    "Prototype RPC client factories use the requesting Spring injection point, declared package/ClassLoader ownership and explicit consumes metadata; final business components do not require class proxies.",
+    "Constructor, factory, field, lazy and ObjectProvider injection select the consuming module. Background/concurrent calls keep their injected identity; raw unowned lookup and undeclared consumption fail.",
+    "Signed-token nested local invocation observes caller-one, caller-two, then caller-one again; browser identity is preserved only on the caller thread.",
+    "Remote transport tests inspect the bound module credential; transport failure restores the previous binding. These tests do not simulate a deployed remote network.",
+    "Default Spring configuration integrates separate module credentials, mocked OAuth HTTP responses, actual RSA verification and nested local invocation without manually supplying an authentication hook.",
+    "Separate credential caches and invalidation are verified. Host credentials are not used as fallback; missing consumer secrets and shared client IDs fail, and unselected module credentials cannot be bound.",
+    "Resource-server security contribution now follows routing infrastructure existence, avoiding premature evaluation of the module-derived isolation default.",
+    "A singleton replacement for a prototype module client definition is rejected to prevent caching the first consumer identity for other modules."
+  ],
+  "limitations": [
+    "No production deployment or actual APP/DNA/Workflow resource scenario was run in this phase.",
+    "Installation-time OAuth client provisioning, secret distribution, caller allowlist derivation and migration of old service entrypoints remain pending.",
+    "Unowned shared API bootstrap consumers must be modeled as explicit contributions (G21); no implicit host caller is supplied for them.",
+    "UsersService credential/entity contract migration including MFA and rate limiting remains pending.",
+    "Storage, event identities, reusable web/frontend contributions, standalone distribution and real standalone/distributed/mixed topology acceptance remain incomplete."
+  ],
+  "sourceSha256": {
+    "simplepoint-platform/simplepoint-platform-composition-spring/build.gradle.kts": "927e470ce355419619d572eeffdeb9e9246829db00235db514804676e9f7bdac",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/EnablePlatformModules.java": "98bc1a053deb13cbddc1815ecf220f4a4f15cadbb4e6598a3b083b4dccac1963",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleClientFactoryBean.java": "f6315151574b9719beddc15b881414e05bf67fc2a67e3ede47984b45e93bc29f",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleCredentialConfiguration.java": "9db24e9e456b915a65ec3647da8353918c14fa1b520fd2a2035ae2d90406ac2e",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/ModuleServiceCredentials.java": "e9e802438cbd9bca58d10f7f6d7b44e9f054ce15755df7fb9641c772d7beb596",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/main/java/org/simplepoint/platform/composition/spring/PlatformModuleRegistrar.java": "f31e773070401aada1e02279d37e2e4db7131036ae817378c64a983d66219fad",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/CallerChain.java": "1543c7990a49ed502d4c251f2bfc432a1e4a4feba0de0fc7cf70c3736c8d1e2a",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/api/CallerIdentity.java": "33db08f50ff7be69c28c42ec694f0d151a4e793373b456f43adbbc17c4c499bc",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/callee/CalleeModule.java": "bf575428e57b03b6c8fa184014f1eb135c0bde84c4809e3ef585e4d37e770e3d",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/callerone/CallerOneModule.java": "fa0f762ab131f3da4db8b533aa25280e8e72b876bb0eaef51461c26d094c0d4d",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/callertwo/CallerTwoModule.java": "0191a9a17daf5ad4a7b4b6c67ed66c4c1d0f0cf8c6db05473070b392c70f7eb8",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/composition/fixture/remote/RemoteModule.java": "bea9a2e14dd8e018da1faaaaa164e81db23d9c2fbccd63bbcd5b56a0e9e9fe1e",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleCallerIdentityTest.java": "f514d236b2ac340f5fe533d829019502519ea0c9b37356d96a715e5532535226",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleClientDefinitionTest.java": "0235659f1cc73e7f9f8c7b5fa7dcc211d992bbcfb7b580b6b608ca03a895af8b",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/ModuleCredentialConfigurationTest.java": "afb4fec55422df12f5f13bc62ecc59c3b32ead38e6c4d9439727c62ba62ed761",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/java/org/simplepoint/platform/composition/spring/PlatformModuleAssemblyTest.java": "5687a385964f4d1aac090de8cfdf4f4444c0a1666af3357e6586782eea302553",
+    "simplepoint-platform/simplepoint-platform-composition-spring/src/test/resources/META-INF/simplepoint/modules.imports": "7eb33e42503e70ced85fb4a47e299838c14d242ef1e127920897a5a54f8d7400",
+    "simplepoint-security/simplepoint-security-oauth2-resource/src/main/java/org/simplepoint/security/oauth2/resourceserver/config/ServiceRouterLocalSecurityAutoConfiguration.java": "303fd122972f077309e3cb6e82caaabf9e6e965b32c833fe5e7ada6d98f8c346",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/config/ServiceRouterProxyDefinitions.java": "37d973dcb6c0a943fb45cd7cd6e8cbc273ee18593e14dc64452e7bb96c19e88b",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/IsolatedLocalInvoker.java": "55f4c1c886a60f53c0fdbd7a90a2e7395b8566b8acc8910d157644d8e05d81b0",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/invocation/LocalInvocationContext.java": "7de9319e6426c11ae151c42f35e31707a8662d3b2d8ccc8b5fd4ae12276a5e6f",
+    "simplepoint-service-router/simplepoint-service-router-core/src/main/java/com/simplepoint/service/router/registry/ApplicationContextLocalServiceRegistry.java": "815445344c3a90308e58882e71f11376333b852d76d31d60f74369f8570c30b0"
+  }
+}

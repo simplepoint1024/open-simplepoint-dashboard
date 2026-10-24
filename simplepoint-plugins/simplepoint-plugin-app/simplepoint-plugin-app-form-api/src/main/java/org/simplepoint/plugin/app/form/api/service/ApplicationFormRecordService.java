@@ -3,9 +3,11 @@ package org.simplepoint.plugin.app.form.api.service;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordMutationView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPageQuery;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPageView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordPreviewView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeIdentity;
 import org.simplepoint.plugin.app.form.api.model.CreateApplicationFormRecordCommand;
+import org.simplepoint.plugin.app.form.api.model.PreviewApplicationFormRecordCommand;
 import org.simplepoint.plugin.app.form.api.model.UpdateApplicationFormRecordCommand;
 
 /** Page-bound runtime record API backed by a server-selected DNA model. */
@@ -17,6 +19,9 @@ public interface ApplicationFormRecordService {
 
   /** Returns one authorized record. */
   ApplicationFormRecordView get(String applicationId, String pageId, String recordId);
+
+  /** Calculates authorized prospective values without persisting the edit. */
+  ApplicationFormRecordPreviewView preview(String applicationId, String pageId, PreviewApplicationFormRecordCommand command);
 
   /** Creates one draft or submitted record idempotently. */
   ApplicationFormRecordMutationView create(String applicationId, String pageId,

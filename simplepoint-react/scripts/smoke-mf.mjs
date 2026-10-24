@@ -127,6 +127,7 @@ import {createWorkflowFixture, workflowRoutes} from './workflow-fixture.mjs';
 import {smokeWorkflow} from './smoke-workflow.mjs';
 import {smokeWorkflowLifecycle} from './smoke-workflow-lifecycle.mjs';
 import {smokeWorkflowPersonal} from './smoke-workflow-personal.mjs';
+import {smokeWorkflowBusinessForm} from './workflow-business-form-fixture.mjs';
 import {smokeWorkflowScroll} from './smoke-workflow-scroll.mjs';
 import {smokeWorkflowMultiInstance} from './smoke-workflow-multi-instance.mjs';
 import {smokeExpressionModes} from './smoke-expression-modes.mjs';
@@ -138,10 +139,13 @@ const profileAccessFixture = createProfileAccessFixture();
 import {smokeHomeCustomization} from './smoke-home-customization.mjs';
 import {createTenantResourceFixture, tenantResourceRoutes} from './tenant-resource-fixture.mjs';
 import {smokeTenantResources} from './smoke-tenant-resources.mjs';
+import {createTenantPackageFixture, packageRoute} from './tenant-package-fixture.mjs';
+import {smokeTenantPackages} from './smoke-tenant-packages.mjs';
 const tenantResourceFixture = createTenantResourceFixture();
+const tenantPackageFixture = createTenantPackageFixture(tenantResourceFixture);
 const workflowFixture = createWorkflowFixture();
 const workflowTenant = 'workflow-smoke-tenant';
-const initialWorkflowWorkspace = ['MF_SMOKE_WORKFLOW_SCROLL_ONLY', 'MF_SMOKE_WORKFLOW_PERSONAL_ONLY', 'MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY',
+const initialWorkflowWorkspace = ['MF_SMOKE_WORKFLOW_FORM_ONLY', 'MF_SMOKE_WORKFLOW_SCROLL_ONLY', 'MF_SMOKE_WORKFLOW_PERSONAL_ONLY', 'MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY',
   'MF_SMOKE_WORKFLOW_FORM_COMMIT_ONLY', 'MF_SMOKE_WORKFLOW_MULTI_ONLY', 'MF_SMOKE_WORKFLOW_LOOP_ONLY', 'MF_SMOKE_WORKFLOW_DIAGRAM_ONLY', 'MF_SMOKE_WORKFLOW_IMPORT_ONLY', 'MF_SMOKE_WORKFLOW_ONLY'].some(key => process.env[key] === '1');
 const entitySelectFixture = createEntitySelectFixture();
 import {createUserAssignmentFixture, tenantAssignmentRoute} from './user-assignment-fixture.mjs';
@@ -220,6 +224,7 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
+    if (pathname === '/csrf') {json(res, {token: 'fixture-csrf', headerName: 'X-CSRF-TOKEN', parameterName: '_csrf'}); return;}
     if (process.env.MF_SMOKE_WORKSPACE_PREFERENCE_ONLY === '1' && pathname === '/logout') {
       assert.equal(req.method, 'POST');res.writeHead(200, {'Content-Type':'text/html'});res.end('Logged out');return;
     }
@@ -239,6 +244,7 @@ const server = createServer(async (req, res) => {
     if (await resourceManagementFixture.handle(req, url, respond)) return;
     if (await configurationLifecycleFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await userPickerFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
+    if (await tenantPackageFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await tenantResourceFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await workflowFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
     if (await dnaWorkbenchFixture.handle(req, url, respond, status => expectedUploadFailures.push({url: origin + req.url, status}))) return;
@@ -336,8 +342,8 @@ const server = createServer(async (req, res) => {
       entryPoint: '/mf/mf-manifest.json',
       authorizationContext: {scopeType: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT' : 'PLATFORM',
         actorRole: [tenantResourceFixture.tenantId, workflowTenant].filter(Boolean).includes(req.headers['x-tenant-id']) ? 'TENANT_OWNER' : 'PLATFORM_ADMIN',
-        resources: [...new Set([...remotes.map(p => `${p.remote}.view`), ...(req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? tenantResourceRoutes.map(route => route.code) : [])])]},
-      routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, dnaRuntimeRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, appFormRuntimeRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? tenantResourceRoutes : [])],
+        resources: [...new Set([...remotes.map(p => `${p.remote}.view`), ...(req.headers['x-tenant-id'] === tenantResourceFixture.tenantId ? [...tenantResourceRoutes, packageRoute].map(route => route.code) : [])])]},
+      routes: [...personalNavigation, ...workflowRoutes, ...pages.map((p, id) => ({id: String(id + 1), code: `${p.remote}.view`, type: 'PAGE', routeKind: 'item', path: `/smoke/${p.remote}`, component: `${p.remote}/${p.expose}`, title: '', label: p.label, icon: 'AppstoreOutlined', scopeTypes: ['PLATFORM']})), ...cacheTestRoutes, storageRoute, sqlRoute, dnaRuntimeRoute, organizationRoute, memberRoute, tenantAssignmentRoute, organizationSelectionRoute, ...commonMainRoutes, aiProviderRoute, exactDecimalRoute, applicationResourceRoute, resourceManagementRoute, runtimeRoute, redisRoute, knowledgeRoute, apiKeyRoute, mcpCapabilitiesRoute, jdbcUserRoute, ...storageCrudRoutes, metadataRoute, ...jdbcArtifactRoutes, appWorkbenchRoute, appFormRuntimeRoute, catalogRoute, billingRoute, mcpLifecycleRoute, ...(tenantResourceFixture.isActive() ? [...tenantResourceRoutes, packageRoute] : [])],
     });
     if (pathname === '/common/i18n/languages/mapping') return respond({'zh-CN': '简体中文', 'en-US': 'English'});
     if (pathname === '/common/i18n/messages/mapping') {
@@ -647,6 +653,14 @@ try {
     assert.ok(warnings.every(message => message.startsWith('[API]') && /\/role-resource-configuration\//.test(message)));
     assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
     console.log('PASS: targeted Role retained lifecycle with actual production components and isolated HTTP fixtures');
+  } else if (process.env.MF_SMOKE_TENANT_PACKAGES_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await clickMenu('首页');
+    await smokeTenantPackages({clickMenu, clickReady, clickText, poll, evaluate, fixture: tenantPackageFixture, workspace: tenantResourceFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/tenants/current-packages')));
+    assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
+    console.log('PASS: owner package lifecycle, exact activation retry, paged entitlements and retained scope boundaries');
   } else if (process.env.MF_SMOKE_RESOURCE_MANAGEMENT_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');
@@ -813,6 +827,12 @@ try {
     await smokeWorkflowScroll({poll, evaluate, send, clickText, fixture: workflowFixture});
     assert.deepEqual(exceptions, []);
     assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/workflow/inbox/pending')));
+    assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
+  } else if (process.env.MF_SMOKE_WORKFLOW_FORM_ONLY === '1') {
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+    await smokeWorkflowBusinessForm({clickText, clickReady, poll, evaluate, send, fixture: workflowFixture});
+    assert.deepEqual(exceptions, []);
+    assert.ok(warnings.every(message => message.startsWith('[API]') && message.includes('/business-form')));
     assert.deepEqual(network.filter(r => r.status >= 400 && !expectedUploadFailures.some(f => f.url === r.url && f.status === r.status)), []);
   } else if (process.env.MF_SMOKE_WORKFLOW_PERSONAL_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});

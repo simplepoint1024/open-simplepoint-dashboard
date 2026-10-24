@@ -5,6 +5,7 @@ public class ManagedTenantResourceException extends RuntimeException {
 
   private final ManagedTenantResourceErrorCode errorCode;
 
+  /** Creates a domain failure with its stable diagnostic code. */
   public ManagedTenantResourceException(
       final ManagedTenantResourceErrorCode errorCode,
       final String message
@@ -13,6 +14,7 @@ public class ManagedTenantResourceException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
+  /** Retains an internal cause while preserving the public domain code. */
   public ManagedTenantResourceException(
       final ManagedTenantResourceErrorCode errorCode,
       final String message,
@@ -22,6 +24,7 @@ public class ManagedTenantResourceException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
+  /** Returns the stable domain diagnostic code. */
   public ManagedTenantResourceErrorCode errorCode() {
     return errorCode;
   }

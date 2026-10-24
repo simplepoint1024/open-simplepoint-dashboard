@@ -102,7 +102,8 @@ class PhysicalModelServiceDatabaseTest {
             new StandardLogicalValueConverter()
         ),
         new RuntimeRequestContext(),
-        new JpaDnaRuntimeAuditPublisher(auditRepository)
+        new JpaDnaRuntimeAuditPublisher(auditRepository),
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
     );
   }
 

@@ -12,7 +12,7 @@ export type FormComponentBehavior = {
   cells?: (node: Node) => {columns: number; managed: boolean};
   initialize?: (node: Node, identity: () => string, document: DesignDocument) => Node;
   validate?: (node: Node, document: DesignDocument) => void;
-  clone?: (node: Node, identity: () => string, document: DesignDocument, source: DesignDocument) => void;
+  clone?: (node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string>) => ReadonlyMap<string, string> | void;
 };
 export class FormComponentBehaviorRegistry {
   private readonly behaviors = new Map<string, FormComponentBehavior>();
