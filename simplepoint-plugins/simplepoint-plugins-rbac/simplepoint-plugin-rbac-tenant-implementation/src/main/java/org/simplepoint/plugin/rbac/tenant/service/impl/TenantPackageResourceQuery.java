@@ -67,6 +67,7 @@ final class TenantPackageResourceQuery {
         em.createQuery(
                 "select key(d) as id, coalesce(d.resourceCode, key(d)) as code,"
                     + " coalesce(d.resourceName, key(d)) as name, i.durationDays as days,"
+                    + " d.supplemental as supplemental,"
                     + " i.acquisition as acquisition, c.activatedAt as activated, c.resultExpiresAt"
                     + " as credited, i.revokedAt as revoked, e.startsAt as starts, e.expiresAt as"
                     + " expires from TenantPackageInstance i join i.resources d left join"
@@ -87,12 +88,13 @@ final class TenantPackageResourceQuery {
                 row -> {
                   Instant starts = row.get("starts", Instant.class);
                   Instant expires = row.get("expires", Instant.class);
+                  boolean supplemental = row.get("supplemental", Boolean.class);
                   return new TenantPackageResourceView(
                       row.get("id", String.class),
                       row.get("code", String.class),
                       row.get("name", String.class),
                       row.get("days", Integer.class),
-                      row.get(
+                      supplemental || row.get(
                                   "acquisition",
                                   org.simplepoint.plugin.rbac.tenant.api.entity
                                       .TenantPackageInstance.Acquisition.class)
@@ -104,7 +106,8 @@ final class TenantPackageResourceQuery {
                       row.get("revoked", Instant.class),
                       starts,
                       expires,
-                      TenantPackageResourceView.stateAt(starts, expires, now));
+                      TenantPackageResourceView.stateAt(starts, expires, now),
+                      supplemental);
                 })
             .toList();
     long total =

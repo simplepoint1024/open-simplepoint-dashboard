@@ -1916,6 +1916,7 @@
     "tenant.packages.error.ALLOCATION_CONFLICT": "分配请求标识已用于其他套餐或工作空间",
     "tenant.packages.error.INCONSISTENT_ACTIVATION": "套餐激活记录不完整，请联系管理员处理",
     "tenant.packages.error.INSTANCE_NOT_ACTIVATABLE": "历史接管记录不能再次激活",
+    "tenant.packages.error.INSTANCE_NOT_SUPPLEMENTABLE": "只能为已激活且无期限的套餐补发操作权限",
     "tenant.packages.error.INSTANCE_NOT_FOUND": "套餐实例不存在或不属于当前工作空间",
     "tenant.packages.error.INSTANCE_REVOKED": "该套餐实例已撤销，不能激活",
     "tenant.packages.error.INVALID_DURATION": "套餐时长无效或超过支持的日期范围",

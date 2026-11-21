@@ -1,12 +1,14 @@
 package org.simplepoint.plugin.rbac.tenant.rest.controller;
 
 import java.util.Map;
+import java.util.Set;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageAssignment;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageInstanceView;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageResourceView;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageRevocation;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageActionSupplementService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageAdministrationQueryService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageAssignmentService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageRevocationService;
@@ -29,15 +31,18 @@ public class TenantPackageAdministrationController {
   private final TenantPackageAdministrationQueryService queries;
   private final TenantPackageAssignmentService assignments;
   private final TenantPackageRevocationService revocations;
+  private final TenantPackageActionSupplementService supplements;
 
   /** Delegates authorization and durable idempotency to identity-owned domain services. */
   public TenantPackageAdministrationController(
       TenantPackageAssignmentService assignments,
       TenantPackageRevocationService revocations,
-      TenantPackageAdministrationQueryService queries) {
+      TenantPackageAdministrationQueryService queries,
+      TenantPackageActionSupplementService supplements) {
     this.queries = queries;
     this.assignments = assignments;
     this.revocations = revocations;
+    this.supplements = supplements;
   }
 
   /** Platform actions are checked independently of the owner-only package page. */
@@ -72,6 +77,9 @@ public class TenantPackageAdministrationController {
   /** The allocation ID identifies one purchase, allowing exact retries without duplicate grants. */
   public record Allocation(String allocationId, String packageCode) {}
 
+  /** Explicit package action codes to supplement. */
+  public record ActionSupplement(Set<String> resourceCodes) {}
+
   /** Allocates a pending instance; this operation does not start its validity period. */
   @PostMapping
   public Response<TenantPackageInstanceView> assign(
@@ -92,5 +100,13 @@ public class TenantPackageAdministrationController {
   public Response<TenantPackageRevocation> revoke(
       @PathVariable("tenantId") String tenantId, @PathVariable("id") String id) {
     return Response.okay(revocations.revoke(tenantId, id));
+  }
+
+  /** Adds admissible actions without replacing the original package or its purchase contents. */
+  @PostMapping("/{id}/action-supplements")
+  public Response<Void> supplement(@PathVariable("tenantId") String tenantId,
+      @PathVariable("id") String id, @RequestBody ActionSupplement command) {
+    supplements.supplement(tenantId, id, command.resourceCodes());
+    return Response.okay();
   }
 }

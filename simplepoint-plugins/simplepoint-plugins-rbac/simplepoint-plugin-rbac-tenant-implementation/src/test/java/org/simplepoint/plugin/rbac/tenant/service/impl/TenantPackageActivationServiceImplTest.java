@@ -23,6 +23,8 @@ import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
@@ -42,6 +44,7 @@ import org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageActivation;
 import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageAssignment;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageActionSupplementService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageActivationService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageAssignmentService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageQueryService;
@@ -155,6 +158,70 @@ class TenantPackageActivationServiceImplTest {
     assertThat(receipts.get(0)).isEqualTo(receipts.get(1));
     assertThat(expiry("customer")).isEqualTo(NOW.plus(Duration.ofDays(30)));
     assertThat(count(TenantResourceCredit.class)).isEqualTo(1);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void supplementsUseTheExistingPackageAndPreserveActivationEvidence(boolean legacy) {
+    definePackage();
+    transaction(() -> {
+      em.createQuery("update Package p set p.durationDays = null where p.code = 'purchased'")
+          .executeUpdate();
+      return null;
+    });
+    platformActor();
+    var assigned = assignmentService()
+        .assign(new TenantPackageAssignment(tenantId, "purchased", UUID.randomUUID().toString()));
+    String packageId = assigned.id();
+    Instant activatedAt = assigned.assignedAt().plusSeconds(1);
+    actor("owner", tenantId);
+    var original = at(activatedAt).activate(packageId);
+    if (legacy) {
+      transaction(() -> {
+        em.createQuery("update TenantPackageInstance i set i.acquisition = 'LEGACY_PACKAGE',"
+                + " i.adoptedAt = i.assignedAt, i.activatedAt = i.assignedAt where i.id = :id")
+            .setParameter("id", packageId).executeUpdate();
+        em.createQuery("update TenantResourceCredit c set c.activatedAt ="
+                + " (select i.assignedAt from TenantPackageInstance i where i.id = :id)"
+                + " where c.instanceId = :id")
+            .setParameter("id", packageId).executeUpdate();
+        return null;
+      });
+    }
+    defineSupplementaryAction();
+    Instant supplementTime = activatedAt.plusSeconds(12);
+    var supplements = supplementsAt(supplementTime);
+
+    assertThatThrownBy(() -> supplements.supplement(tenantId, packageId, Set.of("example.delete")))
+        .hasMessageContaining("PLATFORM_ADMIN_REQUIRED");
+    platformActor();
+    assertThatThrownBy(() -> supplements.supplement(
+            tenantId, packageId, Set.of("example.delete", "example.order")))
+        .hasMessageContaining("RESOURCE_CONFLICT");
+    assertThat(count(TenantResourceCredit.class)).isEqualTo(1);
+    supplements.supplement(tenantId, packageId, Set.of("example.delete"));
+    supplementsAt(supplementTime.plusSeconds(3))
+        .supplement(tenantId, packageId, Set.of("example.delete"));
+    assertThat(count(TenantResourceCredit.class)).isEqualTo(2);
+    assertThat(count(TenantPackageInstance.class)).isEqualTo(1);
+
+    actor("owner", tenantId);
+    if (!legacy) {
+      assertThat(at(supplementTime).activate(packageId)).isEqualTo(original);
+    }
+    var details = queryAt(supplementTime).resources(packageId, PageRequest.of(0, 50)).getContent();
+    assertThat(details).hasSize(2);
+    assertThat(details.stream().filter(row -> row.supplemental()).toList())
+        .singleElement()
+        .satisfies(row -> {
+          assertThat(row.resourceCode()).isEqualTo("example.delete");
+          assertThat(row.activatedAt()).isEqualTo(supplementTime);
+          assertThat(row.currentState().name()).isEqualTo("UNLIMITED");
+        });
+    platformActor();
+    var revocations = revocationsAt(supplementTime.plusSeconds(1));
+    assertThat(revocations.revoke(tenantId, packageId)).isEqualTo(revocations.revoke(tenantId, packageId));
+    assertThat(count(TenantResourceEntitlement.class)).isZero();
   }
 
   @Test
@@ -773,6 +840,36 @@ class TenantPackageActivationServiceImplTest {
     proxy.addAdvice(
         new TransactionInterceptor(manager, new AnnotationTransactionAttributeSource()));
     return (TenantPackageAssignmentService) proxy.getProxy();
+  }
+
+  private TenantPackageActionSupplementService supplementsAt(Instant instant) {
+    var proxy = new ProxyFactory(new TenantPackageActionSupplementServiceImpl(
+        em, authorization, Clock.fixed(instant, ZoneOffset.UTC)));
+    proxy.addAdvice(
+        new TransactionInterceptor(manager, new AnnotationTransactionAttributeSource()));
+    return (TenantPackageActionSupplementService) proxy.getProxy();
+  }
+
+  private void defineSupplementaryAction() {
+    transaction(() -> {
+      var action = new Resource();
+      action.setId("delete");
+      action.setCode("example.delete");
+      action.setName("Delete");
+      action.setType(ResourceType.ACTION);
+      action.setParentId("customer");
+      action.setScopeTypes(Set.of(ResourceScopeType.TENANT));
+      action.setPublicAccess(false);
+      action.setRequireOrgTenant(false);
+      action.setDisabled(false);
+      action.setGrantable(true);
+      em.persist(action);
+      var member = new ApplicationResourceRelevance();
+      member.setApplicationCode("sales");
+      member.setResourceCode(action.getCode());
+      em.persist(member);
+      return null;
+    });
   }
 
   private void platformActor() {

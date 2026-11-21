@@ -1916,6 +1916,7 @@
     "tenant.packages.error.ALLOCATION_CONFLICT": "The allocation identifier is already used for another package or workspace",
     "tenant.packages.error.INCONSISTENT_ACTIVATION": "Package activation records are incomplete; contact an administrator",
     "tenant.packages.error.INSTANCE_NOT_ACTIVATABLE": "Legacy adoption records cannot be activated again",
+    "tenant.packages.error.INSTANCE_NOT_SUPPLEMENTABLE": "Actions can only be added to active packages with unlimited validity",
     "tenant.packages.error.INSTANCE_NOT_FOUND": "Package instance does not exist in this workspace",
     "tenant.packages.error.INSTANCE_REVOKED": "This package instance has been revoked",
     "tenant.packages.error.INVALID_DURATION": "Package duration is invalid or exceeds supported dates",

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageInstance;
+import org.simplepoint.plugin.rbac.tenant.api.entity.TenantPackageResourceDefinition;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceCredit;
 import org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException;
 import org.simplepoint.plugin.rbac.tenant.api.error.TenantPackageException.Code;
@@ -13,7 +14,7 @@ import org.simplepoint.plugin.rbac.tenant.api.model.TenantPackageRevocation;
 
 /** Validates original activation evidence before retries and administrative revocation. */
 final class TenantPackageReceipts {
-  private static final int MAX_RESOURCES = 5000;
+  static final int MAX_RESOURCES = 5000;
   private final EntityManager em;
 
   TenantPackageReceipts(EntityManager em) {
@@ -47,16 +48,31 @@ final class TenantPackageReceipts {
     if (instance.getActivatedAt() == null || instance.getActivatedBy() == null
         || instance.getResourceIds().isEmpty() || instance.getResourceIds().size() > MAX_RESOURCES
         || credits.size() != instance.getResourceIds().size()
-        || credits.stream().anyMatch(row -> !instance.getResourceIds().contains(row.getResourceId())
-            || !Objects.equals(row.getRevokedAt(), revokedAt)
-            || !Objects.equals(row.getDurationDays(), instance.getDurationDays())
-            || !Objects.equals(row.getActivatedAt(), instance.getActivatedAt())
-            || !Objects.equals(row.getActivatedBy(), instance.getActivatedBy()))) {
+        || credits.stream().anyMatch(row -> !validCredit(instance, row, revokedAt))) {
       throw new TenantPackageException(Code.INCONSISTENT_ACTIVATION);
     }
     List<TenantPackageActivation.ResourceCredit> results = credits.stream()
+        .filter(row -> !instance.getResources().get(row.getResourceId()).isSupplemental())
         .map(row -> new TenantPackageActivation.ResourceCredit(
             row.getResourceId(), row.getDurationDays(), row.getResultExpiresAt())).toList();
+    if (results.isEmpty()) {
+      throw new TenantPackageException(Code.INCONSISTENT_ACTIVATION);
+    }
     return new TenantPackageActivation(instance.getId(), instance.getActivatedAt(), results);
+  }
+
+  private static boolean validCredit(
+      TenantPackageInstance instance, TenantResourceCredit credit, Instant revokedAt) {
+    TenantPackageResourceDefinition definition = instance.getResources().get(credit.getResourceId());
+    if (definition == null || !Objects.equals(credit.getRevokedAt(), revokedAt)
+        || !Objects.equals(credit.getDurationDays(), instance.getDurationDays())) {
+      return false;
+    }
+    if (definition.isSupplemental()) {
+      return instance.getDurationDays() == null && credit.getActivatedBy() != null
+          && !credit.getActivatedAt().isBefore(instance.getActivatedAt());
+    }
+    return Objects.equals(credit.getActivatedAt(), instance.getActivatedAt())
+        && Objects.equals(credit.getActivatedBy(), instance.getActivatedBy());
   }
 }

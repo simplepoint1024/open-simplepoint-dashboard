@@ -29,6 +29,10 @@ public class TenantPackageResourceDefinition {
   @Column(name = "resource_name", length = 100, updatable = false)
   private String resourceName;
 
+  /** True for an action explicitly added after the original activation. */
+  @Column(nullable = false, updatable = false)
+  private boolean supplemental;
+
   /** Captures labels; the owning instance binds both immutable identity components. */
   public TenantPackageResourceDefinition(String resourceCode, String resourceName) {
     this.resourceCode = resourceCode;

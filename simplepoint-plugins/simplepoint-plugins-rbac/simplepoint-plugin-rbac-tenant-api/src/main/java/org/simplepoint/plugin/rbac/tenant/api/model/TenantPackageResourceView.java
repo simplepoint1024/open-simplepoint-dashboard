@@ -6,7 +6,8 @@ import java.time.Instant;
 public record TenantPackageResourceView(
     String id, String resourceCode, String resourceName, Integer durationDays,
     Instant activatedAt, Instant creditedExpiresAt, Instant revokedAt,
-    Instant currentStartsAt, Instant currentExpiresAt, EntitlementState currentState) {
+    Instant currentStartsAt, Instant currentExpiresAt, EntitlementState currentState,
+    boolean supplemental) {
 
   /** Time entitlement only; role grants and resource availability still govern actual access. */
   public enum EntitlementState { NONE, NOT_STARTED, ACTIVE, UNLIMITED, EXPIRED }

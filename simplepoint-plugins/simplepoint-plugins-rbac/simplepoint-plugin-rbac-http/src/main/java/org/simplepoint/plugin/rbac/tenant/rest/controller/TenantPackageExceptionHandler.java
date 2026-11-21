@@ -34,6 +34,7 @@ public class TenantPackageExceptionHandler {
               ALLOCATION_CONFLICT,
               RESOURCE_CONFLICT,
               INSTANCE_NOT_ACTIVATABLE,
+              INSTANCE_NOT_SUPPLEMENTABLE,
               ADOPTION_NOT_REQUIRED ->
               409;
         };

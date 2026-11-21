@@ -35,6 +35,7 @@ import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceCredit;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceEntitlement;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
 import org.simplepoint.plugin.rbac.tenant.api.service.ResourceAuthorizationVersionService;
+import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageActionSupplementService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageActivationService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageAdministrationQueryService;
 import org.simplepoint.plugin.rbac.tenant.api.service.TenantPackageAssignmentService;
@@ -44,6 +45,7 @@ import org.simplepoint.plugin.rbac.tenant.rest.controller.TenantPackageAdministr
 import org.simplepoint.plugin.rbac.tenant.rest.controller.TenantPackageController;
 import org.simplepoint.plugin.rbac.tenant.rest.controller.TenantPackageExceptionHandler;
 import org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActivationServiceImpl;
+import org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageActionSupplementServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageAssignmentServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageQueryServiceImpl;
 import org.simplepoint.plugin.rbac.tenant.service.impl.TenantPackageRevocationServiceImpl;
@@ -172,7 +174,10 @@ class TenantPackageHttpTest {
                         TenantPackageRevocationService.class),
                     proxy(
                         new TenantPackageQueryServiceImpl(em),
-                        TenantPackageAdministrationQueryService.class)))
+                        TenantPackageAdministrationQueryService.class),
+                    proxy(
+                        new TenantPackageActionSupplementServiceImpl(em, versions),
+                        TenantPackageActionSupplementService.class)))
             .setControllerAdvice(new TenantPackageExceptionHandler())
             .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
             .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
