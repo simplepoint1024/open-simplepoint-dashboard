@@ -1,0 +1,143 @@
+{
+  "date": "2026-11-18",
+  "scope": "APP many-to-many form relations",
+  "tests": {
+    "appForm": 505,
+    "appHttp": 66,
+    "dnaRuntimeApi": 110,
+    "dnaCollectionRuntime": 62,
+    "nativeCompositionAndMigration": 7,
+    "frontendRelationModels": 43,
+    "frontendTypecheck": true,
+    "strictUiAudit": true,
+    "i18nAudit": true,
+    "collectionHttpParameterRegression": 2
+  },
+  "nativeDatabases": {
+    "postgresql": "passed",
+    "mysql": "passed",
+    "memberPageSizes": [
+      50,
+      50,
+      25
+    ],
+    "twoSidedVersions": true,
+    "twoSidedScope": true,
+    "ownedFieldGrant": true,
+    "targetPermissionIndependentOfSource": true,
+    "durableConcurrentReplay": true,
+    "delayedLinkAfterUnlinkRejected": true,
+    "candidateAntiJoin": "NOT EXISTS"
+  },
+  "installation": {
+    "appControlMigration": "V4__form_collection_bindings.sql",
+    "applied": true,
+    "schemaVerified": true,
+    "packagedFrontendVerified": [
+      "standalone",
+      "app",
+      "dna"
+    ],
+    "mode": "verified app-http distribution JAR mounted read-only on both tested topologies",
+    "httpBindingCorrection": true,
+    "deployedAppHttpJarSha256": "7aefc77f71af7ce60a77859911e860cbf797de1115a0819d7518f5ff541b0879"
+  },
+  "checks": {
+    "bidirectional-paging-and-incremental-replay": {
+      "nativeDatabases": [
+        "postgresql",
+        "mysql"
+      ],
+      "topologies": [
+        "single",
+        "micro"
+      ]
+    },
+    "same-model-direction-and-self-edge-rejection": {
+      "topologies": [
+        "single",
+        "micro"
+      ]
+    },
+    "four-pages-and-local-unlink": {
+      "pageSizes": [
+        50,
+        50,
+        50,
+        25
+      ],
+      "retainedTotal": 174
+    },
+    "independent-participation-unique-key": {
+      "topologies": [
+        "single",
+        "micro"
+      ]
+    },
+    "independent-participation-approval-and-snapshot": {
+      "topologies": [
+        "single",
+        "micro"
+      ]
+    }
+  },
+  "topologies": {
+    "single": {
+      "records": {
+        "at": "2026-11-18T10:20:57.916Z",
+        "pages": [
+          50,
+          50,
+          50,
+          25
+        ],
+        "retainedMembers": 174,
+        "reverseUnlink": true,
+        "lateLinkRejected": true,
+        "duplicateParticipationRejected": true
+      },
+      "browser": {
+        "passed": true,
+        "dimensions": [
+          1440,
+          768,
+          390
+        ],
+        "forwardLink": true,
+        "forwardUnlink": true
+      },
+      "independentParticipationApproval": true,
+      "federatedFrontendAssetsVerified": 415
+    },
+    "micro": {
+      "records": {
+        "at": "2026-11-18T10:19:48.848Z",
+        "pages": [
+          50,
+          50,
+          50,
+          25
+        ],
+        "retainedMembers": 174,
+        "reverseUnlink": true,
+        "lateLinkRejected": true,
+        "duplicateParticipationRejected": true
+      },
+      "browser": {
+        "passed": true,
+        "dimensions": [
+          1440,
+          768,
+          390
+        ],
+        "forwardLink": true,
+        "forwardUnlink": true
+      },
+      "independentParticipationApproval": true,
+      "federatedFrontendAssetsVerified": 415
+    }
+  },
+  "remaining": [
+    "Formal retirement of a published collection with retained edges and its recovery path."
+  ]
+}

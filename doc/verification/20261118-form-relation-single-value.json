@@ -1,0 +1,305 @@
+{
+  "contractVersion": 1,
+  "date": "2026-11-18",
+  "scope": "单值表单关联部署验收",
+  "sample": {
+    "publishedForms": 5,
+    "customerCandidates": 63,
+    "candidatePageSizes": [
+      50,
+      13
+    ],
+    "tradeDetailRows": 40
+  },
+  "validation": {
+    "databases": [
+      "PostgreSQL",
+      "MySQL"
+    ],
+    "backend": {
+      "appForm": {
+        "tests": 505,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "appHttp": {
+        "tests": 64,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnaRelations": {
+        "tests": 40,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "appDnaComposition": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "frontend": {
+      "typecheckedModules": 8,
+      "strictUiAudit": true,
+      "reviewedExceptions": 39,
+      "modelTests": 17,
+      "isolatedMappingBrowserScenarios": 19
+    }
+  },
+  "topologies": {
+    "single": {
+      "businessChecks": {
+        "candidate-search-pagination-resolution": {
+          "passedAt": "2026-11-18T09:06:51.910Z",
+          "total": 63,
+          "firstPage": 50,
+          "secondPage": 13
+        },
+        "root-detail-mapping-live-and-drill": {
+          "passedAt": "2026-11-18T09:06:52.836Z",
+          "detailRows": 40
+        },
+        "snapshot-tamper-rejected": {
+          "passedAt": "2026-11-18T09:06:54.970Z",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        "referenced-target-delete-restricted": {
+          "passedAt": "2026-11-18T09:06:56.719Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+        },
+        "conflicting-default-and-replay-rejected": {
+          "passedAt": "2026-11-18T09:06:56.499Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+        },
+        "invalid-detail-rejects-whole-aggregate": {
+          "passedAt": "2026-11-18T09:06:54.935Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT",
+          "rows": 40
+        },
+        "inverse-crud-fixed-parent-and-unlink": {
+          "passedAt": "2026-11-18T09:07:07.482Z",
+          "rebind": {
+            "status": 409,
+            "code": "RECORD_REFERENCE_CONFLICT",
+            "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+          },
+          "scopedDelete": true
+        },
+        "related-approval-immutable-and-idempotent": {
+          "passedAt": "2026-11-18T09:08:55.843Z",
+          "details": 40,
+          "managerWithoutTargetGrant": true,
+          "status": "COMPLETED"
+        },
+        "live-target-edit-retains-history": {
+          "passedAt": "2026-11-18T08:54:55.858Z",
+          "labelStableInHistory": true,
+          "targetRestored": true,
+          "staleWrite": 409
+        },
+        "rebind-updates-both-inverse-counts": {
+          "passedAt": "2026-11-18T09:07:12.321Z",
+          "oldParentDifference": -1,
+          "newParentDifference": 1
+        },
+        "one-to-one-unique-and-soft-delete-retention": {
+          "passedAt": "2026-11-18T09:07:14.161Z",
+          "concurrentResults": [
+            200,
+            409
+          ],
+          "rejection": "RECORD_OPERATION_REJECTED",
+          "afterSoftDelete": {
+            "status": 409,
+            "code": "RECORD_OPERATION_REJECTED",
+            "messageKey": "app.error.RECORD_OPERATION_REJECTED"
+          }
+        }
+      },
+      "browser": {
+        "viewports": [
+          1440,
+          768,
+          390
+        ],
+        "drillThrough": true,
+        "passed": true,
+        "cleanedUp": true,
+        "freshDocumentDeepLinkReload": true
+      },
+      "crossWorkspaceHttpStatuses": [
+        404,
+        404,
+        404
+      ],
+      "priorCreateReceiptReplayVerified": true,
+      "temporaryApproverGrantRestored": true,
+      "federation": {
+        "common": 111,
+        "audit": 51,
+        "dna": 81,
+        "ai": 55,
+        "app": 52,
+        "workflow": 64
+      },
+      "deployment": {
+        "simplepoint-standalone:20261118-single-relations-r4": "healthy"
+      },
+      "cleanup": {
+        "retainedSubmittedTrades": 2,
+        "activeTemporaryProfiles": 0,
+        "temporaryRoleGrant": false
+      }
+    },
+    "micro": {
+      "businessChecks": {
+        "candidate-search-pagination-resolution": {
+          "passedAt": "2026-11-18T09:06:20.549Z",
+          "total": 63,
+          "firstPage": 50,
+          "secondPage": 13
+        },
+        "root-detail-mapping-live-and-drill": {
+          "passedAt": "2026-11-18T09:06:22.128Z",
+          "detailRows": 40
+        },
+        "snapshot-tamper-rejected": {
+          "passedAt": "2026-11-18T09:06:25.489Z",
+          "status": 400,
+          "code": "RECORD_INVALID",
+          "messageKey": "app.error.RECORD_INVALID"
+        },
+        "conflicting-default-and-replay-rejected": {
+          "passedAt": "2026-11-18T09:06:27.327Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+        },
+        "referenced-target-delete-restricted": {
+          "passedAt": "2026-11-18T09:06:27.597Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+        },
+        "invalid-detail-rejects-whole-aggregate": {
+          "passedAt": "2026-11-18T09:06:25.450Z",
+          "status": 409,
+          "code": "RECORD_REFERENCE_CONFLICT",
+          "messageKey": "app.error.RECORD_REFERENCE_CONFLICT",
+          "rows": 40
+        },
+        "inverse-crud-fixed-parent-and-unlink": {
+          "passedAt": "2026-11-18T09:06:40.710Z",
+          "rebind": {
+            "status": 409,
+            "code": "RECORD_REFERENCE_CONFLICT",
+            "messageKey": "app.error.RECORD_REFERENCE_CONFLICT"
+          },
+          "scopedDelete": true
+        },
+        "related-approval-immutable-and-idempotent": {
+          "passedAt": "2026-11-18T09:08:57.348Z",
+          "details": 40,
+          "managerWithoutTargetGrant": true,
+          "status": "COMPLETED"
+        },
+        "live-target-edit-retains-history": {
+          "passedAt": "2026-11-18T08:54:55.858Z",
+          "labelStableInHistory": true,
+          "targetRestored": true,
+          "staleWrite": 409
+        },
+        "rebind-updates-both-inverse-counts": {
+          "passedAt": "2026-11-18T09:06:46.901Z",
+          "oldParentDifference": -1,
+          "newParentDifference": 1
+        },
+        "one-to-one-unique-and-soft-delete-retention": {
+          "passedAt": "2026-11-18T09:06:49.044Z",
+          "concurrentResults": [
+            200,
+            409
+          ],
+          "rejection": "RECORD_OPERATION_REJECTED",
+          "afterSoftDelete": {
+            "status": 409,
+            "code": "RECORD_OPERATION_REJECTED",
+            "messageKey": "app.error.RECORD_OPERATION_REJECTED"
+          }
+        }
+      },
+      "browser": {
+        "viewports": [
+          1440,
+          768,
+          390
+        ],
+        "drillThrough": true,
+        "passed": true,
+        "cleanedUp": true,
+        "freshDocumentDeepLinkReload": true
+      },
+      "crossWorkspaceHttpStatuses": [
+        404,
+        404,
+        404
+      ],
+      "priorCreateReceiptReplayVerified": true,
+      "temporaryApproverGrantRestored": true,
+      "federation": {
+        "common": 111,
+        "audit": 51,
+        "dna": 81,
+        "ai": 55,
+        "app": 52,
+        "workflow": 64
+      },
+      "deployment": {
+        "simplepoint203/host:20261118-single-relations-r2": "healthy",
+        "simplepoint203/app:20261118-single-relations-r3": "healthy",
+        "simplepoint203/dna:20261118-single-relations-r4": "healthy",
+        "simplepoint203/workflow:20261117-single-relations-r1": "healthy"
+      },
+      "cleanup": {
+        "retainedSubmittedTrades": 2,
+        "activeTemporaryProfiles": 0,
+        "temporaryRoleGrant": false
+      }
+    }
+  },
+  "verifiedCases": {
+    "REL-01": [
+      "candidate-search-pagination-resolution",
+      "root-detail-mapping-live-and-drill",
+      "live-target-edit-retains-history"
+    ],
+    "REL-02": [
+      "rebind-updates-both-inverse-counts"
+    ],
+    "REL-20": [
+      "root-detail-mapping-live-and-drill",
+      "related-approval-immutable-and-idempotent",
+      "live-target-edit-retains-history"
+    ],
+    "REL-21": [
+      "snapshot-tamper-rejected",
+      "live-target-edit-retains-history"
+    ],
+    "REL-24": [
+      "inverse-crud-fixed-parent-and-unlink",
+      "rebind-updates-both-inverse-counts"
+    ]
+  }
+}

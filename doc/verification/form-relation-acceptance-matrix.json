@@ -1,0 +1,578 @@
+{
+  "contractVersion": 1,
+  "updatedAt": "2026-11-19",
+  "status": "passed",
+  "design": "doc/design/form_relation_delivery_plan.md",
+  "cases": [
+    {
+      "id": "REL-01",
+      "requirement": "N:1 正向选择和反向查询一致；改名不改变引用身份",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-single-value.json",
+          "checks": [
+            "candidate-search-pagination-resolution",
+            "root-detail-mapping-live-and-drill",
+            "live-target-edit-retains-history"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-02",
+      "requirement": "1:N 不维护第二份 ID 清单；交易换绑后旧、新客户列表及计数一致",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-single-value.json",
+          "checks": [
+            "rebind-updates-both-inverse-counts"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-03",
+      "requirement": "1:1 并发关联相同目标只有一方成功；可空、多租户、软删恢复和跨父单据明细符合唯一策略",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "owned-one-to-one-uniqueness"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-04",
+      "requirement": "M:N 双向查询一致、重复添加幂等、同键不同内容拒绝；自引用方向明确且禁止自身边",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-many-to-many.json",
+          "checks": [
+            "bidirectional-paging-and-incremental-replay",
+            "same-model-direction-and-self-edge-rejection"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-05",
+      "requirement": "M:N 超过三页，局部解除不误删未加载关联；迟到旧添加不能复活旧边",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-many-to-many.json",
+          "checks": [
+            "four-pages-and-local-unlink"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-06",
+      "requirement": "中间业务模型的属性、审批和唯一键保持独立；不混入纯关联表",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-many-to-many.json",
+          "checks": [
+            "independent-participation-unique-key",
+            "independent-participation-approval-and-snapshot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-07",
+      "requirement": "明细关联共用字段注册和校验；第 N 行失败全部回滚",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "aggregate-detail-validation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-08",
+      "requirement": "同字段 ID 出现在不同明细作用域时身份不混淆",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "scoped-relation-identities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-09",
+      "requirement": "搜索、排序、分页和总数在完整权限／关系过滤后执行",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "permission-filtering-before-paging"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-10",
+      "requirement": "候选外已有值可回读；不可读／不存在不泄漏区别；标签不跨工作空间缓存；撤权后无关修改保留未变引用且不回填敏感值",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "retained-reference-access"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-11",
+      "requirement": "主表／当前行联动过滤、缺省上下文、迟到请求和切换行不串值",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "scoped-context-and-tampering"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-12",
+      "requirement": "修改客户端过滤、目标 ID、资源、relationId 或上下文均不能越权",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "scoped-context-and-tampering"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-13",
+      "requirement": "字段隐藏／脱敏后无法通过搜索、排序、总数、带出或汇总推断值",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "masked-hidden-reference-projection"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-14",
+      "requirement": "目标删除与建立关联并发、停用与换绑并发，满足事务及资格协议",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "concurrent-reference-governance"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-15",
+      "requirement": "隐藏源记录仍阻止目标删除，但错误不暴露源记录信息",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "hidden-source-delete-guard"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-16",
+      "requirement": "直接 DNA、旧页面、批量／主从／流程写入及 SQL 控制台受同一治理保护",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "all-write-entries-governed",
+            "aggregate-detail-validation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-17",
+      "requirement": "目标页面改绑不同表单后旧关系不可用；同表单兼容升级保留关系",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "target-entry-rebinding"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-18",
+      "requirement": "穿透详情、深链刷新、返回、关闭与多层导航正确，不能继承源宽权限",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "authorized-reference-navigation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-19",
+      "requirement": "保留详情或选择器期间撤权、下线、切换租户，旧响应与缓存立即失效",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "retained-browser-revocation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-20",
+      "requirement": "实时展示按当前值读取，复制快照在目标改名／改价后保持原值",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-single-value.json",
+          "checks": [
+            "root-detail-mapping-live-and-drill",
+            "related-approval-immutable-and-idempotent",
+            "live-target-edit-retains-history"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-21",
+      "requirement": "来源版本变化使快照保存冲突；客户端伪造带出值和来源版本被拒绝",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-single-value.json",
+          "checks": [
+            "snapshot-tamper-rejected",
+            "live-target-edit-retains-history"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-22",
+      "requirement": "用户修改默认值后的换绑／刷新不静默覆盖；只读快照与可编辑默认区分",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "editable-default-retention"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-23",
+      "requirement": "复制映射类型错误、空值、高精度、Unicode、必填和规则冲突服务端拒绝",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "mapped-value-constraints"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-24",
+      "requirement": "客户关联列表新增／编辑／删除与独立交易页规则一致，关系上下文不可篡改",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261118-form-relation-single-value.json",
+          "checks": [
+            "inverse-crud-fixed-parent-and-unlink",
+            "rebind-updates-both-inverse-counts"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-25",
+      "requirement": "未保存父记录、父记录有未保存修改、子操作独立提交的交互符合约定",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "parent-draft-and-independent-related-save"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-26",
+      "requirement": "移除关联与删除目标明确区分；必填关系无法解除；目标删除执行全局引用保护",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "unlink-and-delete-semantics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-27",
+      "requirement": "列表／卡片、默认顺序、个人偏好、内滚动及键盘操作符合平台标准",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "related-list-and-card-preferences"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-28",
+      "requirement": "同一交易多行引用商品的反向列表按根记录去重，明细访问遵循父权限",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "detail-inverse-deduplication"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-29",
+      "requirement": "外部公式绑定使用稳定 ID，独立计算库可不依赖平台运行",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-30",
+      "requirement": "普通引用环允许，跨表单计算环／多跳超限在发布时被拒绝",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-31",
+      "requirement": "同库快照计算与业务保存使用一致输入；外部变化不混入历史审批",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-32",
+      "requirement": "当前用户可见汇总与全业务汇总严格区分；源权限变化不泄漏派生结果",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-33",
+      "requirement": "异步结果未就绪不能用于权威审批／额度决策；界面显示状态与更新时间",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-34",
+      "requirement": "目标事务提交与 outbox 原子；进程终止、MQ 停机后无丢失失效事实",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-35",
+      "requirement": "重复／乱序／过期事件、旧新目标改绑重算、失败重放与对账保持收敛",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-36",
+      "requirement": "同库业务命令中途失败全部回滚；响应丢失后重试无重复记录／关系",
+      "scope": "deferred-r5",
+      "status": "deferred",
+      "evidence": []
+    },
+    {
+      "id": "REL-37",
+      "requirement": "关系发布部分失败保持旧版本；回填、取消、重启恢复与目标并发发布通过；添加反向组件不产生发布循环",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "deployed-collection-backfill-and-retirement"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-38",
+      "requirement": "N:1→1:1、N:1→M:N、可空→必选迁移核对数据及约束，失败可恢复",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "constraint-migrations",
+            "deployed-reference-collection-conversion"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-39",
+      "requirement": "旧 JSON／校验和／不可变快照兼容；未知能力失败关闭，不降级为普通字符串",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "legacy-snapshot-and-unknown-capabilities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-40",
+      "requirement": "正式下线完成所有必要参与方；重新上线不恢复授权或删除历史关系",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "formal-lifecycle-and-revocation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-41",
+      "requirement": "1440／768／390 宽度下选择器、关联列表、明细及详情可用，内容不挤出页面",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "deployed-browser-scenarios"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-42",
+      "requirement": "API 批量解析／搜索预算、查询计划及大扇出重算有界，无每行 RPC 的 N+1",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "relation-api-latency-baseline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-43",
+      "requirement": "升级与受控回退、目标数据库结构、线上 JS/CSS、服务和 Consul 一致",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "release-build-upgrade-rollback-and-assets"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REL-44",
+      "requirement": "测试结束无孤立记录／边、遗留待办、异常死信和临时授权；保留验收数据可查看",
+      "scope": "current",
+      "status": "passed",
+      "evidence": [
+        {
+          "path": "doc/verification/20261119-form-relation-delivery.json",
+          "checks": [
+            "isolated-business-cleanup"
+          ]
+        }
+      ]
+    }
+  ]
+}

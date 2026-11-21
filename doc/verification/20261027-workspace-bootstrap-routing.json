@@ -1,0 +1,334 @@
+{
+  "passed": true,
+  "verifiedAt": "2026-10-27T01:42:48.409602+00:00",
+  "problem": "HTTP 404 from the microservice gateway for workspace and i18n APIs after successful authentication, despite healthy common instances.",
+  "fix": "Stable /common/** route definition, independent of discovery-generated routes and indexed external route configuration, preserving gateway default filters and Consul load balancing.",
+  "deployment": {
+    "scope": "Only legacy microservice host updated; standalone and all other runtime images unchanged.",
+    "hostImage": "simplepoint203/host:20261027-workspace-routing-r1",
+    "fullDistributionManifestVerified": true,
+    "frontendDistributionGate": "passed",
+    "healthyContainers": 10
+  },
+  "backendTests": {
+    "total": 20,
+    "failures": 0,
+    "errors": 0,
+    "lateReadinessAndRecovery": "passed using framework filters and controlled instance selection; no production service outage induced",
+    "defaultSessionAndTokenFilters": "passed",
+    "tenantContextHeadersAndPathBoundary": "passed"
+  },
+  "registration": {
+    "realPublicRegistrations": 2,
+    "personalWorkspaceCreatedAndStableAcrossLogins": true,
+    "unauthorizedPlatformAccessRejected": true
+  },
+  "authentication": {
+    "freshLoginRounds": 18,
+    "parallelBootstrapReads": 126,
+    "logoutAndRelogin": "passed",
+    "scenarios": [
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://home.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "new",
+        "scope": "PERSONAL",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "employee",
+        "scope": "ORGANIZATION",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 1,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 2,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      },
+      {
+        "origin": "https://single.simplepoint.online:8000",
+        "actor": "admin",
+        "scope": "PLATFORM",
+        "round": 3,
+        "parallelReads": 7,
+        "personalWorkspaceStable": true,
+        "logoutVerified": true,
+        "passed": true
+      }
+    ]
+  },
+  "browser": [
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "actor": "new",
+      "cleanStorageBootstrap": true,
+      "reloads": 2,
+      "workspaceRetained": true,
+      "httpErrors": [],
+      "jsErrors": [],
+      "passed": true
+    },
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "actor": "employee",
+      "cleanStorageBootstrap": true,
+      "reloads": 2,
+      "workspaceRetained": true,
+      "httpErrors": [],
+      "jsErrors": [],
+      "passed": true
+    },
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "actor": "new",
+      "cleanStorageBootstrap": true,
+      "reloads": 2,
+      "workspaceRetained": true,
+      "httpErrors": [],
+      "jsErrors": [],
+      "passed": true
+    },
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "actor": "employee",
+      "cleanStorageBootstrap": true,
+      "reloads": 2,
+      "workspaceRetained": true,
+      "httpErrors": [],
+      "jsErrors": [],
+      "passed": true
+    }
+  ],
+  "frontendAssets": [
+    {
+      "origin": "https://home.simplepoint.online:8000",
+      "hostAssets": 350,
+      "federationModules": [
+        {
+          "name": "common",
+          "assets": 109
+        },
+        {
+          "name": "audit",
+          "assets": 49
+        },
+        {
+          "name": "dna",
+          "assets": 79
+        },
+        {
+          "name": "ai",
+          "assets": 53
+        },
+        {
+          "name": "app",
+          "assets": 50
+        },
+        {
+          "name": "workflow",
+          "assets": 61
+        }
+      ],
+      "passed": true
+    },
+    {
+      "origin": "https://single.simplepoint.online:8000",
+      "hostAssets": 350,
+      "federationModules": [
+        {
+          "name": "common",
+          "assets": 109
+        },
+        {
+          "name": "audit",
+          "assets": 49
+        },
+        {
+          "name": "dna",
+          "assets": 79
+        },
+        {
+          "name": "ai",
+          "assets": 53
+        },
+        {
+          "name": "app",
+          "assets": 50
+        },
+        {
+          "name": "workflow",
+          "assets": 61
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "cleanup": {
+    "passed": true,
+    "checks": [
+      {
+        "origin": "micro",
+        "testAccountDisabled": true,
+        "auditedPlatformApi": true
+      },
+      {
+        "origin": "single",
+        "testAccountDisabled": true,
+        "auditedPlatformApi": true
+      }
+    ]
+  }
+}

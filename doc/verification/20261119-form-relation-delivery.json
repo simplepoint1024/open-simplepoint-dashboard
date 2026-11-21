@@ -1,0 +1,1131 @@
+{
+  "contractVersion": 1,
+  "date": "2026-11-19",
+  "scope": "表单关联正式验收。两种隔离拓扑使用真实认证、授权、数据库、工作流、事件和前端发行包。",
+  "status": "passed",
+  "validation": {
+    "backendRegression": {
+      "nativeDatabases": [
+        "PostgreSQL 17",
+        "MySQL 8.4"
+      ],
+      "tests": 1423,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "modules": {
+        "appFormImplementation": 510,
+        "appHttp": 66,
+        "dnaRuntimeApi": 110,
+        "dnaRuntimeImplementation": 737
+      },
+      "scope": "本轮模式演进修复前的完整回归。后续针对性验证分别记账。"
+    },
+    "targetedApplicationTests": {
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "typecheckedProjects": 8,
+      "i18nTests": 12,
+      "strictUiAudit": true,
+      "reviewedExceptions": 39,
+      "unreviewedExceptions": 0,
+      "authoringBrowserSmoke": true,
+      "designerModelTests": 24,
+      "literalI18nUsages": 3906,
+      "reviewedDynamicI18nUsages": 67,
+      "relatedBrowserFlowsOnDeployedTopologies": true
+    },
+    "latestNativeRegression": {
+      "databases": [
+        "PostgreSQL 18",
+        "MySQL 8.4"
+      ],
+      "passed": 57,
+      "errors": 0,
+      "skipped": 0,
+      "initialTimeouts": 1,
+      "initialTimeoutPhase": "MySQL 集合分页用例的物理所有权夹具初始化",
+      "retryPending": false,
+      "rerunPassedOnBothDatabases": true
+    },
+    "ownedReferenceSchema": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "federationSqlOwnership": {
+      "tests": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "composition": {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "fixtureRecovery": [
+      "MySQL 分页用例初次在物理所有权夹具初始化时超时。采用相同方言和断言重新运行通过。",
+      "SQL 治理用例完成后发现同模块已有增量编译残留。仅清理该模块构建输出，重新编译并重跑通过。",
+      "微服务候选搜索 p95 首轮超出原预算，隔离复测保持原预算并通过。两轮记录见时延证据。"
+    ]
+  },
+  "checks": {
+    "aggregate-detail-validation": {
+      "expected": "通过字段注册表校验主表与所属明细，任一行非法整单回滚。",
+      "actual": {
+        "single": {
+          "detailRows": 40,
+          "lastRowRejected": 409,
+          "aggregateRolledBack": true
+        },
+        "micro": {
+          "detailRows": 40,
+          "lastRowRejected": 409,
+          "aggregateRolledBack": true
+        }
+      },
+      "tests": [
+        "ApplicationFormReferenceServiceTest.detailReferenceChecksTheOwnedModelFieldInsteadOfItsParentsGrant"
+      ]
+    },
+    "scoped-relation-identities": {
+      "expected": "根、第一明细和第二明细可以共用局部字段 ID，并各自绑定不同目标。",
+      "actual": "三处身份可发布且规范化编码、解码后保持三个独立目标。",
+      "tests": [
+        "FormRelationDocumentTest.rootAndEachDetailCanReferenceDifferentTargetsWithTheSameLocalFieldId"
+      ]
+    },
+    "authorized-reference-navigation": {
+      "expected": "穿透详情、直接打开和刷新可恢复，关闭或返回回到正确的源页，目标按自身授权读取。",
+      "actual": {
+        "single": {
+          "targetDrawer": true,
+          "sourceRestoredOnClose": true,
+          "deepLinkAfterReload": true
+        },
+        "micro": {
+          "targetDrawer": true,
+          "sourceRestoredOnClose": true,
+          "deepLinkAfterReload": true
+        }
+      },
+      "tests": [
+        "smoke-reference-navigation.mjs（13 项浏览器夹具场景，覆盖多层导航和保留页）",
+        "ApplicationFormReferenceServiceTest.delegatedSourcePolicyCannotAuthorizeTargetLookupOrDrillThrough",
+        "ApplicationFormReferenceServiceTest.drillThroughDenialNeverReturnsRuntimeOrFallsBackToAnotherEntry"
+      ]
+    },
+    "legacy-snapshot-and-unknown-capabilities": {
+      "expected": "旧 JSON 和物理快照校验和保持不变；未经注册的组件和伪装引用拒绝；审批历史保持原提交快照。",
+      "actual": {
+        "single": {
+          "approvalStatus": "COMPLETED",
+          "snapshotDetailRows": 40,
+          "redactedForApproverWithoutTargetGrant": true
+        },
+        "micro": {
+          "approvalStatus": "COMPLETED",
+          "snapshotDetailRows": 40,
+          "redactedForApproverWithoutTargetGrant": true
+        }
+      },
+      "tests": [
+        "FormRelationDocumentTest.legacyDocumentKeepsExactJsonAndChecksum",
+        "PhysicalSchemaSnapshotCodecTest.oldSnapshotsKeepTheirExactJsonAndChecksum",
+        "FormDocumentValidatorTest.rejectsMultipleMainScenesAndUnknownComponentTypes",
+        "FormRelationDocumentTest.referenceComponentsCannotMasqueradeAsStoredUuidInputsOrStaticChoices"
+      ]
+    },
+    "formal-lifecycle-and-revocation": {
+      "expected": "收齐必需参与方完成结果后才下线；保留关联数据，重新上线不恢复普通授权。",
+      "actual": {
+        "single": {
+          "completedParticipants": [
+            "common",
+            "dna"
+          ],
+          "offline": "OFFLINE",
+          "online": "ONLINE",
+          "preservedRelationships": 121,
+          "ordinaryAccessAfterOnline": 403
+        },
+        "micro": {
+          "completedParticipants": [
+            "common",
+            "dna"
+          ],
+          "offline": "OFFLINE",
+          "online": "ONLINE",
+          "preservedRelationships": 121,
+          "ordinaryAccessAfterOnline": 403
+        }
+      }
+    },
+    "deployed-collection-paging-and-isolation": {
+      "expected": "正式拓扑内四页读取一致，局部移除和旧命令重放保护分页外的边；第二组织无法跨租户访问。",
+      "actual": {
+        "single": {
+          "pages": [
+            50,
+            50,
+            50,
+            25
+          ],
+          "activeAfterUnlink": 174,
+          "staleStatus": 409,
+          "exactReplayDoesNotRevive": true,
+          "oldTargetPreserved": true,
+          "otherOrganizationPageRecordAndQuery": [
+            404,
+            404,
+            404
+          ]
+        },
+        "micro": {
+          "pages": [
+            50,
+            50,
+            50,
+            25
+          ],
+          "activeAfterUnlink": 174,
+          "staleStatus": 409,
+          "exactReplayDoesNotRevive": true,
+          "oldTargetPreserved": true,
+          "otherOrganizationPageRecordAndQuery": [
+            404,
+            404,
+            404
+          ]
+        }
+      }
+    },
+    "deployed-collection-backfill-and-retirement": {
+      "expected": "已复制部分边时允许恢复旧版；正式迁移保留目标记录；有活动边时阻止关系退役。",
+      "actual": {
+        "single": {
+          "oldLinksAfterCancellation": 121,
+          "copiedBeforeCancellation": 10,
+          "newLinksAfterSwitch": 121,
+          "oldTargetRecordPreserved": true,
+          "blockedRetirementWithActiveEdge": true,
+          "reversePublishesWithoutCycle": true
+        },
+        "micro": {
+          "oldLinksAfterCancellation": 121,
+          "copiedBeforeCancellation": 10,
+          "newLinksAfterSwitch": 121,
+          "oldTargetRecordPreserved": true,
+          "blockedRetirementWithActiveEdge": true,
+          "reversePublishesWithoutCycle": true
+        }
+      },
+      "restartRecovery": {
+        "newProcess": true,
+        "priorPageVersionPinnedBeforeAndAfterRestart": true,
+        "mutationFencePreserved": true,
+        "copiedBeforeRestart": 10,
+        "sameReleaseCompleted": true,
+        "finalEdges": 121,
+        "finalPageSizes": [
+          50,
+          50,
+          21
+        ]
+      },
+      "tests": [
+        "SchemaReferencePublicationDatabaseTest.publishesAndRecoversReferences（两种数据库验证部分 DDL、持久计划与目标发布冲突）",
+        "RecordCollectionRebindDatabaseTest.copiesInBatchesAndRestoresOrCommitsTheExactMappedEdges（两种数据库）"
+      ]
+    },
+    "deployed-browser-scenarios": {
+      "expected": "真实运行环境进入关联选择、映射确认、关联列表和目标详情。",
+      "actual": {
+        "single": {
+          "viewports": [
+            1440,
+            768,
+            390
+          ],
+          "locales": [
+            "zh-CN",
+            "en-US"
+          ],
+          "mappingDialog": true,
+          "associatedList": true,
+          "referenceDetailAndReload": true,
+          "temporaryBrowserRecordRemoved": true,
+          "referenceSelectorAndDetailEditor": [
+            1440,
+            768,
+            390
+          ],
+          "detailsScrollInternally": true,
+          "keyboardSelectorOpenAndClose": true
+        },
+        "micro": {
+          "viewports": [
+            1440,
+            768,
+            390
+          ],
+          "locales": [
+            "zh-CN",
+            "en-US"
+          ],
+          "mappingDialog": true,
+          "associatedList": true,
+          "referenceDetailAndReload": true,
+          "temporaryBrowserRecordRemoved": true,
+          "referenceSelectorAndDetailEditor": [
+            1440,
+            768,
+            390
+          ],
+          "detailsScrollInternally": true,
+          "keyboardSelectorOpenAndClose": true
+        }
+      }
+    },
+    "isolated-business-cleanup": {
+      "expected": "验收业务可继续查看，无活动孤立引用、不完整关联、遗留任务、未恢复死信或临时授权。",
+      "actual": {
+        "single": {
+          "verifiedCompositeForeignKeys": 22,
+          "retainedUnlinkTombstones": 244,
+          "halfBoundEdges": 0,
+          "orphanedActiveReferences": 0,
+          "openWorkflowTasks": 0,
+          "workflowDeadLetterJobs": 0,
+          "deadPlatformEvents": 0,
+          "pendingPlatformEvents": 0,
+          "quarantinedEvents": 0,
+          "brokerQueues": 7,
+          "brokerQueuedMessages": 0
+        },
+        "micro": {
+          "verifiedCompositeForeignKeys": 22,
+          "retainedUnlinkTombstones": 244,
+          "halfBoundEdges": 0,
+          "orphanedActiveReferences": 0,
+          "openWorkflowTasks": 0,
+          "workflowDeadLetterJobs": 0,
+          "deadPlatformEvents": 0,
+          "pendingPlatformEvents": 0,
+          "quarantinedEvents": 0,
+          "brokerQueues": 7,
+          "brokerQueuedMessages": 0
+        },
+        "temporaryApproverGrantsRemovedOnBothTopologies": true,
+        "auditedWorkflowReplay": {
+          "auditedReplays": 15,
+          "workflowCompleted": 15,
+          "outboxPending": 0,
+          "inboxPending": 0
+        },
+        "temporaryFieldAndDepartmentGrantsRestored": true
+      }
+    },
+    "deployed-reference-collection-conversion": {
+      "expected": "同一目标的多对一引用迁移成精确的多对多关联边，保留源和目标业务记录。",
+      "actual": {
+        "single": {
+          "convertedSources": 2,
+          "liveEdges": 2,
+          "sourceRecordsPreserved": true,
+          "targetRecordPreserved": true
+        },
+        "micro": {
+          "convertedSources": 2,
+          "liveEdges": 2,
+          "sourceRecordsPreserved": true,
+          "targetRecordPreserved": true
+        }
+      }
+    },
+    "editable-default-retention": {
+      "expected": "重新观察或换绑时保留用户修改的默认值，快照由服务端维护。",
+      "actual": {
+        "single": {
+          "manualValueRetainedAfterRebind": true,
+          "manualValueRetainedAfterRefresh": true,
+          "readOnlySnapshotUpdatedByServer": true,
+          "forgedSnapshotDenied": 400,
+          "temporaryRecordRemoved": true
+        },
+        "micro": {
+          "manualValueRetainedAfterRebind": true,
+          "manualValueRetainedAfterRefresh": true,
+          "readOnlySnapshotUpdatedByServer": true,
+          "forgedSnapshotDenied": 400,
+          "temporaryRecordRemoved": true
+        }
+      }
+    },
+    "detail-inverse-deduplication": {
+      "expected": "40 行重复商品引用聚合成一条父交易，目标可见性不扩大来源权限。",
+      "actual": {
+        "single": {
+          "repeatedDetailReferences": 40,
+          "distinctVisibleRootEntries": 1,
+          "restrictedTotal": 0,
+          "restrictedParentRead": 404,
+          "temporaryRoleGrantsRevoked": true
+        },
+        "micro": {
+          "repeatedDetailReferences": 40,
+          "distinctVisibleRootEntries": 1,
+          "restrictedTotal": 0,
+          "restrictedParentRead": 404,
+          "temporaryRoleGrantsRevoked": true
+        }
+      }
+    },
+    "concurrent-reference-governance": {
+      "expected": "删除和关联建立按提交顺序互斥；目标资格变化与写入不能绕过同一事务。",
+      "actual": {
+        "nativeDatabases": [
+          "PostgreSQL 18",
+          "MySQL 8.4"
+        ],
+        "passedScenarios": 24
+      },
+      "tests": [
+        "RecordReferenceIntegrityDatabaseTest.sourceCommitWinsAndTargetDeleteRollsBack",
+        "RecordReferenceIntegrityDatabaseTest.targetDeleteWinsAndSourceWriteRollsBack",
+        "RecordReferenceQualificationDatabaseTest.qualificationAndTargetStateChangeCannotRaceAcrossTheSourceCommit"
+      ]
+    },
+    "hidden-source-delete-guard": {
+      "expected": "允许的目标删除仍受全局引用保护，拒绝结果不包含隐藏来源身份。",
+      "actual": {
+        "single": {
+          "sourceInvisible": 403,
+          "deletePermissionPresent": true,
+          "protectedDeletion": 409,
+          "noSourceIdentityExposed": true,
+          "targetPreserved": true,
+          "temporaryRoleGrantsRevoked": true
+        },
+        "micro": {
+          "sourceInvisible": 403,
+          "deletePermissionPresent": true,
+          "protectedDeletion": 409,
+          "noSourceIdentityExposed": true,
+          "targetPreserved": true,
+          "temporaryRoleGrantsRevoked": true
+        }
+      }
+    },
+    "permission-filtering-before-paging": {
+      "expected": "关系、两端授权、筛选和稳定排序先于分页与总数。",
+      "actual": {
+        "deployed": {
+          "single": {
+            "mainContextMatches": 30,
+            "detailContextMatches": 31,
+            "missingInputsEmpty": true,
+            "exactRetainedTargetOutsideContextIsReadable": true,
+            "missingTargetOmitted": true,
+            "unexpectedContextRejected": 400,
+            "typeMismatchRejected": 400,
+            "ungrantedInjectedQuery": 403,
+            "ungrantedTargetById": 403,
+            "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+            "missingAndInvisibleTargetIndistinguishable": true,
+            "sensitiveTargetLabelNotReturned": true,
+            "temporaryRoleGrantsRevoked": true
+          },
+          "micro": {
+            "mainContextMatches": 30,
+            "detailContextMatches": 31,
+            "missingInputsEmpty": true,
+            "exactRetainedTargetOutsideContextIsReadable": true,
+            "missingTargetOmitted": true,
+            "unexpectedContextRejected": 400,
+            "typeMismatchRejected": 400,
+            "ungrantedInjectedQuery": 403,
+            "ungrantedTargetById": 403,
+            "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+            "missingAndInvisibleTargetIndistinguishable": true,
+            "sensitiveTargetLabelNotReturned": true,
+            "temporaryRoleGrantsRevoked": true
+          }
+        },
+        "nativePagingTests": 2
+      },
+      "tests": [
+        "RecordCollectionPagingDatabaseTest.pagesAndCountsBothDirectionsAfterBothEndpointPolicies",
+        "ApplicationFormReferenceServiceTest.searchUsesOnlyFrozenPresentationAndTargetPolicyWithServerPaging"
+      ]
+    },
+    "scoped-context-and-tampering": {
+      "expected": "主表与本行分别筛选，缺失上下文无候选，伪造字段、类型、资源、关系和目标身份无法扩大授权。",
+      "actual": {
+        "single": {
+          "mainContextMatches": 30,
+          "detailContextMatches": 31,
+          "missingInputsEmpty": true,
+          "exactRetainedTargetOutsideContextIsReadable": true,
+          "missingTargetOmitted": true,
+          "unexpectedContextRejected": 400,
+          "typeMismatchRejected": 400,
+          "ungrantedInjectedQuery": 403,
+          "ungrantedTargetById": 403,
+          "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+          "missingAndInvisibleTargetIndistinguishable": true,
+          "sensitiveTargetLabelNotReturned": true,
+          "temporaryRoleGrantsRevoked": true
+        },
+        "micro": {
+          "mainContextMatches": 30,
+          "detailContextMatches": 31,
+          "missingInputsEmpty": true,
+          "exactRetainedTargetOutsideContextIsReadable": true,
+          "missingTargetOmitted": true,
+          "unexpectedContextRejected": 400,
+          "typeMismatchRejected": 400,
+          "ungrantedInjectedQuery": 403,
+          "ungrantedTargetById": 403,
+          "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+          "missingAndInvisibleTargetIndistinguishable": true,
+          "sensitiveTargetLabelNotReturned": true,
+          "temporaryRoleGrantsRevoked": true
+        }
+      },
+      "browserFixture": [
+        "root context uses declared inputs only",
+        "stale context results fenced",
+        "row switching fences previous candidates",
+        "missing dependencies disable browsing without querying unfiltered records"
+      ]
+    },
+    "masked-hidden-reference-projection": {
+      "expected": "隐藏或脱敏字段无法通过查询、排序、计数、实时带出或复制值推断。",
+      "actual": {
+        "single": {
+          "maskedTargetValue": true,
+          "hiddenTargetValue": true,
+          "inferenceFiltersAndSortsRejected": [
+            403,
+            403,
+            403,
+            403
+          ],
+          "referenceSearchNoInference": true,
+          "liveMappingRedacted": true,
+          "copiedSourceAddressRedacted": true,
+          "temporaryRoleAndFieldPolicyRemoved": true
+        },
+        "micro": {
+          "maskedTargetValue": true,
+          "hiddenTargetValue": true,
+          "inferenceFiltersAndSortsRejected": [
+            403,
+            403,
+            403,
+            403
+          ],
+          "referenceSearchNoInference": true,
+          "liveMappingRedacted": true,
+          "copiedSourceAddressRedacted": true,
+          "temporaryRoleAndFieldPolicyRemoved": true
+        }
+      },
+      "tests": [
+        "RecordQueryProtectionDatabaseTest（两种数据库，关联复制与派生结果来源权限）"
+      ]
+    },
+    "target-entry-rebinding": {
+      "expected": "同一目标表单兼容升级保留关联，不同表单接管目标入口后旧关系关闭。",
+      "actual": {
+        "single": {
+          "sameFormUpgradePreservedOriginalTarget": true,
+          "entryNowPointsToDifferentForm": true,
+          "originalReferenceEntryDenied": 403,
+          "candidateDidNotReadReplacementForm": true
+        },
+        "micro": {
+          "sameFormUpgradePreservedOriginalTarget": true,
+          "entryNowPointsToDifferentForm": true,
+          "originalReferenceEntryDenied": 403,
+          "candidateDidNotReadReplacementForm": true
+        }
+      }
+    },
+    "constraint-migrations": {
+      "expected": "N:1 转 1:1、N:1 转 M:N、可空转必选保持存量和原版保护，修正数据后恢复同一发布。",
+      "actual": {
+        "single": {
+          "duplicatesRejected": true,
+          "uniquenessLive": true,
+          "nullRowsRejected": true,
+          "requiredLive": true,
+          "missingReferenceRejected": 400,
+          "emptyUpdateRejected": 400
+        },
+        "micro": {
+          "duplicatesRejected": true,
+          "uniquenessLive": true,
+          "nullRowsRejected": true,
+          "requiredLive": true,
+          "missingReferenceRejected": 400,
+          "emptyUpdateRejected": 400
+        }
+      },
+      "tests": [
+        "SchemaReferencePublicationDatabaseTest.tightensReferenceUniquenessAndNullabilityAfterDataRepair",
+        "RecordReferenceCollectionConversionDatabaseTest.restoresACommittedBatchAndThenConvertsAndActivatesTheReplacement"
+      ]
+    },
+    "unlink-and-delete-semantics": {
+      "expected": "解除只修改关联；必选关系不可清空；实际删除受全局引用保护。",
+      "actual": {
+        "single": {
+          "mandatoryClearDenied": 400,
+          "collectionUnlinkPreservedTarget": true,
+          "protectedTargetDeletion": 409
+        },
+        "micro": {
+          "mandatoryClearDenied": 400,
+          "collectionUnlinkPreservedTarget": true,
+          "protectedTargetDeletion": 409
+        }
+      }
+    },
+    "release-build-upgrade-rollback-and-assets": {
+      "expected": "同一业务在升级/回退/重新升级后保持权限和数据，分发资源、运行服务、服务发现与数据库结构一致。",
+      "actual": {
+        "single": {
+          "businessDuringRoundTrip": [
+            {
+              "phase": "upgrade",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            },
+            {
+              "phase": "rollback",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            },
+            {
+              "phase": "re-upgrade",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            }
+          ],
+          "assetChecks": {
+            "common": 111,
+            "audit": 51,
+            "dna": 81,
+            "ai": 55,
+            "app": 53,
+            "workflow": 64
+          },
+          "installationReleaseFingerprint": "f3e4b260c46891b8284ca16fb954a29017a07923adf7734dc423b6011b1942b6",
+          "verifiedOwnedTables": 199,
+          "standaloneJarSha256": "1010655a7146ee434898955ca4c8176fdaa862a06c6f3a39e297ecd9a96fb453"
+        },
+        "micro": {
+          "businessDuringRoundTrip": [
+            {
+              "phase": "upgrade",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            },
+            {
+              "phase": "rollback",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            },
+            {
+              "phase": "re-upgrade",
+              "liveEdges": 174,
+              "pageSizes": [
+                50,
+                50,
+                50,
+                24
+              ],
+              "unauthorizedStatus": 403
+            }
+          ],
+          "assetChecks": {
+            "common": 111,
+            "audit": 51,
+            "dna": 81,
+            "ai": 55,
+            "app": 53,
+            "workflow": 64
+          },
+          "verifiedServiceRegistrations": 9,
+          "installationReleaseFingerprint": "f3e4b260c46891b8284ca16fb954a29017a07923adf7734dc423b6011b1942b6",
+          "verifiedOwnedTables": 199,
+          "serviceJarSha256": {
+            "authorization": "218119b8f6c72e6f60046216f81be1b236bb680493dc486d3315a5bf47d014d8",
+            "host": "b2915bdb79741f9defc738907646c2bfeaa77f7669db7dab4c23a326a5b385ad",
+            "common": "d01c5e7a308b52a88942b511942181e5db89c16c9e1d28b9fcbca99fae93089d",
+            "auditing": "7ed9b01e3e72913f160f4ea26e7345d72d116f94198e634e0cf915a4afd8f6fa",
+            "app": "2216e7869e04ebff08dc4de270f9a3c204d5d29f361217ecdd37ae109d3fe18d",
+            "dna": "33ccfaec67406bf4abf2340e649429c1b7dd8387f629890288ec26d5d9fa1d78",
+            "workflow": "66f4c59e3507b62aa0bdb12a5eebfe030b740b8cad3326e4866c679030ddb525",
+            "ai": "4e58250a4d1c53458641870974c659dac506a431289f4f2b29c336332a69d444",
+            "mcp-gateway": "c86730e3c98eb1c9b3356e14c6317f6cb0b1d7bbdf2b4f2e1c745182b6fadfc2"
+          },
+          "runtimeMethod": "独立服务发行包与 Consul 注册、启动依赖、健康和轮换回读"
+        }
+      }
+    },
+    "relation-api-latency-baseline": {
+      "expected": "记录独立负载基线及候选版本 API 耗时，保持相同请求模式和数据量。",
+      "actual": {
+        "single": {
+          "baseline": {
+            "hardware": {
+              "cpu": "12th Gen Intel(R) Core(TM) i5-12400",
+              "logicalCores": 12,
+              "ramGiB": 31
+            },
+            "concurrency": 3,
+            "repetitions": 30,
+            "phase": "baseline",
+            "checks": {
+              "relation-page": {
+                "p50Millis": 312,
+                "p95Millis": 664,
+                "errors": 0,
+                "candidateBudgetMillis": 1403
+              },
+              "candidate-search": {
+                "p50Millis": 193,
+                "p95Millis": 332,
+                "errors": 0,
+                "candidateBudgetMillis": 739
+              },
+              "resolve-50-labels": {
+                "p50Millis": 425,
+                "p95Millis": 726,
+                "errors": 0,
+                "candidateBudgetMillis": 1527
+              }
+            }
+          },
+          "candidate": {
+            "hardware": {
+              "cpu": "12th Gen Intel(R) Core(TM) i5-12400",
+              "logicalCores": 12,
+              "ramGiB": 31
+            },
+            "concurrency": 3,
+            "repetitions": 30,
+            "phase": "candidate",
+            "checks": {
+              "relation-page": {
+                "p50Millis": 293,
+                "p95Millis": 358,
+                "errors": 0,
+                "withinBaselineBudget": true
+              },
+              "candidate-search": {
+                "p50Millis": 162,
+                "p95Millis": 244,
+                "errors": 0,
+                "withinBaselineBudget": true
+              },
+              "resolve-50-labels": {
+                "p50Millis": 338,
+                "p95Millis": 485,
+                "errors": 0,
+                "withinBaselineBudget": true
+              }
+            }
+          }
+        },
+        "micro": {
+          "baseline": {
+            "hardware": {
+              "cpu": "12th Gen Intel(R) Core(TM) i5-12400",
+              "logicalCores": 12,
+              "ramGiB": 31
+            },
+            "concurrency": 3,
+            "repetitions": 30,
+            "phase": "baseline",
+            "checks": {
+              "relation-page": {
+                "p50Millis": 529,
+                "p95Millis": 1052,
+                "errors": 0,
+                "candidateBudgetMillis": 2179
+              },
+              "candidate-search": {
+                "p50Millis": 194,
+                "p95Millis": 437,
+                "errors": 0,
+                "candidateBudgetMillis": 949
+              },
+              "resolve-50-labels": {
+                "p50Millis": 324,
+                "p95Millis": 536,
+                "errors": 0,
+                "candidateBudgetMillis": 1147
+              }
+            }
+          },
+          "candidate": {
+            "hardware": {
+              "cpu": "12th Gen Intel(R) Core(TM) i5-12400",
+              "logicalCores": 12,
+              "ramGiB": 31
+            },
+            "concurrency": 3,
+            "repetitions": 30,
+            "phase": "candidate",
+            "checks": {
+              "relation-page": {
+                "p50Millis": 252,
+                "p95Millis": 388,
+                "errors": 0,
+                "withinBaselineBudget": true
+              },
+              "candidate-search": {
+                "p50Millis": 199,
+                "p95Millis": 271,
+                "errors": 0,
+                "withinBaselineBudget": true
+              },
+              "resolve-50-labels": {
+                "p50Millis": 298,
+                "p95Millis": 582,
+                "errors": 0,
+                "withinBaselineBudget": true
+              }
+            }
+          },
+          "firstCandidateAttempt": {
+            "hardware": {
+              "cpu": "12th Gen Intel(R) Core(TM) i5-12400",
+              "logicalCores": 12,
+              "ramGiB": 31
+            },
+            "concurrency": 3,
+            "repetitions": 30,
+            "phase": "candidate",
+            "checks": {
+              "relation-page": {
+                "p50Millis": 452,
+                "p95Millis": 848,
+                "errors": 0,
+                "withinBaselineBudget": true
+              },
+              "candidate-search": {
+                "p50Millis": 273,
+                "p95Millis": 999,
+                "errors": 0,
+                "withinBaselineBudget": false
+              },
+              "resolve-50-labels": {
+                "p50Millis": 454,
+                "p95Millis": 869,
+                "errors": 0,
+                "withinBaselineBudget": true
+              }
+            }
+          }
+        }
+      },
+      "nativePlanDiagnostics": {
+        "single": {
+          "boundedRows": 50,
+          "tenantQualifiedTotal": 174,
+          "executionMillis": 0.179,
+          "queryPlanNodes": [
+            "Hash",
+            "Hash Join",
+            "Limit",
+            "Seq Scan",
+            "Sort"
+          ],
+          "forwardAndReverseIndexesPresent": true
+        },
+        "micro": {
+          "boundedRows": 50,
+          "tenantQualifiedTotal": 174,
+          "executionMillis": 0.173,
+          "queryPlanNodes": [
+            "Hash",
+            "Hash Join",
+            "Limit",
+            "Seq Scan",
+            "Sort"
+          ],
+          "forwardAndReverseIndexesPresent": true
+        }
+      },
+      "tests": [
+        "ApplicationFormReferenceServiceTest.hydrationUsesOneBoundedQueryWithoutBrowseFiltersAndPreservesRequestedOrder",
+        "ApplicationFormReferenceServiceTest.rejectedBudgetsCannotReachMetadataOrDataReaders",
+        "RecordCollectionPagingDatabaseTest.pagesAndCountsBothDirectionsAfterBothEndpointPolicies",
+        "smoke-reference-display.mjs（40 行明细标签批量解析）"
+      ],
+      "fanout": {
+        "newProcess": true,
+        "priorPageVersionPinnedBeforeAndAfterRestart": true,
+        "mutationFencePreserved": true,
+        "copiedBeforeRestart": 10,
+        "sameReleaseCompleted": true,
+        "finalEdges": 121,
+        "finalPageSizes": [
+          50,
+          50,
+          21
+        ]
+      },
+      "scope": "本轮关联查询、批量读回和分批迁移预算。负载用于隔离环境验收。"
+    },
+    "owned-one-to-one-uniqueness": {
+      "expected": "根与明细的一对一唯一性以租户为界，空值可并存，跨父明细重复引用拒绝，软删保留占用，恢复原记录仍有效。",
+      "actual": {
+        "single": {
+          "concurrentStatuses": [
+            200,
+            409
+          ],
+          "reassignmentWhileSoftDeleted": 409
+        },
+        "micro": {
+          "concurrentStatuses": [
+            200,
+            409
+          ],
+          "reassignmentWhileSoftDeleted": 409
+        }
+      },
+      "tests": [
+        "SchemaReferencePublicationDatabaseTest.publishesAndRecoversReferences（含跨父明细唯一、空值、跨租户防护和软删后恢复，两种数据库）"
+      ]
+    },
+    "retained-reference-access": {
+      "expected": "候选条件外的已知值可回读，缺失和不可见表现相同，失去目标读取资格后仍可保存无关字段，浏览器缓存跟随租户和授权作用域。",
+      "actual": {
+        "single": {
+          "exactRetainedTargetOutsideContextIsReadable": true,
+          "missingTargetOmitted": true,
+          "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+          "missingAndInvisibleTargetIndistinguishable": true,
+          "sensitiveTargetLabelNotReturned": true,
+          "temporaryRoleGrantsRevoked": true
+        },
+        "micro": {
+          "exactRetainedTargetOutsideContextIsReadable": true,
+          "missingTargetOmitted": true,
+          "readableSourceRetainsUnchangedReferenceAfterTargetDenial": true,
+          "missingAndInvisibleTargetIndistinguishable": true,
+          "sensitiveTargetLabelNotReturned": true,
+          "temporaryRoleGrantsRevoked": true
+        }
+      },
+      "tests": [
+        "RecordReferenceQualificationDatabaseTest.changedReferencesRequireCurrentQualificationWhileRetainedReferencesSurviveRevocation",
+        "ApplicationFormReferenceServiceTest.hydrationUsesOneBoundedQueryWithoutBrowseFiltersAndPreservesRequestedOrder",
+        "smoke-reference-display.mjs（授权切换、保留页回收、迟到结果围栏）"
+      ]
+    },
+    "all-write-entries-governed": {
+      "expected": "旧页面、直连 DNA、批量、主从聚合、流程及 SQL 控制台的写入均遵守已有治理。",
+      "actual": {
+        "single": {
+          "retiredOldReferenceWriteDenied": 409,
+          "browserSessionDirectDnaWritesDenied": [
+            401,
+            401,
+            401
+          ],
+          "unauthorizedScopedWorkflowWriteDenied": 400,
+          "noWorkflowOrRecordMutation": true
+        },
+        "micro": {
+          "retiredOldReferenceWriteDenied": 409,
+          "browserSessionDirectDnaWritesDenied": [
+            403,
+            403,
+            403
+          ],
+          "unauthorizedScopedWorkflowWriteDenied": 400,
+          "noWorkflowOrRecordMutation": true
+        }
+      },
+      "tests": [
+        "RecordReferenceIntegrityDatabaseTest.durableReferenceRejectionCannotBecomeDelayedSuccessfulSubmission",
+        "FederationSqlWriteOwnershipDatabaseTest",
+        "FederationNativeWriteOwnershipDatabaseTest",
+        "FederationNativeTableEffectsDatabaseTest",
+        "FederationNativeStorageEngineDatabaseTest"
+      ]
+    },
+    "retained-browser-revocation": {
+      "expected": "撤权、下线和租户切换时，保留详情、候选选择器和迟到结果均受当前范围约束。",
+      "actual": {
+        "single": {
+          "sameLogin": true,
+          "relationDetailPreviouslyVisible": true,
+          "staleDrawerHidden": true,
+          "staleRowsHidden": true,
+          "postRevocationDenials": [
+            403,
+            403,
+            403,
+            403,
+            403,
+            403
+          ],
+          "temporaryGrantRevoked": true
+        },
+        "micro": {
+          "sameLogin": true,
+          "relationDetailPreviouslyVisible": true,
+          "staleDrawerHidden": true,
+          "staleRowsHidden": true,
+          "postRevocationDenials": [
+            403,
+            403,
+            403,
+            403,
+            403
+          ],
+          "temporaryGrantRevoked": true
+        }
+      },
+      "tests": [
+        "smoke-reference-display.mjs（授权作用域、关闭/隐藏和迟到响应）",
+        "smoke-reference-navigation.mjs（工作空间切换回收已保留详情）"
+      ],
+      "relatedChecks": [
+        "formal-lifecycle-and-revocation",
+        "deployed-collection-paging-and-isolation"
+      ]
+    },
+    "mapped-value-constraints": {
+      "expected": "复制值经过服务端类型、精度、Unicode 长度、空值、必填和写入规则，非法值不生成业务记录。",
+      "actual": {
+        "single": {
+          "nullRejected": 409,
+          "overLengthUnicodeRejected": 400,
+          "threeUnicodeCodePointsPreserved": true,
+          "invalidRowsNotWritten": true
+        },
+        "micro": {
+          "nullRejected": 409,
+          "overLengthUnicodeRejected": 400,
+          "threeUnicodeCodePointsPreserved": true,
+          "invalidRowsNotWritten": true
+        }
+      },
+      "tests": [
+        "FormReferenceMappingTest.targetFieldsAreFrozenAndConversionFamiliesAreExplicit",
+        "ApplicationFormReferenceMappingServiceTest",
+        "FormDnaReferenceMappingDatabaseTest.mappingPublicationObservationAndAggregateWritesRemainConsistent（精确小数、Unicode、伪造与过期来源，两种数据库）"
+      ]
+    },
+    "parent-draft-and-independent-related-save": {
+      "expected": "新增父记录和未保存的父编辑由同一个标准保存/放弃流程管理，父草稿内无子记录写入口，已保存父的子操作独立提交。",
+      "actual": {
+        "single": {
+          "unsavedParentHasNoRelatedActions": true,
+          "dirtyParentHadNoRelatedWriteAndWasNotAutosaved": true,
+          "relatedSaveSurvivesParentClose": true,
+          "cleanedUp": true
+        },
+        "micro": {
+          "unsavedParentHasNoRelatedActions": true,
+          "dirtyParentHadNoRelatedWriteAndWasNotAutosaved": true,
+          "relatedSaveSurvivesParentClose": true,
+          "cleanedUp": true
+        }
+      }
+    },
+    "related-list-and-card-preferences": {
+      "expected": "表格和卡片保持服务端默认顺序，共享账户偏好，窄屏内滚动，键盘可选择。",
+      "actual": {
+        "single": {
+          "rows": 3,
+          "serverDefaultCreationOrder": true,
+          "tableAndCardsPreservedOrder": true,
+          "keyActivation": true,
+          "innerScrollAt390": true,
+          "accountPreferenceRestoredInFreshProfile": true,
+          "originalListModeRestored": true
+        },
+        "micro": {
+          "rows": 3,
+          "serverDefaultCreationOrder": true,
+          "tableAndCardsPreservedOrder": true,
+          "keyActivation": true,
+          "innerScrollAt390": true,
+          "accountPreferenceRestoredInFreshProfile": true,
+          "originalListModeRestored": true
+        }
+      }
+    },
+    "deployed-department-data-scope": {
+      "expected": "真实部门归属由平台写入，按创建部门的候选查询、计数、选择回读和直接记录读取均受限。",
+      "actual": {
+        "single": {
+          "actualDepartments": 2,
+          "distinctCreatorDepartments": true,
+          "candidateTotalAfterScope": 1,
+          "otherDepartmentDetailDenied": 404,
+          "untrustedCreatorDepartmentDenied": 400,
+          "crossDepartmentResolveFiltered": true,
+          "temporaryMembershipsAndGrantsRestored": true
+        },
+        "micro": {
+          "actualDepartments": 2,
+          "distinctCreatorDepartments": true,
+          "candidateTotalAfterScope": 1,
+          "otherDepartmentDetailDenied": 404,
+          "untrustedCreatorDepartmentDenied": 400,
+          "crossDepartmentResolveFiltered": true,
+          "temporaryMembershipsAndGrantsRestored": true
+        }
+      }
+    }
+  }
+}
