@@ -11,6 +11,13 @@ public final class AuthorizationScopeGuards {
   private AuthorizationScopeGuards() {
   }
 
+  /** Requires both an accessible page and an effective action grant in the active tenant. */
+  public static boolean hasTenantResourceAction(
+      AuthorizationContext context, String page, String action) {
+    return context != null && context.getScopeType() == AuthorizationScopeType.TENANT
+        && context.hasResource(page) && context.hasResource(action);
+  }
+
   /**
    * Is Platform Administrator.
    */

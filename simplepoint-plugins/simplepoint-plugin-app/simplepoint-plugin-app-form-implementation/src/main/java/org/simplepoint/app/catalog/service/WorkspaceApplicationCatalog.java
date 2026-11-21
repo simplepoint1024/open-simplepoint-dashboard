@@ -1,9 +1,18 @@
 package org.simplepoint.app.catalog.service;
 
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.CREATE_APPLICATION;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.CREATE_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.CREATE_PAGE;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.DELETE_APPLICATION;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.DELETE_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.DELETE_PAGE;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.EDIT_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.PUBLISH_FORM;
+import static org.simplepoint.plugin.app.form.service.ApplicationWorkbenchAccess.allowed;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -163,18 +172,13 @@ public class WorkspaceApplicationCatalog {
   /** Resolves workspace-bound application and page creation rights. */
   public Permissions permissions() {
     tenantId();
-    AuthorizationContext context = AuthorizationContextHolder.getContext();
-    Collection<String> resources =
-        context.getResources() == null ? List.of() : context.getResources();
-    boolean administrator = Boolean.TRUE.equals(context.getIsAdministrator());
     return new Permissions(
-        administrator || resources.contains("app.workbench.apps.create"),
-        administrator || resources.contains("app.workbench.pages.create"),
-        administrator || resources.contains("app.workbench.forms.edit"),
-        administrator || resources.contains("app.workbench.apps.delete"),
-        administrator || resources.contains("app.workbench.pages.delete"),
-        administrator || List.of("create", "edit", "publish", "delete").stream()
-            .anyMatch(action -> resources.contains("app.workbench.forms." + action)));
+        allowed(CREATE_APPLICATION),
+        allowed(CREATE_PAGE),
+        allowed(EDIT_FORM),
+        allowed(DELETE_APPLICATION),
+        allowed(DELETE_PAGE),
+        allowed(CREATE_FORM) || allowed(EDIT_FORM) || allowed(PUBLISH_FORM) || allowed(DELETE_FORM));
   }
 
   /** Returns readable scalar fields and allowed query operators. */

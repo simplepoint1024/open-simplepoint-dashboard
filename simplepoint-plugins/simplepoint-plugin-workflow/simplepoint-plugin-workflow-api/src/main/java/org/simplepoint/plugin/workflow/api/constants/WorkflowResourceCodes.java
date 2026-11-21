@@ -19,6 +19,10 @@ public final class WorkflowResourceCodes {
   public static final String INSTANCES_CANCEL = "workflow.instances.cancel";
   public static final String INSTANCES_DELETE = "workflow.instances.delete";
 
+  public static final String CAN_VIEW_INSTANCES = "hasAuthority('" + INSTANCES_VIEW + "')";
+  public static final String CAN_DELETE_INSTANCES =
+      CAN_VIEW_INSTANCES + " and hasAuthority('" + INSTANCES_DELETE + "')";
+
   private WorkflowResourceCodes() {
   }
 }

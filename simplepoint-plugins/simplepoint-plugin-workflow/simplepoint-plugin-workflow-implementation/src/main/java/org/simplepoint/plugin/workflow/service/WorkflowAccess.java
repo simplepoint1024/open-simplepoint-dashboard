@@ -2,6 +2,7 @@ package org.simplepoint.plugin.workflow.service;
 
 import java.util.List;
 import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
 
@@ -50,6 +51,15 @@ final class WorkflowAccess {
     if (!allowed(authority)) {
       throw forbidden("当前用户没有操作权限");
     }
+  }
+
+  static boolean canDelete(String page, String operation) {
+    return AuthorizationScopeGuards.hasTenantResourceAction(
+        AuthorizationContextHolder.getContext(), page, operation);
+  }
+
+  static void requireDeletion(String page, String operation) {
+    if (!canDelete(page, operation)) throw forbidden("当前用户没有操作权限");
   }
 
   static boolean canViewPersonalMatters() {

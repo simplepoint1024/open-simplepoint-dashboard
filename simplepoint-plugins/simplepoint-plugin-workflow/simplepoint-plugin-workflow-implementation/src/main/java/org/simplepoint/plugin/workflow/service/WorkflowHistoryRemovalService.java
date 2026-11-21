@@ -103,6 +103,11 @@ public class WorkflowHistoryRemovalService {
     return progress(id, operations);
   }
 
+  public int maximumSelection() {
+    return WorkflowAccess.canDelete(WorkflowResourceCodes.INSTANCES_VIEW, WorkflowResourceCodes.INSTANCES_DELETE)
+        ? MAX_BATCH : 0;
+  }
+
   /** Runs inside the durable inbox transaction and commits native history removal with its receipt. */
   @Transactional
   public void completed(EventMessage event) {
@@ -213,8 +218,7 @@ public class WorkflowHistoryRemovalService {
   }
 
   private static void requireCapability() {
-    WorkflowAccess.requireAuthority(WorkflowResourceCodes.INSTANCES_VIEW);
-    WorkflowAccess.requireAuthority(WorkflowResourceCodes.INSTANCES_DELETE);
+    WorkflowAccess.requireDeletion(WorkflowResourceCodes.INSTANCES_VIEW, WorkflowResourceCodes.INSTANCES_DELETE);
   }
 
   private static WorkflowException blocked(String message) {

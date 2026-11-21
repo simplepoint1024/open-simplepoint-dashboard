@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.workflow.api.WorkflowException;
+import org.simplepoint.plugin.workflow.api.constants.WorkflowResourceCodes;
 import org.simplepoint.plugin.workflow.api.model.WorkflowHistoryRemoval.Progress;
 import org.simplepoint.plugin.workflow.api.model.WorkflowHistoryRemoval.Request;
 import org.simplepoint.plugin.workflow.service.WorkflowHistoryRemovalService;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @org.simplepoint.core.permission.DomainDataAuthorization
 @RequestMapping("/instances/history-removals")
-@PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.instances.view') and hasAuthority('workflow.instances.delete'))")
+@PreAuthorize(WorkflowResourceCodes.CAN_DELETE_INSTANCES)
 public class WorkflowHistoryRemovalController {
   private final ObjectProvider<WorkflowHistoryRemovalService> service;
 
@@ -29,9 +30,10 @@ public class WorkflowHistoryRemovalController {
   }
 
   @GetMapping("/capability")
+  @PreAuthorize(WorkflowResourceCodes.CAN_VIEW_INSTANCES)
   public Response<Map<String, Integer>> capability() {
-    return Response.okay(Map.of("maxSelection",
-        service.getIfAvailable() == null ? 0 : WorkflowHistoryRemovalService.MAX_BATCH));
+    var available = service.getIfAvailable();
+    return Response.okay(Map.of("maxSelection", available == null ? 0 : available.maximumSelection()));
   }
 
   @PostMapping

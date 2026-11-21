@@ -3,6 +3,7 @@ package org.simplepoint.app.form.controller;
 import java.util.Locale;
 import java.util.Map;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormCatalogPage;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDesignerContract;
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormCatalogService;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Platform table and designer discovery endpoints; mutations stay in the form controller. */
 @RestController
 @RequestMapping("/applications/{applicationId}/forms")
-@PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.view')")
+@PreAuthorize(ApplicationWorkbenchResources.CAN_VIEW)
 public class ApplicationFormCatalogController {
 
   private final ApplicationFormCatalogService catalog;

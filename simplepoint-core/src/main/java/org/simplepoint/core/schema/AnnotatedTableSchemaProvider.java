@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -19,6 +18,7 @@ import org.simplepoint.api.security.generator.JsonSchemaGenerator;
 import org.simplepoint.api.security.service.DetailsProviderService;
 import org.simplepoint.api.security.service.JsonSchemaDetailsService;
 import org.simplepoint.core.AuthorizationContext;
+import org.simplepoint.core.AuthorizationScopeGuards;
 import org.simplepoint.core.annotation.ButtonDeclaration;
 import org.simplepoint.core.annotation.ButtonDeclarations;
 import org.simplepoint.core.jackson.FieldPermissionPolicy;
@@ -80,11 +80,10 @@ public final class AnnotatedTableSchemaProvider {
     if (declarations == null || context == null) {
       return Set.of();
     }
-    Collection<String> resources = context.getResources() == null ? Set.of() : context.getResources();
-    boolean administrator = Boolean.TRUE.equals(context.getIsAdministrator());
+    boolean administrator = AuthorizationScopeGuards.isPlatformAdministrator(context);
     Set<Map<String, Object>> result = new LinkedHashSet<>();
     for (ButtonDeclaration declaration : declarations.value()) {
-      if (administrator || resources.contains(declaration.authority())) {
+      if (administrator || context.hasResource(declaration.authority())) {
         result.add(annotationAttributes(declaration));
       }
     }

@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.events.api.EventHandler;
 import org.simplepoint.events.api.EventMessage;
 import org.simplepoint.events.api.EventPublisher;
@@ -31,7 +31,6 @@ import org.simplepoint.plugin.app.form.entity.FormWritePolicyPublicationStatus;
 import org.simplepoint.plugin.dna.runtime.api.event.FormStorageRemovalEvents;
 import org.simplepoint.plugin.dna.runtime.api.schema.CollectionModelRelation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +60,18 @@ public class ApplicationFormRemoval implements EventHandler {
 
   @Transactional
   public List<Progress> requestBatch(String applicationId, List<Selection> selections) {
-    requireAuthority();
+    ApplicationWorkbenchAccess.require(ApplicationWorkbenchResources.DELETE_FORM);
+    return requestOwnedForms(applicationId, selections);
+  }
+
+  /** Used by the owner of an application removal to clear its own contained forms. */
+  @Transactional
+  public List<Progress> requestApplicationForms(String applicationId, List<Selection> selections) {
+    ApplicationWorkbenchAccess.require(ApplicationWorkbenchResources.DELETE_APPLICATION);
+    return requestOwnedForms(applicationId, selections);
+  }
+
+  private List<Progress> requestOwnedForms(String applicationId, List<Selection> selections) {
     if (selections == null || selections.isEmpty() || selections.size() > FormStorageRemovalEvents.MAX_FORMS
         || selections.stream().anyMatch(row -> row == null || row.formId() == null || row.id() == null
         || row.version() < 0 || (row.version() == 0) != (row.draftRevision() != null))
@@ -112,7 +122,7 @@ public class ApplicationFormRemoval implements EventHandler {
 
   @Transactional(readOnly = true)
   public List<Progress> progressBatch(String applicationId, List<String> formIds) {
-    requireAuthority();
+    ApplicationWorkbenchAccess.require(ApplicationWorkbenchResources.DELETE_FORM);
     if (formIds == null || formIds.isEmpty() || formIds.size() > 100
         || formIds.stream().anyMatch(id -> id == null || id.isBlank() || id.length() > 36)) throw blocked();
     var actor = context.requireActor();
@@ -234,14 +244,6 @@ public class ApplicationFormRemoval implements EventHandler {
       throw new ApplicationFormException(ApplicationFormErrorCode.FORM_NOT_FOUND, "Form is unavailable");
     }
     return form;
-  }
-
-  private static void requireAuthority() {
-    var authorization = AuthorizationContextHolder.getContext();
-    if (authorization == null || !Boolean.TRUE.equals(authorization.getIsAdministrator())
-        && (authorization.getResources() == null || !authorization.getResources().contains("app.workbench.forms.delete"))) {
-      throw new AccessDeniedException("Form removal is forbidden");
-    }
   }
 
   private static Progress progress(ApplicationFormRemovalEntity row) {

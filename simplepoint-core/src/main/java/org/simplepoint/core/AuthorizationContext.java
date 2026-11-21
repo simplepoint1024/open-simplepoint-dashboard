@@ -377,6 +377,11 @@ public class AuthorizationContext implements Serializable {
     return null;
   }
 
+  /** Checks an effective resource grant in the active authorization scope. */
+  public boolean hasResource(String authority) {
+    return resources != null && resources.contains(authority);
+  }
+
   /**
    * Converts roles and resource codes into Spring Security authorities.
    *

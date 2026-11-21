@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.simplepoint.core.AuthorizationContextHolder;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.events.api.EventHandler;
 import org.simplepoint.events.api.EventMessage;
 import org.simplepoint.events.api.EventPublisher;
@@ -26,10 +26,10 @@ import org.simplepoint.plugin.app.form.entity.WorkspaceApplication;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationPage;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationRemovalEntity;
 import org.simplepoint.plugin.app.form.service.ApplicationFormRemoval;
+import org.simplepoint.plugin.app.form.service.ApplicationWorkbenchAccess;
 import org.simplepoint.plugin.app.form.service.FormRequestContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +62,7 @@ public class WorkspaceApplicationRemoval implements EventHandler {
 
   @Transactional
   public List<Progress> request(List<Selection> selection) {
-    requireAuthority();
+    ApplicationWorkbenchAccess.require(ApplicationWorkbenchResources.DELETE_APPLICATION);
     if (selection == null || selection.isEmpty() || selection.size() > 100
         || selection.stream().anyMatch(row -> row == null || row.id() == null
         || row.expectedUpdatedAt() == null || row.applicationId() == null)
@@ -105,7 +105,7 @@ public class WorkspaceApplicationRemoval implements EventHandler {
       }
     }
     if (!drafts.isEmpty()) forms.deleteDrafts(app.getId(), drafts);
-    if (!published.isEmpty()) formRemoval.requestBatch(app.getId(), published);
+    if (!published.isEmpty()) formRemoval.requestApplicationForms(app.getId(), published);
 
     var row = new WorkspaceApplicationRemovalEntity();
     row.setId(input.id().toString());
@@ -123,7 +123,7 @@ public class WorkspaceApplicationRemoval implements EventHandler {
 
   @Transactional(readOnly = true)
   public List<Progress> progress(List<String> applications) {
-    requireAuthority();
+    ApplicationWorkbenchAccess.require(ApplicationWorkbenchResources.DELETE_APPLICATION);
     if (applications == null || applications.isEmpty() || applications.size() > 100
         || applications.stream().anyMatch(id -> id == null || id.isBlank() || id.length() > 36)) throw blocked();
     return entities.createQuery("from WorkspaceApplicationRemovalEntity r where r.tenantId = :tenant"
@@ -225,14 +225,6 @@ public class WorkspaceApplicationRemoval implements EventHandler {
   private static Progress progress(WorkspaceApplicationRemovalEntity row) {
     return new Progress(row.getApplicationId(), row.getId(), row.getCompletedAt() != null ? "COMPLETED"
         : row.getCatalogRequestedAt() != null ? "AUTHORIZATION" : "STORAGE");
-  }
-
-  private static void requireAuthority() {
-    var authorization = AuthorizationContextHolder.getContext();
-    if (authorization == null || !Boolean.TRUE.equals(authorization.getIsAdministrator())
-        && (authorization.getResources() == null || !authorization.getResources().contains("app.workbench.apps.delete"))) {
-      throw new AccessDeniedException("Application removal is forbidden");
-    }
   }
 
   private static ApplicationFormException blocked() {

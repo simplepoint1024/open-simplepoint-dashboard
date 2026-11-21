@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection;
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Thin transport for tenant-owned form definitions, drafts and immutable versions. */
 @RestController
 @RequestMapping("/applications/{applicationId}/forms")
-@PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.view')")
+@PreAuthorize(ApplicationWorkbenchResources.CAN_VIEW)
 @Tag(name = "应用表单", description = "应用内表单定义、草稿和不可变版本")
 public class ApplicationFormController {
 
@@ -56,7 +57,7 @@ public class ApplicationFormController {
 
   /** Creates one form with a valid empty main scene. */
   @PostMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.create')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_CREATE_FORM)
   @Operation(summary = "创建应用表单")
   public Response<ApplicationFormView> create(
       @PathVariable("applicationId") final String applicationId,
@@ -77,7 +78,7 @@ public class ApplicationFormController {
   }
 
   @DeleteMapping("/{formId}")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.forms.delete'))")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_FORM)
   @Operation(summary = "删除未冻结版本的表单草稿")
   public org.springframework.http.ResponseEntity<Void> deleteDraft(
       @PathVariable("applicationId") String applicationId, @PathVariable("formId") String formId,
@@ -87,7 +88,7 @@ public class ApplicationFormController {
   }
 
   @DeleteMapping
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.forms.delete'))")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_FORM)
   @Operation(summary = "批量删除未冻结版本的表单草稿")
   public org.springframework.http.ResponseEntity<Void> deleteDrafts(
       @PathVariable("applicationId") String applicationId, @RequestBody List<ApplicationFormDraftRevision> drafts) {
@@ -106,7 +107,7 @@ public class ApplicationFormController {
 
   /** Replaces the current draft with optimistic revision control. */
   @PutMapping("/{formId}/draft")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.edit')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_EDIT_FORM)
   @Operation(summary = "保存表单草稿")
   public Response<ApplicationFormDraftView> saveDraft(
       @PathVariable("applicationId") final String applicationId,
@@ -117,7 +118,7 @@ public class ApplicationFormController {
 
   /** Freezes the current draft as an immutable pre-publication version. */
   @PostMapping("/{formId}/versions")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.edit')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_EDIT_FORM)
   @Operation(summary = "创建不可变表单版本")
   public Response<ApplicationFormVersionView> createVersion(
       @PathVariable("applicationId") final String applicationId,
@@ -138,7 +139,7 @@ public class ApplicationFormController {
 
   /** Starts or resumes the recoverable DNA data preparation step. */
   @PostMapping("/{formId}/versions/{version}/data-publication")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "准备表单物理数据结构")
   public Response<ApplicationFormPublicationView> prepareData(
       @PathVariable("applicationId") final String applicationId,
@@ -154,7 +155,7 @@ public class ApplicationFormController {
 
   /** Publishes the physical schema and activates one APP runtime page. */
   @PostMapping("/{formId}/versions/{version}/publication")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "发布表单到应用页面")
   public Response<ApplicationFormReleaseView> publish(
       @PathVariable("applicationId") final String applicationId,
@@ -171,7 +172,7 @@ public class ApplicationFormController {
 
   /** Resumes the saved target without accepting a replacement version or idempotency key. */
   @PostMapping("/{formId}/releases/{releaseId}/resume")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "继续已保存的表单发布")
   public Response<ApplicationFormReleaseView> resume(
       @PathVariable("applicationId") final String applicationId,
@@ -182,7 +183,7 @@ public class ApplicationFormController {
 
   /** Resolves cancellation from the persisted release identity under publication authority. */
   @PostMapping("/{formId}/releases/{releaseId}/cancel")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "取消已保存的表单发布")
   public Response<ApplicationFormReleaseView> cancel(
       @PathVariable("applicationId") final String applicationId,
@@ -193,7 +194,7 @@ public class ApplicationFormController {
 
   /** Reads durable publication progress for polling and recovery. */
   @GetMapping("/{formId}/releases/{releaseId}/inspection")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "查看表单发布检查")
   public Response<ApplicationFormPublicationInspection> inspection(
       @PathVariable("applicationId") final String applicationId,

@@ -18,8 +18,10 @@ import org.simplepoint.app.catalog.service.WorkspaceApplicationRemoval;
 import org.simplepoint.app.catalog.service.WorkspaceApplicationRemoval.Progress;
 import org.simplepoint.app.catalog.service.WorkspaceApplicationRemoval.Selection;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
+import org.simplepoint.plugin.app.form.service.ApplicationWorkbenchAccess;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,11 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 /** Application workbench metadata endpoints; all lookups are tenant-scoped. */
 @RestController
 @RequestMapping("/applications")
-@PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.view')")
+@PreAuthorize(ApplicationWorkbenchResources.CAN_VIEW)
 @Tag(name = "应用工作台", description = "租户应用及页面目录")
 public class WorkspaceApplicationController {
-  private static final String CAN_DELETE =
-      "hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.apps.delete'))";
   private final WorkspaceApplicationCatalog catalog;
   private final ObjectProvider<WorkspaceApplicationRemoval> removal;
 
@@ -80,7 +80,7 @@ public class WorkspaceApplicationController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize(CAN_DELETE)
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_APPLICATION)
   @Operation(summary = "删除未发布的应用草稿")
   public org.springframework.http.ResponseEntity<Void> delete(
       @PathVariable("id") String id, @RequestParam("expectedUpdatedAt") Instant expectedUpdatedAt) {
@@ -89,7 +89,7 @@ public class WorkspaceApplicationController {
   }
 
   @DeleteMapping
-  @PreAuthorize(CAN_DELETE)
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_APPLICATION)
   @Operation(summary = "批量删除应用草稿")
   public org.springframework.http.ResponseEntity<Void> deleteApplications(@RequestBody List<CatalogRevision> selection) {
     catalog.deleteApplications(selection);
@@ -97,19 +97,20 @@ public class WorkspaceApplicationController {
   }
 
   @GetMapping("/removals/capability")
-  @PreAuthorize(CAN_DELETE)
   public Response<Map<String, Boolean>> removalCapability() {
-    return Response.okay(Map.of("enabled", removal.getIfAvailable() != null));
+    return Response.okay(Map.of("enabled",
+        ApplicationWorkbenchAccess.allowed(ApplicationWorkbenchResources.DELETE_APPLICATION)
+            && removal.getIfAvailable() != null));
   }
 
   @PostMapping("/removals")
-  @PreAuthorize(CAN_DELETE)
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_APPLICATION)
   public Response<List<Progress>> removeApplications(@RequestBody List<Selection> selection) {
     return Response.okay(requireRemoval().request(selection));
   }
 
   @GetMapping("/removals")
-  @PreAuthorize(CAN_DELETE)
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_APPLICATION)
   public Response<List<Progress>> removalProgress(@RequestParam("applicationIds") List<String> applicationIds) {
     return Response.okay(requireRemoval().progress(applicationIds));
   }
@@ -122,7 +123,7 @@ public class WorkspaceApplicationController {
   }
 
   @DeleteMapping("/{id}/pages/{pageId}")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.pages.delete'))")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_PAGE)
   @Operation(summary = "删除未发布的附属页面")
   public org.springframework.http.ResponseEntity<Void> deletePage(
       @PathVariable("id") String id, @PathVariable("pageId") String pageId,
@@ -132,7 +133,7 @@ public class WorkspaceApplicationController {
   }
 
   @DeleteMapping("/{id}/pages")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.pages.delete'))")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_PAGE)
   @Operation(summary = "批量删除未发布的附属页面")
   public org.springframework.http.ResponseEntity<Void> deletePages(
       @PathVariable("id") String id, @RequestBody List<CatalogRevision> selection) {
@@ -142,7 +143,7 @@ public class WorkspaceApplicationController {
 
   /** Creates an application and its main page atomically. */
   @PostMapping
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.apps.create')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_CREATE_APPLICATION)
   @Operation(summary = "创建应用及其主页面")
   public Response<ApplicationDetail> create(@RequestBody CreateApplication command) {
     return Response.okay(catalog.create(command));
@@ -150,7 +151,7 @@ public class WorkspaceApplicationController {
 
   /** Returns bounded tenant-owned publication targets for the platform entity selector. */
   @GetMapping("/{id}/publication-pages")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.forms.publish')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_PUBLISH_FORM)
   @Operation(summary = "分页查询表单发布目标页面")
   public Response<Page<PublicationPage>> publicationPages(
       @PathVariable("id") String id, @RequestParam Map<String, String> parameters, Pageable page) {
@@ -159,7 +160,7 @@ public class WorkspaceApplicationController {
 
   /** Adds a page under the captured application and tenant. */
   @PostMapping("/{id}/pages")
-  @PreAuthorize("hasRole('Administrator') or hasAuthority('app.workbench.pages.create')")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_CREATE_PAGE)
   @Operation(summary = "添加附属页面")
   public Response<PageSummary> addPage(
       @PathVariable("id") String id, @RequestBody CreatePage command) {

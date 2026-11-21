@@ -161,7 +161,7 @@ public class PersonalController {
   }
 
   @DeleteMapping("/todos/{id}")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete'))")
+  @PreAuthorize("hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete')")
   @Operation(summary = "永久删除当前用户的待办记录")
   public Response<Map<String, Boolean>> deleteTodo(@PathVariable("id") String id,
       @RequestParam("expectedVersion") long expectedVersion) {
@@ -170,7 +170,7 @@ public class PersonalController {
   }
 
   @DeleteMapping("/todos")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete'))")
+  @PreAuthorize("hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete')")
   public Response<Map<String, Boolean>> deleteTodos(@RequestBody List<RecordRevision> records) {
     service.deleteTodos(records);
     return Response.okay(Map.of("success", true));
@@ -203,7 +203,7 @@ public class PersonalController {
   }
 
   @DeleteMapping("/messages/{id}")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  @PreAuthorize("hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete')")
   @Operation(summary = "将当前用户的消息移入回收站")
   public Response<Map<String, Boolean>> deleteMessage(@PathVariable("id") String id,
       @RequestParam("expectedVersion") long expectedVersion) {
@@ -212,14 +212,14 @@ public class PersonalController {
   }
 
   @DeleteMapping("/messages")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  @PreAuthorize("hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete')")
   public Response<Map<String, Boolean>> deleteMessages(@RequestBody List<RecordRevision> records) {
     service.deleteMessages(records);
     return Response.okay(Map.of("success", true));
   }
 
   @DeleteMapping("/messages/trash")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  @PreAuthorize("hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete')")
   public Response<Map<String, Boolean>> purgeMessages(@RequestBody List<RecordRevision> records) {
     service.purgeMessages(records);
     return Response.okay(Map.of("success", true));

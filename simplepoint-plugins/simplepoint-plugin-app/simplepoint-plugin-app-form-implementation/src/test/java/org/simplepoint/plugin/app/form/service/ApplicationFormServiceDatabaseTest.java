@@ -484,7 +484,8 @@ class ApplicationFormServiceDatabaseTest {
     AuthorizationContext context = new AuthorizationContext();
     context.setUserId("user-a");
     context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
-    context.setResources(List.of("app.workbench.forms.edit"));
+    context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
+    context.setResources(List.of("app.workbench.view", "app.workbench.forms.edit"));
     context.setFieldPermissions(Map.of("ApplicationFormView#name", "HIDDEN"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     var catalog =
@@ -503,6 +504,24 @@ class ApplicationFormServiceDatabaseTest {
     assertThat(((Map<?, ?>) schema.get("properties")).containsKey("name")).isFalse();
     assertThat(((List<?>) schema.get("required")).contains("name")).isFalse();
     assertThat((List<?>) result.get("buttons")).hasSize(1);
+  }
+
+  @Test
+  void catalogExposesRemovalOnlyWhenTheWorkspaceGrantsIt() {
+    var catalog = new ApplicationFormCatalogServiceImpl(
+        session, new FormRequestContext(), applicationAccessPort(), new DefaultFormComponentRegistry());
+    for (boolean granted : List.of(false, true)) {
+      var context = new AuthorizationContext();
+      context.setUserId("user-a");
+      context.setAttributes(Map.of("X-Tenant-Id", "tenant-a"));
+      context.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
+      context.setIsAdministrator(true);
+      context.setResources(granted
+          ? List.of("app.workbench.view", "app.workbench.forms.delete")
+          : List.of("app.workbench.view"));
+      RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+      assertThat((List<?>) catalog.schema("app-a").get("buttons")).hasSize(granted ? 2 : 1);
+    }
   }
 
   private void seedOtherForm(final String tenant, final String app, final String code) {

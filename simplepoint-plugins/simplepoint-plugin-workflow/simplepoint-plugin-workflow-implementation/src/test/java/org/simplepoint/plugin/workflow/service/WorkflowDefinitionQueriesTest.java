@@ -18,6 +18,8 @@ import org.springframework.orm.jpa.SharedEntityManagerCreator;
 class WorkflowDefinitionQueriesTest extends WorkflowEngineFixture {
   @Test
   void canPurgeAnUnreferencedDefinitionOnlyAfterTakingEveryPublishedVersionOffline() {
+    authorize("actor", "tenant", true,
+        List.of("workflow.definitions.view", "workflow.definitions.delete"));
     var draft = transaction.execute(status -> service.createDefinition(
         new CreateDefinitionCommand("deleteAfterOffline", "Delete after offline", null, null)));
     String id = draft.definition().id();

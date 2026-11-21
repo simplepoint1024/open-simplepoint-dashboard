@@ -1,5 +1,11 @@
 package org.simplepoint.plugin.app.form.service;
 
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.CREATE_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.DELETE_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.EDIT_FORM;
+import static org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources.PUBLISH_FORM;
+import static org.simplepoint.plugin.app.form.service.ApplicationWorkbenchAccess.allowed;
+
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -7,8 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.simplepoint.core.AuthorizationContext;
-import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.annotation.PermissionResource;
 import org.simplepoint.core.query.QueryField;
 import org.simplepoint.core.query.TablePagination;
@@ -107,7 +111,7 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
       buttons.add(button("add", "app.form.create", 0, 0));
     }
     buttons.add(button("design", "app.form.design", 1, 1));
-    if (allowed("delete")) {
+    if (allowed(DELETE_FORM)) {
       buttons.add(Map.of("key", "delete", "text", "i18n:app.form.delete", "sort", 2,
           "argumentMinSize", 1, "argumentMaxSize", 100, "danger", true, "icon", "DeleteOutlined"));
     }
@@ -118,7 +122,7 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
   public ApplicationFormDesignerContract designer(final String applicationId) {
     authorize(applicationId);
     return new ApplicationFormDesignerContract(
-        allowed("create"), allowed("edit"), allowed("publish"), components.descriptors().stream()
+        allowed(CREATE_FORM), allowed(EDIT_FORM), allowed(PUBLISH_FORM), components.descriptors().stream()
             // Keep new authoring unavailable until the governed publication/runtime acceptance gate passes.
             // The trusted registry still accepts incomplete drafts and validates their component contract.
             .filter(component -> !org.simplepoint.plugin.app.form.component.ReferenceComponentContributor.TYPE
@@ -134,13 +138,6 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
     var actor = context.requireActor();
     applications.requireApplication(actor.tenantId(), applicationId);
     return actor.tenantId();
-  }
-
-  private static boolean allowed(final String action) {
-    AuthorizationContext context = AuthorizationContextHolder.getContext();
-    return context != null && (Boolean.TRUE.equals(context.getIsAdministrator())
-        || context.getResources() != null
-        && context.getResources().contains("app.workbench.forms." + action));
   }
 
   private static Sort sorting(final List<String> values) {

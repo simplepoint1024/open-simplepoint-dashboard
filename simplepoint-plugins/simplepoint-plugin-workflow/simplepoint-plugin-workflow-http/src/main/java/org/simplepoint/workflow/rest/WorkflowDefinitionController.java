@@ -81,7 +81,7 @@ public class WorkflowDefinitionController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete'))")
+  @PreAuthorize("hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete')")
   @Operation(summary = "删除未发布的流程定义草稿")
   public ResponseEntity<Void> deleteDefinition(
       @PathVariable("id") String id, @RequestParam("expectedRevision") long expectedRevision) {
@@ -90,7 +90,7 @@ public class WorkflowDefinitionController {
   }
 
   @DeleteMapping
-  @PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete'))")
+  @PreAuthorize("hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete')")
   @Operation(summary = "批量删除流程定义")
   public ResponseEntity<Void> deleteDefinitions(@RequestBody List<DefinitionRevision> selection) {
     service.deleteDefinitions(selection);

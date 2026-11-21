@@ -37,14 +37,18 @@ class WorkflowHistoryRemovalTest extends WorkflowEngineFixture {
         }));
     var request = new Request(UUID.randomUUID(), List.of(new Member(ended.id(), ended.endedAt())));
     var stale = new Request(UUID.randomUUID(), List.of(new Member(ended.id(), ended.endedAt().minusSeconds(1))));
+    var grants = List.of("workflow.instances.view", "workflow.instances.delete", "workflow.instances.start");
+    authorize("actor", "tenant", false, grants);
     assertThatThrownBy(() -> transaction.execute(status -> removal.request(stale)))
         .isInstanceOfSatisfying(WorkflowException.class, error ->
             assertThat(error.getCode()).isEqualTo(Code.HISTORY_REMOVAL_BLOCKED));
     assertThat(messages).isEmpty();
-    authorize("reader", "tenant", false, List.of("workflow.instances.view"));
+    authorize("reader", "tenant", true, List.of("workflow.instances.view"));
+    assertThat(removal.maximumSelection()).isZero();
     assertThatThrownBy(() -> transaction.execute(status -> removal.request(request)))
         .isInstanceOfSatisfying(WorkflowException.class, error -> assertThat(error.getCode()).isEqualTo(Code.FORBIDDEN));
-    authorize("actor", "tenant", true, List.of());
+    authorize("actor", "tenant", false, grants);
+    assertThat(removal.maximumSelection()).isGreaterThan(0);
     Progress accepted = transaction.execute(status -> removal.request(request));
     assertThat(accepted).isEqualTo(new Progress(request.id(), 1, 0));
     assertThat(transaction.<Progress>execute(status -> removal.request(request))).isEqualTo(accepted);

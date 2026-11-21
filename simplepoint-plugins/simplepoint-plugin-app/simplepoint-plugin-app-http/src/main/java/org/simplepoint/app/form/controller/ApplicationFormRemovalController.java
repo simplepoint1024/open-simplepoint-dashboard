@@ -3,11 +3,13 @@ package org.simplepoint.app.form.controller;
 import java.util.List;
 import java.util.Map;
 import org.simplepoint.core.http.Response;
+import org.simplepoint.plugin.app.form.api.ApplicationWorkbenchResources;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.service.ApplicationFormRemoval;
 import org.simplepoint.plugin.app.form.service.ApplicationFormRemoval.Progress;
 import org.simplepoint.plugin.app.form.service.ApplicationFormRemoval.Selection;
+import org.simplepoint.plugin.app.form.service.ApplicationWorkbenchAccess;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @org.simplepoint.core.permission.DomainDataAuthorization
 @RequestMapping("/applications/{applicationId}/forms/removals")
-@PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.forms.delete'))")
+@PreAuthorize(ApplicationWorkbenchResources.CAN_DELETE_FORM)
 public class ApplicationFormRemovalController {
   private final ObjectProvider<ApplicationFormRemoval> service;
 
@@ -30,8 +32,10 @@ public class ApplicationFormRemovalController {
   }
 
   @GetMapping("/capability")
+  @PreAuthorize(ApplicationWorkbenchResources.CAN_VIEW)
   public Response<Map<String, Boolean>> capability(@PathVariable("applicationId") String applicationId) {
-    return Response.okay(Map.of("enabled", service.getIfAvailable() != null));
+    return Response.okay(Map.of("enabled", ApplicationWorkbenchAccess.allowed(ApplicationWorkbenchResources.DELETE_FORM)
+        && service.getIfAvailable() != null));
   }
 
   @PostMapping

@@ -216,7 +216,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
         allowed(WorkflowResourceCodes.DEFINITIONS_PUBLISH),
         allowed(WorkflowResourceCodes.DEFINITIONS_COPY_VERSION),
         allowed(WorkflowResourceCodes.INSTANCES_START),
-        allowed(WorkflowResourceCodes.DEFINITIONS_DELETE),
+        WorkflowAccess.canDelete(WorkflowResourceCodes.DEFINITIONS_VIEW, WorkflowResourceCodes.DEFINITIONS_DELETE),
         allowed(WorkflowResourceCodes.DEFINITIONS_OFFLINE));
   }
 
@@ -312,8 +312,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   @Override
   @Transactional
   public void deleteDefinition(final String definitionId, final long expectedRevision) {
-    requireAuthority(WorkflowResourceCodes.DEFINITIONS_VIEW);
-    requireAuthority(WorkflowResourceCodes.DEFINITIONS_DELETE);
+    WorkflowAccess.requireDeletion(WorkflowResourceCodes.DEFINITIONS_VIEW, WorkflowResourceCodes.DEFINITIONS_DELETE);
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
     if (!"OFFLINE".equals(definition.getStatus())
         && !("DRAFT".equals(definition.getStatus()) && definition.getLatestVersion() == 0)) {
