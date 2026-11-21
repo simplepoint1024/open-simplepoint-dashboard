@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {DEFAULT_TABLE_PAGE_SIZE} from '../libs/shared/types/pagination.ts';
 import {committedReactFiber} from './cdp-react-probe.mjs';
 import {fieldMatrixModel as model, fieldMatrixTranslationNamespaces} from './common-main-fixture.mjs';
 
@@ -119,11 +120,12 @@ export async function smokeFieldProtected({clickMenu, clickReady, clickText, fil
 export async function smokeFieldMatrix({clickMenu, clickReady, clickText, fill, poll, evaluate, fixture}) {
   fixture.matrix.enable();
   const matrix = fixture.matrix, root = '.nb-tab-panel-active', drawer = '.field-scope-editor.ant-drawer-open';
+  const lastPage = Math.floor(239 / DEFAULT_TABLE_PAGE_SIZE) + 1;
   matrix.row.entries = [{resource: 'org.simplepoint.fixture.OffPage', field: 'hiddenField', access: 'MASKED'}];
   await clickMenu('契约测试 FieldScope');
   if (await evaluate(`!!document.querySelector('${root} button[aria-label="清除全部筛选"]')`)) await clickReady(`${root} button[aria-label="清除全部筛选"]`);
-  await poll(() => evaluate(`document.querySelectorAll('${root} tr[data-row-key]').length===20 && !document.querySelector('${root} .ant-spin-spinning')`), 'field matrix base table');
-  await clickReady(`${root} .ant-pagination-item-12`);
+  await poll(() => evaluate(`document.querySelectorAll('${root} tr[data-row-key]').length===${DEFAULT_TABLE_PAGE_SIZE} && !document.querySelector('${root} .ant-spin-spinning')`), 'field matrix base table');
+  await clickReady(`${root} .ant-pagination-item-${lastPage}`);
   await poll(() => evaluate(`!!document.querySelector('${root} tr[data-row-key="FieldScope-239"]') && !document.querySelector('${root} .ant-spin-spinning')`), 'captured off-page field scope');
   await clickReady(`${root} tr[data-row-key="FieldScope-239"] input[type="checkbox"]`);
   await clickText(`${root} .sp-table-toolbar-main button`, '配置字段规则');
@@ -142,6 +144,8 @@ export async function smokeFieldMatrix({clickMenu, clickReady, clickText, fill, 
   await poll(() => evaluate(`document.querySelector('${drawer} .field-permission-tree')?.textContent.includes('实际资源 520')`), 'field resource beyond first 500');
   await evaluate(`(() => {const button=[...document.querySelectorAll('${drawer} .field-resource-node button')].find(b=>b.textContent.startsWith('实际资源 520'));if(!button||button.disabled)throw Error('Field resource not selectable');button.click();})()`);
   await poll(() => evaluate(`!!document.querySelector('${drawer} [data-row-key="${model}#name"]')`), 'fields only requested for selected page');
+  assert.equal(await evaluate(`!!document.querySelector('${drawer} .field-permission-field-table .ant-table-selection-column')`),
+    false, 'field rules are edited by access level and need no row selection column');
   await clickReady(`${drawer} [data-row-key="${model}#name"] input[type="radio"][value="VISIBLE"]`);
   assert.equal(matrix.reads.filter(r => r.path.endsWith('/page-fields')).length, 1, 'does not download metadata for every catalog page');
   const dimensions = await evaluate(`(() => {const a=document.querySelector('${drawer} .field-permission-layout').getBoundingClientRect(), b=document.querySelector('${drawer} .ant-drawer-body').getBoundingClientRect();return {height:a.height,bottom:a.bottom,limit:b.bottom};})()`);
@@ -149,7 +153,7 @@ export async function smokeFieldMatrix({clickMenu, clickReady, clickText, fill, 
   await clickReady(`${drawer} .ant-drawer-close`);
   await poll(() => evaluate(`document.querySelector('.ant-modal')?.textContent.includes('放弃未保存')`), 'explicit discard protects draft');
   await evaluate(`location.hash='#/profile'`);
-  await poll(() => evaluate(`!!document.querySelector('${root} .profile-nav-links') && !document.querySelector('${drawer}') && !document.querySelector('.ant-modal')`), 'inactive editor and confirmation hidden');
+  await poll(() => evaluate(`!!document.querySelector('${root} .profile-content-section') && !document.querySelector('${drawer}') && !document.querySelector('.ant-modal')`), 'inactive editor and confirmation hidden');
   await clickMenu('契约测试 FieldScope');
   await poll(() => evaluate(`!!document.querySelector('.ant-modal')`), 'own page restores discard confirmation');
   await clickText('.ant-modal-footer button', '继续编辑');
@@ -165,7 +169,7 @@ export async function smokeFieldMatrix({clickMenu, clickReady, clickText, fill, 
   assert.equal(await evaluate(`document.querySelector('${drawer} [data-row-key="${model}#name"] input[type="radio"][value="VISIBLE"]').checked`), true);
   await clickText(`${drawer} .ant-drawer-footer button`, '保存');
   await poll(() => evaluate(`!document.querySelector('${drawer}') && document.querySelector('${root} tr[data-row-key="FieldScope-239"]')?.textContent.includes('实际字段权限')`), 'retry refreshes owner without resetting page');
-  assert.equal(await evaluate(`document.querySelector('${root} .ant-pagination-item-active')?.textContent`), '12');
+  assert.equal(await evaluate(`document.querySelector('${root} .ant-pagination-item-active')?.textContent`), String(lastPage));
   assert.deepEqual(matrix.writes.at(-1).body.entries, [{resource: 'org.simplepoint.fixture.OffPage', field: 'hiddenField', access: 'MASKED'},
     {resource: model, field: 'name', access: 'VISIBLE'}]);
   assert.equal(matrix.writes.at(-1).params.get('id'), 'FieldScope-239');

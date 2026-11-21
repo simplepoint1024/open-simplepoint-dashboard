@@ -1,5 +1,9 @@
+import {ReferenceMappingContext} from './referenceMapping/Context';
+import {useMappingEditor} from './referenceMapping/useMappingEditor';
+import {mappingDisplay, mappingIntent, type MappingDraft} from './referenceMapping/model';
 import {requiredValueIssues} from './requiredValues';
 import {useCalculationPreview} from './useCalculationPreview';
+import {useLiveReferenceValues} from './useLiveReferenceValues';
 import {calculationInputs, type CalculationPreviewLoader} from './calculationPreview';
 import {formRuntimeFields} from '../FormComponents/runtimeFields';
 import {detailFormValues} from '../FormComponents/Detail/payload';
@@ -18,8 +22,13 @@ import {runtimeFormModel, type RuntimeFormAction} from './model.ts';
 import {mergeSceneValues, sceneValues, type FormValues} from './sceneState.ts';
 import SceneLayout from './SceneLayout';
 import {aggregateIssues, deriveFormTotals} from './aggregateValidation.ts';
+import {ReferenceInputContext} from '../FormComponents/Reference/inputs';
+import {referenceIdentity} from '../FormComponents/Reference/display';
 
 export type SceneFormProps = {
+  mappingDraft?: MappingDraft;
+  fixedReferenceField?: string;
+  onMappingChange?: (values: FormValues, draft: MappingDraft) => void;
   calculationPreview?: CalculationPreviewLoader;
   document: ApplicationFormDocument;
   sceneId: string;
@@ -40,19 +49,31 @@ export type SceneFormProps = {
   onClose?: () => void;
 };
 
+const emptyMappings: MappingDraft = [];
 const templates = {ObjectFieldTemplate: SceneLayout};
 
 /** One SForm per scene, using shared values for rules and a bounded field projection for edits. */
 export default function SceneForm(props: SceneFormProps) {
   const {document, sceneId, value, disabled = false, readOnly = false, externalSubmit = false, submitting = false, registry, recordState,
-    calculationPreview, formRef, onChange, onSubmit, onAction, onApply, onClose, onOpen, canOpen} = props;
+    calculationPreview, mappingDraft = emptyMappings, onMappingChange, formRef, onChange, onSubmit, onAction, onApply, onClose, onOpen, canOpen} = props;
   const {t} = useI18n();
   const selected = usePageSelected();
   const localForm = useRef<SFormHandle | null>(null), actionLock = useRef(false);
   const [intent, setIntent] = useState<'save' | 'submit' | 'apply'>();
   const [validationAction, setValidationAction] = useState<'save' | 'submit' | 'apply'>('save');
-  const calculation = useCalculationPreview(document, value, calculationPreview, !readOnly && !disabled && !submitting);
-  const displayValues = calculation.values;
+  const mapping = useMappingEditor({document, values: value, draft: mappingDraft, state: recordState,
+    disabled: readOnly || disabled || submitting || !onMappingChange,
+    onChange: (values, draft) => onMappingChange?.(deriveFormTotals(document, values), draft)});
+  const confirmation = mappingIntent(mappingDraft, value);
+  const fixedField = document.fields.find(field => field.fieldId === props.fixedReferenceField);
+  const fixedMapping = fixedField?.reference?.mappingWritable !== false && fixedField?.reference?.mappings;
+  const fixedTarget = fixedField && referenceIdentity(value[fixedField.fieldId]);
+  const fixedConfirmationRequired = !!fixedTarget && !!fixedMapping && fixedMapping.some(item => item.mode === 'SERVER_SNAPSHOT')
+    && !confirmation?.confirmations.some(item => item.relationId === fixedField.reference!.relationId && !item.detailId);
+  const calculation = useCalculationPreview(document, mappingDisplay(value, mappingDraft), calculationPreview,
+    !readOnly && !disabled && !submitting && !fixedConfirmationRequired, confirmation);
+  const live = useLiveReferenceValues(document, sceneId, calculation.values);
+  const displayValues = calculationPreview ? live.values : mappingDisplay(live.values, mappingDraft);
   const [validationNotice, setValidationNotice] = useState('');
   const [validationAttempt, setValidationAttempt] = useState(0);
   const validationFeedback = useRef<HTMLDivElement>(null);
@@ -79,9 +100,9 @@ export default function SceneForm(props: SceneFormProps) {
   // A detail collection is one editable field; strip its preview-only cells before merging that field.
   const mergeInput = (next: FormValues) => mergeSceneValues(value, calculationInputs(document, next), model);
   const clearIntent = () => {actionLock.current = false; setIntent(undefined);};
-  const ready = () => selected && !disabled && !readOnly && !submitting && !actionLock.current;
+  const ready = () => selected && !disabled && !readOnly && !submitting && !mapping.editor.busy && !actionLock.current;
   const submitAction = (action: 'save' | 'submit' | 'apply') => {
-    if (!ready()) return;
+    if (!ready() || action !== 'apply' && fixedConfirmationRequired) return;
     if (!localForm.current) {setValidationAttempt(value => value + 1); setValidationNotice(t('app.submission.formNotReady', '表单尚未就绪，请等待附件上传或当前操作完成后重试。')); return;}
     actionLock.current = true;
     // RJSF derives schema in componentDidUpdate; complete that commit before dispatch.
@@ -90,7 +111,7 @@ export default function SceneForm(props: SceneFormProps) {
   };
   const invoke = (action: RuntimeFormAction) => {
     if (readOnly && action.key !== 'close' && !action.key.startsWith('open-')) return;
-    if (!selected || submitting || actionLock.current || action.hidden
+    if (!selected || submitting || actionLock.current || mapping.editor.busy && action.key !== 'close' || action.hidden
       || action.key !== 'close' && (disabled || action.disabled)) return;
     if (action.key === 'save' || action.key === 'submit' || action.key === 'apply') submitAction(action.key);
     else if (action.key === 'reset') onChange?.(mergeInput({}));
@@ -103,8 +124,9 @@ export default function SceneForm(props: SceneFormProps) {
       key: action.id, sort: index, icon: ({save: 'SaveOutlined', submit: 'SendOutlined', apply: 'CheckOutlined',
         close: 'CloseOutlined', reset: 'ReloadOutlined', 'open-dialog': 'ExpandOutlined', 'open-drawer': 'LayoutOutlined'})[action.key], text: action.label ?? actionLabel(action.key, t),
       type: action.key === 'submit' || action.key === 'apply' ? 'primary' as const : 'default' as const,
-      disabled: !selected || submitting || Boolean(intent) || action.key !== 'close' && (disabled || action.disabled)
-        || action.key.startsWith('open-') && !canOpen?.(action),
+      disabled: !selected || submitting || Boolean(intent) || mapping.editor.busy && action.key !== 'close' || action.key !== 'close' && (disabled || action.disabled)
+        || action.key.startsWith('open-') && !canOpen?.(action)
+        || fixedConfirmationRequired && (action.key === 'save' || action.key === 'submit'),
       argumentMinSize: 0, argumentMaxSize: 0,
     }))}
     onButtonEvents={Object.fromEntries(actions.map(action => [action.id, () => invoke(action)]))}/>;
@@ -114,13 +136,26 @@ export default function SceneForm(props: SceneFormProps) {
   if (onApply && !model.actions.some(action => action.key === 'apply')) footer.push(localAction('apply'));
   if (onClose && !model.actions.some(action => action.key === 'close')) footer.push(localAction('close'));
   if (onAction && model.sceneType === 'MAIN' && !model.actions.length) footer.push(localAction('save'));
-  return <>
+  return <ReferenceMappingContext.Provider value={mapping.editor}>
+    {mapping.notice}{mapping.dialog}
+    {!readOnly && onMappingChange && fixedField && fixedTarget && fixedMapping && fixedMapping.some(item => item.mode !== 'LIVE') &&
+      <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+        {key: 'reviewFixedReference', sort: 0, icon: 'CheckOutlined', text: t('app.relation.mappingConfirm', '确认关联带出值'),
+          disabled: !ready()},
+      ]} onButtonEvents={{reviewFixedReference: () => {
+        if (ready()) mapping.editor.change({fieldId: fixedField.fieldId}, fixedTarget);
+      }}}/>}
     {validationNotice && <div ref={validationFeedback} tabIndex={-1}><Alert role="alert" showIcon type="error" title={validationNotice}/></div>}
     {onAction && recordState !== 'SUBMITTED' && <Alert type="info" showIcon title={t('app.runtime.draftValidationHint', '保存草稿允许暂缺提交必填项；提交时将校验完整数据和明细。')}/>}
 
     {calculation.loading && <div role="status" className="sp-form-calculation-status">{t('app.calculation.loading', '正在计算…')}</div>}
     {calculation.failed && <Alert type="warning" showIcon title={t('app.calculation.previewFailed', '暂时无法计算，请检查输入或稍后重试。保存时将重新计算。')}/>}
-    <SForm customValidate={(data, errors) => {
+    {live.failed && <Alert type="warning" showIcon title={t('app.relation.liveUnavailable', '暂时无法读取关联展示值，请稍后重试。')}/>}
+    {live.refreshable && <TableActions appearance="toolbar" selectedKeys={[]} selectedRows={[]} buttons={[
+      {key: 'refreshLive', sort: 0, icon: 'ReloadOutlined', iconOnly: true, type: 'text',
+        text: t('app.relation.refreshLive', '刷新关联展示值'), disabled: live.loading || submitting || !selected},
+    ]} onButtonEvents={{refreshLive: live.refresh}}/>}
+    <ReferenceInputContext.Provider value={{fields: displayValues}}><SForm customValidate={(data, errors) => {
       if (!readOnly) for (const issue of requiredValueIssues(document, model.schema, data ?? {})) {
         let target: any = errors;
         for (const part of issue.path) target = target?.[part];
@@ -134,7 +169,7 @@ export default function SceneForm(props: SceneFormProps) {
       return errors;
     }} fields={formRuntimeFields} ref={bindForm} schema={model.schema} uiSchema={model.uiSchema}
       idPrefix={`form_${sceneId}`} formData={sceneValues(detailFormValues(document, displayValues), model.fieldIds)}
-      disabled={disabled || readOnly || !selected || submitting} submitLoading={submitting}
+      disabled={disabled || readOnly || !selected || submitting || mapping.editor.busy} submitLoading={submitting}
       hideSubmit={externalSubmit || Boolean(onAction) || Boolean(onApply) || !onSubmit} templates={templates}
       formContext={{labelCol: {flex: `${document.presentation?.labelWidth ?? 140}px`}, wrapperCol: {flex: '1 1 0'}, descriptionLocation: 'tooltip', runtimeLayout: {layout: model.layout, renderAction: (action: RuntimeFormAction) => renderActions([action]), errorFields}}}
       onChange={event => {
@@ -149,15 +184,15 @@ export default function SceneForm(props: SceneFormProps) {
         clearIntent();
       }}
       onSubmit={event => {
-        if (disabled || readOnly || submitting || !selected) {clearIntent(); return;}
+        if (disabled || readOnly || submitting || !selected || intent !== 'apply' && fixedConfirmationRequired) {clearIntent(); return;}
         const data = mergeInput(event.formData ?? {});
         if (intent === 'apply') onApply?.(data);
         else if (intent && onAction) onAction(intent === 'submit' ? 'SUBMIT' : 'SAVE_DRAFT', data);
         else onSubmit?.(data);
         setValidationNotice(''); setErrorFields([]); clearIntent();
-      }}/>
+      }}/></ReferenceInputContext.Provider>
     {footer.length > 0 && <div className="sp-form-runtime-footer">{renderActions(footer)}</div>}
-  </>;
+  </ReferenceMappingContext.Provider>;
 }
 
 function actionLabel(action: RuntimeFormAction['key'], t: ReturnType<typeof useI18n>['t']) {

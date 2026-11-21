@@ -4,6 +4,7 @@ const icons: Record<string, string> = {
   'display.progress': 'DashboardOutlined', 'display.icon': 'StarOutlined', 'display.markdown': 'FileMarkdownOutlined',
   'field.rating': 'StarOutlined', 'field.cascader': 'BranchesOutlined', 'field.transfer': 'SwapOutlined',
   'data.detail': 'ProfileOutlined',
+  'field.reference': 'LinkOutlined',
   'layout.matrix': 'AppstoreOutlined', 'layout.cell': 'BorderOutlined',
   'layout.form': 'FormOutlined', 'layout.grid': 'TableOutlined', 'layout.group': 'GroupOutlined', 'layout.tabs': 'FolderOutlined',
   'display.text': 'FontSizeOutlined', 'field.text': 'FontSizeOutlined', 'field.textarea': 'AlignLeftOutlined',
@@ -19,7 +20,7 @@ export const componentIcon = (type: string) => icons[type] ?? 'AppstoreOutlined'
 export function componentGroup(type: string) {
   if (type.startsWith('layout.') || type.startsWith('display.')) return 'layout';
   if (type.startsWith('action.')) return 'actions';
-  if (['data.detail', 'field.user', 'field.role', 'field.organization', 'field.tenant', 'field.attachment'].includes(type)) return 'business';
+  if (['data.detail', 'field.reference', 'field.user', 'field.role', 'field.organization', 'field.tenant', 'field.attachment'].includes(type)) return 'business';
   return 'fields';
 }
 export const designerFormContext = {

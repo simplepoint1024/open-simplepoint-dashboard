@@ -27,6 +27,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import org.simplepoint.plugin.dna.federation.api.error.FederationSqlWriteException;
 import org.simplepoint.plugin.dna.federation.api.service.FederationJdbcDriverService;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationJdbcDriverModels;
 import org.simplepoint.plugin.dna.federation.api.vo.FederationQueryModels;
@@ -640,10 +641,27 @@ public class FederationJdbcSocketServer implements DisposableBean {
     }
 
     private static SocketResponse error(Exception failure) {
+      if (failure instanceof FederationSqlWriteException write) {
+        return new SocketResponse(
+            false,
+            write.getMessage(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            write.errorCode().name(),
+            write.messageKey(),
+            switch (write.errorCode()) {
+              case SQL_WRITE_PROTECTED -> "42501";
+              case SQL_WRITE_OWNERSHIP_UNAVAILABLE -> "55000";
+              default -> "42000";
+            });
+      }
       if (failure
           instanceof
           org.simplepoint.plugin.rbac.core.api.authentication.CredentialAuthenticationException
-              credential) {
+                  credential) {
         return new SocketResponse(
             false,
             credential.getMessage(),

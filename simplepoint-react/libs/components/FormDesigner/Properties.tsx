@@ -13,6 +13,7 @@ import {componentIcon, designerFormContext} from './presentation';
 import type {ComponentDescriptor, DesignDocument} from './contracts.ts';
 import type {FormFieldWritePolicy} from '../FormRuntime/contracts.ts';
 import {changeNode, locate} from './model.ts';
+import {businessReferenceField} from './relations/model';
 
 export default function Properties({document, componentId, components, disabled, onChange, writePolicies, propertyRegistry = designerPropertyEditors}: {
   document: DesignDocument; componentId: string; components: readonly ComponentDescriptor[];
@@ -82,7 +83,7 @@ export default function Properties({document, componentId, components, disabled,
       properties.scale = {type: 'integer', title: t('app.designer.scale', '小数位数'), minimum: 0, maximum: field.precision ?? 38};
       data.precision = field.precision; data.scale = field.scale; required.push('precision', 'scale');
     }
-    if (node.componentType === 'field.select' || field.choices.length) {
+    if (!businessReferenceField(document, field) && (node.componentType === 'field.select' || field.choices.length)) {
       properties.choices = {type: 'array', title: t('app.designer.choices', '选项'), maxItems: 200,
         items: {type: 'object', required: ['value', 'labelLocalization'], properties: {
           value: {type: 'string', title: t('app.designer.choiceValue', '选项值'), minLength: 1, maxLength: 256},

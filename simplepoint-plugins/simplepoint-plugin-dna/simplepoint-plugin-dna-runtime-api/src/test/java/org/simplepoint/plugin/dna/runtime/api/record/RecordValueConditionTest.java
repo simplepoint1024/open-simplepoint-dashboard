@@ -47,4 +47,20 @@ class RecordValueConditionTest {
     final var tooDeep = deep;
     assertThatThrownBy(() -> RecordValueCondition.bounded(tooDeep)).isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void ordinaryPagesRetainLegacyWireShapeAndBoundOptionalTypedConditions() throws Exception {
+    var mapper = new ObjectMapper();
+    var schema = new RecordSchemaReference(1, "a".repeat(64));
+    var legacy = new RecordPageQuery("model", schema, 0, 50, List.of("name"), null, List.of());
+    String json = mapper.writeValueAsString(legacy);
+    assertThat(json).doesNotContain("condition");
+    assertThat(mapper.readValue(json, RecordPageQuery.class)).isEqualTo(legacy);
+    var condition = new RecordValueCondition(RecordValueConditionOperator.IS_EMPTY, "name", List.of(), List.of());
+    var typed = new RecordPageQuery("model", schema, 0, 50, List.of("name"), null, List.of(), condition);
+    assertThat(mapper.readValue(mapper.writeValueAsString(typed), RecordPageQuery.class)).isEqualTo(typed);
+    var oversized = new RecordValueCondition(RecordValueConditionOperator.OR, null, List.of(), Collections.nCopies(4096, condition));
+    assertThatThrownBy(() -> new RecordPageQuery("model", schema, 0, 50, List.of("name"), null, List.of(), oversized))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

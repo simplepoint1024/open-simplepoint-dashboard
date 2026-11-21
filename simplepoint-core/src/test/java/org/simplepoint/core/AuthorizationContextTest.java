@@ -19,6 +19,20 @@ class AuthorizationContextTest {
     ctx = new AuthorizationContext();
   }
 
+  @Test
+  void completePolicyDefaultsSurviveTransportButAreNeverInferredFromLegacyOrHeaderValues()
+      throws Exception {
+    var json = new com.fasterxml.jackson.databind.ObjectMapper();
+    var legacy = json.readValue("{\"userId\":\"actor\",\"dataScopeType\":\"ALL\"}", AuthorizationContext.class);
+    assertThat(legacy.isResourcePolicyDefaultsResolved()).isFalse();
+    assertThat(json.readTree(json.writeValueAsString(legacy)).has("resourcePolicyDefaultsResolved")).isFalse();
+    legacy.mergeAttributes(Map.of("resourcePolicyDefaultsResolved", "true"));
+    assertThat(legacy.isResourcePolicyDefaultsResolved()).isFalse();
+    legacy.setResourcePolicyDefaultsResolved(true);
+    assertThat(json.readValue(json.writeValueAsString(legacy), AuthorizationContext.class)
+        .isResourcePolicyDefaultsResolved()).isTrue();
+  }
+
   // -------- write-once setters --------
 
   @Test

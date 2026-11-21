@@ -7,6 +7,8 @@ public final class WorkflowResourceCodes {
   public static final String DEFINITIONS_CREATE = "workflow.definitions.create";
   public static final String DEFINITIONS_EDIT = "workflow.definitions.edit";
   public static final String DEFINITIONS_PUBLISH = "workflow.definitions.publish";
+  public static final String DEFINITIONS_DELETE = "workflow.definitions.delete";
+  public static final String DEFINITIONS_OFFLINE = "workflow.definitions.offline";
   public static final String DEFINITIONS_COPY_VERSION = "workflow.definitions.copy-version";
   public static final String TASKS_VIEW = "workflow.tasks.view";
   public static final String TASKS_CLAIM = "workflow.tasks.claim";
@@ -15,6 +17,7 @@ public final class WorkflowResourceCodes {
   public static final String INSTANCES_VIEW = "workflow.instances.view";
   public static final String INSTANCES_START = "workflow.instances.start";
   public static final String INSTANCES_CANCEL = "workflow.instances.cancel";
+  public static final String INSTANCES_DELETE = "workflow.instances.delete";
 
   private WorkflowResourceCodes() {
   }

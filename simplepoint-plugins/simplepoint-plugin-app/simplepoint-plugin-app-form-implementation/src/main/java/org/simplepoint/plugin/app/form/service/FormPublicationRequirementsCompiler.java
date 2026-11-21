@@ -42,7 +42,8 @@ final class FormPublicationRequirementsCompiler {
 
   static Plan compile(final String modelId, final String appId, final String formId,
       final Iterable<Version> pages, final ApplicationFormDocument governing) {
-    return compile(modelId, appId, formId, pages, governing, FormCalculationCompiler.hasCalculations(governing));
+    return compile(modelId, appId, formId, pages, governing,
+        FormCalculationCompiler.hasCalculations(governing) || !governing.relations().isEmpty());
   }
 
   static Plan compile(final String modelId, final String appId, final String formId,

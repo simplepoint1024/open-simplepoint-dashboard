@@ -23,13 +23,15 @@ import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
-import org.simplepoint.plugin.app.form.api.model.FormFieldType;
 import org.simplepoint.plugin.app.form.api.model.FormIndexDefinition;
 import org.simplepoint.plugin.app.form.api.model.FormValue;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
+import org.simplepoint.plugin.dna.runtime.api.schema.CollectionModelRelation;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldDefinition;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalIndexDefinition;
+import org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition;
+import org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceField;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue;
 import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
@@ -44,79 +46,218 @@ public class FormStorageProjectionCompiler {
 
   /** Creates an isolated canonical mapper without changing the platform mapper. */
   public FormStorageProjectionCompiler(final ObjectMapper mapper) {
-    this.mapper = mapper.copy()
-        .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-        .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
-        .enable(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS);
+    this.mapper =
+        mapper
+            .copy()
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+            .enable(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS);
   }
 
   /** Compiles stable fields and indexes while excluding UI-only definitions. */
   public CompiledStorageProjection compile(final ApplicationFormDocument document) {
-    List<FormFieldDefinition> persistentFields = document.fields().stream()
-        .filter(FormFieldDefinition::persistent)
-        .sorted(Comparator.comparing(FormFieldDefinition::fieldId))
-        .toList();
+    return compile(document, List.of(), false);
+  }
+
+  /** Explicit frozen bindings and identity-key state keep historical projections reproducible. */
+  public CompiledStorageProjection compile(
+      final ApplicationFormDocument document,
+      final List<FormRelationBinding> bindings,
+      final boolean tenantIdentity) {
+    var references = FormRelationPublicationProjection.references(document, bindings, null);
+    var retired = FormRelationConversion.retiredFields(document);
+    List<FormFieldDefinition> persistentFields =
+        document.fields().stream()
+            .filter(FormFieldDefinition::persistent)
+            .sorted(Comparator.comparing(FormFieldDefinition::fieldId))
+            .toList();
     Map<String, String> fieldCodes = new LinkedHashMap<>();
     List<LogicalFieldDefinition> fields = new ArrayList<>();
     fields.add(recordStateField());
-    fields.addAll(persistentFields.stream()
-        .map(field -> {
-          fieldCodes.put(field.fieldId(), field.storageCode());
-          return compileField(field);
-        })
-        .toList());
-    List<LogicalIndexDefinition> indexes = document.indexes().stream()
-        .sorted(Comparator.comparing(FormIndexDefinition::indexId))
-        .map(index -> new LogicalIndexDefinition(
-            index.storageCode(),
-            index.fieldIds().stream().map(fieldCodes::get).toList(),
-            index.unique()
-        ))
-        .toList();
-    PhysicalSchemaDefinition schema = new PhysicalSchemaDefinition(
-        DnaRuntimeApiVersion.CURRENT,
-        fields,
-        indexes
-    );
+    fields.addAll(
+        persistentFields.stream()
+            .map(
+                field -> {
+                  fieldCodes.put(field.fieldId(), field.storageCode());
+                  var logical = compileField(field);
+                  return retired.contains(field.fieldId()) && !logical.nullable()
+                      ? new LogicalFieldDefinition(
+                          logical.fieldId(),
+                          logical.code(),
+                          logical.displayName(),
+                          logical.type(),
+                          true,
+                          logical.length(),
+                          logical.precision(),
+                          logical.scale(),
+                          logical.defaultValue())
+                      : logical;
+                })
+            .toList());
+    List<LogicalIndexDefinition> indexes =
+        document.indexes().stream()
+            .sorted(Comparator.comparing(FormIndexDefinition::indexId))
+            .map(
+                index ->
+                    new LogicalIndexDefinition(
+                        index.storageCode(),
+                        index.fieldIds().stream().map(fieldCodes::get).toList(),
+                        index.unique()))
+            .toList();
+    PhysicalSchemaDefinition schema =
+        new PhysicalSchemaDefinition(
+            DnaRuntimeApiVersion.CURRENT,
+            fields,
+            indexes,
+            null,
+            tenantIdentity || !references.isEmpty() ? Boolean.TRUE : null,
+            references);
     return encode(schema, fieldCodes);
   }
 
   /** Compiles an owned table with a server controlled parent reference and row ordering. */
   public CompiledStorageProjection compileDetail(
       final org.simplepoint.plugin.app.form.api.model.FormDetailDefinition detail,
-      final String parentModelId
-  ) {
-    Map<String, String> codes = new LinkedHashMap<>();
-    List<LogicalFieldDefinition> fields = new ArrayList<>();
-    fields.add(new LogicalFieldDefinition("owned_parent", "parent_record_id", "Parent record",
-        LogicalFieldType.UUID, false, null, null, null, null));
-    fields.add(new LogicalFieldDefinition("owned_order", "row_order", "Row order",
-        LogicalFieldType.INT32, false, null, null, null, null));
-    detail.fields().stream().sorted(Comparator.comparing(FormFieldDefinition::fieldId)).forEach(field -> {
-      codes.put(field.fieldId(), field.storageCode());
-      fields.add(compileField(field));
-    });
-    List<LogicalIndexDefinition> indexes = new ArrayList<>();
-    indexes.add(new LogicalIndexDefinition("owned_parent_order", List.of("parent_record_id", "row_order"), false));
-    detail.indexes().stream().sorted(Comparator.comparing(FormIndexDefinition::indexId)).forEach(index -> {
-      List<String> columns = new ArrayList<>();
-      columns.add("parent_record_id");
-      columns.addAll(index.fieldIds().stream().map(codes::get).toList());
-      indexes.add(new LogicalIndexDefinition(index.storageCode(), columns, index.unique()));
-    });
-    return encode(new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, fields, indexes,
-        new org.simplepoint.plugin.dna.runtime.api.schema.OwnedModelRelation(parentModelId, "owned_parent")), codes);
+      final String parentModelId) {
+    return compileDetail(detail, parentModelId, List.of());
   }
 
-  private CompiledStorageProjection encode(final PhysicalSchemaDefinition schema, final Map<String, String> fieldCodes) {
+  /** Relations are taken from the same immutable parent snapshot as its detail declaration. */
+  public CompiledStorageProjection compileDetail(
+      final ApplicationFormDocument document,
+      final org.simplepoint.plugin.app.form.api.model.FormDetailDefinition detail,
+      final String parentModelId,
+      final List<FormRelationBinding> bindings) {
+    if (document.details().stream().noneMatch(detail::equals)) {
+      throw failure("Detail does not belong to its immutable form document", null);
+    }
+    return compileDetail(
+        detail,
+        parentModelId,
+        FormRelationPublicationProjection.references(document, bindings, detail.detailId()));
+  }
+
+  private CompiledStorageProjection compileDetail(
+      final org.simplepoint.plugin.app.form.api.model.FormDetailDefinition detail,
+      final String parentModelId,
+      final List<org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition>
+          references) {
+    Map<String, String> codes = new LinkedHashMap<>();
+    List<LogicalFieldDefinition> fields = new ArrayList<>();
+    fields.add(
+        new LogicalFieldDefinition(
+            "owned_parent",
+            "parent_record_id",
+            "Parent record",
+            LogicalFieldType.UUID,
+            false,
+            null,
+            null,
+            null,
+            null));
+    fields.add(
+        new LogicalFieldDefinition(
+            "owned_order",
+            "row_order",
+            "Row order",
+            LogicalFieldType.INT32,
+            false,
+            null,
+            null,
+            null,
+            null));
+    detail.fields().stream()
+        .filter(FormFieldDefinition::persistent)
+        .sorted(Comparator.comparing(FormFieldDefinition::fieldId))
+        .forEach(
+            field -> {
+              codes.put(field.fieldId(), field.storageCode());
+              fields.add(compileField(field));
+            });
+    List<LogicalIndexDefinition> indexes = new ArrayList<>();
+    indexes.add(
+        new LogicalIndexDefinition(
+            "owned_parent_order", List.of("parent_record_id", "row_order"), false));
+    detail.indexes().stream()
+        .sorted(Comparator.comparing(FormIndexDefinition::indexId))
+        .forEach(
+            index -> {
+              List<String> columns = new ArrayList<>();
+              columns.add("parent_record_id");
+              columns.addAll(index.fieldIds().stream().map(codes::get).toList());
+              indexes.add(new LogicalIndexDefinition(index.storageCode(), columns, index.unique()));
+            });
+    return encode(
+        new PhysicalSchemaDefinition(
+            DnaRuntimeApiVersion.CURRENT,
+            fields,
+            indexes,
+            new org.simplepoint.plugin.dna.runtime.api.schema.OwnedModelRelation(
+                parentModelId, "owned_parent"),
+            references.isEmpty() ? null : Boolean.TRUE,
+            references),
+        codes);
+  }
+
+  /** Compiles a pure edge; display and target qualification remain in immutable governance. */
+  CompiledStorageProjection compileCollection(String sourceModelId, FormRelationBinding binding) {
+    var collection = new CollectionModelRelation(binding.relationId(), "source", "target");
+    var fields =
+        List.of(
+            new LogicalFieldDefinition(
+                "source",
+                "source_id",
+                "Source record",
+                LogicalFieldType.UUID,
+                true,
+                null,
+                null,
+                null,
+                null),
+            new LogicalFieldDefinition(
+                "target",
+                "target_id",
+                "Target record",
+                LogicalFieldType.UUID,
+                true,
+                null,
+                null,
+                null,
+                null));
+    var references =
+        List.of(
+            new LogicalReferenceDefinition(
+                "source",
+                "source",
+                sourceModelId,
+                false,
+                List.of(new LogicalReferenceField(RECORD_STATE_FIELD_ID, LogicalFieldType.STRING))),
+            new LogicalReferenceDefinition(
+                "target",
+                "target",
+                binding.targetPhysicalModelId(),
+                false,
+                binding.targetFields()));
+    return encode(
+        new PhysicalSchemaDefinition(
+            DnaRuntimeApiVersion.CURRENT,
+            fields,
+            List.of(
+                new LogicalIndexDefinition(
+                    "endpoint_pair", List.of("source_id", "target_id"), true)),
+            null,
+            true,
+            references,
+            collection),
+        Map.of());
+  }
+
+  private CompiledStorageProjection encode(
+      final PhysicalSchemaDefinition schema, final Map<String, String> fieldCodes) {
     try {
       String json = mapper.writeValueAsString(schema);
       return new CompiledStorageProjection(
-          schema,
-          json,
-          checksum(json.getBytes(StandardCharsets.UTF_8)),
-          Map.copyOf(fieldCodes)
-      );
+          schema, json, checksum(json.getBytes(StandardCharsets.UTF_8)), Map.copyOf(fieldCodes));
     } catch (JsonProcessingException exception) {
       throw failure("Form storage projection cannot be serialized", exception);
     }
@@ -130,23 +271,12 @@ public class FormStorageProjectionCompiler {
       throw new ApplicationFormException(
           ApplicationFormErrorCode.PERSISTENCE_FAILED,
           "Stored form storage projection is invalid",
-          exception
-      );
+          exception);
     }
   }
 
   private LogicalFieldDefinition compileField(final FormFieldDefinition field) {
-    return new LogicalFieldDefinition(
-        field.fieldId(),
-        field.storageCode(),
-        field.storageLabel(),
-        LogicalFieldType.valueOf(field.type().name()),
-        !field.storageRequired(),
-        field.length(),
-        field.precision(),
-        field.scale(),
-        compileValue(field, field.defaultValue())
-    );
+    return FormLogicalFields.define(field, compileValue(field, field.defaultValue()));
   }
 
   private static LogicalFieldDefinition recordStateField() {
@@ -159,8 +289,7 @@ public class FormStorageProjectionCompiler {
         16,
         null,
         null,
-        new LogicalValue(LogicalValueKind.STRING, "DRAFT")
-    );
+        new LogicalValue(LogicalValueKind.STRING, "DRAFT"));
   }
 
   private LogicalValue compileValue(final FormFieldDefinition field, final FormValue value) {
@@ -170,19 +299,22 @@ public class FormStorageProjectionCompiler {
     if (value.value() == null) {
       return LogicalValue.nullValue();
     }
-    String canonical = switch (field.type()) {
-      case STRING, TEXT -> value.value();
-      case BOOLEAN -> Boolean.toString(Boolean.parseBoolean(value.value()));
-      case INT32 -> Integer.toString(Integer.parseInt(value.value()));
-      case INT64 -> Long.toString(Long.parseLong(value.value()));
-      case DECIMAL -> new BigDecimal(value.value()).setScale(field.scale(), java.math.RoundingMode.UNNECESSARY)
-          .toPlainString();
-      case DATE -> LocalDate.parse(value.value()).toString();
-      case TIME -> LocalTime.parse(value.value()).toString();
-      case DATETIME -> Instant.parse(value.value()).toString();
-      case UUID -> UUID.fromString(value.value()).toString();
-      case JSON -> canonicalJson(value.value());
-    };
+    String canonical =
+        switch (field.type()) {
+          case STRING, TEXT -> value.value();
+          case BOOLEAN -> Boolean.toString(Boolean.parseBoolean(value.value()));
+          case INT32 -> Integer.toString(Integer.parseInt(value.value()));
+          case INT64 -> Long.toString(Long.parseLong(value.value()));
+          case DECIMAL ->
+              new BigDecimal(value.value())
+                  .setScale(field.scale(), java.math.RoundingMode.UNNECESSARY)
+                  .toPlainString();
+          case DATE -> LocalDate.parse(value.value()).toString();
+          case TIME -> LocalTime.parse(value.value()).toString();
+          case DATETIME -> Instant.parse(value.value()).toString();
+          case UUID -> UUID.fromString(value.value()).toString();
+          case JSON -> canonicalJson(value.value());
+        };
     return new LogicalValue(LogicalValueKind.valueOf(value.kind().name()), canonical);
   }
 
@@ -217,10 +349,7 @@ public class FormStorageProjectionCompiler {
     }
   }
 
-  private static ApplicationFormException failure(
-      final String message,
-      final Throwable cause
-  ) {
+  private static ApplicationFormException failure(final String message, final Throwable cause) {
     return new ApplicationFormException(ApplicationFormErrorCode.DOCUMENT_INVALID, message, cause);
   }
 
@@ -229,8 +358,7 @@ public class FormStorageProjectionCompiler {
       PhysicalSchemaDefinition schema,
       String json,
       String checksum,
-      Map<String, String> fieldCodes
-  ) {
+      Map<String, String> fieldCodes) {
 
     /** Keeps the field identity map immutable. */
     public CompiledStorageProjection {

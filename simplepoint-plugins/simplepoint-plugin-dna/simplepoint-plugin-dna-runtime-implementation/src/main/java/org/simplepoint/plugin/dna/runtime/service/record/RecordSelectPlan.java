@@ -10,16 +10,37 @@ record RecordSelectPlan(
     List<Object> parameters,
     List<String> valueFields,
     int maxRows,
-    boolean physicalValueProjection
-) {
+    boolean physicalValueProjection,
+    boolean physicalRelationalExecution) {
 
-  RecordSelectPlan(final String sql, final List<Object> parameters, final List<String> valueFields, final int maxRows) {
+  RecordSelectPlan(
+      String sql,
+      List<Object> parameters,
+      List<String> valueFields,
+      int maxRows,
+      boolean physicalValueProjection) {
+    this(sql, parameters, valueFields, maxRows, physicalValueProjection, false);
+  }
+
+  RecordSelectPlan(
+      final String sql,
+      final List<Object> parameters,
+      final List<String> valueFields,
+      final int maxRows) {
     this(sql, parameters, valueFields, maxRows, false);
   }
 
   RecordSelectPlan {
-    parameters = parameters == null
-        ? List.of() : Collections.unmodifiableList(new ArrayList<>(parameters));
+    parameters =
+        parameters == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(parameters));
     valueFields = valueFields == null ? List.of() : List.copyOf(valueFields);
+  }
+
+  /**
+   * Collection cardinality/filter/order must remain in the owned database, even for small pages.
+   */
+  RecordSelectPlan requirePhysicalRelations() {
+    return new RecordSelectPlan(
+        sql, parameters, valueFields, maxRows, physicalValueProjection, true);
   }
 }

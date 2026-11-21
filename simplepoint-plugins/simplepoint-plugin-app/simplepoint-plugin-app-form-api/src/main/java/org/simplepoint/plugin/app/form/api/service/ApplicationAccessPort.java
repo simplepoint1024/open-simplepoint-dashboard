@@ -15,4 +15,9 @@ public interface ApplicationAccessPort {
   default void requireApplicationForUpdate(String tenantId, String applicationId) {
     requireApplication(tenantId, applicationId);
   }
+
+  /** Serializes a new form with application removal. */
+  default void requireApplicationForFormCreation(String tenantId, String applicationId) {
+    requireApplicationForUpdate(tenantId, applicationId);
+  }
 }

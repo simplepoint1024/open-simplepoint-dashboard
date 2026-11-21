@@ -28,32 +28,40 @@ class DnaRuntimeAssemblyTest {
     try (var context = new AnnotationConfigApplicationContext()) {
       context.registerBean(ObjectMapper.class, () -> new ObjectMapper().findAndRegisterModules());
       context.registerBean(
-          PhysicalModelRepository.class,
-          () -> mock(PhysicalModelRepository.class)
-      );
+          PhysicalModelRepository.class, () -> mock(PhysicalModelRepository.class));
       context.registerBean(
-          PhysicalModelBindingRepository.class,
-          () -> mock(PhysicalModelBindingRepository.class)
-      );
+          PhysicalModelBindingRepository.class, () -> mock(PhysicalModelBindingRepository.class));
       context.registerBean(
-          PhysicalModelVersionRepository.class,
-          () -> mock(PhysicalModelVersionRepository.class)
-      );
+          PhysicalModelVersionRepository.class, () -> mock(PhysicalModelVersionRepository.class));
       context.registerBean(
-          DnaRuntimeAuditEventRepository.class,
-          () -> mock(DnaRuntimeAuditEventRepository.class)
-      );
-      context.registerBean(org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl.class,
-          () -> mock(org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl.class));
+          DnaRuntimeAuditEventRepository.class, () -> mock(DnaRuntimeAuditEventRepository.class));
+      context.registerBean(
+          org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl.class,
+          () ->
+              mock(
+                  org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl
+                      .class));
+      context.registerBean(
+          org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class,
+          () ->
+              mock(
+                  org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog
+                      .class));
+      context.registerBean(
+          org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider.class,
+          () ->
+              mock(
+                  org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider
+                      .class));
       context.register(
+          org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry.class,
           DnaRuntimeConfiguration.class,
           StandardLogicalValueConverter.class,
           PhysicalSchemaCodec.class,
           PhysicalSchemaValidator.class,
           RuntimeRequestContext.class,
           JpaDnaRuntimeAuditPublisher.class,
-          PhysicalModelServiceImpl.class
-      );
+          PhysicalModelServiceImpl.class);
       context.refresh();
 
       assertThat(context.getBean(PhysicalModelService.class)).isNotNull();

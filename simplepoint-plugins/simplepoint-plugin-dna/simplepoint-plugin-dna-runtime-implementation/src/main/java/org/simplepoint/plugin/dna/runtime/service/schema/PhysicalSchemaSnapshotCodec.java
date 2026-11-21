@@ -12,6 +12,7 @@ import java.util.Map;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalColumnSnapshot;
+import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalForeignKeySnapshot;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalIndexSnapshot;
 import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalTableSnapshot;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,12 @@ public class PhysicalSchemaSnapshotCodec {
       final List<PhysicalIndexSnapshot> indexes,
       final String tableComment
   ) {
+    return snapshot(exists, columns, indexes, tableComment, List.of());
+  }
+
+  /** Includes foreign keys without changing checksums of historical tables without them. */
+  public PhysicalTableSnapshot snapshot(boolean exists, List<PhysicalColumnSnapshot> columns,
+      List<PhysicalIndexSnapshot> indexes, String tableComment, List<PhysicalForeignKeySnapshot> foreignKeys) {
     List<PhysicalColumnSnapshot> sortedColumns = columns == null
         ? List.of()
         : columns.stream().sorted(java.util.Comparator.comparing(PhysicalColumnSnapshot::name)).toList();
@@ -45,12 +52,18 @@ public class PhysicalSchemaSnapshotCodec {
     canonical.put("columns", sortedColumns);
     canonical.put("indexes", sortedIndexes);
     canonical.put("tableComment", normalize(tableComment));
+    List<PhysicalForeignKeySnapshot> sortedForeignKeys = foreignKeys == null ? List.of()
+        : foreignKeys.stream().sorted(java.util.Comparator.comparing(PhysicalForeignKeySnapshot::name)).toList();
+    if (!sortedForeignKeys.isEmpty()) {
+      canonical.put("foreignKeys", sortedForeignKeys);
+    }
     return new PhysicalTableSnapshot(
         exists,
         sortedColumns,
         sortedIndexes,
         tableComment,
-        checksumJson(canonical)
+        checksumJson(canonical),
+        sortedForeignKeys
     );
   }
 

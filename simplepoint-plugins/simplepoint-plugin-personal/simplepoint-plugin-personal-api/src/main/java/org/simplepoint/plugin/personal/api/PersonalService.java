@@ -1,11 +1,14 @@
 package org.simplepoint.plugin.personal.api;
 
 import java.util.Map;
+import java.util.List;
 import org.simplepoint.plugin.personal.api.PersonalModels.ActionInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.EventView;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemView;
 import org.simplepoint.plugin.personal.api.PersonalModels.MessageView;
+import org.simplepoint.plugin.personal.api.PersonalModels.MessageSelection;
+import org.simplepoint.plugin.personal.api.PersonalModels.RecordRevision;
 import org.simplepoint.plugin.personal.api.PersonalModels.Overview;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoView;
@@ -67,6 +70,11 @@ public interface PersonalService {
   /** Changes a manual todo; business-source outcomes cannot be changed here. */
   TodoView todoAction(String id, ActionInput action);
 
+  /** Permanently removes a versioned todo from its owner's current workspace. */
+  void deleteTodo(String id, long expectedVersion);
+
+  void deleteTodos(List<RecordRevision> records);
+
   /** Lists owned inbox or archived messages with an optional unread filter. */
   default Page<MessageView> messages(
       String keyword, boolean unreadOnly, boolean archived, Pageable page) {
@@ -74,10 +82,16 @@ public interface PersonalService {
   }
 
   /** Applies platform header filters and sorting to personal messages. */
+  default Page<MessageView> messages(
+      String keyword, boolean unreadOnly, boolean archived, Pageable page, Map<String, String> filters) {
+    return messages(keyword, unreadOnly, archived, false, page, filters);
+  }
+
   Page<MessageView> messages(
       String keyword,
       boolean unreadOnly,
       boolean archived,
+      boolean trash,
       Pageable page,
       Map<String, String> filters);
 
@@ -86,6 +100,16 @@ public interface PersonalService {
 
   /** Changes the read or archive state using optimistic version checks. */
   MessageView messageAction(String id, ActionInput action);
+
+  /** Moves the recipient's message to the recycle bin. */
+  void deleteMessage(String id, long expectedVersion);
+
+  void deleteMessages(List<RecordRevision> records);
+
+  /** Permanently removes the recipient's selected messages from the recycle bin. */
+  void purgeMessages(List<RecordRevision> records);
+
+  void changeMessages(MessageSelection selection);
 
   /** Marks only the current workspace inbox read in one bulk update. */
   void readAllMessages();

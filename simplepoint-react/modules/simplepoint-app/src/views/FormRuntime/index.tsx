@@ -1,4 +1,6 @@
-import {runtimeDescriptorKey, type ApplicationFormRuntimeView} from '@simplepoint/components/FormRuntime';
+import {asyncComponent} from '@simplepoint/components/AsyncComponent';
+import type {ApplicationFormRuntimeView} from '@simplepoint/components/FormRuntime/contracts';
+import {runtimeDescriptorKey} from '@simplepoint/components/FormRuntime/recordTableModel';
 import TableActions from '@simplepoint/components/Table/Actions';
 import {get, useData} from '@simplepoint/shared/api/methods';
 import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
@@ -9,12 +11,23 @@ import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
 import {usePageLocation} from '@simplepoint/shared/page/hooks';
 import PageSection from '@simplepoint/shared/page/Section';
 import RecordTable from './RecordTable.tsx';
+import {readFormReferenceLocation} from '@simplepoint/components/FormRuntime/referenceLocation';
+
+const ReferencePage = asyncComponent(() => import('@simplepoint/components/FormRuntime/ReferencePage'));
 
 /** Local drafts and outstanding writes belong to exactly one route and authorization scope. */
 export default function FormRuntime() {
   const location = usePageLocation();
   const scope = useQueryScope();
-  return <RuntimePage key={JSON.stringify([scope, location])} location={location}/>;
+  return <RuntimeEntry key={JSON.stringify([scope, location])} location={location}/>;
+}
+
+function RuntimeEntry({location}: {location: string}) {
+  const {t} = useI18n();
+  const selection = readFormReferenceLocation(location);
+  if (selection.state === 'invalid') return <Alert type="error" showIcon title={t('app.runtime.invalidRoute', '应用页面地址无效')}/>;
+  if (selection.state === 'reference') return <ReferencePage reference={selection.reference}/>;
+  return <RuntimePage location={location}/>;
 }
 
 function RuntimePage({location}: {location: string}) {

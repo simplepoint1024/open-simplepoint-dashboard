@@ -4,9 +4,10 @@ import {platformComponentBehaviors} from '../FormComponents/modelRegistry.ts';
 import type {FormComponentDefinition as Node, FormSceneDefinition as Scene, FormFieldType} from '../FormRuntime/contracts.ts';
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
 import {sameDesignDocument} from './draftState.ts';
+import {cloneFieldRelations, validateDesignRelations} from './relations/model.ts';
 
 export type NodeLocation = {node: Node; scene: Scene; parent?: Node; index: number};
-export type Clipboard = {node: Node; fields: DesignField[]; rules: DesignDocument['rules']; details?: DesignDocument['details']};
+export type Clipboard = {node: Node; fields: DesignField[]; rules: DesignDocument['rules']; details?: DesignDocument['details']; relations?: DesignDocument['relations']};
 export type DesignHistory = {past: DesignDocument[]; present: DesignDocument; future: DesignDocument[]};
 export type Identity = () => string;
 export class DesignError extends Error {
@@ -46,6 +47,7 @@ function requireParent(document: DesignDocument, parentId: string, child: Node, 
 /** Validate command invariants before replacing a complete immutable document. Server validates all values again. */
 export function validateStructure(document: DesignDocument, components: readonly ComponentDescriptor[]) {
   if (document.contractVersion !== '1') throw new DesignError('unsupported');
+  validateDesignRelations(document);
   if (document.fields.length > 300 || document.scenes.length > 50 || document.rules.length > 500
     || document.scenes.filter(scene => scene.type === 'MAIN').length !== 1) throw new DesignError('limit');
   const ids = new Set<string>(), fieldIds = new Set(document.fields.map(field => field.fieldId));
@@ -111,12 +113,21 @@ export function newDataField(document: DesignDocument, type: FormFieldType, labe
     length: type === 'STRING' ? 255 : null, precision: type === 'DECIMAL' ? 18 : null,
     scale: type === 'DECIMAL' ? 2 : null, defaultValue: null, choices: []};
 }
+
+/** Temporary values have a stable field identity but never a physical storage identity. */
+export function newTransientField(document: DesignDocument, type: FormFieldType, label: string, id: Identity = identity): DesignField {
+  const field = newDataField(document, type, label, id);
+  delete field.storageCode;
+  delete field.storageLabel;
+  return {...field, storageMode: 'TRANSIENT'};
+}
 function createField(document: DesignDocument, component: ComponentDescriptor, label: string, id: Identity): DesignField {
   const type = preferredTypes.find(type => component.supportedFieldTypes.includes(type));
   if (!type) throw new DesignError('field');
-  return {...newDataField(document, type, label, id),
+  const field: DesignField = {...newDataField(document, type, label, id),
     storageMode: component.type === 'field.attachment' ? 'ATTACHMENT' : 'STORED',
     choices: component.type === 'field.select' ? [{value: 'option_1', label}] : []};
+  return platformComponentBehaviors.get({componentType: component.type, componentVersion: component.version})?.initializeField?.(field) ?? field;
 }
 export function insertComponent(document: DesignDocument, parentId: string, index: number,
   component: ComponentDescriptor, label: string, components: readonly ComponentDescriptor[], existingFieldId?: string,
@@ -186,7 +197,7 @@ export function copyComponent(document: DesignDocument, componentId: string): Cl
   if (!target?.parent || platformComponentBehaviors.get(target.node)?.structural) throw new DesignError('parent');
   const nodes = new Set<string>(), fields = new Set<string>();
   walk(target.node, item => {nodes.add(item.componentId); if (item.fieldId) fields.add(item.fieldId);});
-  return structuredClone({node: target.node, details: document.details, fields: document.fields.filter(field => fields.has(field.fieldId)),
+  return structuredClone({node: target.node, details: document.details, ...(document.relations?.length ? {relations: document.relations} : {}), fields: document.fields.filter(field => fields.has(field.fieldId)),
     rules: document.rules.filter(rule => nodes.has(rule.targetComponentId))});
 }
 export function pasteComponent(document: DesignDocument, parentId: string, clipboard: Clipboard,
@@ -201,10 +212,12 @@ export function pasteComponent(document: DesignDocument, parentId: string, clipb
   walk(copied.node, item => {
     const newId = id(); nodes.set(item.componentId, newId); item.componentId = newId;
     if (item.fieldId) item.fieldId = fields.get(item.fieldId)!;
-    const extra = platformComponentBehaviors.get(item)?.clone?.(item, id, next, {...document, details: copied.details}, fields);
+    const extra = platformComponentBehaviors.get(item)?.clone?.(item, id, next, {...document, details: copied.details}, fields, references);
     extra?.forEach((to, from) => references.set(from, to));
   });
   const copiedIds = new Set(fields.values());
+  const relations = cloneFieldRelations(copied.relations, references, id);
+  if (relations.length) next.relations = [...(next.relations ?? []), ...relations];
   next.fields = next.fields.map(field => copiedIds.has(field.fieldId) ? remapCalculation(field, references) : field);
   const conditionFields = (condition: DesignDocument['rules'][number]['condition']) => {
     if (condition.fieldId) condition.fieldId = fields.get(condition.fieldId) ?? condition.fieldId;

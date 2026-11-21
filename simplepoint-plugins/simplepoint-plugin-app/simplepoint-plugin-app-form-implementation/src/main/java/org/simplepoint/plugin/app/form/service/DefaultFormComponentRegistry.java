@@ -63,6 +63,7 @@ public class DefaultFormComponentRegistry implements FormComponentRegistry {
     var extensions = new java.util.ArrayList<FormComponentContributor>();
     extensions.add(new org.simplepoint.plugin.app.form.component.MatrixComponentContributor());
     extensions.add(new org.simplepoint.plugin.app.form.component.DetailComponentContributor());
+    extensions.add(new org.simplepoint.plugin.app.form.component.ReferenceComponentContributor());
     extensions.add(new org.simplepoint.plugin.app.form.component.StandardComponentsContributor());
     extensions.addAll(contributors);
     extensions.forEach(

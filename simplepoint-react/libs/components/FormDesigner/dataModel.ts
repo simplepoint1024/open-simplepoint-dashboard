@@ -10,6 +10,7 @@ import {exactDecimal} from '../../shared/utils/decimal.ts';
 import {sameDesignValue} from './draftState.ts';
 import {validateStructure} from './model.ts';
 import {persistentField, calculableField} from './fieldCapabilities.ts';
+import {businessReferenceField} from './relations/model.ts';
 export {persistentField, calculableField} from './fieldCapabilities.ts';
 
 export type DesignIndex = DesignDocument['indexes'][number];
@@ -29,6 +30,7 @@ export const fieldTypes: readonly FormFieldType[] = ['STRING', 'TEXT', 'BOOLEAN'
 /** A shared field must remain compatible with every scene and existing typed rule. */
 export function allowedFieldTypes(document: DesignDocument, field: DesignField, components: readonly ComponentDescriptor[]) {
   let allowed = fieldTypes.filter(type => field.storageMode !== 'REFERENCE' || type === 'STRING' || type === 'UUID')
+    .filter(type => !businessReferenceField(document, field) || type === 'UUID')
     .filter(type => field.storageMode !== 'ATTACHMENT' || type === 'JSON');
   const visit = (node: DesignDocument['scenes'][number]['root']) => {
     if (node.fieldId === field.fieldId) {
@@ -40,6 +42,8 @@ export function allowedFieldTypes(document: DesignDocument, field: DesignField, 
   document.scenes.forEach(scene => visit(scene.root));
   const references = (condition: FormCondition): boolean => condition.fieldId === field.fieldId || condition.children.some(references);
   if (document.rules.some(rule => references(rule.condition))) allowed = allowed.filter(type => type === field.type);
+  if (document.relations?.some(relation => relation.referenceView?.contextFilters?.some(filter =>
+    filter.source === 'FORM' && filter.sourceFieldId === field.fieldId))) allowed = allowed.filter(type => type === field.type);
   return allowed;
 }
 
@@ -88,9 +92,13 @@ function literalIdentity(type: FormFieldType, value: string): string {
 }
 
 /** Inspect existing metadata without normalizing or mutating an immutable draft. */
-export function validateDesignField(field: DesignField) {validateField(structuredClone(field));}
+export function validateDesignField(field: DesignField, businessReference = false) {
+  validateField(structuredClone(field), businessReference);
+}
 
-function validateField(field: DesignField) {
+function validateField(field: DesignField, businessReference = false) {
+  if (businessReference && (field.calculation || field.choices.length
+    || field.defaultValue != null && field.defaultValue.kind !== 'NULL')) throw new DataEditError('constraints');
   const integer = (value: unknown, min: number, max: number) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
   if (!field.label?.trim() || [...field.label].length > 120
     || field.labelLocalization && (!localizedTextValid(field.labelLocalization, 120) || field.labelLocalization.defaultValue !== field.label)
@@ -99,7 +107,9 @@ function validateField(field: DesignField) {
     throw new DataEditError('constraints');
   }
   try {validateFieldRules(field.validation, field.length ?? undefined);} catch {throw new DataEditError('constraints');}
-  if (field.storageRequired && (!persistentField(field) || !field.calculation && (!field.defaultValue || field.defaultValue.kind === 'NULL'))) {
+  const requiredReference = businessReference && field.storageMode === 'REFERENCE' && field.defaultValue == null;
+  if (field.storageRequired && (!persistentField(field)
+    || !field.calculation && !requiredReference && (!field.defaultValue || field.defaultValue.kind === 'NULL'))) {
     throw new DataEditError('defaultValue');
   }
   let defaultText: string | undefined;
@@ -126,7 +136,7 @@ function validateField(field: DesignField) {
 export function applyFieldEdit(document: DesignDocument, base: DesignField, edit: FieldEdit,
   components: readonly ComponentDescriptor[], writePolicies: readonly FormFieldWritePolicy[], creating = false, scope: 'form' | 'detail' = 'form'): DesignDocument {
   const current = document.fields.find(field => field.fieldId === base.fieldId);
-  if (creating ? current || document.fields.some(field => field.storageCode === base.storageCode) : !current || !sameDesignValue(current, base)) {
+  if (creating ? current || base.storageCode && document.fields.some(field => field.storageCode === base.storageCode) : !current || !sameDesignValue(current, base)) {
     throw new DataEditError('conflict');
   }
   if (!allowedFieldTypes(document, base, components).includes(edit.type)) throw new DataEditError('fieldType');
@@ -151,10 +161,10 @@ export function applyFieldEdit(document: DesignDocument, base: DesignField, edit
       delete field.calculation;
     }
   }
-  if (creating) field.storageLabel = edit.label;
+  if (creating && persistentField(field)) field.storageLabel = edit.label;
   if (field.calculation || edit.writePolicy === 'EDITABLE') delete field.writePolicy;
   else field.writePolicy = edit.writePolicy;
-  validateField(field);
+  validateField(field, businessReferenceField(document, base));
   const next = {...document, fields: creating ? [field, ...document.fields]
     : document.fields.map(item => item.fieldId === field.fieldId ? field : item)};
   if (scope === 'form') {next.scenes = renamedFieldScenes(next, base, field); validateStructure(next, components);}

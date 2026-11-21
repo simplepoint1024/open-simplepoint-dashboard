@@ -28,6 +28,10 @@ export default function PublicationSummary({base, document, revision, intent, pr
     formula: t('app.publication.formulaChanged', '计算方式变化'), attributes: t('app.publication.fieldChanged', '字段属性变化'),
   };
   const changes = query.data && !query.error && !query.isFetching ? publicationChanges(query.data.before, query.data.candidate) : [];
+  const conversions = query.data?.candidate.relations?.filter(relation => relation.retiredByCollectionId
+    && query.data?.before?.relations?.some(previous => previous.relationId === relation.relationId && !previous.retiredByCollectionId)) ?? [];
+  const replacements = query.data?.candidate.relations?.filter(relation => relation.collectionReplacement
+    && query.data?.before?.relations?.some(previous => previous.relationId === relation.collectionReplacement?.sourceRelationId)) ?? [];
   return <Collapse className="app-publication-summary" defaultActiveKey={['summary']} items={[
     {key: 'summary', label: <span>{createIcon('DiffOutlined')} {t('app.publication.summary', '发布影响')}</span>, children: <>
       {query.error ? <Alert type="warning" showIcon title={t('app.publication.summaryFailed', '发布摘要加载失败，请重试；不能据此判断没有影响。')}
@@ -36,7 +40,11 @@ export default function PublicationSummary({base, document, revision, intent, pr
         : query.data && <>
           <Tag>{query.data.version == null ? t('app.publication.firstRelease', '首次发布')
             : t('app.publication.compareVersion', '对比已发布版本 {version}', {version: query.data.version})}</Tag>
-          {!changes.length ? <p>{t('app.publication.noFieldChanges', '未发现字段定义变化。')}</p> : <DataTable rowKey="key" dataSource={changes} cards={false} settings={false} selectable={false} pagination={changes.length > 5 ? {pageSize: 5} : false}
+          {conversions.length > 0 && <Alert type="warning" showIcon
+            title={t('app.relation.collection.conversionEffect', '发布会把现有引用迁入新集合，并停用原引用字段。历史记录保留。')}/>}
+          {replacements.length > 0 && <Alert type="warning" showIcon
+            title={t('app.relation.collection.rebindEffect', '发布会按映射迁移现有关联，切换后停用旧关联，并保留两张表单的业务记录。')}/>}
+          {!changes.length ? !conversions.length && !replacements.length && <p>{t('app.publication.noFieldChanges', '未发现字段定义变化。')}</p> : <DataTable rowKey="key" dataSource={changes} cards={false} settings={false} selectable={false} pagination={changes.length > 5 ? {pageSize: 5} : false}
             scroll={{x: 350, y: 210}} columns={[
               {key: 'label', dataIndex: 'label', title: t('app.designer.fieldLabel', '字段名称')},
               {key: 'kind', title: t('app.publication.change', '变更'), render: (_, row) => labels[row.kind]},

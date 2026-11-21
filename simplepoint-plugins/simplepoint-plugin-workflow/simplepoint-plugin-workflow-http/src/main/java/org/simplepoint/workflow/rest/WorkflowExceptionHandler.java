@@ -21,7 +21,7 @@ public class WorkflowExceptionHandler {
         switch (exception.getCode()) {
           case VALIDATION -> HttpStatus.BAD_REQUEST;
           case NOT_FOUND -> HttpStatus.NOT_FOUND;
-          case CONFLICT -> HttpStatus.CONFLICT;
+          case CONFLICT, DEFINITION_DELETE_BLOCKED, HISTORY_REMOVAL_BLOCKED -> HttpStatus.CONFLICT;
           case FORBIDDEN -> HttpStatus.FORBIDDEN;
           case ENGINE_FAILURE -> HttpStatus.UNPROCESSABLE_ENTITY;
           case DIRECTORY_PREPARING, DIRECTORY_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;

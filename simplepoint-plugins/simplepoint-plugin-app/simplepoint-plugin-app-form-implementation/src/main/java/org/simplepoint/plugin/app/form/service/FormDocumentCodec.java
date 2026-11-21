@@ -33,6 +33,7 @@ import org.simplepoint.plugin.app.form.api.model.FormValue;
 public class FormDocumentCodec {
 
   private static final int MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
+  private static final int MAX_RELATION_BINDING_BYTES = 1024 * 1024;
 
   private final ObjectMapper mapper;
 
@@ -90,8 +91,51 @@ public class FormDocumentCodec {
                             .toList(),
                         detail.indexes().stream()
                             .sorted(Comparator.comparing(FormIndexDefinition::indexId))
-                            .toList(), detail.labelLocalization()))
-            .toList(), document.constraints(), document.presentation());
+                            .toList(),
+                        detail.labelLocalization()))
+            .toList(),
+        document.constraints(),
+        document.presentation(),
+        document.relations().stream()
+            .map(
+                relation ->
+                    new org.simplepoint.plugin.app.form.api.model.relation.FormRelationDefinition(
+                        relation.contractVersion(),
+                        relation.relationId(),
+                        relation.cardinality(),
+                        relation.sourceField(),
+                        relation.target(),
+                        relation.qualification() == null
+                            ? null
+                            : new org.simplepoint.plugin.app.form.api.model.relation
+                                .FormRelationQualification(
+                                canonicalCondition(relation.qualification().condition()),
+                                relation.qualification().recheck()),
+                        relation.referenceView() == null
+                            ? null
+                            : new org.simplepoint.plugin.app.form.api.model.relation
+                                .FormReferenceView(
+                                relation.referenceView().labelFieldId(),
+                                relation.referenceView().searchFieldIds(),
+                                relation.referenceView().displayFieldIds(),
+                                canonicalCondition(relation.referenceView().candidateFilter()),
+                                relation.referenceView().allowDrillThrough(),
+                                relation.referenceView().contextFilters()),
+                        relation.mappings().stream()
+                            .sorted(
+                                Comparator.comparing(
+                                    org.simplepoint.plugin.app.form.api.model.relation
+                                            .FormReferenceMapping
+                                        ::mappingId))
+                            .toList(),
+                        relation.collectionLabel(),
+                        relation.retiredByCollectionId(),
+                        relation.collectionReplacement()))
+            .sorted(
+                Comparator.comparing(
+                    org.simplepoint.plugin.app.form.api.model.relation.FormRelationDefinition
+                        ::relationId))
+            .toList());
   }
 
   private FormFieldDefinition canonicalField(final FormFieldDefinition field) {
@@ -109,7 +153,11 @@ public class FormDocumentCodec {
         field.scale(),
         canonicalValue(field.defaultValue()),
         field.choices(),
-        field.writePolicy(), field.validation(), field.access(), field.calculation(), field.labelLocalization());
+        field.writePolicy(),
+        field.validation(),
+        field.access(),
+        field.calculation(),
+        field.labelLocalization());
   }
 
   private FormSceneDefinition canonicalScene(final FormSceneDefinition scene) {
@@ -137,7 +185,8 @@ public class FormDocumentCodec {
         component.targetSceneId(),
         component.readOnly(),
         properties,
-        component.children().stream().map(this::canonicalComponent).toList(), component.labelLocalization());
+        component.children().stream().map(this::canonicalComponent).toList(),
+        component.labelLocalization());
   }
 
   private FormRuleDefinition canonicalRule(final FormRuleDefinition rule) {
@@ -149,6 +198,9 @@ public class FormDocumentCodec {
   }
 
   private FormCondition canonicalCondition(final FormCondition condition) {
+    if (condition == null) {
+      return null;
+    }
     return new FormCondition(
         condition.operator(),
         condition.fieldId(),
@@ -203,6 +255,79 @@ public class FormDocumentCodec {
   public List<FormDetailBinding> decodeDetailBindings(final String json) {
     return FormDetailSchemaCoordinator.decode(json, mapper);
   }
+
+  /**
+   * Freezes resolved relation identities with the exact semantic document; absence stays absent.
+   */
+  public String encodeRelationBindings(
+      ApplicationFormDocument document, List<FormRelationBinding> bindings) {
+    var checked = FormRelationPublicationProjection.bindings(document, bindings);
+    if (checked.isEmpty()) {
+      return null;
+    }
+    var payload =
+        new RelationPayload(
+            1,
+            encode(document).checksum(),
+            checked.values().stream()
+                .sorted(Comparator.comparing(FormRelationBinding::relationId))
+                .toList());
+    try {
+      String json =
+          mapper.writeValueAsString(
+              new RelationEnvelope(payload, checksum(mapper.writeValueAsBytes(payload))));
+      if (json.getBytes(StandardCharsets.UTF_8).length > MAX_RELATION_BINDING_BYTES) {
+        throw relationBindingFailure(null);
+      }
+      return json;
+    } catch (JsonProcessingException failure) {
+      throw relationBindingFailure(failure);
+    }
+  }
+
+  /** Restores only a complete matching immutable snapshot, never resolving a replacement target. */
+  public List<FormRelationBinding> decodeRelationBindings(
+      ApplicationFormDocument document, String json) {
+    if (json == null && document.relations().isEmpty()) {
+      return List.of();
+    }
+    if (json == null || json.getBytes(StandardCharsets.UTF_8).length > MAX_RELATION_BINDING_BYTES) {
+      throw relationBindingFailure(null);
+    }
+    try {
+      RelationEnvelope envelope =
+          mapper
+              .readerFor(RelationEnvelope.class)
+              .with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+              .readValue(json);
+      if (envelope == null
+          || envelope.payload() == null
+          || envelope.payload().contractVersion() != 1
+          || !encode(document).checksum().equals(envelope.payload().documentChecksum())
+          || !checksum(mapper.writeValueAsBytes(envelope.payload())).equals(envelope.checksum())) {
+        throw relationBindingFailure(null);
+      }
+      return FormRelationPublicationProjection.bindings(document, envelope.payload().bindings())
+          .values()
+          .stream()
+          .sorted(Comparator.comparing(FormRelationBinding::relationId))
+          .toList();
+    } catch (JsonProcessingException | IllegalArgumentException failure) {
+      throw relationBindingFailure(failure);
+    }
+  }
+
+  private static ApplicationFormException relationBindingFailure(Throwable cause) {
+    return new ApplicationFormException(
+        ApplicationFormErrorCode.PERSISTENCE_FAILED,
+        "Immutable form relation bindings are absent, incompatible or corrupted",
+        cause);
+  }
+
+  private record RelationPayload(
+      int contractVersion, String documentChecksum, List<FormRelationBinding> bindings) {}
+
+  private record RelationEnvelope(RelationPayload payload, String checksum) {}
 
   /** Restores one validated contract snapshot from persistence. */
   public ApplicationFormDocument decode(final String json) {

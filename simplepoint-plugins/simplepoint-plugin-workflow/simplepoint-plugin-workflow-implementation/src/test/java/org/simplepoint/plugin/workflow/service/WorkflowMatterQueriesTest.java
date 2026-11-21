@@ -88,6 +88,11 @@ class WorkflowMatterQueriesTest extends WorkflowDirectoryFixture {
           em.persist(watcher);
         });
     assertThat(rows("copied").content()).isEmpty();
+    transaction.executeWithoutResult(status -> matters.archive("started", List.of(instance.id()), true));
+    assertThat(rows("started").totalElements()).isZero();
+    assertThat(transaction.execute(status ->
+        matters.query("started", true, Map.of(), PageRequest.of(0, 50))).totalElements()).isEqualTo(1);
+    assertThat(rows("all").totalElements()).isEqualTo(1);
     authorize("reviewer", "tenant", false, List.of("workflow.instances.started.view"));
     assertThat(rows("started").content()).isEmpty();
     assertThat(rows("copied").content())

@@ -4,7 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -26,14 +32,29 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
-import org.simplepoint.plugin.app.form.api.model.*;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormRuntimeIdentity;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormStatus;
+import org.simplepoint.plugin.app.form.api.model.FormCalculation;
+import org.simplepoint.plugin.app.form.api.model.FormComponentDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormFieldType;
+import org.simplepoint.plugin.app.form.api.model.FormRecordState;
+import org.simplepoint.plugin.app.form.api.model.FormSceneDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormSceneType;
+import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
+import org.simplepoint.plugin.app.form.api.model.FormWorkflowSubmissionCheck;
+import org.simplepoint.plugin.app.form.api.model.SubmitApplicationFormCommand;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormEntity;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormSubmissionEntity;
 import org.simplepoint.plugin.app.form.service.PublishedApplicationFormResolver.PublishedApplicationForm;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
 import org.simplepoint.plugin.workflow.api.model.WorkflowInvocationContext;
-import org.simplepoint.plugin.workflow.api.model.WorkflowModels.*;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ProcessInstanceSummary;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.RuntimeForm;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.StartProcessCommand;
 import org.simplepoint.plugin.workflow.api.service.WorkflowBusinessRuntimeService;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -68,12 +89,14 @@ class FormSubmissionRecoveryTest {
     factory =
         new MetadataSources(registry)
             .addAnnotatedClass(ApplicationFormEntity.class)
-            .addAnnotatedClass(org.simplepoint.plugin.app.form.entity.ApplicationFormVersionEntity.class)
+            .addAnnotatedClass(
+                org.simplepoint.plugin.app.form.entity.ApplicationFormVersionEntity.class)
             .addAnnotatedClass(
                 org.simplepoint.plugin.app.form.entity.ApplicationResourceOfflineEntity.class)
             .addAnnotatedClass(
                 org.simplepoint.plugin.app.form.entity.ApplicationFormPageBindingEntity.class)
             .addAnnotatedClass(ApplicationFormSubmissionEntity.class)
+            .addAnnotatedClass(org.simplepoint.plugin.app.form.entity.ApplicationRemovedSubmissionEntity.class)
             .buildMetadata()
             .buildSessionFactory();
     manager = SharedEntityManagerCreator.createSharedEntityManager(factory);
@@ -217,16 +240,29 @@ class FormSubmissionRecoveryTest {
   }
 
   private void persistVersion(int number, ApplicationFormDocument document) {
-    new TransactionTemplate(new JpaTransactionManager(factory)).executeWithoutResult(status -> {
-      var encoded = new FormDocumentCodec(new ObjectMapper()).encode(document);
-      var version = new org.simplepoint.plugin.app.form.entity.ApplicationFormVersionEntity();
-      version.setId("version-" + number); version.setTenantId("tenant"); version.setFormId("form");
-      version.setVersionNumber(number); version.setDocumentJson(encoded.json()); version.setChecksum(encoded.checksum());
-      version.setStorageSchemaJson("{}"); version.setStorageChecksum("f".repeat(64)); version.setPhysicalModelVersion(number);
-      version.setRendererVersion("1"); version.setCreatedAt(clock.instant()); manager.persist(version);
-      var form = manager.find(ApplicationFormEntity.class, "form");
-      form.setPublishedVersion(number); form.setLatestVersion(number); form.setPhysicalModelId("model");
-    });
+    new TransactionTemplate(new JpaTransactionManager(factory))
+        .executeWithoutResult(
+            status -> {
+              var encoded = new FormDocumentCodec(new ObjectMapper()).encode(document);
+              var version =
+                  new org.simplepoint.plugin.app.form.entity.ApplicationFormVersionEntity();
+              version.setId("version-" + number);
+              version.setTenantId("tenant");
+              version.setFormId("form");
+              version.setVersionNumber(number);
+              version.setDocumentJson(encoded.json());
+              version.setChecksum(encoded.checksum());
+              version.setStorageSchemaJson("{}");
+              version.setStorageChecksum("f".repeat(64));
+              version.setPhysicalModelVersion(number);
+              version.setRendererVersion("1");
+              version.setCreatedAt(clock.instant());
+              manager.persist(version);
+              var form = manager.find(ApplicationFormEntity.class, "form");
+              form.setPublishedVersion(number);
+              form.setLatestVersion(number);
+              form.setPhysicalModelId("model");
+            });
   }
 
   @AfterEach
@@ -234,20 +270,35 @@ class FormSubmissionRecoveryTest {
     org.simplepoint.core.RequestContextHolder.clearContext(
         org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
     org.springframework.security.core.context.SecurityContextHolder.clearContext();
-    if (factory != null) factory.close();
+    if (factory != null) {
+      factory.close();
+    }
   }
 
   @Test
   void frozenCaptureRequirementsSurvivePersistenceAndDataResponseLoss() {
-    var requirements = FormSubmissionMapping.captureRequirements(accepted.form(), accepted.workflow());
-    assertThat(requirements).containsExactly(new org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement(
-        "name", true, 4000, null, false, false, false));
-    var frozen = new AcceptedFormSubmission(accepted.form(), accepted.command(), accepted.dataAuthority(), accepted.workflowAuthority(),
-        accepted.workflow(), accepted.previousInstanceId(), requirements);
+    var requirements =
+        FormSubmissionMapping.captureRequirements(accepted.form(), accepted.workflow());
+    assertThat(requirements)
+        .containsExactly(
+            new org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement(
+                "name", true, 4000, null, false, false, false));
+    var frozen =
+        new AcceptedFormSubmission(
+            accepted.form(),
+            accepted.command(),
+            accepted.dataAuthority(),
+            accepted.workflowAuthority(),
+            accepted.workflow(),
+            accepted.previousInstanceId(),
+            requirements);
     journal.accept(id, "frozen-fingerprint", frozen);
-    var captured = new ApplicationFormRecordView("record", 0, FormRecordState.SUBMITTED, Map.of("name", "最终值"));
+    var captured =
+        new ApplicationFormRecordView(
+            "record", 0, FormRecordState.SUBMITTED, Map.of("name", "最终值"));
     when(records.captureCreate(any(), any(), eq(requirements)))
-        .thenThrow(new IllegalStateException("data response lost")).thenReturn(captured);
+        .thenThrow(new IllegalStateException("data response lost"))
+        .thenReturn(captured);
     new FormSubmissionProcessor(journal, records, new FormWorkflowGateway(workflow)).advance(id);
     assertThat(journal.getOwned(id, "tenant", "actor").step()).isEqualTo("PREPARED");
     clock.advance(6);
@@ -258,32 +309,196 @@ class FormSubmissionRecoveryTest {
   }
 
   @Test
+  void relatedScopeSurvivesRestartAndCannotBeReadThroughAnotherParent() {
+    var original = accepted.command();
+    var command =
+        new SubmitApplicationFormCommand(
+            original.runtime(),
+            original.idempotencyKey(),
+            "record",
+            3L,
+            original.definitionId(),
+            original.definitionVersion(),
+            null,
+            original.title(),
+            Map.of(),
+            original.variables(),
+            original.ccUserIds());
+    var scope =
+        new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+            "1",
+            "customer",
+            "customer-model",
+            "aaaaaaaa-1111-2222-3333-000000000001",
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN,
+            null);
+    var frozen =
+        new AcceptedFormSubmission(
+            accepted.form(),
+            command,
+            accepted.dataAuthority(),
+            accepted.workflowAuthority(),
+            accepted.workflow(),
+            null,
+            null,
+            scope);
+    assertThat(codec.read(codec.write(frozen), AcceptedFormSubmission.class)).isEqualTo(frozen);
+    journal.accept(id, "related-fingerprint", frozen);
+    assertThat(journal.getOwnedRelated(id, "tenant", "actor", scope).step()).isEqualTo("PREPARED");
+    var wrong =
+        new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+            "1",
+            "customer",
+            "customer-model",
+            "aaaaaaaa-1111-2222-3333-000000000002",
+            scope.mode(),
+            null);
+    assertThatThrownBy(() -> journal.getOwnedRelated(id, "tenant", "actor", wrong))
+        .isInstanceOf(ApplicationFormException.class);
+    assertThatThrownBy(() -> journal.getOwnedRelated(id, "other", "actor", scope))
+        .isInstanceOf(ApplicationFormException.class);
+    when(records.captureRelatedUpdate(
+            any(), eq("record"), any(), org.mockito.ArgumentMatchers.isNull(), eq(scope)))
+        .thenThrow(new IllegalStateException("lost scoped capture response"))
+        .thenReturn(
+            new ApplicationFormRecordView(
+                "record", 4, FormRecordState.SUBMITTED, Map.of("name", "关联快照")));
+    new FormSubmissionProcessor(journal, records, new FormWorkflowGateway(workflow)).advance(id);
+    assertThat(journal.getOwned(id, "tenant", "actor").step()).isEqualTo("PREPARED");
+    clock.advance(6);
+    when(workflow.start(any(), eq("definition"), any())).thenReturn(process("RUNNING"));
+    new FormSubmissionProcessor(journal, records, new FormWorkflowGateway(workflow)).advance(id);
+    var commands =
+        org.mockito.ArgumentCaptor.forClass(
+            org.simplepoint.plugin.app.form.api.model.UpdateApplicationFormRecordCommand.class);
+    verify(records, times(2))
+        .captureRelatedUpdate(
+            any(),
+            eq("record"),
+            commands.capture(),
+            org.mockito.ArgumentMatchers.isNull(),
+            eq(scope));
+    assertThat(commands.getAllValues().get(0)).isEqualTo(commands.getAllValues().get(1));
+    assertThat(commands.getValue().values()).isEmpty();
+    assertThat(journal.getOwnedRelated(id, "tenant", "actor", scope).processStatus())
+        .isEqualTo("RUNNING");
+    org.mockito.Mockito.verify(records, org.mockito.Mockito.never())
+        .captureUpdate(any(), any(), any(), any());
+    org.mockito.Mockito.verify(records, org.mockito.Mockito.never())
+        .captureCreate(any(), any(), any());
+  }
+
+  @Test
+  void relatedSubmissionReplayCannotChangeParentOrDowngradeToAnOrdinarySubmission() {
+    var original = accepted.command();
+    var command =
+        new SubmitApplicationFormCommand(
+            original.runtime(),
+            original.idempotencyKey(),
+            "record",
+            3L,
+            original.definitionId(),
+            original.definitionVersion(),
+            null,
+            original.title(),
+            Map.of(),
+            original.variables(),
+            original.ccUserIds());
+    var scope =
+        new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+            "1",
+            "customer",
+            "customer-model",
+            "aaaaaaaa-1111-2222-3333-000000000001",
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN,
+            null);
+    var frozen =
+        new AcceptedFormSubmission(
+            accepted.form(),
+            command,
+            accepted.dataAuthority(),
+            accepted.workflowAuthority(),
+            accepted.workflow(),
+            null,
+            null,
+            scope);
+    String identity = codec.fingerprint(List.of("tenant", "app", "page", command.idempotencyKey()));
+    String fingerprint =
+        codec.fingerprint(List.of("app.submission.related.v1", "app", "page", command, scope));
+    var saved = journal.accept(identity, fingerprint, frozen);
+    var resolver = mock(PublishedApplicationFormResolver.class);
+    when(resolver.resolve("app", "page")).thenReturn(accepted.form());
+    var actors = mock(FormRequestContext.class);
+    when(actors.requireActor()).thenReturn(new FormRequestContext.FormActor("tenant", "actor"));
+    var contexts = mock(DnaInvocationContextFactory.class);
+    var processor = mock(FormSubmissionProcessor.class);
+    var service =
+        new ApplicationFormSubmissionService(
+            resolver,
+            records,
+            contexts,
+            new FormWorkflowGateway(workflow),
+            journal,
+            processor,
+            codec,
+            actors);
+    assertThat(service.submitRelated(accepted.form(), scope, command)).isEqualTo(saved);
+    verify(processor).advance(identity);
+    verifyNoInteractions(records, contexts, workflow);
+    assertThatThrownBy(() -> service.submit("app", "page", command))
+        .isInstanceOf(ApplicationFormException.class);
+    var changed =
+        new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+            "1",
+            "customer",
+            "customer-model",
+            "aaaaaaaa-1111-2222-3333-000000000002",
+            scope.mode(),
+            null);
+    assertThatThrownBy(() -> service.submitRelated(accepted.form(), changed, command))
+        .isInstanceOf(ApplicationFormException.class);
+    assertThatThrownBy(() -> service.submitRelated(accepted.form(), scope, original))
+        .isInstanceOf(ApplicationFormException.class);
+  }
+
+  @Test
   void acceptedLegacyShapeKeepsAbsentRequirementsWhileNewMetadataRoundTrips() {
     String legacy = codec.write(accepted);
-    assertThat(legacy).doesNotContain("snapshotRequirements");
+    assertThat(legacy).doesNotContain("snapshotRequirements", "relatedScope");
     assertThat(codec.read(legacy, AcceptedFormSubmission.class).snapshotRequirements()).isNull();
-    var requirements = FormSubmissionMapping.captureRequirements(accepted.form(), accepted.workflow());
-    var frozen = new AcceptedFormSubmission(accepted.form(), accepted.command(), accepted.dataAuthority(), accepted.workflowAuthority(),
-        accepted.workflow(), accepted.previousInstanceId(), requirements);
+    var requirements =
+        FormSubmissionMapping.captureRequirements(accepted.form(), accepted.workflow());
+    var frozen =
+        new AcceptedFormSubmission(
+            accepted.form(),
+            accepted.command(),
+            accepted.dataAuthority(),
+            accepted.workflowAuthority(),
+            accepted.workflow(),
+            accepted.previousInstanceId(),
+            requirements);
     assertThat(codec.read(codec.write(frozen), AcceptedFormSubmission.class)).isEqualTo(frozen);
     assertThat(codec.fingerprint(frozen)).isNotEqualTo(codec.fingerprint(accepted));
   }
 
-  @Test
-  void onlyDurableDataRejectionEndsAnUncommittedIntentAndRetryCannotReviveIt() {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.EnumSource(
+      value = org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.class,
+      names = {"RECORD_OPERATION_REJECTED", "RECORD_REFERENCE_CONFLICT"})
+  void onlyDurableDataRejectionEndsAnUncommittedIntentAndRetryCannotReviveIt(
+      org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode rejectionCode) {
     journal.accept(id, "fingerprint", accepted);
     when(records.captureCreate(any(), any(), org.mockito.ArgumentMatchers.isNull()))
-        .thenThrow(new ApplicationFormException(
-            org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.RECORD_OPERATION_REJECTED,
-            "Durable negative receipt"));
-    var processor = new FormSubmissionProcessor(journal, records, new FormWorkflowGateway(workflow));
+        .thenThrow(new ApplicationFormException(rejectionCode, "Durable negative receipt"));
+    var processor =
+        new FormSubmissionProcessor(journal, records, new FormWorkflowGateway(workflow));
     processor.advance(id);
     var failed = journal.getOwned(id, "tenant", "actor");
     assertThat(failed.status()).isEqualTo("FAILED");
     assertThat(failed.step()).isEqualTo("TERMINAL");
     assertThat(failed.recordId()).isNull();
     assertThat(failed.processInstanceId()).isNull();
-    assertThat(failed.errorCode()).isEqualTo("RECORD_OPERATION_REJECTED");
+    assertThat(failed.errorCode()).isEqualTo(rejectionCode.name());
     journal.retry(id, "tenant", "actor");
     clock.advance(600);
     processor.advance(id);
@@ -294,14 +509,19 @@ class FormSubmissionRecoveryTest {
   }
 
   @Test
-  void rejectionCannotEraseCapturedDataOrUseAStaleLease() {
+  void rejectionCannotEraseCapturedDataOrUseStaleLeases() {
     journal.accept(id, "fingerprint", accepted);
     var first = journal.claim(id);
     journal.rejected(id, "stale-token");
     assertThat(journal.getOwned(id, "tenant", "actor").step()).isEqualTo("PREPARED");
-    journal.captured(id, first.token(), new ApplicationFormRecordView("record", 0, FormRecordState.SUBMITTED, Map.of("name", "frozen")));
+    journal.captured(
+        id,
+        first.token(),
+        new ApplicationFormRecordView(
+            "record", 0, FormRecordState.SUBMITTED, Map.of("name", "frozen")));
     var next = journal.claim(id);
-    assertThatThrownBy(() -> journal.rejected(id, next.token())).isInstanceOf(ApplicationFormException.class);
+    assertThatThrownBy(() -> journal.rejected(id, next.token()))
+        .isInstanceOf(ApplicationFormException.class);
     assertThat(journal.getOwned(id, "tenant", "actor").step()).isEqualTo("DATA_COMMITTED");
     assertThat(journal.snapshot(id, "tenant").record().values()).containsEntry("name", "frozen");
   }
@@ -470,16 +690,24 @@ class FormSubmissionRecoveryTest {
             actors,
             mock(org.simplepoint.plugin.app.form.api.service.ApplicationPageAccessPort.class),
             new FormDocumentCodec(new ObjectMapper()));
-    var recordReader = mock(org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService.class);
-    var snapshots =
+    var recordReader =
+        mock(org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService.class);
+    var historyReader = mock(FormSubmissionHistory.class);
+    when(historyReader.read(any()))
+        .thenAnswer(call -> ((FormSubmissionJournal.Snapshot) call.getArgument(0)).record());
+    final var snapshots =
         new FormSubmissionSnapshotService(
             new FormWorkflowGateway(workflow),
             journal,
             resolver,
             new FormRuntimeDocumentCompiler(),
-            new DnaInvocationContextFactory(actors),
+            new DnaInvocationContextFactory(
+                actors, org.mockito.Mockito.mock(FormRelationTargetResolver.class)),
             actors,
-            new FormRecordIdentityLabels(mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class)), recordReader);
+            new FormRecordIdentityLabels(
+                mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class)),
+            historyReader,
+            recordReader);
     when(workflow.taskForm(any(), eq("task")))
         .thenReturn(
             new RuntimeForm(
@@ -520,11 +748,23 @@ class FormSubmissionRecoveryTest {
           org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, reader);
       var result = snapshots.task("task");
       var history = snapshots.instance("process");
-      assertThat(snapshots.forRecord(accepted.form().applicationId(), accepted.form().pageId(), "record", id).record().values())
+      assertThat(
+              snapshots
+                  .forRecord(
+                      accepted.form().applicationId(), accepted.form().pageId(), "record", id)
+                  .record()
+                  .values())
           .isEqualTo(history.record().values());
-      assertThatThrownBy(() -> snapshots.forRecord(accepted.form().applicationId(), accepted.form().pageId(), "wrong-record", id))
+      assertThatThrownBy(
+              () ->
+                  snapshots.forRecord(
+                      accepted.form().applicationId(),
+                      accepted.form().pageId(),
+                      "wrong-record",
+                      id))
           .isInstanceOf(org.simplepoint.plugin.app.form.api.error.ApplicationFormException.class);
-      assertThatThrownBy(() -> snapshots.forRecord("wrong-app", accepted.form().pageId(), "record", id))
+      assertThatThrownBy(
+              () -> snapshots.forRecord("wrong-app", accepted.form().pageId(), "record", id))
           .isInstanceOf(org.simplepoint.plugin.app.form.api.error.ApplicationFormException.class);
       assertThat(history.record().values()).isEqualTo(result.record().values());
       assertThat(history.form().document()).isEqualTo(result.form().document());
@@ -532,25 +772,66 @@ class FormSubmissionRecoveryTest {
       if ("HIDDEN".equals(policy)) {
         assertThat(result.record().values()).doesNotContainKey("name");
         assertThat(result.form().document().fields()).isEmpty();
-      } else
+      } else {
         assertThat(result.record().values())
             .containsEntry("name", "MASKED".equals(policy) ? "***" : "敏感名称");
+      }
     }
-    // A new formula can introduce a protected dependency absent from the frozen submission document.
+    // A new formula can introduce a protected dependency absent from the frozen submission
+    // document.
     var capturedDocument = accepted.form().document();
-    var computed = new FormFieldDefinition("name", "name", "New label", "Name", FormFieldType.STRING, FormStorageMode.COMPUTED,
-        false, false, 120, null, null, null, List.of(), null, null, null, new FormCalculation("1", "UPPER([private-source])"));
-    var secret = new FormFieldDefinition("private-source", "private_source", "Private", "Private", FormFieldType.STRING,
-        FormStorageMode.STORED, false, false, 120, null, null, null, List.of());
-    persistVersion(2, new ApplicationFormDocument("1", List.of(computed, secret), List.of(), capturedDocument.scenes(), List.of()));
+    var computed =
+        new FormFieldDefinition(
+            "name",
+            "name",
+            "New label",
+            "Name",
+            FormFieldType.STRING,
+            FormStorageMode.COMPUTED,
+            false,
+            false,
+            120,
+            null,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            new FormCalculation("1", "UPPER([private-source])"));
+    var secret =
+        new FormFieldDefinition(
+            "private-source",
+            "private_source",
+            "Private",
+            "Private",
+            FormFieldType.STRING,
+            FormStorageMode.STORED,
+            false,
+            false,
+            120,
+            null,
+            null,
+            null,
+            List.of());
+    persistVersion(
+        2,
+        new ApplicationFormDocument(
+            "1", List.of(computed, secret), List.of(), capturedDocument.scenes(), List.of()));
     var reader = new org.simplepoint.core.AuthorizationContext();
     reader.setUserId("approver");
     reader.setScopeType(org.simplepoint.core.AuthorizationScopeType.TENANT);
     reader.setAttributes(Map.of("X-Tenant-Id", "tenant"));
     reader.setResources(Set.of("app.page"));
-    reader.setResourceFieldPermissions(Map.of("app.page", Map.of(
-        org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel.key("model") + "#"
-            + org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel.field("private-source"), "MASKED")));
+    reader.setResourceFieldPermissions(
+        Map.of(
+            "app.page",
+            Map.of(
+                org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel.key("model")
+                    + "#"
+                    + org.simplepoint.plugin.dna.runtime.api.record.RecordPermissionModel.field(
+                        "private-source"),
+                "MASKED")));
     org.simplepoint.core.RequestContextHolder.setContext(
         org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, reader);
     assertThat(snapshots.instance("process").record().values()).doesNotContainKey("name");
@@ -566,7 +847,8 @@ class FormSubmissionRecoveryTest {
     assertThat(restored.record().values()).containsEntry("name", "敏感名称");
     assertThat(restored.form().formVersion()).isEqualTo(1);
     assertThat(restored.form().document().fields().getFirst().label()).isEqualTo("名称");
-    assertThat(restored.form().document().fields()).noneMatch(field -> field.fieldId().equals("private-source"));
+    assertThat(restored.form().document().fields())
+        .noneMatch(field -> field.fieldId().equals("private-source"));
 
     for (var binding :
         List.of(

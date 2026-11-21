@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {isWorkflowEntryLocation, migrateWorkflowLocation, migrateWorkflowTabs, resolveWorkflowTargets} from './legacyWorkflow.ts';
+import {pageViewLocation} from '../../../../libs/shared/page/viewIdentity.ts';
 
 const targets = {tasks: '/my/todos', items: '/my/items', management: '/workflow/management'};
+
+test('unrelated reference tabs survive workflow migration beside their ordinary page', () => {
+  const route = '/app/runtime/sales/trades';
+  const detail = pageViewLocation(route, {version: 1, kind: 'form-reference', identity: ['trade', '3', 'customer', 'record']});
+  const tabs = [{key: route, location: `${route}?filter=active`}, {key: detail, location: detail}];
+  assert.deepEqual(migrateWorkflowTabs(tabs, targets, true), tabs);
+});
 
 test('first-visit personal deep links do not require a previously saved tab', () => {
   assert.equal(isWorkflowEntryLocation('/my/todos?view=completed&instance=flow', targets), true);

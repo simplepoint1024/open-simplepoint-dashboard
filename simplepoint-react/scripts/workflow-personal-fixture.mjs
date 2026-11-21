@@ -21,6 +21,7 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
     priority: 50, createdAt: now, outcome: 'PENDING', instanceStatus: 'RUNNING', handledByMe: false}));
   const events = new Map(matters.map(item => [item.id, [{id: item.id + '-start', actionType: 'STARTED', actorName: '张三', occurredAt: now}]]));
   const failures = new Set();
+  const archives = new Map();
   let listDelay = 0;
   let sequence = 0;
   let diagramXml = xml;
@@ -62,9 +63,24 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
     }
     if (path === '/workflow/runtime/permissions') return respond({canClaim: true, canComplete: true, canStartInstances: true,
       canViewAllInstances: true, canCancelInstances: true}), true;
-    if (/^\/workflow\/inbox\/(pending|completed)(\/schema)?$/.test(path)) {
-      if (path.endsWith('/schema')) return respond(fixtureSchema(inboxFields)), true;
-      return respond(result(tasks.filter(row => (row.outcome === 'PENDING') === path.endsWith('/pending')), inboxFields, url)), true;
+    const list = path.match(/^\/workflow\/(inbox\/(?:pending|completed)|matters\/(?:started|copied|all))(\/archived)?(\/schema)?$/);
+    if (list) {
+      const [, key, archived, schema] = list;
+      const fields = key.startsWith('inbox') ? inboxFields : matterFields;
+      if (schema) return respond(fixtureSchema(fields)), true;
+      const rows = key.startsWith('inbox')
+        ? tasks.filter(row => (row.outcome === 'PENDING') === key.endsWith('/pending'))
+        : key.endsWith('/copied') ? matters.slice(0, 1) : matters;
+      const selected = archives.get(key) ?? new Set();
+      if (archived && (req.method === 'PUT' || req.method === 'DELETE')) {
+        if (!Array.isArray(data) || !data.every(id => rows.some(row => row.id === id))) {
+          return respond({message: 'Invalid selection'}, 404), true;
+        }
+        data.forEach(id => req.method === 'PUT' ? selected.add(id) : selected.delete(id));
+        archives.set(key, selected);
+        return respond(null, 204), true;
+      }
+      return respond(result(rows.filter(row => selected.has(row.id) === Boolean(archived)), fields, url)), true;
     }
     if (path.startsWith('/workflow/inbox/tasks/')) {
       const task = tasks.find(row => row.taskId === path.split('/').at(-1));
@@ -74,10 +90,6 @@ export function createWorkflowPersonalFixture({xml, contract, definition}) {
       if (path.endsWith('/schema')) return respond(fixtureSchema(definitionFields)), true;
       const rows = [{...definition, latestVersion: 2}];
       return respond(path.endsWith('/options') ? rows : result(rows, definitionFields, url)), true;
-    }
-    if (/^\/workflow\/matters\/(started|copied|all)(\/schema)?$/.test(path)) {
-      if (path.endsWith('/schema')) return respond(fixtureSchema(matterFields)), true;
-      return respond(result(path.includes('/copied') ? matters.slice(0, 1) : matters, matterFields, url)), true;
     }
     const taskMatch = path.match(/^\/workflow\/tasks\/(task[^/]+)\/(form|claim|complete|reject)$/);
     const instanceMatch = path.match(/^\/workflow\/instances\/([^/]+)\/(progress|nodes\/[^/]+|actions|resubmission-form|resubmit|withdraw|cancel)$/);

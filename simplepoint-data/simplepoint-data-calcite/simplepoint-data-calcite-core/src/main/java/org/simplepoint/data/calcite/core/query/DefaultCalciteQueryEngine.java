@@ -1,8 +1,5 @@
 package org.simplepoint.data.calcite.core.query;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -33,38 +30,34 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 
-/**
- * Default Calcite execution engine backed by a transient {@code jdbc:calcite:} session.
- */
+/** Default Calcite execution engine backed by a transient {@code jdbc:calcite:} session. */
 public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
 
   private static final String CALCITE_JDBC_URL = "jdbc:calcite:";
 
   private static final int LOB_PREVIEW_LENGTH = 4096;
 
-  private static final List<PushdownOperator> PUSH_DOWN_OPERATORS = List.of(
-      new PushdownOperator("JdbcProject", "Project"),
-      new PushdownOperator("JdbcFilter", "Filter"),
-      new PushdownOperator("JdbcAggregate", "Aggregate"),
-      new PushdownOperator("JdbcSort", "Sort"),
-      new PushdownOperator("JdbcJoin", "Join"),
-      new PushdownOperator("JdbcUnion", "Union"),
-      new PushdownOperator("JdbcCalc", "Calc")
-  );
+  private static final List<PushdownOperator> PUSH_DOWN_OPERATORS =
+      List.of(
+          new PushdownOperator("JdbcProject", "Project"),
+          new PushdownOperator("JdbcFilter", "Filter"),
+          new PushdownOperator("JdbcAggregate", "Aggregate"),
+          new PushdownOperator("JdbcSort", "Sort"),
+          new PushdownOperator("JdbcJoin", "Join"),
+          new PushdownOperator("JdbcUnion", "Union"),
+          new PushdownOperator("JdbcCalc", "Calc"));
 
-  private static final List<String> PLATFORM_JOIN_OPERATORS = List.of(
-      "EnumerableHashJoin",
-      "EnumerableMergeJoin",
-      "EnumerableNestedLoopJoin",
-      "EnumerableCorrelate"
-  );
+  private static final List<String> PLATFORM_JOIN_OPERATORS =
+      List.of(
+          "EnumerableHashJoin",
+          "EnumerableMergeJoin",
+          "EnumerableNestedLoopJoin",
+          "EnumerableCorrelate");
 
   /** {@inheritDoc} */
   @Override
   public CalciteUpdateResult executeUpdate(
-      final CalciteUpdateRequest request,
-      final CalciteSchemaConfigurer schemaConfigurer
-  ) {
+      final CalciteUpdateRequest request, final CalciteSchemaConfigurer schemaConfigurer) {
     if (request == null) {
       throw new IllegalArgumentException("更新请求不能为空");
     }
@@ -78,57 +71,96 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       throw new IllegalArgumentException("timeoutMs 必须大于 0");
     }
     String normalizedSql = sql;
-    return withSession(trimToNull(request.defaultSchema()), schemaConfigurer, session -> {
-      CapturedValue<CalciteUpdateResult> captured = captureBackendQueries(() -> {
-        long startedAt = System.nanoTime();
-        List<Object> params = request.parameters();
-        try {
-          int affectedRows;
-          if (params != null && !params.isEmpty()) {
-            try (PreparedStatement statement = session.connection().prepareStatement(normalizedSql)) {
-              statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
-              bindParameters(statement, params);
-              affectedRows = statement.executeUpdate();
-            }
-          } else {
-            try (Statement statement = session.connection().createStatement()) {
-              statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
-              affectedRows = statement.executeUpdate(normalizedSql);
-            }
-          }
-          return new CalciteUpdateResult(affectedRows, toElapsedMs(startedAt), List.of());
-        } catch (SQLException ex) {
-          throw new IllegalStateException("Calcite 更新执行失败: " + rootMessage(ex), ex);
+    return withSession(
+        trimToNull(request.defaultSchema()),
+        schemaConfigurer,
+        session -> {
+          CapturedValue<CalciteUpdateResult> captured =
+              captureBackendQueries(
+                  () -> {
+                    long startedAt = System.nanoTime();
+                    List<Object> params = request.parameters();
+                    try {
+                      int affectedRows;
+                      CalciteWriteAdmission admission = schemaConfigurer.writeAdmission();
+                      if (admission != null) {
+                        affectedRows =
+                            executeAdmittedUpdate(
+                                session.connection(),
+                                normalizedSql,
+                                params,
+                                request.timeoutMs(),
+                                admission);
+                      } else if (params != null && !params.isEmpty()) {
+                        try (PreparedStatement statement =
+                            session.connection().prepareStatement(normalizedSql)) {
+                          statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+                          bindParameters(statement, params);
+                          affectedRows = statement.executeUpdate();
+                        }
+                      } else {
+                        try (Statement statement = session.connection().createStatement()) {
+                          statement.setQueryTimeout(toQueryTimeoutSeconds(request.timeoutMs()));
+                          affectedRows = statement.executeUpdate(normalizedSql);
+                        }
+                      }
+                      return new CalciteUpdateResult(
+                          affectedRows, toElapsedMs(startedAt), List.of());
+                    } catch (SQLException ex) {
+                      throw new IllegalStateException("Calcite 更新执行失败: " + rootMessage(ex), ex);
+                    }
+                  });
+          CalciteUpdateResult result = captured.value();
+          return new CalciteUpdateResult(
+              result.affectedRows(), result.executionTimeMs(), captured.capturedQueries());
+        });
+  }
+
+  private static int executeAdmittedUpdate(
+      Connection connection,
+      String sql,
+      List<Object> parameters,
+      int timeoutMs,
+      CalciteWriteAdmission admission)
+      throws SQLException {
+    try (var verification = new PreparedWriteAdmission(admission)) {
+      try (var statement = connection.prepareStatement(sql)) {
+        verification.requireVerified();
+        statement.setQueryTimeout(toQueryTimeoutSeconds(timeoutMs));
+        if (parameters != null && !parameters.isEmpty()) {
+          bindParameters(statement, parameters);
         }
-      });
-      CalciteUpdateResult result = captured.value();
-      return new CalciteUpdateResult(result.affectedRows(), result.executionTimeMs(), captured.capturedQueries());
-    });
+        admission.beforeExecution();
+        return statement.executeUpdate();
+      } catch (SQLException | RuntimeException failure) {
+        // Calcite may wrap a policy rejection in SQLException during preparation. Preserve the
+        // owner's fixed domain diagnosis instead of replacing it with a SQL/parser error.
+        verification.rethrowRejection();
+        throw failure;
+      }
+    }
   }
 
   /** {@inheritDoc} */
   @Override
   public CalciteQueryAnalysis explain(
-      final CalciteQueryRequest request,
-      final CalciteSchemaConfigurer schemaConfigurer
-  ) {
+      final CalciteQueryRequest request, final CalciteSchemaConfigurer schemaConfigurer) {
     CalciteQueryRequest normalizedRequest = normalizeRequest(request);
     validateReadOnlyQuery(normalizedRequest.sql());
-    return withSession(normalizedRequest.defaultSchema(), schemaConfigurer, session -> {
-      CapturedValue<CalciteQueryAnalysis> captured = captureBackendQueries(() -> explainInternal(
-          session.connection(),
-          normalizedRequest
-      ));
-      return enrichAnalysis(captured.value(), captured.capturedQueries());
-    });
+    return withSession(
+        normalizedRequest.defaultSchema(),
+        schemaConfigurer,
+        session -> {
+          CapturedValue<CalciteQueryAnalysis> captured =
+              captureBackendQueries(() -> explainInternal(session.connection(), normalizedRequest));
+          return enrichAnalysis(captured.value(), captured.capturedQueries());
+        });
   }
 
   /** {@inheritDoc} */
   @Override
   public CalciteQueryResult execute(
-      final CalciteQueryRequest request,
-      final CalciteSchemaConfigurer schemaConfigurer
-  ) {
+      final CalciteQueryRequest request, final CalciteSchemaConfigurer schemaConfigurer) {
     return executeInternal(request, schemaConfigurer, null);
   }
 
@@ -137,61 +169,68 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
   public CalciteQueryResult execute(
       final CalciteQueryRequest request,
       final CalciteSchemaConfigurer schemaConfigurer,
-      final CalciteQueryAnalysis preComputedAnalysis
-  ) {
+      final CalciteQueryAnalysis preComputedAnalysis) {
     return executeInternal(request, schemaConfigurer, preComputedAnalysis);
   }
 
   private CalciteQueryResult executeInternal(
       final CalciteQueryRequest request,
       final CalciteSchemaConfigurer schemaConfigurer,
-      final CalciteQueryAnalysis preComputedAnalysis
-  ) {
+      final CalciteQueryAnalysis preComputedAnalysis) {
     CalciteQueryRequest normalizedRequest = normalizeRequest(request);
     validateReadOnlyQuery(normalizedRequest.sql());
-    return withSession(normalizedRequest.defaultSchema(), schemaConfigurer, session -> {
-      CapturedValue<ExecutionPayload> captured = captureBackendQueries(() -> {
-        CalciteQueryAnalysis analysis = preComputedAnalysis != null
-            ? preComputedAnalysis
-            : explainInternal(session.connection(), normalizedRequest);
-        long startedAt = System.nanoTime();
-        List<Object> params = normalizedRequest.parameters();
-        boolean hasParams = params != null && !params.isEmpty();
-        try {
-          ResultSet resultSet;
-          Statement statement;
-          if (hasParams) {
-            PreparedStatement ps = session.connection().prepareStatement(normalizedRequest.sql());
-            ps.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
-            ps.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
-            bindParameters(ps, params);
-            resultSet = ps.executeQuery();
-            statement = ps;
-          } else {
-            Statement st = session.connection().createStatement();
-            st.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
-            st.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
-            resultSet = st.executeQuery(normalizedRequest.sql());
-            statement = st;
-          }
-          try (statement; resultSet) {
-            ExtractedRows extracted = extractRows(resultSet, normalizedRequest.maxRows());
-            return new ExecutionPayload(extracted, toElapsedMs(startedAt), analysis);
-          }
-        } catch (SQLException ex) {
-          throw new IllegalStateException("Calcite 查询执行失败: " + rootMessage(ex), ex);
-        }
-      });
-      CalciteQueryAnalysis analysis = enrichAnalysis(captured.value().analysis(), captured.capturedQueries());
-      return new CalciteQueryResult(
-          captured.value().extractedRows().columns(),
-          captured.value().extractedRows().rows(),
-          captured.value().extractedRows().truncated(),
-          captured.value().extractedRows().returnedRows(),
-          captured.value().executionTimeMs(),
-          analysis
-      );
-    });
+    return withSession(
+        normalizedRequest.defaultSchema(),
+        schemaConfigurer,
+        session -> {
+          CapturedValue<ExecutionPayload> captured =
+              captureBackendQueries(
+                  () -> {
+                    CalciteQueryAnalysis analysis =
+                        preComputedAnalysis != null
+                            ? preComputedAnalysis
+                            : explainInternal(session.connection(), normalizedRequest);
+                    long startedAt = System.nanoTime();
+                    List<Object> params = normalizedRequest.parameters();
+                    boolean hasParams = params != null && !params.isEmpty();
+                    try {
+                      ResultSet resultSet;
+                      Statement statement;
+                      if (hasParams) {
+                        PreparedStatement ps =
+                            session.connection().prepareStatement(normalizedRequest.sql());
+                        ps.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
+                        ps.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
+                        bindParameters(ps, params);
+                        resultSet = ps.executeQuery();
+                        statement = ps;
+                      } else {
+                        Statement st = session.connection().createStatement();
+                        st.setQueryTimeout(toQueryTimeoutSeconds(normalizedRequest.timeoutMs()));
+                        st.setMaxRows(toStatementMaxRows(normalizedRequest.maxRows()));
+                        resultSet = st.executeQuery(normalizedRequest.sql());
+                        statement = st;
+                      }
+                      try (statement;
+                          resultSet) {
+                        ExtractedRows extracted =
+                            extractRows(resultSet, normalizedRequest.maxRows());
+                        return new ExecutionPayload(extracted, toElapsedMs(startedAt), analysis);
+                      }
+                    } catch (SQLException ex) {
+                      throw new IllegalStateException("Calcite 查询执行失败: " + rootMessage(ex), ex);
+                    }
+                  });
+          CalciteQueryAnalysis analysis =
+              enrichAnalysis(captured.value().analysis(), captured.capturedQueries());
+          return new CalciteQueryResult(
+              captured.value().extractedRows().columns(),
+              captured.value().extractedRows().rows(),
+              captured.value().extractedRows().truncated(),
+              captured.value().extractedRows().returnedRows(),
+              captured.value().executionTimeMs(),
+              analysis);
+        });
   }
 
   private static CalciteQueryRequest normalizeRequest(final CalciteQueryRequest request) {
@@ -214,8 +253,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
         trimToNull(request.defaultSchema()),
         request.maxRows(),
         request.timeoutMs(),
-        request.parameters()
-    );
+        request.parameters());
   }
 
   private static void validateReadOnlyQuery(final String sql) {
@@ -254,9 +292,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
   }
 
   private static CalciteQueryAnalysis explainInternal(
-      final Connection connection,
-      final CalciteQueryRequest request
-  ) {
+      final Connection connection, final CalciteQueryRequest request) {
     List<Object> params = request.parameters();
     boolean hasParams = params != null && !params.isEmpty();
     try {
@@ -274,7 +310,8 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
         resultSet = st.executeQuery("EXPLAIN PLAN FOR " + request.sql());
         statement = st;
       }
-      try (statement; resultSet) {
+      try (statement;
+          resultSet) {
         return toAnalysis(readExplainPlan(resultSet));
       }
     } catch (SQLException ex) {
@@ -284,16 +321,11 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
 
   private static CalciteQueryAnalysis toAnalysis(final String planText) {
     return new CalciteQueryAnalysis(
-        planText,
-        detectPushedDownOperators(planText),
-        detectPlatformJoin(planText)
-    );
+        planText, detectPushedDownOperators(planText), detectPlatformJoin(planText));
   }
 
   private static CalciteQueryAnalysis enrichAnalysis(
-      final CalciteQueryAnalysis analysis,
-      final List<String> capturedQueries
-  ) {
+      final CalciteQueryAnalysis analysis, final List<String> capturedQueries) {
     if (analysis == null) {
       return null;
     }
@@ -304,8 +336,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
         analysis.planText(),
         analysis.pushedDownOperators(),
         analysis.platformJoin(),
-        capturedQueries
-    );
+        capturedQueries);
   }
 
   private static String readExplainPlan(final ResultSet resultSet) throws SQLException {
@@ -347,20 +378,18 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
     return PLATFORM_JOIN_OPERATORS.stream().anyMatch(normalized::contains);
   }
 
-  private static ExtractedRows extractRows(
-      final ResultSet resultSet,
-      final int maxRows
-  ) throws SQLException {
+  private static ExtractedRows extractRows(final ResultSet resultSet, final int maxRows)
+      throws SQLException {
     ResultSetMetaData metaData = resultSet.getMetaData();
     int columnCount = metaData.getColumnCount();
     List<CalciteQueryColumn> columns = new ArrayList<>(columnCount);
     for (int index = 1; index <= columnCount; index++) {
       String label = trimToNull(metaData.getColumnLabel(index));
-      columns.add(new CalciteQueryColumn(
-          label == null ? metaData.getColumnName(index) : label,
-          trimToNull(metaData.getColumnTypeName(index)),
-          metaData.getColumnType(index)
-      ));
+      columns.add(
+          new CalciteQueryColumn(
+              label == null ? metaData.getColumnName(index) : label,
+              trimToNull(metaData.getColumnTypeName(index)),
+              metaData.getColumnType(index)));
     }
 
     List<List<Object>> rows = new ArrayList<>();
@@ -429,9 +458,7 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
   }
 
   private static void bindParameters(
-      final PreparedStatement statement,
-      final List<Object> parameters
-  ) throws SQLException {
+      final PreparedStatement statement, final List<Object> parameters) throws SQLException {
     if (parameters == null || parameters.isEmpty()) {
       return;
     }
@@ -487,14 +514,16 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
       throw new IllegalArgumentException("callback 不能为空");
     }
     List<String> capturedQueries = new ArrayList<>();
-    try (Hook.Closeable closeable = Hook.QUERY_PLAN.addThread(query -> {
-      if (query instanceof String sql) {
-        String normalized = trimToNull(sql);
-        if (normalized != null) {
-          capturedQueries.add(normalized);
-        }
-      }
-    })) {
+    try (Hook.Closeable closeable =
+        Hook.QUERY_PLAN.addThread(
+            query -> {
+              if (query instanceof String sql) {
+                String normalized = trimToNull(sql);
+                if (normalized != null) {
+                  capturedQueries.add(normalized);
+                }
+              }
+            })) {
       return new CapturedValue<>(callback.execute(), deduplicateQueries(capturedQueries));
     } catch (RuntimeException ex) {
       throw ex;
@@ -513,17 +542,19 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
   private static <T> T withSession(
       final String defaultSchema,
       final CalciteSchemaConfigurer schemaConfigurer,
-      final SessionCallback<T> callback
-  ) {
+      final SessionCallback<T> callback) {
     if (schemaConfigurer == null) {
       throw new IllegalArgumentException("schemaConfigurer 不能为空");
     }
     Properties properties = new Properties();
     if (schemaConfigurer.typeSystem() != null) {
-      properties.setProperty(CalciteConnectionProperty.TYPE_SYSTEM.camelName(), schemaConfigurer.typeSystem().getName());
+      properties.setProperty(
+          CalciteConnectionProperty.TYPE_SYSTEM.camelName(),
+          schemaConfigurer.typeSystem().getName());
     }
     if (schemaConfigurer.timeZone() != null) {
-      properties.setProperty(CalciteConnectionProperty.TIME_ZONE.camelName(), schemaConfigurer.timeZone().getId());
+      properties.setProperty(
+          CalciteConnectionProperty.TIME_ZONE.camelName(), schemaConfigurer.timeZone().getId());
     }
     properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
     try (Connection connection = DriverManager.getConnection(CALCITE_JDBC_URL, properties)) {
@@ -549,36 +580,18 @@ public class DefaultCalciteQueryEngine implements CalciteQueryEngine {
     T execute() throws Exception;
   }
 
-  private record CalciteSession(
-      Connection connection,
-      CalciteConnection calciteConnection
-  ) {
-  }
+  private record CalciteSession(Connection connection, CalciteConnection calciteConnection) {}
 
   private record ExtractedRows(
       List<CalciteQueryColumn> columns,
       List<List<Object>> rows,
       boolean truncated,
-      long returnedRows
-  ) {
-  }
+      long returnedRows) {}
 
   private record ExecutionPayload(
-      ExtractedRows extractedRows,
-      long executionTimeMs,
-      CalciteQueryAnalysis analysis
-  ) {
-  }
+      ExtractedRows extractedRows, long executionTimeMs, CalciteQueryAnalysis analysis) {}
 
-  private record CapturedValue<T>(
-      T value,
-      List<String> capturedQueries
-  ) {
-  }
+  private record CapturedValue<T>(T value, List<String> capturedQueries) {}
 
-  private record PushdownOperator(
-      String planToken,
-      String displayName
-  ) {
-  }
+  private record PushdownOperator(String planToken, String displayName) {}
 }

@@ -20,6 +20,9 @@ export type EntitySelectSource = {
   pageSize?: number;
   debounceMs?: number;
   searchParams: (keyword: string, page: number, size: number) => Record<string, string | number>;
+  /** Domain page adapters retain the selector's scope, cancellation and pagination lifecycle. */
+  search?: (keyword: string, page: number, size: number, signal: AbortSignal,
+    filters: Readonly<Record<string, string>>) => Promise<RawPage<EntityRow>>;
   option: (row: Record<string, unknown>) => EntityOption | undefined;
   resolve?: (ids: string[], signal: AbortSignal) => Promise<EntityOption[]>;
 };
@@ -91,8 +94,9 @@ function EntitySelectSession(props: EntitySelectProps) {
   }, [search, debounceMs, active]);
   const pages = useInfiniteQuery({
     ...scopedQueryOptions<Page<EntityRow>, number>(scope, pageKey, async ({pageParam, signal}) =>
-      normalizePage(await get<RawPage<EntityRow>>(endpoint,
-        {...(source?.searchParams ?? entitySearchParams)(keyword, pageParam, pageSize), ...filters}, {signal, notifyOnError: false}))),
+      normalizePage(source?.search ? await source.search(keyword, pageParam, pageSize, signal, filters ?? {})
+        : await get<RawPage<EntityRow>>(endpoint,
+          {...(source?.searchParams ?? entitySearchParams)(keyword, pageParam, pageSize), ...filters}, {signal, notifyOnError: false}))),
     initialPageParam: 0,
     getNextPageParam: last => last.page.number + 1 < last.page.totalPages ? last.page.number + 1 : undefined,
     getPreviousPageParam: first => first.page.number > 0 ? first.page.number - 1 : undefined,

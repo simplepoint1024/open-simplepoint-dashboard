@@ -45,17 +45,17 @@ import org.springframework.stereotype.Component;
 public class RecordSqlCompiler {
 
   private static final String CATALOG = "runtime";
-  private static final Map<String, SystemType> SYSTEM_TYPES = Map.ofEntries(
-      Map.entry("id", SystemType.STRING),
-      Map.entry("tenant_id", SystemType.STRING),
-      Map.entry("record_version", SystemType.LONG),
-      Map.entry("created_by", SystemType.STRING),
-      Map.entry("created_org_dept_id", SystemType.STRING),
-      Map.entry("created_at", SystemType.INSTANT),
-      Map.entry("updated_by", SystemType.STRING),
-      Map.entry("updated_at", SystemType.INSTANT),
-      Map.entry("deleted_at", SystemType.INSTANT)
-  );
+  private static final Map<String, SystemType> SYSTEM_TYPES =
+      Map.ofEntries(
+          Map.entry("id", SystemType.STRING),
+          Map.entry("tenant_id", SystemType.STRING),
+          Map.entry("record_version", SystemType.LONG),
+          Map.entry("created_by", SystemType.STRING),
+          Map.entry("created_org_dept_id", SystemType.STRING),
+          Map.entry("created_at", SystemType.INSTANT),
+          Map.entry("updated_by", SystemType.STRING),
+          Map.entry("updated_at", SystemType.INSTANT),
+          Map.entry("deleted_at", SystemType.INSTANT));
 
   private final LogicalValueConverter valueConverter;
 
@@ -68,111 +68,449 @@ public class RecordSqlCompiler {
   RecordSelectPlan page(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordPageQuery query
-  ) {
+      final RecordPageQuery query) {
+    return page(model, access, query, null);
+  }
+
+  /** Selects each parent once even when several authorized detail rows match the relation. */
+  RecordSelectPlan page(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordPageQuery query,
+      final RecordRelatedSelection related) {
+    return page(model, access, query, related, null);
+  }
+
+  private RecordSelectPlan page(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      RecordPageQuery query,
+      RecordRelatedSelection related,
+      RecordCollectionSelection collection) {
     List<String> fields = projection(model, access, query.fields());
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String where = where(model, access, query.filter(), parameters);
+    String where =
+        pageWhere(model, access, query.filter(), query.condition(), parameters)
+            + relatedWhere(model, access, related, parameters)
+            + (collection == null ? "" : collection.predicate(this, model, access, parameters));
     String orderBy = orderBy(model, access, query.sorts());
-    String sql = "SELECT " + selectList(model, fields) + " FROM " + table(model)
-        + " WHERE " + where + " ORDER BY " + orderBy
-        + " OFFSET " + ((long) query.page() * query.size()) + " ROWS"
-        + " FETCH NEXT " + query.size() + " ROWS ONLY";
-    return new RecordSelectPlan(sql, parameters.values(), valueFields(fields), query.size(),
+    String sql =
+        "SELECT "
+            + selectList(model, fields)
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + where
+            + " ORDER BY "
+            + orderBy
+            + " OFFSET "
+            + ((long) query.page() * query.size())
+            + " ROWS"
+            + " FETCH NEXT "
+            + query.size()
+            + " ROWS ONLY";
+    return new RecordSelectPlan(
+        sql,
+        parameters.values(),
+        valueFields(fields),
+        query.size(),
+        RecordWireValues.requiresPhysicalProjection(model, fields));
+  }
+
+  RecordSelectPlan collectionPage(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      RecordPageQuery query,
+      RecordCollectionSelection collection) {
+    return page(model, access, query, null, java.util.Objects.requireNonNull(collection))
+        .requirePhysicalRelations();
+  }
+
+  /** Qualifies bounded reference identities with target row/field policy and typed eligibility. */
+  RecordSelectPlan referenceTargets(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final List<String> ids,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition eligibility) {
+    return referenceTargets(model, access, ids, eligibility, false);
+  }
+
+  /** Versions are transaction observations, not a second source of business field grants. */
+  RecordSelectPlan referenceTargets(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final List<String> ids,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition eligibility,
+      final boolean includeVersion) {
+    if (ids.isEmpty()
+        || ids.size() > 100
+        || !access.readableFields().contains("id")
+        || access.maskedFields().contains("id")) {
+      throw invalid("Reference qualification requires bounded readable target identities");
+    }
+    RecordSqlParameters parameters = new RecordSqlParameters();
+    String predicate =
+        where(
+            model,
+            access,
+            new RecordFilter(RecordFilterOperator.IN, "id", new ArrayList<>(ids), List.of()),
+            parameters);
+    if (eligibility != null) {
+      predicate +=
+          " AND "
+              + RecordValueConditionCompiler.compile(
+                  model,
+                  access,
+                  eligibility,
+                  parameters,
+                  org.simplepoint.plugin.dna.runtime.api.record.RecordJsonSemantics.STRUCTURAL_V1);
+    }
+    return new RecordSelectPlan(
+        "SELECT "
+            + quote("id")
+            + (includeVersion ? ", " + quote("record_version") : "")
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + predicate,
+        parameters.values(),
+        List.of(),
+        ids.size());
+  }
+
+  /** Exact owned identities; callers have already authorized each root and verified ownership. */
+  RecordSelectPlan referenceOwnedTargets(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      String parentCode,
+      List<RecordReferenceOwnedVisibility.Row> rows) {
+    var owner = model.requestedSchema().owner();
+    var field = model.requestedField(parentCode);
+    if (rows.isEmpty()
+        || rows.size() > 100
+        || rows.stream().distinct().count() != rows.size()
+        || owner == null
+        || field == null
+        || !owner.parentFieldId().equals(field.fieldId())
+        || !access.readableFields().contains("id")
+        || access.maskedFields().contains("id")) {
+      throw invalid("Owned reference visibility requires bounded authorized identities");
+    }
+    var parameters = new RecordSqlParameters();
+    String predicate = baseWhere(access, parameters) + " AND " + scope(model, access, parameters);
+    String ownerColumn = quote(model.activeCode(parentCode));
+    String pairs =
+        rows.stream()
+            .map(
+                row ->
+                    "("
+                        + quote("id")
+                        + " = "
+                        + parameters.add(row.recordId())
+                        + " AND "
+                        + ownerColumn
+                        + " = "
+                        + parameters.add(row.parentId())
+                        + ")")
+            .collect(java.util.stream.Collectors.joining(" OR "));
+    return new RecordSelectPlan(
+        "SELECT "
+            + quote("id")
+            + ", "
+            + ownerColumn
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + predicate
+            + " AND ("
+            + pairs
+            + ")",
+        parameters.values(),
+        List.of(),
+        rows.size());
+  }
+
+  /** Captures bounded labels with target row/field authorization in the borrowed transaction. */
+  RecordSelectPlan referenceLabels(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final List<String> ids,
+      final String labelCode) {
+    if (ids.isEmpty()
+        || ids.size() > 100
+        || !access.readableFields().contains("id")
+        || access.maskedFields().contains("id")
+        || !access.readableFields().contains(labelCode)
+        || access.maskedFields().contains(labelCode)) {
+      throw invalid("Reference snapshot requires bounded authorized identities and labels");
+    }
+    var fields = projection(model, access, List.of(labelCode));
+    var parameters = new RecordSqlParameters();
+    String predicate =
+        where(
+            model,
+            access,
+            new RecordFilter(RecordFilterOperator.IN, "id", new ArrayList<>(ids), List.of()),
+            parameters);
+    return new RecordSelectPlan(
+        "SELECT " + selectList(model, fields) + " FROM " + table(model) + " WHERE " + predicate,
+        parameters.values(),
+        valueFields(fields),
+        ids.size(),
         RecordWireValues.requiresPhysicalProjection(model, fields));
   }
 
   /** Compiles an authorized count using the same predicate builder as page queries. */
   RecordSelectPlan count(
+      final RuntimeRecordModel model, final RecordAccessContext access, final RecordFilter filter) {
+    return count(model, access, filter, null);
+  }
+
+  /** Page and total must intersect the same typed condition before pagination. */
+  RecordSelectPlan count(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordFilter filter
-  ) {
+      final RecordFilter filter,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition condition) {
+    return count(model, access, filter, condition, null);
+  }
+
+  /** Count and page use the exact same fixed relation predicate before pagination. */
+  RecordSelectPlan count(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordFilter filter,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition condition,
+      final RecordRelatedSelection related) {
+    return count(model, access, filter, condition, related, null);
+  }
+
+  private RecordSelectPlan count(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      RecordFilter filter,
+      org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition condition,
+      RecordRelatedSelection related,
+      RecordCollectionSelection collection) {
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String sql = "SELECT COUNT(*) AS " + quote("record_count") + " FROM " + table(model)
-        + " WHERE " + where(model, access, filter, parameters);
+    String sql =
+        "SELECT COUNT(*) AS "
+            + quote("record_count")
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + pageWhere(model, access, filter, condition, parameters)
+            + relatedWhere(model, access, related, parameters)
+            + (collection == null ? "" : collection.predicate(this, model, access, parameters));
     return new RecordSelectPlan(sql, parameters.values(), List.of(), 1);
+  }
+
+  RecordSelectPlan collectionCount(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      RecordPageQuery query,
+      RecordCollectionSelection collection) {
+    return count(
+            model,
+            access,
+            query.filter(),
+            query.condition(),
+            null,
+            java.util.Objects.requireNonNull(collection))
+        .requirePhysicalRelations();
+  }
+
+  private String relatedWhere(
+      RuntimeRecordModel parent,
+      RecordAccessContext access,
+      RecordRelatedSelection related,
+      RecordSqlParameters parameters) {
+    if (related == null) {
+      return "";
+    }
+    if (!access.actor().equals(related.access().actor())
+        || !access.resourceCode().equals(related.access().resourceCode())) {
+      throw denied("Inverse selection cannot borrow another resource's field policy");
+    }
+    requireReadableFilter(parent, access, "id");
+    String code = related.sourceCode();
+    var selection =
+        new RecordFilter(
+            RecordFilterOperator.EQUALS, code, List.of(related.targetRecordId()), List.of());
+    if (related.sourceRowId() != null) {
+      selection =
+          new RecordFilter(
+              RecordFilterOperator.AND,
+              null,
+              List.of(),
+              List.of(
+                  selection,
+                  new RecordFilter(
+                      RecordFilterOperator.EQUALS,
+                      "id",
+                      List.of(related.sourceRowId()),
+                      List.of())));
+    }
+    if (related.source().physicalModelId().equals(parent.physicalModelId())) {
+      return " AND " + filter(parent, access, selection, parameters);
+    }
+    String owner = OwnedRecordBinding.parentCode(parent, related.source());
+    // A semi-join preserves parent cardinality, count and ordering without client-side
+    // deduplication.
+    return " AND "
+        + quote("id")
+        + " IN (SELECT "
+        + quote(related.source().activeCode(owner))
+        + " FROM "
+        + table(related.source())
+        + " WHERE "
+        + where(related.source(), related.access(), selection, parameters)
+        + ")";
+  }
+
+  private String pageWhere(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordFilter filter,
+      final org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition condition,
+      final RecordSqlParameters parameters) {
+    String predicate = where(model, access, filter, parameters);
+    return condition == null
+        ? predicate
+        : predicate
+            + " AND "
+            + RecordValueConditionCompiler.compile(
+                model,
+                access,
+                condition,
+                parameters,
+                org.simplepoint.plugin.dna.runtime.api.record.RecordJsonSemantics.STRUCTURAL_V1);
   }
 
   /** Compiles aggregate-only completeness checks using the same tenant and filter predicates. */
   RecordSelectPlan completeness(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordCompletenessQuery query
-  ) {
+      final RecordCompletenessQuery query) {
     Map<String, LogicalFieldDefinition> definitions = fields(model);
     RecordSqlParameters parameters = new RecordSqlParameters();
     List<String> aggregates = new ArrayList<>();
     aggregates.add("COUNT(*) AS " + quote("record_count"));
     for (String field : query.fields()) {
       LogicalFieldDefinition definition = definitions.get(field);
-      if (definition == null || !access.readableFields().contains(field) || access.maskedFields().contains(field)) {
+      if (definition == null || !access.queryable(model, field)) {
         throw invalid("Completeness inspection requires a known, readable model field");
       }
-      String empty = RecordCompletenessPredicate.compile(
-          quote(model.activeCode(field)), definition.type(), parameters, query.jsonSemantics());
+      String empty =
+          RecordCompletenessPredicate.compile(
+              quote(model.activeCode(field)), definition.type(), parameters, query.jsonSemantics());
       // Keep the projection numeric: COUNT(CASE ...) can become an aggregate FILTER,
       // which some JDBC dialects cannot push down. A numeric SUM remains portable.
-      aggregates.add("SUM(CAST(CASE WHEN " + empty
-          + " THEN 1 ELSE 0 END AS BIGINT)) AS " + quote(field));
+      aggregates.add(
+          "SUM(CAST(CASE WHEN " + empty + " THEN 1 ELSE 0 END AS BIGINT)) AS " + quote(field));
     }
     String where = where(model, access, query.filter(), parameters);
     if (query.condition() != null) {
-      where += " AND " + RecordValueConditionCompiler.compile(model, access, query.condition(), parameters, query.jsonSemantics());
+      where +=
+          " AND "
+              + RecordValueConditionCompiler.compile(
+                  model, access, query.condition(), parameters, query.jsonSemantics());
     }
-    String sql = "SELECT " + String.join(", ", aggregates) + " FROM " + table(model) + " WHERE " + where;
+    String sql =
+        "SELECT " + String.join(", ", aggregates) + " FROM " + table(model) + " WHERE " + where;
     return new RecordSelectPlan(sql, parameters.values(), query.fields(), 1);
   }
 
   /** Counts records violating a typed invariant; the database returns only one aggregate. */
-  RecordSelectPlan violations(final RuntimeRecordModel model, final RecordAccessContext access, final RecordViolationQuery query) {
+  RecordSelectPlan violations(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordViolationQuery query) {
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String where = where(model, access, query.filter(), parameters) + " AND "
-        + RecordValueConditionCompiler.compile(model, access, query.condition(), parameters, query.jsonSemantics());
-    return new RecordSelectPlan("SELECT COUNT(*) AS " + quote("violation_count") + " FROM " + table(model)
-        + " WHERE " + where, parameters.values(), List.of(), 1);
+    String where =
+        where(model, access, query.filter(), parameters)
+            + " AND "
+            + RecordValueConditionCompiler.compile(
+                model, access, query.condition(), parameters, query.jsonSemantics());
+    return new RecordSelectPlan(
+        "SELECT COUNT(*) AS "
+            + quote("violation_count")
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + where,
+        parameters.values(),
+        List.of(),
+        1);
   }
 
   /** Compiles an authorized active-record lookup. */
   RecordSelectPlan lookup(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordLookupQuery query
-  ) {
+      final RecordLookupQuery query) {
     List<String> fields = projection(model, access, query.fields());
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String sql = "SELECT " + selectList(model, fields) + " FROM " + table(model)
-        + " WHERE " + baseWhere(access, parameters) + " AND " + quote("id")
-        + " = " + parameters.add(query.recordId()) + " AND " + scope(model, access, parameters);
-    return new RecordSelectPlan(sql, parameters.values(), valueFields(fields), 1,
+    String sql =
+        "SELECT "
+            + selectList(model, fields)
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + baseWhere(access, parameters)
+            + " AND "
+            + quote("id")
+            + " = "
+            + parameters.add(query.recordId())
+            + " AND "
+            + scope(model, access, parameters);
+    return new RecordSelectPlan(
+        sql,
+        parameters.values(),
+        valueFields(fields),
+        1,
         RecordWireValues.requiresPhysicalProjection(model, fields));
   }
 
   /** Compiles an authorization-scoped identity/version probe used after transaction rollback. */
   RecordSelectPlan version(
-      final RuntimeRecordModel model,
-      final RecordAccessContext access,
-      final String recordId
-  ) {
+      final RuntimeRecordModel model, final RecordAccessContext access, final String recordId) {
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String sql = "SELECT " + quote("id") + ", " + quote("record_version")
-        + " FROM " + table(model) + " WHERE " + baseWhere(access, parameters)
-        + " AND " + quote("id") + " = " + parameters.add(recordId)
-        + " AND " + scope(model, access, parameters);
+    String sql =
+        "SELECT "
+            + quote("id")
+            + ", "
+            + quote("record_version")
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + baseWhere(access, parameters)
+            + " AND "
+            + quote("id")
+            + " = "
+            + parameters.add(recordId)
+            + " AND "
+            + scope(model, access, parameters);
     return new RecordSelectPlan(sql, parameters.values(), List.of(), 1);
   }
 
   /** Compiles a tenant-scoped probe for a server-derived create identity. */
   RecordSelectPlan creation(
-      final RuntimeRecordModel model,
-      final RecordAccessContext access,
-      final String recordId
-  ) {
+      final RuntimeRecordModel model, final RecordAccessContext access, final String recordId) {
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String sql = "SELECT " + quote("id")
-        + " FROM " + table(model) + " WHERE " + quote("tenant_id")
-        + " = " + parameters.add(access.actor().tenantId())
-        + " AND " + quote("id") + " = " + parameters.add(recordId);
+    String sql =
+        "SELECT "
+            + quote("id")
+            + " FROM "
+            + table(model)
+            + " WHERE "
+            + quote("tenant_id")
+            + " = "
+            + parameters.add(access.actor().tenantId())
+            + " AND "
+            + quote("id")
+            + " = "
+            + parameters.add(recordId);
     return new RecordSelectPlan(sql, parameters.values(), List.of(), 1);
   }
 
@@ -181,8 +519,7 @@ public class RecordSqlCompiler {
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final RecordMutation mutation,
-      final Instant now
-  ) {
+      final Instant now) {
     return mutation(model, access, mutation, now, null);
   }
 
@@ -192,8 +529,7 @@ public class RecordSqlCompiler {
       final RecordAccessContext access,
       final RecordMutation mutation,
       final Instant now,
-      final String createRecordId
-  ) {
+      final String createRecordId) {
     if (mutation instanceof RecordCreateMutation create) {
       return create(model, access, create.values(), now, createRecordId);
     }
@@ -210,8 +546,13 @@ public class RecordSqlCompiler {
    * Internal complete values may include many calculated/defaulted columns. Public request limits
    * still apply to the original mutation; all supplied internal fields retain schema/type checks.
    */
-  RecordSqlStatement computedMutation(final RuntimeRecordModel model, final RecordAccessContext access,
-      final RecordMutation mutation, final Map<String, Object> values, final Instant at, final String createRecordId) {
+  RecordSqlStatement computedMutation(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordMutation mutation,
+      final Map<String, Object> values,
+      final Instant at,
+      final String createRecordId) {
     if (mutation instanceof RecordCreateMutation) {
       return create(model, access, values, at, createRecordId);
     }
@@ -221,31 +562,53 @@ public class RecordSqlCompiler {
     return mutation(model, access, mutation, at, createRecordId);
   }
 
-  /** Validates untrusted intent without inventing values for server-computed required fields. */
-  void validateIntent(final RuntimeRecordModel model, final RecordAccessContext access,
-      final RecordMutation mutation, final Set<String> computedFieldIds) {
+  /** Validates untrusted intent without requiring client input for server-controlled fields. */
+  void validateIntent(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordMutation mutation,
+      final Set<String> controlledFieldIds) {
+    validateIntent(model, access, mutation, controlledFieldIds, Set.of());
+  }
+
+  /**
+   * Explicit defaults defer requiredness, while their supplied values remain ordinary user input.
+   */
+  void validateIntent(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      RecordMutation mutation,
+      Set<String> controlledFieldIds,
+      Set<String> confirmedDefaultFieldIds) {
     if (mutation instanceof RecordDeleteMutation) {
       return;
     }
-    var values = mutation instanceof RecordCreateMutation create ? create.values()
-        : ((RecordUpdateMutation) mutation).values();
+    var values =
+        mutation instanceof RecordCreateMutation create
+            ? create.values()
+            : ((RecordUpdateMutation) mutation).values();
     var definitions = fields(model);
     validateWriteFields(access, definitions, values.keySet());
     for (var entry : values.entrySet()) {
-      if (computedFieldIds.contains(definitions.get(entry.getKey()).fieldId())) {
-        throw denied("Calculated record fields are server controlled");
+      if (controlledFieldIds.contains(definitions.get(entry.getKey()).fieldId())) {
+        throw denied("The record field is server controlled");
       }
       logical(definitions.get(entry.getKey()), entry.getValue());
     }
     if (mutation instanceof RecordCreateMutation) {
       for (var field : definitions.values()) {
-        if (!field.nullable() && field.defaultValue() == null && !values.containsKey(field.code())
-            && !computedFieldIds.contains(field.fieldId())) {
+        if (!field.nullable()
+            && field.defaultValue() == null
+            && !values.containsKey(field.code())
+            && !controlledFieldIds.contains(field.fieldId())
+            && !confirmedDefaultFieldIds.contains(field.fieldId())) {
           throw invalid("Required record field is missing: " + field.code());
         }
       }
     } else {
-      rejectScopeFieldMutation(model, access.rowScope(),
+      rejectScopeFieldMutation(
+          model,
+          access.rowScope(),
           values.keySet().stream().map(model::activeCode).collect(Collectors.toSet()));
     }
   }
@@ -255,18 +618,15 @@ public class RecordSqlCompiler {
       final RecordAccessContext access,
       final Map<String, Object> input,
       final Instant now,
-      final String requestedRecordId
-  ) {
+      final String requestedRecordId) {
     Map<String, LogicalFieldDefinition> definitions = fields(model);
     validateWriteFields(access, definitions, input.keySet());
     for (LogicalFieldDefinition field : definitions.values()) {
-      if (!field.nullable() && field.defaultValue() == null
-          && !input.containsKey(field.code())) {
+      if (!field.nullable() && field.defaultValue() == null && !input.containsKey(field.code())) {
         throw invalid("Required record field is missing: " + field.code());
       }
     }
-    String recordId = requestedRecordId == null
-        ? UUID.randomUUID().toString() : requestedRecordId;
+    String recordId = requestedRecordId == null ? UUID.randomUUID().toString() : requestedRecordId;
     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
     for (LogicalFieldDefinition field : model.requestedSchema().fields()) {
       if (input.containsKey(field.code())) {
@@ -277,8 +637,12 @@ public class RecordSqlCompiler {
     // trusted active defaults explicitly, including columns added after the requested schema.
     for (var field : model.activeSchema().fields()) {
       if (!values.containsKey(field.code()) && field.defaultValue() != null) {
-        values.put(field.code(), logical(field,
-            org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(field.defaultValue())));
+        values.put(
+            field.code(),
+            logical(
+                field,
+                org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(
+                    field.defaultValue())));
       }
     }
     values.put("id", recordId);
@@ -294,18 +658,19 @@ public class RecordSqlCompiler {
       throw denied("The created record is outside the active data scope");
     }
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String columns = values.keySet().stream().map(RecordSqlCompiler::quote)
-        .collect(Collectors.joining(", "));
-    String placeholders = values.values().stream().map(parameters::add)
-        .collect(Collectors.joining(", "));
+    String columns =
+        values.keySet().stream().map(RecordSqlCompiler::quote).collect(Collectors.joining(", "));
+    String placeholders =
+        values.values().stream().map(parameters::add).collect(Collectors.joining(", "));
     return new RecordSqlStatement(
         "INSERT INTO " + table(model) + " (" + columns + ") VALUES (" + placeholders + ")",
         parameters.values(),
         RecordMutationType.CREATE,
         recordId,
         0L,
-        now
-    );
+        now,
+        new RecordSqlStatement.Subject(
+            model.physicalModelId(), access.actor().tenantId(), access.actor().actorId()));
   }
 
   private RecordSqlStatement update(
@@ -313,72 +678,130 @@ public class RecordSqlCompiler {
       final RecordAccessContext access,
       final RecordUpdateMutation mutation,
       final Map<String, Object> input,
-      final Instant now
-  ) {
+      final Instant now) {
     Map<String, LogicalFieldDefinition> definitions = fields(model);
     validateWriteFields(access, definitions, input.keySet());
     rejectScopeFieldMutation(
         model,
         access.rowScope(),
-        input.keySet().stream().map(model::activeCode).collect(Collectors.toSet())
-    );
+        input.keySet().stream().map(model::activeCode).collect(Collectors.toSet()));
     RecordSqlParameters parameters = new RecordSqlParameters();
     List<String> assignments = new ArrayList<>();
     for (LogicalFieldDefinition field : model.requestedSchema().fields()) {
       if (input.containsKey(field.code())) {
-        assignments.add(quote(model.activeCode(field.code())) + " = "
-            + parameters.add(logical(field, input.get(field.code()))));
+        assignments.add(
+            quote(model.activeCode(field.code()))
+                + " = "
+                + parameters.add(logical(field, input.get(field.code()))));
       }
     }
     assignments.add(quote("updated_by") + " = " + parameters.add(access.actor().actorId()));
     assignments.add(quote("updated_at") + " = " + parameters.add(Timestamp.from(now)));
-    assignments.add(quote("record_version") + " = "
-        + parameters.add(mutation.expectedVersion() + 1));
-    String sql = "UPDATE " + table(model) + " SET " + String.join(", ", assignments)
-        + " WHERE " + mutationWhere(
-        model,
-        access,
-        mutation.recordId(),
-        mutation.expectedVersion(),
-        parameters
-    );
+    assignments.add(
+        quote("record_version") + " = " + parameters.add(mutation.expectedVersion() + 1));
+    String sql =
+        "UPDATE "
+            + table(model)
+            + " SET "
+            + String.join(", ", assignments)
+            + " WHERE "
+            + mutationWhere(
+                model, access, mutation.recordId(), mutation.expectedVersion(), parameters);
     return new RecordSqlStatement(
         sql,
         parameters.values(),
         RecordMutationType.UPDATE,
         mutation.recordId(),
         mutation.expectedVersion() + 1,
-        now
-    );
+        now,
+        new RecordSqlStatement.Subject(
+            model.physicalModelId(), access.actor().tenantId(), access.actor().actorId()));
   }
 
   private RecordSqlStatement delete(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final RecordDeleteMutation mutation,
-      final Instant now
-  ) {
+      final Instant now) {
     RecordSqlParameters parameters = new RecordSqlParameters();
-    String sql = "UPDATE " + table(model) + " SET "
-        + quote("deleted_at") + " = " + parameters.add(Timestamp.from(now)) + ", "
-        + quote("updated_by") + " = " + parameters.add(access.actor().actorId()) + ", "
-        + quote("updated_at") + " = " + parameters.add(Timestamp.from(now)) + ", "
-        + quote("record_version") + " = " + parameters.add(mutation.expectedVersion() + 1)
-        + " WHERE " + mutationWhere(
-        model,
-        access,
-        mutation.recordId(),
-        mutation.expectedVersion(),
-        parameters
-    );
+    String sql =
+        "UPDATE "
+            + table(model)
+            + " SET "
+            + quote("deleted_at")
+            + " = "
+            + parameters.add(Timestamp.from(now))
+            + ", "
+            + quote("updated_by")
+            + " = "
+            + parameters.add(access.actor().actorId())
+            + ", "
+            + quote("updated_at")
+            + " = "
+            + parameters.add(Timestamp.from(now))
+            + ", "
+            + quote("record_version")
+            + " = "
+            + parameters.add(mutation.expectedVersion() + 1)
+            + " WHERE "
+            + mutationWhere(
+                model, access, mutation.recordId(), mutation.expectedVersion(), parameters);
     return new RecordSqlStatement(
         sql,
         parameters.values(),
         RecordMutationType.DELETE,
         mutation.recordId(),
         mutation.expectedVersion() + 1,
-        now
-    );
+        now,
+        new RecordSqlStatement.Subject(
+            model.physicalModelId(), access.actor().tenantId(), access.actor().actorId()));
+  }
+
+  /**
+   * Advances an endpoint's aggregate revision in the same transaction as incident collection
+   * changes. Callers must already admit its collection capability and lifecycle; tenant, row scope
+   * and the exact observed aggregate version remain mandatory SQL predicates.
+   */
+  RecordSqlStatement touchCollectionEndpoint(
+      RuntimeRecordModel model,
+      RecordAccessContext access,
+      String recordId,
+      long expectedVersion,
+      Instant now) {
+    if (expectedVersion < 0
+        || expectedVersion >= Long.MAX_VALUE - 1
+        || model.activeSchema().owner() != null
+        || model.activeSchema().collection() != null
+        || !access.queryable(model, "id")) {
+      throw denied("Collection endpoints require an authorized root record and version");
+    }
+    var parameters = new RecordSqlParameters();
+    String sql =
+        "UPDATE "
+            + table(model)
+            + " SET "
+            + quote("updated_by")
+            + " = "
+            + parameters.add(access.actor().actorId())
+            + ", "
+            + quote("updated_at")
+            + " = "
+            + parameters.add(Timestamp.from(now))
+            + ", "
+            + quote("record_version")
+            + " = "
+            + parameters.add(expectedVersion + 1)
+            + " WHERE "
+            + mutationWhere(model, access, recordId, expectedVersion, parameters);
+    return new RecordSqlStatement(
+        sql,
+        parameters.values(),
+        RecordMutationType.UPDATE,
+        recordId,
+        expectedVersion + 1,
+        now,
+        new RecordSqlStatement.Subject(
+            model.physicalModelId(), access.actor().tenantId(), access.actor().actorId()));
   }
 
   private String mutationWhere(
@@ -386,22 +809,29 @@ public class RecordSqlCompiler {
       final RecordAccessContext access,
       final String recordId,
       final long expectedVersion,
-      final RecordSqlParameters parameters
-  ) {
+      final RecordSqlParameters parameters) {
     return baseWhere(access, parameters)
-        + " AND " + quote("id") + " = " + parameters.add(recordId)
-        + " AND " + quote("record_version") + " = " + parameters.add(expectedVersion)
-        + " AND " + scope(model, access, parameters);
+        + " AND "
+        + quote("id")
+        + " = "
+        + parameters.add(recordId)
+        + " AND "
+        + quote("record_version")
+        + " = "
+        + parameters.add(expectedVersion)
+        + " AND "
+        + scope(model, access, parameters);
   }
 
   private String where(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final RecordFilter filter,
-      final RecordSqlParameters parameters
-  ) {
-    StringBuilder result = new StringBuilder(baseWhere(access, parameters))
-        .append(" AND ").append(scope(model, access, parameters));
+      final RecordSqlParameters parameters) {
+    StringBuilder result =
+        new StringBuilder(baseWhere(access, parameters))
+            .append(" AND ")
+            .append(scope(model, access, parameters));
     if (filter != null) {
       result.append(" AND ").append(filter(model, access, filter, parameters));
     }
@@ -409,23 +839,25 @@ public class RecordSqlCompiler {
   }
 
   private static String baseWhere(
-      final RecordAccessContext access,
-      final RecordSqlParameters parameters
-  ) {
-    return quote("tenant_id") + " = " + parameters.add(access.actor().tenantId())
-        + " AND " + quote("deleted_at") + " IS NULL";
+      final RecordAccessContext access, final RecordSqlParameters parameters) {
+    return quote("tenant_id")
+        + " = "
+        + parameters.add(access.actor().tenantId())
+        + " AND "
+        + quote("deleted_at")
+        + " IS NULL";
   }
 
   private String filter(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
       final RecordFilter filter,
-      final RecordSqlParameters parameters
-  ) {
+      final RecordSqlParameters parameters) {
     if (filter.operator().group()) {
-      List<String> children = filter.children().stream()
-          .map(child -> filter(model, access, child, parameters))
-          .toList();
+      List<String> children =
+          filter.children().stream()
+              .map(child -> filter(model, access, child, parameters))
+              .toList();
       return switch (filter.operator()) {
         case AND -> "(" + String.join(" AND ", children) + ")";
         case OR -> "(" + String.join(" OR ", children) + ")";
@@ -433,29 +865,24 @@ public class RecordSqlCompiler {
         default -> throw invalid("Invalid record filter group");
       };
     }
-    requireReadableFilter(access, filter.field());
+    requireReadableFilter(model, access, filter.field());
     Function<Object, Object> converter = converter(model, filter.field());
     List<Object> values = filter.values().stream().map(converter).toList();
     return predicate(
-        quote(model.activeCode(filter.field())),
-        filter.operator(),
-        values,
-        parameters
-    );
+        quote(model.activeCode(filter.field())), filter.operator(), values, parameters);
   }
 
   private String scope(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final RecordSqlParameters parameters
-  ) {
+      final RecordSqlParameters parameters) {
     DataScopeCondition scope = access.rowScope();
     if (scope == null || scope.isAllData()) {
       return "1 = 1";
     }
     List<String> alternatives = new ArrayList<>();
     for (QueryDocument.Node expression : scope.getExpressions()) {
-      alternatives.add(scopeExpression(model, expression, parameters));
+      alternatives.add(scopeExpression(model, access, expression, parameters));
     }
     if (scope.isSelf() || scope.isIncludeSelf()) {
       if (scope.getUserId() != null) {
@@ -463,21 +890,24 @@ public class RecordSqlCompiler {
       }
     }
     if (Set.of("DEPT", "DEPT_AND_BELOW", "CUSTOM").contains(scope.getScopeType())
-        && scope.getDeptIds() != null && !scope.getDeptIds().isEmpty()) {
-      alternatives.add(inPredicate(quote(scope.getDeptField()), scope.getDeptIds(), parameters, false));
+        && scope.getDeptIds() != null
+        && !scope.getDeptIds().isEmpty()) {
+      alternatives.add(
+          inPredicate(quote(scope.getDeptField()), scope.getDeptIds(), parameters, false));
     }
     return alternatives.isEmpty() ? "1 = 0" : "(" + String.join(" OR ", alternatives) + ")";
   }
 
   private String scopeExpression(
       final RuntimeRecordModel model,
+      final RecordAccessContext access,
       final QueryDocument.Node node,
-      final RecordSqlParameters parameters
-  ) {
+      final RecordSqlParameters parameters) {
     if (Set.of("and", "or", "not").contains(node.op())) {
-      List<String> children = node.children().stream()
-          .map(child -> scopeExpression(model, child, parameters))
-          .toList();
+      List<String> children =
+          node.children().stream()
+              .map(child -> scopeExpression(model, access, child, parameters))
+              .toList();
       return switch (node.op()) {
         case "and" -> "(" + String.join(" AND ", children) + ")";
         case "or" -> "(" + String.join(" OR ", children) + ")";
@@ -487,18 +917,23 @@ public class RecordSqlCompiler {
     }
     String field = model.permissionCode(node.field());
     ensureActiveField(model, field);
+    if (model.activeSchema().fields().stream()
+        .anyMatch(
+            candidate ->
+                candidate.code().equals(field)
+                    && access.queryProtectedFields().contains(candidate.fieldId()))) {
+      throw denied("Dynamically protected values cannot define a data scope");
+    }
     RecordFilterOperator operator = scopeOperator(node.op());
-    List<Object> values = jsonValues(node.value()).stream()
-        .map(activeConverter(model, field))
-        .toList();
+    List<Object> values =
+        jsonValues(node.value()).stream().map(activeConverter(model, field)).toList();
     return predicate(quote(field), operator, values, parameters);
   }
 
   private static void rejectScopeFieldMutation(
       final RuntimeRecordModel model,
       final DataScopeCondition scope,
-      final Set<String> changedFields
-  ) {
+      final Set<String> changedFields) {
     if (scope == null || scope.isAllData() || changedFields.isEmpty()) {
       return;
     }
@@ -515,10 +950,7 @@ public class RecordSqlCompiler {
     }
   }
 
-  private static void collectFields(
-      final QueryDocument.Node node,
-      final Set<String> fields
-  ) {
+  private static void collectFields(final QueryDocument.Node node, final Set<String> fields) {
     if (node.field() != null) {
       fields.add(node.field());
     }
@@ -549,8 +981,7 @@ public class RecordSqlCompiler {
       final String field,
       final RecordFilterOperator operator,
       final List<Object> values,
-      final RecordSqlParameters parameters
-  ) {
+      final RecordSqlParameters parameters) {
     return switch (operator) {
       case EQUALS -> field + " = " + parameters.add(values.getFirst());
       case NOT_EQUALS -> field + " <> " + parameters.add(values.getFirst());
@@ -562,10 +993,18 @@ public class RecordSqlCompiler {
       case LESS_THAN -> field + " < " + parameters.add(values.getFirst());
       case GREATER_THAN_OR_EQUAL -> field + " >= " + parameters.add(values.getFirst());
       case LESS_THAN_OR_EQUAL -> field + " <= " + parameters.add(values.getFirst());
-      case BETWEEN -> field + " BETWEEN " + parameters.add(values.get(0))
-          + " AND " + parameters.add(values.get(1));
-      case NOT_BETWEEN -> field + " NOT BETWEEN " + parameters.add(values.get(0))
-          + " AND " + parameters.add(values.get(1));
+      case BETWEEN ->
+          field
+              + " BETWEEN "
+              + parameters.add(values.get(0))
+              + " AND "
+              + parameters.add(values.get(1));
+      case NOT_BETWEEN ->
+          field
+              + " NOT BETWEEN "
+              + parameters.add(values.get(0))
+              + " AND "
+              + parameters.add(values.get(1));
       case IS_NULL -> field + " IS NULL";
       case IS_NOT_NULL -> field + " IS NOT NULL";
       default -> throw invalid("Unsupported record predicate");
@@ -576,8 +1015,7 @@ public class RecordSqlCompiler {
       final String field,
       final Collection<?> values,
       final RecordSqlParameters parameters,
-      final boolean negated
-  ) {
+      final boolean negated) {
     if (values.isEmpty()) {
       return negated ? "1 = 1" : "1 = 0";
     }
@@ -586,9 +1024,7 @@ public class RecordSqlCompiler {
   }
 
   private static boolean scopeAllowsWrite(
-      final DataScopeCondition scope,
-      final Function<String, Object> values
-  ) {
+      final DataScopeCondition scope, final Function<String, Object> values) {
     if (scope == null || scope.isAllData()) {
       return true;
     }
@@ -596,30 +1032,33 @@ public class RecordSqlCompiler {
         .anyMatch(expression -> PermissionExpressionEvaluator.matches(expression, values))) {
       return true;
     }
-    boolean self = (scope.isSelf() || scope.isIncludeSelf())
-        && values.apply(scope.getOwnerField()) != null
-        && values.apply(scope.getOwnerField()).toString().equals(scope.getUserId());
+    boolean self =
+        (scope.isSelf() || scope.isIncludeSelf())
+            && values.apply(scope.getOwnerField()) != null
+            && values.apply(scope.getOwnerField()).toString().equals(scope.getUserId());
     if (scope.isSelf()) {
       return self;
     }
-    boolean department = Set.of("DEPT", "DEPT_AND_BELOW", "CUSTOM")
-        .contains(scope.getScopeType())
-        && values.apply(scope.getDeptField()) != null
-        && scope.getDeptIds().contains(values.apply(scope.getDeptField()).toString());
+    boolean department =
+        Set.of("DEPT", "DEPT_AND_BELOW", "CUSTOM").contains(scope.getScopeType())
+            && values.apply(scope.getDeptField()) != null
+            && scope.getDeptIds().contains(values.apply(scope.getDeptField()).toString());
     return department || scope.isIncludeSelf() && self;
   }
 
   private List<String> projection(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final List<String> requested
-  ) {
+      final List<String> requested) {
     LinkedHashSet<String> result = new LinkedHashSet<>();
     result.add("id");
     result.add("record_version");
-    Collection<String> candidates = requested == null || requested.isEmpty()
-        ? model.requestedFieldCodes().stream().filter(access.readableFields()::contains).toList()
-        : requested;
+    Collection<String> candidates =
+        requested == null || requested.isEmpty()
+            ? model.requestedFieldCodes().stream()
+                .filter(access.readableFields()::contains)
+                .toList()
+            : requested;
     for (String field : candidates) {
       ensureField(model, field);
       if (!access.readableFields().contains(field)) {
@@ -630,10 +1069,7 @@ public class RecordSqlCompiler {
     return List.copyOf(result);
   }
 
-  private static String selectList(
-      final RuntimeRecordModel model,
-      final List<String> fields
-  ) {
+  private static String selectList(final RuntimeRecordModel model, final List<String> fields) {
     Set<String> names = new LinkedHashSet<>(SYSTEM_TYPES.keySet());
     model.activeSchema().fields().forEach(field -> names.add(field.code()));
     List<String> projections = new ArrayList<>();
@@ -665,25 +1101,28 @@ public class RecordSqlCompiler {
   private String orderBy(
       final RuntimeRecordModel model,
       final RecordAccessContext access,
-      final List<RecordSort> requested
-  ) {
+      final List<RecordSort> requested) {
     LinkedHashMap<String, String> fields = new LinkedHashMap<>();
     for (RecordSort sort : requested) {
       ensureField(model, sort.field());
-      requireReadableFilter(access, sort.field());
+      requireReadableFilter(model, access, sort.field());
       fields.put(
-          sort.field(),
-          quote(model.activeCode(sort.field())) + " " + sort.direction().name()
-      );
+          sort.field(), quote(model.activeCode(sort.field())) + " " + sort.direction().name());
     }
     if (requested.isEmpty()) {
-      var ordinal = java.util.List.of("sort", "sort_order", "sequence", "ordinal", "position").stream()
-          .filter(code -> model.requestedField(code) != null
-              && java.util.Set.of("INT32", "INT64").contains(model.requestedField(code).type().name())
-              && access.readableFields().contains(code) && !access.maskedFields().contains(code)).findFirst();
+      var ordinal =
+          java.util.List.of("sort", "sort_order", "sequence", "ordinal", "position").stream()
+              .filter(
+                  code ->
+                      model.requestedField(code) != null
+                          && java.util.Set.of("INT32", "INT64")
+                              .contains(model.requestedField(code).type().name())
+                          && access.queryable(model, code))
+              .findFirst();
       if (ordinal.isPresent()) {
         fields.put(ordinal.get(), quote(model.activeCode(ordinal.get())) + " ASC");
-      } else if (access.readableFields().contains("created_at") && !access.maskedFields().contains("created_at")) {
+      } else if (access.readableFields().contains("created_at")
+          && !access.maskedFields().contains("created_at")) {
         fields.put("created_at", quote("created_at") + " DESC");
       }
     }
@@ -691,10 +1130,7 @@ public class RecordSqlCompiler {
     return String.join(", ", fields.values());
   }
 
-  private Function<Object, Object> converter(
-      final RuntimeRecordModel model,
-      final String field
-  ) {
+  private Function<Object, Object> converter(final RuntimeRecordModel model, final String field) {
     LogicalFieldDefinition definition = fields(model).get(field);
     if (definition != null) {
       return value -> logical(definition, value);
@@ -707,13 +1143,12 @@ public class RecordSqlCompiler {
   }
 
   private Function<Object, Object> activeConverter(
-      final RuntimeRecordModel model,
-      final String field
-  ) {
-    LogicalFieldDefinition definition = model.activeSchema().fields().stream()
-        .filter(candidate -> candidate.code().equals(field))
-        .findFirst()
-        .orElse(null);
+      final RuntimeRecordModel model, final String field) {
+    LogicalFieldDefinition definition =
+        model.activeSchema().fields().stream()
+            .filter(candidate -> candidate.code().equals(field))
+            .findFirst()
+            .orElse(null);
     if (definition != null) {
       return value -> logical(definition, value);
     }
@@ -724,18 +1159,25 @@ public class RecordSqlCompiler {
     return type::convert;
   }
 
-  /** Resolves a persisted canonical value through the same strict type path used by ordinary writes. */
+  /**
+   * Resolves a persisted canonical value through the same strict type path used by ordinary writes.
+   */
   Object canonicalParameter(final LogicalFieldDefinition field, final LogicalValue value) {
     try {
-      var input = org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(value);
+      var input =
+          org.simplepoint.plugin.dna.runtime.service.support.LogicalValueInputs.fromCanonical(
+              value);
       var normalized = valueConverter.normalize(field, input);
       if (!normalized.equals(value)) {
-        throw new IllegalArgumentException("Stored publication value differs from its canonical field value");
+        throw new IllegalArgumentException(
+            "Stored publication value differs from its canonical field value");
       }
       return logicalParameter(field, normalized);
     } catch (IllegalArgumentException failure) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
-          "Stored publication value is not canonical for its frozen field", failure);
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Stored publication value is not canonical for its frozen field",
+          failure);
     }
   }
 
@@ -743,7 +1185,8 @@ public class RecordSqlCompiler {
     return logicalParameter(field, valueConverter.normalize(field, value));
   }
 
-  private static Object logicalParameter(final LogicalFieldDefinition field, final LogicalValue normalized) {
+  private static Object logicalParameter(
+      final LogicalFieldDefinition field, final LogicalValue normalized) {
     if (normalized.canonicalValue() == null) {
       return null;
     }
@@ -791,8 +1234,7 @@ public class RecordSqlCompiler {
   private static void validateWriteFields(
       final RecordAccessContext access,
       final Map<String, LogicalFieldDefinition> definitions,
-      final Set<String> fields
-  ) {
+      final Set<String> fields) {
     for (String field : fields) {
       if (!definitions.containsKey(field)) {
         throw invalid("Unknown or server-owned record field: " + field);
@@ -804,36 +1246,34 @@ public class RecordSqlCompiler {
   }
 
   private static void requireReadableFilter(
-      final RecordAccessContext access,
-      final String field
-  ) {
-    if (!access.readableFields().contains(field) || access.maskedFields().contains(field)) {
+      final RuntimeRecordModel model, final RecordAccessContext access, final String field) {
+    if (!access.queryable(model, field)) {
       throw denied("Record field cannot be filtered or sorted: " + field);
     }
   }
 
   private static void ensureField(final RuntimeRecordModel model, final String field) {
-    if (!SYSTEM_TYPES.containsKey(field) && model.requestedSchema().fields().stream()
-        .noneMatch(definition -> definition.code().equals(field))) {
+    if (!SYSTEM_TYPES.containsKey(field)
+        && model.requestedSchema().fields().stream()
+            .noneMatch(definition -> definition.code().equals(field))) {
       throw invalid("Unknown record field: " + field);
     }
   }
 
   private static void ensureActiveField(final RuntimeRecordModel model, final String field) {
-    if (!SYSTEM_TYPES.containsKey(field) && model.activeSchema().fields().stream()
-        .noneMatch(definition -> definition.code().equals(field))) {
+    if (!SYSTEM_TYPES.containsKey(field)
+        && model.activeSchema().fields().stream()
+            .noneMatch(definition -> definition.code().equals(field))) {
       throw invalid("Unknown active record field: " + field);
     }
   }
 
   private static Map<String, LogicalFieldDefinition> fields(final RuntimeRecordModel model) {
-    return model.requestedSchema().fields().stream().collect(Collectors.toUnmodifiableMap(
-        LogicalFieldDefinition::code,
-        Function.identity()
-    ));
+    return model.requestedSchema().fields().stream()
+        .collect(Collectors.toUnmodifiableMap(LogicalFieldDefinition::code, Function.identity()));
   }
 
-  private static String table(final RuntimeRecordModel model) {
+  static String table(final RuntimeRecordModel model) {
     String table = model.target().metadataTarget().tableName();
     if (table == null || !table.matches("[A-Za-z][A-Za-z0-9_]{0,62}")) {
       throw invalid("Physical model contains an invalid table binding");
@@ -841,7 +1281,7 @@ public class RecordSqlCompiler {
     return quote(CATALOG) + "." + quote(table);
   }
 
-  private static String quote(final String identifier) {
+  static String quote(final String identifier) {
     if (identifier == null || !identifier.matches("[A-Za-z][A-Za-z0-9_]{0,79}")) {
       throw invalid("Invalid record identifier");
     }
@@ -867,10 +1307,12 @@ public class RecordSqlCompiler {
       }
       return switch (this) {
         case STRING -> value.toString();
-        case LONG -> value instanceof Number number
-            ? number.longValue() : Long.valueOf(value.toString());
-        case INSTANT -> value instanceof Instant instant
-            ? Timestamp.from(instant) : Timestamp.from(Instant.parse(value.toString()));
+        case LONG ->
+            value instanceof Number number ? number.longValue() : Long.valueOf(value.toString());
+        case INSTANT ->
+            value instanceof Instant instant
+                ? Timestamp.from(instant)
+                : Timestamp.from(Instant.parse(value.toString()));
       };
     }
   }

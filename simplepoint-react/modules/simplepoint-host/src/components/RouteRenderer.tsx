@@ -1,24 +1,29 @@
 import {resolveHostComponent} from '@/utils/hostComponent';
 import {JSX} from 'react';
+import {usePageLocation} from '@simplepoint/shared/page/hooks';
+import {pageTabIdentity} from '@simplepoint/shared/page/viewIdentity';
 import {Navigate, Route, useLocation} from 'react-router';
 import {IframeView} from './IframeView';
-import {BoundaryAndSuspense} from './withBoundaryAndSuspense';
+import {RetainedRemoteView} from './RetainedRemoteView';
 import {parseComponent} from '@/utils/parseComponent';
 import {getLazyComponent} from '@/utils/lazyComponent';
-import {Profile} from '@/layouts/profile';
-import {Settings} from '@/layouts/settings';
+import {asyncComponent} from '@simplepoint/components/AsyncComponent';
 import {NotFound} from '@/views/errors/NotFound';
 import {OrgTenantRequired} from '@/views/errors/OrgTenantRequired';
 import {Home} from '@/views/home';
 import type {RouteInfo} from '@/store/routes';
-import {TenantHome} from '@/layouts/tenant';
-import {TenantResourcesPage, TenantPackagesPage} from '@/layouts/tenant/pages';
 import {
     AI_WORKBENCH_ROOT_PATH,
     LEGACY_AI_WORKSPACE_PATH,
     resolveLegacyAiWorkspaceTarget,
 } from './legacyAiWorkspace';
 import {LEGACY_WORKFLOW_INSTANCES, LEGACY_WORKFLOW_TASKS, migrateWorkflowLocation, resolveWorkflowTargets, type WorkflowTargets} from './legacyWorkflow';
+
+const Profile = asyncComponent(() => import('@/layouts/profile').then(module => ({default: module.Profile})));
+const Settings = asyncComponent(() => import('@/layouts/settings').then(module => ({default: module.Settings})));
+const TenantHome = asyncComponent(() => import('@/layouts/tenant').then(module => ({default: module.TenantHome})));
+const TenantResourcesPage = asyncComponent(() => import('@/layouts/tenant/pages').then(module => ({default: module.TenantResourcesPage})));
+const TenantPackagesPage = asyncComponent(() => import('@/layouts/tenant/pages').then(module => ({default: module.TenantPackagesPage})));
 
 function LegacyWorkflowRedirect({targets}: {targets: WorkflowTargets}) {
     const location = useLocation();
@@ -39,6 +44,11 @@ interface LeafRoute extends RouteInfo {
 }
 
 type TranslateFn = (key: string, fallback?: string) => string;
+
+function IframeRouteView({path, source, refreshKeys}: {path: string; source: string; refreshKeys: Record<string, number>}) {
+    const identity = pageTabIdentity(usePageLocation());
+    return <IframeView key={`iframe-${path}-${refreshKeys[identity] || 0}`} src={source}/>;
+}
 
 /**
  * 生成路由
@@ -109,8 +119,6 @@ export function renderRoutes(
                 return {key, path, element: <TenantHome/>};
             }
 
-            const rk = path ? (refreshKeyMap[path] || 0) : 0;
-
             const {type, payload} = parseComponent(component);
 
             // iframe
@@ -118,7 +126,7 @@ export function renderRoutes(
                 return {
                     key,
                     path,
-                    element: <IframeView key={`iframe-${path}-${rk}`} src={payload}/>
+                    element: <IframeRouteView path={path} source={payload} refreshKeys={refreshKeyMap}/>
                 };
             }
 
@@ -133,11 +141,11 @@ export function renderRoutes(
                 key,
                 path,
                 element: (
-                    <BoundaryAndSuspense
+                    <RetainedRemoteView
                         component={LazyComp}
                         t={t}
                         path={path}
-                        refreshKey={rk}
+                        refreshKeys={refreshKeyMap}
                     />
                 )
             };

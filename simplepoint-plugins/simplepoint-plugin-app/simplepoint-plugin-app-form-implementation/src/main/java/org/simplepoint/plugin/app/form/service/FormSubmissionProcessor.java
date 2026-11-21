@@ -44,24 +44,7 @@ public class FormSubmissionProcessor {
         var command = accepted.command();
         if ("PREPARED".equals(work.step())) {
           String operationKey = "submission:" + id;
-          var snapshot =
-              command.recordId() == null
-                  ? records.captureCreate(
-                      accepted.form(),
-                      new CreateApplicationFormRecordCommand(
-                          command.runtime(),
-                          operationKey,
-                          FormRecordState.SUBMITTED,
-                          command.values()), accepted.snapshotRequirements())
-                  : records.captureUpdate(
-                      accepted.form(),
-                      command.recordId(),
-                      new UpdateApplicationFormRecordCommand(
-                          command.runtime(),
-                          command.expectedVersion(),
-                          operationKey,
-                          FormRecordState.SUBMITTED,
-                          command.values()), accepted.snapshotRequirements());
+          var snapshot = capture(accepted, operationKey);
           journal.captured(id, work.token(), snapshot);
         } else if ("DATA_COMMITTED".equals(work.step())) {
           var variables =
@@ -107,14 +90,53 @@ public class FormSubmissionProcessor {
             work.step(),
             code,
             failure.getClass().getSimpleName());
-        if ("PREPARED".equals(work.step()) && failure instanceof ApplicationFormException domain
-            && domain.errorCode() == org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.RECORD_OPERATION_REJECTED) {
-          journal.rejected(id, work.token());
+        if ("PREPARED".equals(work.step())
+            && failure instanceof ApplicationFormException domain
+            && (domain.errorCode()
+                    == org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode
+                        .RECORD_OPERATION_REJECTED
+                || domain.errorCode()
+                    == org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode
+                        .RECORD_REFERENCE_CONFLICT)) {
+          journal.rejected(id, work.token(), domain.errorCode());
         } else {
           journal.failed(id, work.token(), code, false);
         }
         return;
       }
     }
+  }
+
+  private org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView capture(
+      AcceptedFormSubmission accepted, String operationKey) {
+    var command = accepted.command();
+    if (command.recordId() == null) {
+      return records.captureCreate(
+          accepted.form(),
+          new CreateApplicationFormRecordCommand(
+              command.runtime(),
+              operationKey,
+              FormRecordState.SUBMITTED,
+              command.values(),
+              command.referenceMappings()),
+          accepted.snapshotRequirements());
+    }
+    var update =
+        new UpdateApplicationFormRecordCommand(
+            command.runtime(),
+            command.expectedVersion(),
+            operationKey,
+            FormRecordState.SUBMITTED,
+            command.values(),
+            command.referenceMappings());
+    return accepted.relatedScope() == null
+        ? records.captureUpdate(
+            accepted.form(), command.recordId(), update, accepted.snapshotRequirements())
+        : records.captureRelatedUpdate(
+            accepted.form(),
+            command.recordId(),
+            update,
+            accepted.snapshotRequirements(),
+            accepted.relatedScope());
   }
 }

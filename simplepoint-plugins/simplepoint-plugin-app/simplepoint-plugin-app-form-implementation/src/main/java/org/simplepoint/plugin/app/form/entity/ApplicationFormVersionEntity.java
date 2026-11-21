@@ -68,6 +68,12 @@ public class ApplicationFormVersionEntity {
   @Column(name = "detail_bindings_json", columnDefinition = "TEXT")
   private String detailBindingsJson;
 
+  @Column(name = "relation_bindings_json", updatable = false, columnDefinition = "TEXT")
+  private String relationBindingsJson;
+
+  @Column(name = "collection_bindings_json", columnDefinition = "TEXT")
+  private String collectionBindingsJson;
+
   @Column(name = "renderer_version", length = 16, nullable = false, updatable = false)
   private String rendererVersion;
 

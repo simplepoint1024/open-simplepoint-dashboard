@@ -1,4 +1,4 @@
-import {useContext, createContext, type HTMLAttributes, type ReactNode} from 'react';
+import {useContext, useState, createContext, type HTMLAttributes, type ReactNode} from 'react';
 import {Checkbox, Tabs} from 'antd';
 import {DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors} from '@dnd-kit/core';
 import {SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy} from '@dnd-kit/sortable';
@@ -14,11 +14,17 @@ import type {DesignDocument, DesignField} from './contracts';
 import type {FormFieldAccess} from '../FormRuntime/contracts';
 import {designerFormContext} from './presentation';
 import {orderedListFields} from './formPresentation';
+import InverseViews from './relations/InverseViews';
+import Collections from './relations/Collections';
+import {DesignerRelationContext} from './relations/Context';
 
-type Props = {document: DesignDocument; disabled: boolean; open: boolean; onClose: () => void; onChange: (value: DesignDocument) => void};
+type Props = {document: DesignDocument; disabled: boolean; open: boolean; onClose: () => void; onChange: (value: DesignDocument) => boolean};
 /** Live document commands participate in the designer's existing undo/save lifecycle. */
 export default function FormProperties({document, disabled, open, onClose, onChange}: Props) {
   const {t} = useI18n(), selected = usePageSelected();
+  const directory = useContext(DesignerRelationContext);
+  const [inverseEditing, setInverseEditing] = useState(false);
+  const [collectionEditing, setCollectionEditing] = useState(false);
   const locked = disabled || !selected || !open;
   const fields = document.fields.map(field => ({field, owner: '', group: t('app.designer.mainFields', '主表')}))
     .concat((document.details ?? []).flatMap(detail => detail.fields.map(field => ({field, owner: detail.detailId, group: detail.label}))));
@@ -33,7 +39,7 @@ export default function FormProperties({document, disabled, open, onClose, onCha
       disabled={locked || key === 'edit' && value === 'WRITE' && (row.field.storageMode === 'COMPUTED' || row.field.access?.readOnly)}
       checked={(key === 'edit' && row.field.storageMode === 'COMPUTED' && row.field.access?.edit !== 'HIDDEN' ? 'READ' : row.field.access?.[key] ?? 'WRITE') === value}
       onChange={() => patch(row.owner, row.field.fieldId, {...row.field.access, [key]: value})}/>});
-  return <ResourceDrawer rootClassName="sp-form-properties-drawer" placement="right" collapsible open={open} onClose={onClose}
+  return <ResourceDrawer rootClassName="sp-form-properties-drawer" placement="right" collapsible open={open} locked={inverseEditing || collectionEditing} onClose={onClose}
     title={t('app.designer.formProperties', '表单属性')}>
     <Tabs items={[
       {key: 'basic', icon: createIcon('SettingOutlined'), label: t('app.designer.basicProperties', '基础属性'), children:
@@ -55,6 +61,10 @@ export default function FormProperties({document, disabled, open, onClose, onCha
             {key: 'create', title: t('app.designer.createMode', '新增'), children: [choice('create', 'WRITE', t('app.designer.accessShow', '显示')), choice('create', 'HIDDEN', t('app.designer.accessHidden', '隐藏'))]},
             {key: 'edit', title: t('app.designer.editMode', '编辑'), children: [choice('edit', 'READ', t('app.designer.accessRead', '读')), choice('edit', 'WRITE', t('app.designer.accessWrite', '写')), choice('edit', 'HIDDEN', t('app.designer.accessHidden', '隐藏'))]},
           ]}/></>},
+      ...(directory?.inverseSource ? [{key: 'inverse', icon: createIcon('LinkOutlined'), label: t('app.relation.inverseView', '关联记录'),
+        children: open && <InverseViews document={document} disabled={locked} onChange={onChange} onInteractionLockChange={setInverseEditing}/>} ] : []),
+      ...(directory ? [{key: 'collections', icon: createIcon('BranchesOutlined'), label: t('app.relation.collection.title', '多对多关联'),
+        children: open && <Collections document={document} disabled={locked} onChange={onChange} onInteractionLockChange={setCollectionEditing}/>} ] : []),
       {key: 'list', icon: createIcon('OrderedListOutlined'), label: t('app.designer.listDefaults', '列表默认顺序'), children:
         <ListOrder document={document} disabled={locked} onChange={onChange}/>},
     ]}/>

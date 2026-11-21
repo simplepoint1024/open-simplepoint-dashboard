@@ -63,6 +63,29 @@ class FormRuntimeDocumentCompilerTest {
     assertThat(runtime.rules()).isEmpty();
   }
 
+  @Test
+  void referenceCapabilitiesFollowRootAndDetailFieldPolicyWithoutExposingTargetBindings() throws Exception {
+    var original = FormRelationPublicationProjectionTest.document();
+    var relations = original.relations().stream().map(relation ->
+        new org.simplepoint.plugin.app.form.api.model.relation.FormRelationDefinition(relation.contractVersion(), relation.relationId(),
+            relation.cardinality(), relation.sourceField(), relation.target(), relation.qualification(),
+            new org.simplepoint.plugin.app.form.api.model.relation.FormReferenceView("name", List.of("name"), List.of(), null, true))).toList();
+    var document = new ApplicationFormDocument("1", original.fields(), original.indexes(), original.scenes(), original.rules(),
+        original.details(), original.constraints(), original.presentation(), relations);
+    var form = new PublishedApplicationForm("tenant", "app", "page", "Page", "form", "Form", 1, "resource", "model-root", 1,
+        "a".repeat(64), document, 1, 0, List.of(new FormDetailBinding("lines", "model-lines", 1, "b".repeat(64))));
+    var compiler = new FormRuntimeDocumentCompiler();
+    var runtime = compiler.compile(form, Map.of());
+    assertThat(runtime.fields().getFirst().reference().relationId()).isEqualTo("customer");
+    assertThat(runtime.details().getFirst().fields().getFirst().reference().relationId()).isEqualTo("product");
+    var json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(runtime);
+    assertThat(json).contains("relationId").doesNotContain("targetPhysicalModelId", "selected-customer", "customer-app");
+    var restricted = compiler.compile(form, Map.of("dna.runtime.record.model-root#customer_id", "MASKED",
+        "dna.runtime.record.model-lines#product_id", "HIDDEN"));
+    assertThat(restricted.fields().getFirst().reference()).isNull();
+    assertThat(restricted.details().getFirst().fields()).isEmpty();
+  }
+
   private static PublishedApplicationForm form() {
     FormFieldDefinition name = field("name-field", "display_name");
     FormFieldDefinition secret = field("secret-field", "secret_note");

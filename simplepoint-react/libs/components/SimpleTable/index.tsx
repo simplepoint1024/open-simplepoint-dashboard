@@ -1,5 +1,6 @@
 import {emptyPage} from "@simplepoint/shared/types/request"
 import Table from '../Table';
+import DeleteConfirmation from '../Table/DeleteConfirmation';
 import type {TableButtonProps} from '../Table';
 import TreeTable from '../TreeTable';
 import {Alert, Button, Drawer, Empty, Modal, Space} from 'antd';
@@ -150,6 +151,11 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
               loading: tableLoading || submitLoading,
               refreshDisabled: controller.table.refreshDisabled || deleteOpen,
             };
+            if (props.renderContent) return props.renderContent({
+              data: pageData, buttons, onButtonEvents: buttonEvents,
+              isButtonVisible: tableProps.isButtonVisible, isButtonDisabled: tableProps.isButtonDisabled,
+              loading: tableLoading || submitLoading, failed: hasPageError || showPageWarning,
+            });
             return props.tree
               ? <TreeTable<any> {...tableProps} {...props.tree} />
               : <Table<any> {...tableProps} />;
@@ -237,14 +243,13 @@ const SchemaTable = (props: SimpleTableProps<any>) => {
           onOk={() => {if (controller.drawer.canClose()) {changeDiscard(false); setDrawerOpen(false);}}}
           okText={t('personal.discardConfirm', '放弃修改')} cancelText={t('personal.continueEditing', '继续编辑')} />
       </Drawer>
-      <Modal wrapClassName="sp-simple-table-delete" open={controller.deletion.open && selected}
-        destroyOnHidden={!controller.deletion.open} title={t('table.confirmDeleteTitle', '确认删除')}
-        confirmLoading={submitLoading} closable={!submitLoading} maskClosable={!submitLoading} keyboard={!submitLoading}
-        cancelButtonProps={{disabled: submitLoading}} okButtonProps={{danger: true}}
-        onOk={() => void controller.deletion.confirm()} onCancel={controller.deletion.cancel}>
-        {t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', {count: controller.deletion.count})}
-        {controller.deletion.error && <Alert type="error" showIcon title={controller.deletion.error}/>}
-      </Modal>
+      <DeleteConfirmation className="sp-simple-table-delete" open={controller.deletion.open}
+        pending={submitLoading} error={controller.deletion.error}
+        onConfirm={() => void controller.deletion.confirm()} onCancel={controller.deletion.cancel}>
+        {props.permanentDelete
+          ? t('table.confirmPermanentDeleteContent', '永久删除选中的 {count} 条记录？', {count: controller.deletion.count})
+          : t('table.confirmDeleteContent', '确定要删除选中的 {count} 条数据吗？', {count: controller.deletion.count})}
+      </DeleteConfirmation>
     </div>
   );
 };

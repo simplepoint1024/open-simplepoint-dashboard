@@ -107,6 +107,10 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
       buttons.add(button("add", "app.form.create", 0, 0));
     }
     buttons.add(button("design", "app.form.design", 1, 1));
+    if (allowed("delete")) {
+      buttons.add(Map.of("key", "delete", "text", "i18n:app.form.delete", "sort", 2,
+          "argumentMinSize", 1, "argumentMaxSize", 100, "danger", true, "icon", "DeleteOutlined"));
+    }
     return Map.of("schema", schema, "buttons", List.copyOf(buttons));
   }
 
@@ -114,7 +118,11 @@ public class ApplicationFormCatalogServiceImpl implements ApplicationFormCatalog
   public ApplicationFormDesignerContract designer(final String applicationId) {
     authorize(applicationId);
     return new ApplicationFormDesignerContract(
-        allowed("create"), allowed("edit"), allowed("publish"), List.copyOf(components.descriptors()),
+        allowed("create"), allowed("edit"), allowed("publish"), components.descriptors().stream()
+            // Keep new authoring unavailable until the governed publication/runtime acceptance gate passes.
+            // The trusted registry still accepts incomplete drafts and validates their component contract.
+            .filter(component -> !org.simplepoint.plugin.app.form.component.ReferenceComponentContributor.TYPE
+                .equals(component.type())).toList(),
         List.of(FormFieldWritePolicy.values())
     );
   }

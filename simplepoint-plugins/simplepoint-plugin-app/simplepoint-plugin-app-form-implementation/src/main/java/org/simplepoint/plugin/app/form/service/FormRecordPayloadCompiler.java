@@ -35,8 +35,27 @@ public class FormRecordPayloadCompiler {
       final Map<String, Object> requested,
       final FormRecordState currentState,
       final FormRecordState targetState) {
-    validatedValues(document, existing, requested, currentState, targetState);
-    return project(document, requested, targetState);
+    return compile(
+        document,
+        existing,
+        requested,
+        currentState,
+        targetState,
+        FormRecordValueProviders.forRow(document, null, null, null));
+  }
+
+  /**
+   * Defers only declared server outputs and explicitly selected defaults to final DNA validation.
+   */
+  Map<String, Object> compile(
+      ApplicationFormDocument document,
+      Map<String, Object> existing,
+      Map<String, Object> requested,
+      FormRecordState currentState,
+      FormRecordState targetState,
+      FormRecordValueProviders providers) {
+    validatedValues(document, existing, requested, currentState, targetState, providers);
+    return project(document, requested, targetState, providers);
   }
 
   /**
@@ -49,6 +68,22 @@ public class FormRecordPayloadCompiler {
       final Map<String, Object> requested,
       final FormRecordState currentState,
       final FormRecordState targetState) {
+    return validatedValues(
+        document,
+        existing,
+        requested,
+        currentState,
+        targetState,
+        FormRecordValueProviders.forRow(document, null, null, null));
+  }
+
+  Map<String, Object> validatedValues(
+      ApplicationFormDocument document,
+      Map<String, Object> existing,
+      Map<String, Object> requested,
+      FormRecordState currentState,
+      FormRecordState targetState,
+      FormRecordValueProviders providers) {
     if (requested == null || requested.size() > MAX_VALUES || targetState == null) {
       throw invalid("Form record values are invalid");
     }
@@ -57,16 +92,15 @@ public class FormRecordPayloadCompiler {
     }
     Map<String, FormFieldDefinition> fields = new HashMap<>();
     document.fields().forEach(field -> fields.put(field.fieldId(), field));
-    final Set<String> calculated = document.fields().stream().filter(field -> field.storageMode() == FormStorageMode.COMPUTED)
-        .map(FormFieldDefinition::fieldId).collect(java.util.stream.Collectors.toUnmodifiableSet());
+    final Set<String> deferred = providers.deferred();
     Map<String, Object> merged = new LinkedHashMap<>();
     if (existing != null) {
       merged.putAll(existing);
     }
     for (Map.Entry<String, Object> entry : requested.entrySet()) {
       FormFieldDefinition field = fields.get(entry.getKey());
-      if (field == null || field.storageMode() == FormStorageMode.COMPUTED) {
-        throw invalid("Form record contains an unknown or computed field");
+      if (field == null || providers.managed().contains(field.fieldId())) {
+        throw invalid("Form record contains an unknown or server-managed field");
       }
       if (!field.allowsWrite(currentState)) {
         throw invalid("Field is not writable in the current record state: " + field.fieldId());
@@ -78,13 +112,16 @@ public class FormRecordPayloadCompiler {
     applyDefaults(fields, merged);
     if (targetState == FormRecordState.SUBMITTED) {
       var inputs = new LinkedHashMap<>(merged);
-      calculated.forEach(inputs::remove);
+      deferred.forEach(inputs::remove);
       FormComponentValues.validate(document, inputs);
     }
     List<FormSubmissionRequirements.Requirement> requirements =
         FormSubmissionRequirements.compile(document).stream()
             .map(requirement -> requirement.forState(targetState))
-            .filter(requirement -> !requirement.requiresCalculatedValues(calculated))
+            .filter(
+                requirement ->
+                    !deferred.contains(requirement.field().fieldId())
+                        && !requirement.requiresCalculatedValues(deferred))
             .toList();
     if (currentState == null) {
       requirements.stream()
@@ -101,7 +138,7 @@ public class FormRecordPayloadCompiler {
               });
     }
     fields.values().stream()
-        .filter(field -> field.storageMode() != FormStorageMode.COMPUTED)
+        .filter(field -> !deferred.contains(field.fieldId()))
         .filter(
             field -> targetState == FormRecordState.SUBMITTED || !field.allowsWrite(targetState))
         .forEach(field -> validateChoice(field, merged.get(field.fieldId())));
@@ -127,6 +164,18 @@ public class FormRecordPayloadCompiler {
       final ApplicationFormDocument document,
       final Map<String, Object> requested,
       final FormRecordState targetState) {
+    return project(
+        document,
+        requested,
+        targetState,
+        FormRecordValueProviders.forRow(document, null, null, null));
+  }
+
+  Map<String, Object> project(
+      ApplicationFormDocument document,
+      Map<String, Object> requested,
+      FormRecordState targetState,
+      FormRecordValueProviders providers) {
     if (requested == null || requested.size() > MAX_VALUES || targetState == null) {
       throw invalid("Form record values are invalid");
     }
@@ -136,8 +185,8 @@ public class FormRecordPayloadCompiler {
     requested.forEach(
         (fieldId, value) -> {
           FormFieldDefinition field = fields.get(fieldId);
-          if (field == null || field.storageMode() == FormStorageMode.COMPUTED) {
-            throw invalid("Form record contains an unknown or computed field");
+          if (field == null || providers.managed().contains(field.fieldId())) {
+            throw invalid("Form record contains an unknown or server-managed field");
           }
           if (persistent(field)) {
             storage.put(
@@ -189,7 +238,9 @@ public class FormRecordPayloadCompiler {
         .values()
         .forEach(
             field -> {
-              if (field.storageMode() != FormStorageMode.COMPUTED && !values.containsKey(field.fieldId()) && field.defaultValue() != null) {
+              if (field.storageMode() != FormStorageMode.COMPUTED
+                  && !values.containsKey(field.fieldId())
+                  && field.defaultValue() != null) {
                 values.put(field.fieldId(), value(field.defaultValue()));
               }
             });

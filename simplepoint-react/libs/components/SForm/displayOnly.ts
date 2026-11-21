@@ -15,6 +15,7 @@ export function displayOnlyProjection(source: any, sourceUi: any = {}): {schema:
       type: ['string', 'number', 'boolean', 'object', 'array', 'null'],
       title: source.title, description: source.description, readOnly: true,
       'x-display-only': true,
+      ...(source['x-field-access'] !== 'MASKED' && source['x-form-reference'] ? {'x-form-reference': source['x-form-reference']} : {}),
       ...(Object.prototype.hasOwnProperty.call(source, 'x-reference-label') ? {'x-reference-label': source['x-reference-label']} : {}),
       ...(source['x-display-selection'] ? {'x-display-selection': source['x-display-selection']} : {}),
       ...(['date', 'date-time', 'time'].includes(source.format) ? {'x-display-format': source.format} : {}),

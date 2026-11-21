@@ -11,6 +11,7 @@ export function detailFormValues(document: ApplicationFormDocument, values: Reco
     result[detail.detailId] = rows.map(row => row && typeof row === 'object' && !Array.isArray(row) ? {
       ...(Object.prototype.hasOwnProperty.call(row, 'id') ? {id: row.id} : {}),
       ...(Object.prototype.hasOwnProperty.call(row, 'version') ? {version: row.version} : {}),
+      ...(typeof row.clientId === 'string' ? {clientId: row.clientId} : {}),
       values: row.values,
     } : row);
   }

@@ -116,8 +116,8 @@ subprojects {
         if (project.name !in setOf("simplepoint-calculation", "simplepoint-platform-composition",
                 "simplepoint-platform-dictionary-api", "simplepoint-platform-dictionary-registration",
                 "simplepoint-platform-installation", "simplepoint-platform-installation-jdbc",
-                "simplepoint-platform-installation-dictionary", "simplepoint-platform-bootstrap-registry-api",
-                "simplepoint-remoting-core", "simplepoint-data-migrations", "simplepoint-data-migrations-api",
+                "simplepoint-platform-installation-dictionary", "simplepoint-platform-installation-ownership", "simplepoint-platform-bootstrap-registry-api",
+                "simplepoint-remoting-core", "simplepoint-data-migrations", "simplepoint-data-migrations-api", "simplepoint-data-ownership",
                 "simplepoint-events-api", "simplepoint-events-migrations",
                 "simplepoint-plugin-workflow-migrations")) {
             implementation(platform("org.springframework.boot:spring-boot-dependencies:${rootProject.libs.versions.spring.boot.get()}"))

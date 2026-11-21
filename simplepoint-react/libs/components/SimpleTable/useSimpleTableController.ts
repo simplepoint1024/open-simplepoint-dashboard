@@ -5,7 +5,8 @@ import type { IChangeEvent } from '@rjsf/core';
 import { App } from 'antd';
 import { sortSchemaProperties, useSchema } from '@simplepoint/shared/hooks/useSchema';
 import { isHttpError, resolveApiErrorMessage } from '@simplepoint/shared/api/client';
-import { del, get, post, put, usePage } from '@simplepoint/shared/api/methods';
+import { del, get, post, put } from '@simplepoint/shared/api/methods';
+import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
 import { useI18n } from '@simplepoint/shared/hooks/useI18n';
 import { getStoredContextId, getStoredRoleId, getStoredTenantId } from '@simplepoint/shared/api/contextId';
 import type { TableButtonProps } from '../Table';
@@ -83,7 +84,8 @@ export type SimpleTableController<T> = {
 
 export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): SimpleTableController<T> {
   const scope = useQueryScope();
-  const resourceKey = JSON.stringify([props.baseUrl, props.name, props.queryContext ?? '']);
+  const schemaContext = JSON.stringify(props.schemaParams ?? null);
+  const resourceKey = JSON.stringify([props.baseUrl, props.name, props.queryContext ?? '', schemaContext]);
   const session = JSON.stringify([scope, resourceKey]);
   const { t, ensure, locale, ready } = useI18n();
   const {message} = App.useApp();
@@ -171,7 +173,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
   }, [props.i18nNamespaces, ensure, locale]);
 
   const { data: rawSchemaData, isLoading: schemaLoading, error: schemaError, refetch: refetchSchema,
-    dictionariesLoading, dictionariesError, retryDictionaries } = useSchema(props.baseUrl, {staleTime: props.schemaStaleTime});
+    dictionariesLoading, dictionariesError, retryDictionaries } = useSchema(props.baseUrl, {staleTime: props.schemaStaleTime}, props.schemaParams);
   const schemaData = useMemo(() => rawSchemaData && props.schemaTransform
     ? {...rawSchemaData, schema: props.schemaTransform(rawSchemaData.schema)} : rawSchemaData,
   [rawSchemaData, props.schemaTransform]);
@@ -206,11 +208,11 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
           ...(sort ? {sort} : {}),
         }, {signal});
 
-  const { data: pageData, isLoading: pageLoading, isFetching: pageFetching, error: pageError, refetch: refetchPage } = usePage(
-    [props.baseUrl, props.name, props.queryContext ?? '', tenantId, roleId, contextId, page, size, filters, sort],
+  const { data: pageData, isLoading: pageLoading, isFetching: pageFetching, error: pageError, refetch: refetchPage } = useOwnedData<Page<T>>(
+    [props.baseUrl, props.name, props.queryContext ?? '', schemaContext, tenantId, roleId, contextId, page, size, filters, sort],
     fetchPage,
     {
-      placeholderData: scopedPagePlaceholder<Page<any>>(scope, [props.baseUrl, props.name, props.queryContext ?? '']),
+      placeholderData: scopedPagePlaceholder<Page<any>>(scope, [props.baseUrl, props.name, props.queryContext ?? '', schemaContext]),
       retry: (count, error) => !(isHttpError(error) && error.status >= 400 && error.status < 500)
         && !(isHttpError(error) && error.status === 500) && count < 1,
     }
@@ -336,7 +338,7 @@ export function useSimpleTableController<T = any>(props: SimpleTableProps<T>): S
     if (!props.loadEditingRecord) {
       setEditingRecord(rows[0]); setDrawerOpen(true); return;
     }
-    const request = operation.begin();
+    const request = operation.beginRead();
     if (!request) {props.onInteractionLockChange?.(false); return;}
     let opened = false;
     const accessEpoch = readAccess.current.epoch;

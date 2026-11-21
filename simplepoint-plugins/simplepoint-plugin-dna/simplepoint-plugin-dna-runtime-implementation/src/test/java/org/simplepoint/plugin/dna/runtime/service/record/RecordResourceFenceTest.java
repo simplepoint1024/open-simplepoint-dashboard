@@ -37,7 +37,7 @@ class RecordResourceFenceTest {
         .addAnnotatedClass(PhysicalResourceProjectionEntity.class).buildMetadata().buildSessionFactory();
     em = SharedEntityManagerCreator.createSharedEntityManager(factory);
     var manager = new JpaTransactionManager(factory);
-    tx = new TransactionTemplate(manager); fence = new RecordResourceFence(em, manager);
+    tx = new TransactionTemplate(manager); fence = new RecordResourceFence(em, manager, mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class));
     tx.executeWithoutResult(status -> {
       var row = new PhysicalResourceProjectionEntity();
       row.setId("projection"); row.setTenantId("tenant"); row.setResourceCode("resource");
@@ -64,6 +64,7 @@ class RecordResourceFenceTest {
     var access = mock(RecordAccessContext.class);
     when(access.actor()).thenReturn(new org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor("tenant", "actor"));
     when(access.resourceGeneration()).thenReturn(1L);
+    when(access.resourceCode()).thenReturn("resource");
     tx.executeWithoutResult(status -> em.find(PhysicalResourceProjectionEntity.class, "projection").setFormallyOffline(true));
     assertThatThrownBy(() -> backend.read(model, java.util.List.of(), access, 30_000,
         session -> {throw new AssertionError("An offline read must not run");})).isInstanceOf(AccessDeniedException.class);
@@ -80,15 +81,41 @@ class RecordResourceFenceTest {
   void stalePreparedWriteCannotCrossOfflineAndReonline() {
     assertThat(fence.generation("tenant", "model", "resource")).isEqualTo(1);
     tx.executeWithoutResult(status -> em.find(PhysicalResourceProjectionEntity.class, "projection").setFormallyOffline(true));
-    assertThatThrownBy(() -> fence.execute("tenant", "model", 1, () -> "write"))
+    assertThatThrownBy(() -> fence.execute("tenant", "model", 1, java.util.List.of(), () -> "write"))
         .isInstanceOf(AccessDeniedException.class);
     tx.executeWithoutResult(status -> {
       var row = em.find(PhysicalResourceProjectionEntity.class, "projection");
       row.setFormallyOffline(false); row.setGeneration(2);
     });
-    assertThatThrownBy(() -> fence.execute("tenant", "model", 1, () -> "old-write"))
+    assertThatThrownBy(() -> fence.execute("tenant", "model", 1, java.util.List.of(), () -> "old-write"))
         .isInstanceOf(AccessDeniedException.class);
-    assertThat(fence.execute("tenant", "model", 2, () -> "new-write")).isEqualTo("new-write");
+    assertThat(fence.execute("tenant", "model", 2, java.util.List.of(), () -> "new-write")).isEqualTo("new-write");
+  }
+
+  @Test
+  void relatedResourcesRequireTheirExactManagedGenerationBeforeTheCallback() {
+    tx.executeWithoutResult(status -> {
+      var row = new PhysicalResourceProjectionEntity(); row.setId("target-projection"); row.setTenantId("tenant");
+      row.setResourceCode("target"); row.setPhysicalModelId("target-model"); row.setOwnerKey("app:target"); row.setGeneration(3);
+      row.setCreatedBy("app"); row.setUpdatedBy("app"); row.setCreatedAt(Instant.now()); row.setUpdatedAt(Instant.now()); em.persist(row);
+    });
+    var source = new RecordResourceGuard("model","resource",1,false);
+    var target = new RecordResourceGuard("target-model","target",3,true);
+    assertThat(fence.execute("tenant",java.util.List.of(target,source),java.util.List.of(),() -> "read")).isEqualTo("read");
+    for (var invalid : java.util.List.of(new RecordResourceGuard("target-model","missing",0,true),
+        new RecordResourceGuard("wrong-model","target",3,true),new RecordResourceGuard("target-model","target",2,true))) {
+      assertThatThrownBy(() -> fence.execute("tenant",java.util.List.of(source,invalid),java.util.List.of(),() -> {throw new AssertionError("Rejected target reached execution");}))
+          .isInstanceOf(AccessDeniedException.class);
+    }
+    tx.executeWithoutResult(status -> em.find(PhysicalResourceProjectionEntity.class,"target-projection").setFormallyOffline(true));
+    assertThatThrownBy(() -> fence.execute("tenant",java.util.List.of(source,target),java.util.List.of(),() -> "read"))
+        .isInstanceOf(AccessDeniedException.class);
+    tx.executeWithoutResult(status -> {
+      var row=em.find(PhysicalResourceProjectionEntity.class,"target-projection"); row.setFormallyOffline(false); row.setGeneration(4);
+    });
+    assertThatThrownBy(() -> fence.execute("tenant",java.util.List.of(source,target),java.util.List.of(),() -> "read"))
+        .isInstanceOf(AccessDeniedException.class);
+    assertThat(ResourcePolicyContext.get()).isEqualTo("resource");
   }
 
   @Test
@@ -100,7 +127,7 @@ class RecordResourceFenceTest {
       var write = workers.submit(() -> {
         ResourcePolicyContext.set("resource");
         try {
-          return fence.execute("tenant", "model", 1, () -> {
+          return fence.execute("tenant", "model", 1, java.util.List.of(), () -> {
             admitted.countDown();
             try {assertThat(release.await(5, TimeUnit.SECONDS)).isTrue();}
             catch (InterruptedException interrupted) {throw new IllegalStateException(interrupted);}
@@ -120,7 +147,7 @@ class RecordResourceFenceTest {
       release.countDown();
       assertThat(write.get(5, TimeUnit.SECONDS)).isEqualTo("committed");
       offline.get(5, TimeUnit.SECONDS);
-      assertThatThrownBy(() -> fence.execute("tenant", "model", 1, () -> "write"))
+      assertThatThrownBy(() -> fence.execute("tenant", "model", 1, java.util.List.of(), () -> "write"))
           .isInstanceOf(AccessDeniedException.class);
     } finally {release.countDown();}
   }

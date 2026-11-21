@@ -17,9 +17,14 @@ export function initializeDetail(node: Node, identity: () => string, document: D
   document.details = [...(document.details ?? []), detail];
   return {...node, properties: {...node.properties, detailId: {kind: 'STRING', value: detail.detailId}}};
 }
-export function cloneDetail(node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string> = new Map()) {
+export function cloneDetail(node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string> = new Map(), clonedFields: ReadonlyMap<string, string> = new Map()) {
   const detail = source.details?.find(item => item.detailId === detailIdentity(node));
   if (!detail) throw new Error('Missing detail definition');
+  const reused = detail.fields[0] && clonedFields.get(`${detail.detailId}.${detail.fields[0].fieldId}`)?.split('.')[0];
+  if (reused && document.details?.some(item => item.detailId === reused)) {
+    node.properties.detailId = {kind: 'STRING', value: reused};
+    return new Map(detail.fields.map(field => [`${detail.detailId}.${field.fieldId}`, clonedFields.get(`${detail.detailId}.${field.fieldId}`)!]));
+  }
   const next = structuredClone(detail), fields = new Map<string, string>();
   next.detailId = identity(); next.storageCode = storageCode(document);
   next.fields.forEach(field => {const id = identity(); fields.set(field.fieldId, id); field.fieldId = id;});

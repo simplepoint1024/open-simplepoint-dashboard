@@ -94,7 +94,11 @@ class FormCalculationPermissionsTest {
             form.resourceCode(),
             new ResourceDataScope("SELF", Set.of("department"), true, List.of())));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, authorization);
-    var context = new DnaInvocationContextFactory(new FormRequestContext()).forForm(form);
+    var context =
+        new DnaInvocationContextFactory(
+                new FormRequestContext(),
+                org.mockito.Mockito.mock(FormRelationTargetResolver.class))
+            .forForm(form);
     assertThat(context.fieldPermissions()).containsEntry(key("main-model", "total"), "HIDDEN");
     assertThat(context.actorId()).isEqualTo("reviewer");
     assertThat(context.dataScopeType()).isEqualTo("SELF");
@@ -117,18 +121,46 @@ class FormCalculationPermissionsTest {
   @Test
   void currentDependenciesMayReferenceNewFieldsWithoutAddingThemToAnOldPage() throws Exception {
     var source = form();
-    var page = new ApplicationFormDocument("1", source.document().fields().stream().filter(field -> !field.fieldId().equals("rate")).toList(),
-        List.of(), source.document().scenes(), List.of(), source.document().details());
-    var historical = new PublishedApplicationForm(source.tenantId(), source.applicationId(), source.pageId(), source.pageName(),
-        source.formId(), source.formName(), 1, source.resourceCode(), source.physicalModelId(), 1, source.storageChecksum(),
-        page, 2, 2, source.detailBindings(), source.document());
-    assertThat(FormCalculationPermissions.restrict(historical, Map.of(key("main-model", "rate"), "MASKED")))
-        .containsEntry(key("main-model", "summary"), "HIDDEN").containsEntry(key("main-model", "total"), "HIDDEN");
+    var page =
+        new ApplicationFormDocument(
+            "1",
+            source.document().fields().stream()
+                .filter(field -> !field.fieldId().equals("rate"))
+                .toList(),
+            List.of(),
+            source.document().scenes(),
+            List.of(),
+            source.document().details());
+    var historical =
+        new PublishedApplicationForm(
+            source.tenantId(),
+            source.applicationId(),
+            source.pageId(),
+            source.pageName(),
+            source.formId(),
+            source.formName(),
+            1,
+            source.resourceCode(),
+            source.physicalModelId(),
+            1,
+            source.storageChecksum(),
+            page,
+            2,
+            2,
+            source.detailBindings(),
+            source.document());
+    assertThat(
+            FormCalculationPermissions.restrict(
+                historical, Map.of(key("main-model", "rate"), "MASKED")))
+        .containsEntry(key("main-model", "summary"), "HIDDEN")
+        .containsEntry(key("main-model", "total"), "HIDDEN");
     assertThat(FormCalculationPermissions.restrict(historical, Map.of()))
         .containsEntry(key("main-model", "summary"), "VISIBLE");
     assertThat(historical.document().fields()).noneMatch(field -> field.fieldId().equals("rate"));
     var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-    assertThat(mapper.readValue(mapper.writeValueAsString(historical), PublishedApplicationForm.class)).isEqualTo(historical);
+    assertThat(
+            mapper.readValue(mapper.writeValueAsString(historical), PublishedApplicationForm.class))
+        .isEqualTo(historical);
     assertThat(mapper.writeValueAsString(source)).doesNotContain("calculationDocument");
   }
 
@@ -151,6 +183,47 @@ class FormCalculationPermissionsTest {
             source.document());
     assertThatThrownBy(() -> FormCalculationPermissions.restrict(missing, Map.of()))
         .isInstanceOf(ApplicationFormException.class);
+  }
+
+  @Test
+  void selfRelationAcrossPageVersionsKeepsTheMoreRestrictiveDerivedPolicy() {
+    var current = form();
+    final var plainVersion =
+        new PublishedApplicationForm(
+            current.tenantId(),
+            current.applicationId(),
+            current.pageId(),
+            current.pageName(),
+            current.formId(),
+            current.formName(),
+            2,
+            current.resourceCode(),
+            current.physicalModelId(),
+            current.physicalModelVersion(),
+            current.storageChecksum(),
+            new ApplicationFormDocument("1", List.of(), List.of(), List.of(), List.of()));
+    var auth = new AuthorizationContext();
+    auth.setUserId("actor");
+    auth.setAttributes(Map.of("X-Tenant-Id", "tenant"));
+    auth.setResources(Set.of(current.resourceCode()));
+    auth.setResourceFieldPermissions(
+        Map.of(current.resourceCode(), Map.of(key("main-model", "rate"), "MASKED")));
+    auth.setResourceDataScopes(
+        Map.of(current.resourceCode(), new ResourceDataScope("SELF", Set.of(), false)));
+    RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, auth);
+    var contexts =
+        new DnaInvocationContextFactory(
+            new FormRequestContext(), org.mockito.Mockito.mock(FormRelationTargetResolver.class));
+    for (var result :
+        List.of(
+            contexts.forRelations(plainVersion, List.of(current)),
+            contexts.forRelations(current, List.of(plainVersion)))) {
+      assertThat(result.additionalResourcePolicies()).isEmpty();
+      assertThat(result.fieldPermissions())
+          .containsEntry(key("main-model", "total"), "HIDDEN")
+          .containsEntry(key("main-model", "summary"), "HIDDEN");
+      assertThat(result.dataScopeType()).isEqualTo("SELF");
+    }
   }
 
   private static String key(String model, String field) {

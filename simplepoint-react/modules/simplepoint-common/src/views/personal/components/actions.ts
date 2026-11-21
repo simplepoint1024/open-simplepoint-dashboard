@@ -8,6 +8,8 @@ export function canPersonalAction(kind: PersonalKind, key: string, record?: Pers
   if (key === 'readAll') return kind === 'messages';
   if (!record) return false;
   if (key === 'view') return true;
+  if (kind === 'messages' && (record as PersonalMessage).deletedAt) return key === 'RESTORE' || key === 'delete';
+  if (key === 'delete' && kind !== 'items') return true;
   if (kind === 'items') {
     const item = record as PersonalItem;
     if (item.deletedAt) return key === 'RESTORE';

@@ -9,7 +9,8 @@ export function useWorkflowRefresh() {
   return useCallback(async () => {
     await Promise.all([
       ...['/workflow/inbox/pending', '/workflow/inbox/completed', '/workflow/matters/started',
-        '/workflow/matters/copied', '/workflow/matters/all'].map(endpoint =>
+        '/workflow/matters/copied'].flatMap(endpoint => [endpoint, endpoint + '/archived'])
+        .concat('/workflow/matters/all').map(endpoint =>
         client.invalidateQueries({queryKey: scopedQueryKey(scope, [endpoint])})),
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'diagram'])}),
       client.invalidateQueries({queryKey: scopedQueryKey(scope, ['workflow', 'progress'])}),

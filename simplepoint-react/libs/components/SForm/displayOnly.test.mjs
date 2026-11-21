@@ -3,6 +3,18 @@ import {test} from 'node:test';
 import {displayOnlyProjection, displaySelection, displayValue} from './displayOnly.ts';
 import {fieldSchema} from '../FormRuntime/fieldSchema.ts';
 
+test('read-only reference metadata survives projection while masked fields cannot enable directory reads', () => {
+  const reference = {relationId: 'customer', allowDrillThrough: true};
+  const source = {type: 'string', format: 'uuid', 'x-display-only': true, 'x-form-reference': reference};
+  const projected = displayOnlyProjection(source);
+  assert.deepEqual(projected.schema['x-form-reference'], reference);
+  assert.equal(projected.uiSchema['ui:field'], 'DisplayValue');
+  assert.equal(projected.schema.format, undefined, 'historical/masked values are not UUID inputs to validate');
+  assert.equal(displayOnlyProjection({...source, 'x-field-access': 'MASKED'}).schema['x-form-reference'], undefined);
+  const historical = {id: 'id', label: 'Original name'};
+  assert.deepEqual(displayOnlyProjection({...source, 'x-reference-label': historical}).schema['x-reference-label'], historical);
+});
+
 test('explicit display values preserve data and bypass input constraints without weakening writable fields', () => {
   const source = {type: 'object', required: ['masked', 'editable'], properties: {
     masked: {type: 'integer', title: 'Secret', 'x-display-only': true, minimum: 0, pattern: '^\\d+$',

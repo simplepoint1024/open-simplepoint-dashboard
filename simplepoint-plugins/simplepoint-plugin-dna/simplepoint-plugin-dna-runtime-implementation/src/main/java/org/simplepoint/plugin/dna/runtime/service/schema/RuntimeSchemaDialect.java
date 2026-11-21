@@ -69,6 +69,31 @@ public interface RuntimeSchemaDialect extends DialectCapabilityProvider {
       PhysicalSchemaDefinition targetSchema
   ) throws SQLException;
 
+  /** Rechecks business reference data after installing FKs, before activating the schema. */
+  default void verifyReferenceData(Connection connection, JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget target,
+      PhysicalSchemaDefinition schema, PhysicalTableSnapshot actual) throws SQLException {
+    if (!schema.references().isEmpty()) {
+      throw new DnaRuntimeException(DnaRuntimeErrorCode.DIALECT_OPERATION_UNSUPPORTED,
+          "Reference data verification is unavailable for this dialect");
+    }
+  }
+
+  /** Native integrity/locking SQL; unsupported dialects must not silently skip reference checks. */
+  default RecordReferenceSql recordReferenceSql(JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget target, String column) {
+    throw new DnaRuntimeException(DnaRuntimeErrorCode.DIALECT_OPERATION_UNSUPPORTED,
+        "Record reference integrity is unavailable for this dialect");
+  }
+
+  /** Removes both owned edge endpoints and advances the tombstone version atomically. */
+  default String retireCollectionEdgesSql(JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget edge,
+      String sourceColumn, String targetColumn) {
+    throw new DnaRuntimeException(DnaRuntimeErrorCode.DIALECT_OPERATION_UNSUPPORTED,
+        "Collection cutover is unavailable for this dialect");
+  }
+
   /** Reads and canonicalizes the bound table structure. */
   PhysicalTableSnapshot inspect(
       Connection connection,

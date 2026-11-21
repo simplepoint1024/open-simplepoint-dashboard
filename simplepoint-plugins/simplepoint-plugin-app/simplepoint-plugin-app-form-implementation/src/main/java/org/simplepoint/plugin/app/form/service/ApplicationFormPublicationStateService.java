@@ -152,6 +152,7 @@ public class ApplicationFormPublicationStateService {
     form.setUpdatedAt(now());
     version.setPhysicalModelVersion(prepared.physicalModelVersion());
     version.setDetailBindingsJson(prepared.detailBindingsJson());
+    version.setCollectionBindingsJson(prepared.collectionBindingsJson());
     publication.setMigrationId(prepared.migrationId());
     publication.setStatus(ApplicationFormPublicationStatus.DATA_READY);
     publication.setStep(ApplicationFormPublicationStep.PAGE_RESOURCE);
@@ -276,6 +277,22 @@ public class ApplicationFormPublicationStateService {
       final ApplicationFormEntity form,
       final ApplicationFormVersionEntity version,
       final boolean recoverStaleDna) {
+    var document = documentCodec.decode(version.getDocumentJson());
+    var bindings =
+        documentCodec.decodeRelationBindings(document, version.getRelationBindingsJson());
+    var storedSchema = storageCompiler.decode(version.getStorageSchemaJson());
+    var projection =
+        storageCompiler.compile(
+            document, bindings, Boolean.TRUE.equals(storedSchema.tenantRecordIdentity()));
+    // Validate before returning executable work: no remote DDL may precede snapshot consistency.
+    if (!documentCodec.encode(document).checksum().equals(version.getChecksum())
+        || !projection.checksum().equals(version.getStorageChecksum())
+        || !projection.schema().equals(storedSchema)) {
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.PERSISTENCE_FAILED,
+          "Immutable publication document, relation bindings and storage projection do not match");
+    }
+    requireReplacementStorage(form, version, document, bindings);
     return new PublicationWork(
         publication.getId(),
         publication.getExecutionToken(),
@@ -285,9 +302,52 @@ public class ApplicationFormPublicationStateService {
         form.getPhysicalModelId(),
         version.getVersionNumber(),
         recoverStaleDna,
-        storageCompiler.decode(version.getStorageSchemaJson()),
+        storedSchema,
         version.getStorageChecksum(),
-        documentCodec.decode(version.getDocumentJson()));
+        document,
+        bindings);
+  }
+
+  private void requireReplacementStorage(
+      ApplicationFormEntity form,
+      ApplicationFormVersionEntity version,
+      org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument document,
+      java.util.List<FormRelationBinding> bindings) {
+    Integer installed = form.getPublishedVersion();
+    if (installed != null && installed >= version.getVersionNumber()
+        || document.relations().stream().noneMatch(item -> item.collectionReplacement() != null)) {
+      return;
+    }
+    var previous =
+        installed == null ? null : requireVersion(form.getTenantId(), form.getId(), installed);
+    if (!FormCollectionRebinding.validateVersion(
+        document, previous == null ? null : documentCodec.decode(previous.getDocumentJson()))) {
+      return;
+    }
+    // The copied edges and policy cutover do not backfill ordinary form or detail data.
+    var detailBindings = documentCodec.decodeDetailBindings(previous.getDetailBindingsJson());
+    if (!previous.getStorageChecksum().equals(version.getStorageChecksum())
+        || detailBindings.size() != document.details().size()
+        || document.details().stream()
+            .anyMatch(
+                detail ->
+                    detailBindings.stream()
+                        .noneMatch(
+                            old ->
+                                old.detailId().equals(detail.detailId())
+                                    && old.checksum()
+                                        .equals(
+                                            storageCompiler
+                                                .compileDetail(
+                                                    document,
+                                                    detail,
+                                                    form.getPhysicalModelId(),
+                                                    bindings)
+                                                .checksum())))) {
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.DOCUMENT_INVALID,
+          "Publish root or detail storage changes separately from a collection replacement");
+    }
   }
 
   private boolean staleForRecovery(final ApplicationFormPublicationEntity publication) {
@@ -311,13 +371,15 @@ public class ApplicationFormPublicationStateService {
                     "select count(publication) from ApplicationFormPublicationEntity publication"
                         + " where publication.tenantId = :tenant and publication.formId = :form and"
                         + " publication.formVersion <> :version and publication.status in :states"
-                        + " and (publication.status <> :ready or not exists ("
-                        + " select cancelled.id from ApplicationFormPageBindingEntity cancelled"
-                        + " where cancelled.tenantId = publication.tenantId and cancelled.formId = publication.formId"
-                        + " and cancelled.formVersion = publication.formVersion and cancelled.status = :cancelled)"
-                        + " or exists (select live.id from ApplicationFormPageBindingEntity live"
-                        + " where live.tenantId = publication.tenantId and live.formId = publication.formId"
-                        + " and live.formVersion = publication.formVersion and live.status not in :closed))",
+                        + " and (publication.status <> :ready or not exists ( select cancelled.id"
+                        + " from ApplicationFormPageBindingEntity cancelled where"
+                        + " cancelled.tenantId = publication.tenantId and cancelled.formId ="
+                        + " publication.formId and cancelled.formVersion = publication.formVersion"
+                        + " and cancelled.status = :cancelled) or exists (select live.id from"
+                        + " ApplicationFormPageBindingEntity live where live.tenantId ="
+                        + " publication.tenantId and live.formId = publication.formId and"
+                        + " live.formVersion = publication.formVersion and live.status not in"
+                        + " :closed))",
                     Long.class)
                 .setParameter("tenant", tenantId)
                 .setParameter("form", formId)
@@ -325,9 +387,11 @@ public class ApplicationFormPublicationStateService {
                 .setParameter("states", OPEN_STATES)
                 .setParameter("ready", ApplicationFormPublicationStatus.DATA_READY)
                 .setParameter("cancelled", ApplicationFormPageBindingStatus.CANCELLED)
-                .setParameter("closed", Set.of(
-                    ApplicationFormPageBindingStatus.CANCELLED,
-                    ApplicationFormPageBindingStatus.RETIRED))
+                .setParameter(
+                    "closed",
+                    Set.of(
+                        ApplicationFormPageBindingStatus.CANCELLED,
+                        ApplicationFormPageBindingStatus.RETIRED))
                 .getSingleResult()
             > 0;
     if (present) {
@@ -540,7 +604,42 @@ public class ApplicationFormPublicationStateService {
       boolean recoverStaleDna,
       PhysicalSchemaDefinition schema,
       String storageChecksum,
-      org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument document) {
+      org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument document,
+      java.util.List<FormRelationBinding> relationBindings) {
+    /** Freezes optional relation bindings for each durable publication attempt. */
+    public PublicationWork {
+      relationBindings =
+          relationBindings == null ? java.util.List.of() : java.util.List.copyOf(relationBindings);
+    }
+
+    /** Retains source compatibility for publications without business relations. */
+    public PublicationWork(
+        String publicationId,
+        String executionToken,
+        String applicationId,
+        String formId,
+        String displayName,
+        String physicalModelId,
+        int formVersion,
+        boolean recoverStaleDna,
+        PhysicalSchemaDefinition schema,
+        String storageChecksum,
+        org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument document) {
+      this(
+          publicationId,
+          executionToken,
+          applicationId,
+          formId,
+          displayName,
+          physicalModelId,
+          formVersion,
+          recoverStaleDna,
+          schema,
+          storageChecksum,
+          document,
+          java.util.List.of());
+    }
+
     /** Preserves the immutable runtime identity and optional child bindings. */
     public PublicationWork(
         String publicationId,

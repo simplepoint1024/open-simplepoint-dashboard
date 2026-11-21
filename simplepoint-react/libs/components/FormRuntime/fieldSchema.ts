@@ -5,6 +5,7 @@ import {selectionOptions} from '../FormComponents/Standard/model.ts';
 export function fieldSchema(field: FormFieldDefinition, component: FormComponentDefinition) {
   const base: Record<string, any> = {
     title: component.label || field.label,
+    ...(field.reference ? {'x-form-reference': field.reference, 'x-ui': {widget: 'FormReference'}} : {}),
     ...(component.description ? {description: component.description} : {}),
   };
   switch (field.type) {

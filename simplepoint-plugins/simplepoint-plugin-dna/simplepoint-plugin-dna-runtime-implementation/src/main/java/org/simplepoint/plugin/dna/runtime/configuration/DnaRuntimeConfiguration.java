@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Configuration;
     requires = {@ModuleDependency(id = "dna-core"), @ModuleDependency(id = "dna-federation")},
     provides = {DnaFormRuntimeService.class, DnaOwnedRecordService.class})
 @Configuration(proxyBeanMethods = false)
+@org.springframework.scheduling.annotation.EnableScheduling
 @EnableConfigurationProperties({
   DnaRuntimePlacementProperties.class,
   DnaRuntimeExecutionProperties.class,

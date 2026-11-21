@@ -3,20 +3,22 @@ package org.simplepoint.plugin.dna.runtime.service.record;
 import java.util.List;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCommandResult;
 
-/** Committed mutation results and sanitized Calcite pushdown observation counts. */
+/** Only the committed attempt supplies mutation receipts and pushdown observations. */
 record RecordBatchExecutionResult(
     List<Integer> affectedRows,
     long executionTimeMs,
     int pushedStatementCount,
-    List<RecordCommandResult> replayedResults
-) {
-
-  RecordBatchExecutionResult(List<Integer> affectedRows, long executionTimeMs, int pushedStatementCount) {
-    this(affectedRows, executionTimeMs, pushedStatementCount, null);
-  }
-
+    List<RecordCommandResult> results,
+    boolean replayed) {
   RecordBatchExecutionResult {
     affectedRows = List.copyOf(affectedRows);
-    replayedResults = replayedResults == null ? null : List.copyOf(replayedResults);
+    results = List.copyOf(results);
+    if (results.isEmpty()) {
+      throw new IllegalArgumentException("A committed batch requires mutation receipts");
+    }
+  }
+
+  List<RecordCommandResult> replayedResults() {
+    return replayed ? results : null;
   }
 }

@@ -17,6 +17,23 @@ import org.springframework.orm.jpa.SharedEntityManagerCreator;
 
 class WorkflowDefinitionQueriesTest extends WorkflowEngineFixture {
   @Test
+  void canPurgeAnUnreferencedDefinitionOnlyAfterTakingEveryPublishedVersionOffline() {
+    var draft = transaction.execute(status -> service.createDefinition(
+        new CreateDefinitionCommand("deleteAfterOffline", "Delete after offline", null, null)));
+    String id = draft.definition().id();
+    var version = transaction.execute(status -> service.publish(id,
+        new org.simplepoint.plugin.workflow.api.model.WorkflowModels.PublishDefinitionCommand(
+            draft.definition().draftRevision(), null)));
+    assertThatThrownBy(() -> transaction.executeWithoutResult(status -> service.deleteDefinition(id,
+        draft.definition().draftRevision()))).isInstanceOf(WorkflowException.class);
+    transaction.executeWithoutResult(status -> service.offlineDefinition(id, version.version()));
+    var offline = transaction.execute(status -> service.definition(id));
+    assertThat(offline.definition().status()).isEqualTo("OFFLINE");
+    transaction.executeWithoutResult(status -> service.deleteDefinition(id, offline.definition().draftRevision()));
+    assertThatThrownBy(() -> transaction.execute(status -> service.definition(id))).isInstanceOf(WorkflowException.class);
+  }
+
+  @Test
   void headerFiltersAndSortAreAppliedBeforeDatabasePagination() {
     transaction.executeWithoutResult(
         status -> {

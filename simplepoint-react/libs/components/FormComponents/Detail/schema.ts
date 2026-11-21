@@ -17,5 +17,7 @@ export function detailRowSchema(detail: FormDetailDefinition, state?: RecordStat
 }
 export function detailSchema(detail: FormDetailDefinition, state?: RecordState, enforceRequired = true): RJSFSchema {
   return {type: 'array', title: detail.label, maxItems: 40, default: [], items: {type: 'object', additionalProperties: false,
-    required: ['values'], properties: {id: {type: 'string'}, version: {type: 'integer', minimum: 0}, values: detailRowSchema(detail, state, enforceRequired)}}};
+    required: ['values'], properties: {id: {type: 'string'}, version: {type: 'integer', minimum: 0},
+      clientId: {type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'},
+      values: detailRowSchema(detail, state, enforceRequired)}}};
 }

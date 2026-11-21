@@ -19,6 +19,8 @@ import org.simplepoint.plugin.app.form.service.ApplicationFormPublicationStateSe
 import org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinator.DnaSchemaPreparationRequest;
 import org.simplepoint.plugin.app.form.service.FormDnaSchemaPublicationCoordinator.PreparedDnaSchema;
 import org.simplepoint.plugin.app.form.service.FormPageResourceCoordinator.PreparedPageResource;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -280,6 +282,7 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
                 work.formId(),
                 prepared.physicalModelId(),
                 work.document(),
+                work.relationBindings(),
                 work.recoverStaleDna());
         if (bindings == null) {
           return state.recordDataProgress(work.publicationId(), work.executionToken(), prepared);
@@ -292,6 +295,17 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
                 prepared.status(),
                 bindings);
       }
+      if (prepared.active() && work.document() != null
+          && work.document().relations().stream().anyMatch(relation -> relation.sourceField() == null)) {
+        String edges = details.prepareCollections(
+            contextFactory.current(), work.applicationId(), work.formId(), prepared.physicalModelId(),
+            work.document(), work.relationBindings(), work.recoverStaleDna());
+        if (edges == null) {
+          return state.recordDataProgress(work.publicationId(), work.executionToken(), prepared);
+        }
+        prepared = new PreparedDnaSchema(prepared.physicalModelId(), prepared.physicalModelVersion(),
+            prepared.migrationId(), prepared.status(), prepared.detailBindingsJson(), edges);
+      }
       if (prepared.active()) {
         return state.completeData(work.publicationId(), work.executionToken(), prepared);
       }
@@ -300,12 +314,19 @@ public class ApplicationFormPublicationServiceImpl implements ApplicationFormPub
       recordFailure(work, exception.errorCode(), exception);
       throw exception;
     } catch (RuntimeException exception) {
+      boolean dataConflict = exception instanceof DnaRuntimeException dnaFailure
+          && dnaFailure.errorCode() == DnaRuntimeErrorCode.SCHEMA_PRECHECK_FAILED;
+      ApplicationFormErrorCode errorCode = dataConflict
+          ? ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT
+          : ApplicationFormErrorCode.PUBLICATION_FAILED;
       ApplicationFormException failure =
           new ApplicationFormException(
-              ApplicationFormErrorCode.PUBLICATION_FAILED,
-              "Form data publication failed",
+              errorCode,
+              dataConflict
+                  ? "Existing data does not satisfy the proposed schema"
+                  : "Form data publication failed",
               exception);
-      recordFailure(work, failure.errorCode(), failure);
+      recordFailure(work, errorCode, failure);
       throw failure;
     }
   }

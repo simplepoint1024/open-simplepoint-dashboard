@@ -15,6 +15,7 @@ import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.simplepoint.platform.resource.ApplicationCatalogRemovalEvents;
 import org.simplepoint.plugin.rbac.tenant.api.entity.Tenant;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantResource;
 import org.simplepoint.plugin.rbac.tenant.api.entity.TenantType;
@@ -44,6 +45,7 @@ class ManagedTenantResourceServiceImplTest {
         database.create(
             Tenant.class,
             TenantResource.class,
+            org.simplepoint.plugin.rbac.tenant.api.entity.RetiredApplicationResource.class,
             org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceSetup.class,
             org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceEntitlement.class,
             org.simplepoint.security.entity.RoleResourceGrant.class);
@@ -81,6 +83,34 @@ class ManagedTenantResourceServiceImplTest {
     }
     session.close();
     database.close();
+  }
+
+  @Test
+  void removesOnlyExactOfflinePageCatalogAndFencesDelayedRegistration() {
+    String application = UUID.randomUUID().toString();
+    String pageId = UUID.randomUUID().toString();
+    String managedKey = ApplicationCatalogRemovalEvents.pageKey(pageId);
+    String code = "app.runtime.page." + pageId;
+    var declaration = new ManagedTenantResourceCommand(tenant.getId(), managedKey, code, "Owned page",
+        ResourceType.PAGE, null, parent.getCode(), host.getCode(),
+        "/app/runtime/" + application + "/" + pageId, null, 10, null);
+    var page = service.prepare(declaration);
+    var unrelated = service.prepare(page("Keep this page"));
+    service.activateGeneration(tenant.getId(), managedKey, 1);
+    var request = ApplicationCatalogRemovalEvents.requested(tenant.getId(), application, 0,
+        UUID.randomUUID(), java.util.Set.of(pageId));
+    assertThatThrownBy(() -> service.removeApplicationCatalog(request))
+        .isInstanceOf(ManagedTenantResourceException.class);
+    service.offlineFromEvent(new org.simplepoint.events.api.EventMessage(UUID.randomUUID(),
+        "resource.offline.requested", 1, "app", tenant.getId(), page.id(), 1, "offline",
+        "trace", java.time.Instant.now(), com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+            .put("managedOwner", "app").put("managedKey", managedKey).put("resourceCode", code)));
+    service.removeApplicationCatalog(request);
+    service.removeApplicationCatalog(request);
+    assertThatThrownBy(() -> service.get(tenant.getId(), managedKey))
+        .isInstanceOf(ManagedTenantResourceException.class);
+    assertThatThrownBy(() -> service.prepare(declaration)).isInstanceOf(ManagedTenantResourceException.class);
+    assertThat(service.get(tenant.getId(), "page:page-1").id()).isEqualTo(unrelated.id());
   }
 
   @Test

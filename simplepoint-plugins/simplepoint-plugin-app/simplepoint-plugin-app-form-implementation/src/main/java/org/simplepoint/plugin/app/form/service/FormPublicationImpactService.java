@@ -78,11 +78,31 @@ public class FormPublicationImpactService {
       }
     }
     Iterable<Version> pages = () -> effectiveVersions.stream().map(number -> version(work, number, budget)).iterator();
+    var installed = FormInstalledCalculation.definitionAt(
+        entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
     boolean calculated = FormCalculationCompiler.hasCalculations(governing)
-        || FormInstalledCalculation.at(entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
+        || !governing.relations().isEmpty() || installed != null;
     var plan = FormPublicationRequirementsCompiler.compile(work.physicalModelId(), work.applicationId(), work.formId(), pages, governing, calculated);
+    var migration = FormCollectionRebinding.command(governing, installed);
+    FormCollectionRebinding.Access access = null;
+    if (migration != null) {
+      var origin = installed.collectionsOrEmpty().stream()
+          .filter(rule -> rule.relationId().equals(migration.sourceRelationId())).findFirst().orElseThrow();
+      String stored = entityManager.createQuery(
+              "select v.relationBindingsJson from ApplicationFormVersionEntity v where v.tenantId = :tenant"
+                  + " and v.formId = :form and v.versionNumber = :version", String.class)
+          .setParameter("tenant", work.tenantId()).setParameter("form", work.formId())
+          .setParameter("version", governingVersion).getSingleResult();
+      var destination = codec.decodeRelationBindings(governing, stored).stream()
+          .filter(entry -> entry.relationId().equals(migration.destinationRelationId()))
+          .findFirst().orElseThrow();
+      access = new FormCollectionRebinding.Access(migration, FormCollectionRebinding.entrance(origin),
+          new org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotTarget(
+              destination.targetPhysicalModelId(), destination.target().applicationId(),
+              destination.target().formId(), destination.targetResourceCode()));
+    }
     return new FormWritePolicyImpact(form.getWritePolicyVersion(), governingVersion, observedBindings,
-        plan.checks(), plan.valueChecks(), plan.validations());
+        plan.checks(), plan.valueChecks(), plan.validations(), access);
   }
 
   private Version version(final BindingWork work, final int number, final FormActiveDefinitionBudget budget) {

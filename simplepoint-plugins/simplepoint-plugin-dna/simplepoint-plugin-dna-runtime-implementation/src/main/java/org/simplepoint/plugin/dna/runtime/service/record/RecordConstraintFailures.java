@@ -11,6 +11,17 @@ final class RecordConstraintFailures {
   }
 
   static boolean integrityViolation(Throwable failure) {
+    return matches(failure, sql -> sql.getSQLState() != null && sql.getSQLState().length() == 5
+        && sql.getSQLState().startsWith("23"));
+  }
+
+  /** PostgreSQL/MySQL FK diagnostics, never localized exception text or constraint-value extraction. */
+  static boolean referenceViolation(Throwable failure) {
+    return matches(failure, sql -> "23503".equals(sql.getSQLState())
+        || ("23000".equals(sql.getSQLState()) && (sql.getErrorCode() == 1451 || sql.getErrorCode() == 1452)));
+  }
+
+  private static boolean matches(Throwable failure, java.util.function.Predicate<SQLException> predicate) {
     var pending = new ArrayDeque<Throwable>();
     var visited = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
     pending.add(failure);
@@ -20,10 +31,7 @@ final class RecordConstraintFailures {
         continue;
       }
       if (current instanceof SQLException sql) {
-        String state = sql.getSQLState();
-        if (state != null && state.length() == 5 && state.startsWith("23")) {
-          return true;
-        }
+        if (predicate.test(sql)) return true;
         if (sql.getNextException() != null) {
           pending.addLast(sql.getNextException());
         }

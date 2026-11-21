@@ -1,4 +1,6 @@
 {
+  "personal.confirmTrashMessage": "将消息移入回收站？",
+  "personal.messageTrashRetention": "回收站中的消息保留 30 天，可恢复或提前永久删除。",
   "personal.workflow": "工作流",
   "personal.saved": "已保存",
   "personal.items": "我的事项",
@@ -76,5 +78,7 @@
   "personal.failed": "操作失败，请重试",
   "personal.retry": "重试",
   "personal.overviewError": "个人工作摘要加载失败",
-  "personal.nothingPending": "暂无待处理内容"
+  "personal.nothingPending": "暂无待处理内容",
+  "personal.confirmPermanentDelete": "永久删除此记录？",
+  "personal.confirmSelected": "将对选中的 {count} 条记录执行此操作。"
 }

@@ -147,6 +147,9 @@
       },
       "required" : [ "title" ],
       "x-query" : {
+        "relations" : [ ],
+        "version" : 1,
+        "maxPageSize" : 500,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -176,10 +179,7 @@
             "sortable" : true,
             "javaType" : "Instant"
           }
-        },
-        "relations" : [ ],
-        "version" : 1,
-        "maxPageSize" : 500
+        }
       }
     },
     "buttons" : [ {
@@ -402,6 +402,9 @@
       },
       "required" : [ "title" ],
       "x-query" : {
+        "relations" : [ ],
+        "version" : 1,
+        "maxPageSize" : 500,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -426,10 +429,7 @@
             "sortable" : true,
             "javaType" : "Instant"
           }
-        },
-        "relations" : [ ],
-        "version" : 1,
-        "maxPageSize" : 500
+        }
       }
     },
     "buttons" : [ {
@@ -497,6 +497,19 @@
       "danger" : false,
       "argumentMinSize" : 1,
       "key" : "REOPEN"
+    }, {
+      "path" : "[default]",
+      "color" : "danger",
+      "authority" : "personal.todos.delete",
+      "variant" : "outlined",
+      "icon" : "DeleteOutlined",
+      "argumentMaxSize" : 500,
+      "sort" : 5,
+      "type" : "primary",
+      "title" : "i18n:personal.delete",
+      "danger" : true,
+      "argumentMinSize" : 1,
+      "key" : "delete"
     } ]
   },
   "messages" : {
@@ -558,6 +571,9 @@
         }
       },
       "x-query" : {
+        "relations" : [ ],
+        "version" : 1,
+        "maxPageSize" : 500,
         "maxNodes" : 32,
         "maxDepth" : 4,
         "maxSort" : 3,
@@ -582,10 +598,7 @@
             "sortable" : true,
             "javaType" : "Instant"
           }
-        },
-        "relations" : [ ],
-        "version" : 1,
-        "maxPageSize" : 500
+        }
       }
     },
     "buttons" : [ {
@@ -607,7 +620,7 @@
       "authority" : "personal.messages.READ",
       "variant" : "outlined",
       "icon" : "MailOutlined",
-      "argumentMaxSize" : 1,
+      "argumentMaxSize" : 500,
       "sort" : 1,
       "type" : "primary",
       "title" : "i18n:personal.read",
@@ -620,7 +633,7 @@
       "authority" : "personal.messages.UNREAD",
       "variant" : "outlined",
       "icon" : "MailOutlined",
-      "argumentMaxSize" : 1,
+      "argumentMaxSize" : 500,
       "sort" : 2,
       "type" : "primary",
       "title" : "i18n:personal.unread",
@@ -633,7 +646,7 @@
       "authority" : "personal.messages.ARCHIVE",
       "variant" : "outlined",
       "icon" : "InboxOutlined",
-      "argumentMaxSize" : 1,
+      "argumentMaxSize" : 500,
       "sort" : 3,
       "type" : "primary",
       "title" : "i18n:personal.archive",
@@ -646,7 +659,7 @@
       "authority" : "personal.messages.UNARCHIVE",
       "variant" : "outlined",
       "icon" : "ExportOutlined",
-      "argumentMaxSize" : 1,
+      "argumentMaxSize" : 500,
       "sort" : 4,
       "type" : "primary",
       "title" : "i18n:personal.unarchive",
@@ -666,6 +679,32 @@
       "danger" : false,
       "argumentMinSize" : 0,
       "key" : "readAll"
+    }, {
+      "path" : "[default]",
+      "color" : "danger",
+      "authority" : "personal.messages.delete",
+      "variant" : "outlined",
+      "icon" : "DeleteOutlined",
+      "argumentMaxSize" : 500,
+      "sort" : 6,
+      "type" : "primary",
+      "title" : "i18n:personal.delete",
+      "danger" : true,
+      "argumentMinSize" : 1,
+      "key" : "delete"
+    }, {
+      "path" : "[default]",
+      "color" : "blue",
+      "authority" : "personal.messages.RESTORE",
+      "variant" : "outlined",
+      "icon" : "RollbackOutlined",
+      "argumentMaxSize" : 500,
+      "sort" : 7,
+      "type" : "primary",
+      "title" : "i18n:personal.restore",
+      "danger" : false,
+      "argumentMinSize" : 1,
+      "key" : "RESTORE"
     } ]
   }
 }

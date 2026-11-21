@@ -78,20 +78,22 @@ final class DnaInvocationExecutor {
       context.setDataScopeType(invocation.dataScopeType());
       context.setDeptIds(invocation.departmentIds());
       context.setDataScopeIncludeSelf(invocation.dataScopeIncludeSelf());
+      Map<String, Map<String, String>> fields = new HashMap<>();
+      Map<String, ResourceDataScope> scopes = new HashMap<>();
+      invocation.additionalResourcePolicies().forEach((resource, policy) -> {
+        fields.put(resource, policy.fieldPermissions());
+        scopes.put(resource, new ResourceDataScope(policy.dataScopeType(), policy.departmentIds(),
+            policy.dataScopeIncludeSelf(), policy.dataScopeExpressions()));
+      });
       if (invocation.resourceCode() != null) {
-        context.setResourceFieldPermissions(
-            Map.of(invocation.resourceCode(), invocation.fieldPermissions()));
+        fields.put(invocation.resourceCode(), invocation.fieldPermissions());
         if (invocation.dataScopeType() != null) {
-          context.setResourceDataScopes(
-              Map.of(
-                  invocation.resourceCode(),
-                  new ResourceDataScope(
-                      invocation.dataScopeType(),
-                      invocation.departmentIds(),
-                      invocation.dataScopeIncludeSelf(),
-                      invocation.dataScopeExpressions())));
+          scopes.put(invocation.resourceCode(), new ResourceDataScope(invocation.dataScopeType(),
+              invocation.departmentIds(), invocation.dataScopeIncludeSelf(), invocation.dataScopeExpressions()));
         }
       }
+      context.setResourceFieldPermissions(fields);
+      context.setResourceDataScopes(scopes);
       return context;
     }
   }

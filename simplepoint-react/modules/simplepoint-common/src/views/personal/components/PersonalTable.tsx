@@ -3,11 +3,12 @@ import {App} from 'antd';
 import SimpleTable from '@simplepoint/components/SimpleTable';
 import type {SimpleTableColumnOverride, SimpleTablePageRequest} from '@simplepoint/components/SimpleTable/types';
 import {get, post, put} from '@simplepoint/shared/api/methods';
+import {request} from '@simplepoint/shared/api/client';
 import {normalizePage, type RawPage} from '@simplepoint/shared/types/request';
 import {personalApi, type PersonalItem} from '@simplepoint/shared/personal/models';
 import {canPersonalAction, type PersonalKind, type PersonalRecord} from './actions';
 import {usePersonalActions} from './usePersonalActions';
-import {usePersonalLabels, usePersonalWrite, ErrorNotice} from './shared';
+import {usePersonalLabels, usePersonalRefresh, usePersonalWrite, ErrorNotice} from './shared';
 
 const namespaces = ['personal', 'common', 'table'];
 interface Props<T extends PersonalRecord> {
@@ -27,12 +28,15 @@ export function PersonalTable<T extends PersonalRecord>({name, view, onOpen, edi
   const {t, priorities} = usePersonalLabels();
   const {message} = App.useApp();
   const write = usePersonalWrite();
+  const refresh = usePersonalRefresh();
   const actions = usePersonalActions(name, {view: record => onOpen(record as T)});
+  const customActions = {...actions.events};
+  if (name !== 'items') delete customActions.delete;
   const loadPage = useCallback(async ({page, size, filters, sort, signal}: SimpleTablePageRequest) => normalizePage(
     await get<RawPage<T>>(`${personalApi}/${name}`, {
       page, size, filters: JSON.stringify(filters), sort,
       ...(name === 'items' ? {view} : name === 'todos' ? {status: view}
-        : {unreadOnly: view === 'UNREAD', archived: view === 'ARCHIVED'}),
+        : {unreadOnly: view === 'UNREAD', archived: view === 'ARCHIVED', trash: view === 'TRASH'}),
     }, {signal})), [name, view]);
   const priorityLabels = priorities.join('|');
   const formSchemaTransform = useCallback((schema: any) => {
@@ -62,10 +66,19 @@ export function PersonalTable<T extends PersonalRecord>({name, view, onOpen, edi
       editingRecord={editing ? {title: editing.title, description: editing.description, category: editing.category,
         priority: editing.priority, pinned: editing.pinned, startAt: editing.startAt || undefined, dueAt: editing.dueAt || undefined, checklist: editing.checklist} : null} onEditingRecordChange={record => onEdit?.(record ?? undefined)}
       initialValues={name === 'items' ? {priority: 1, pinned: false, checklist: []} : {priority: 1}}
-      customButtonEvents={{...actions.events,
+      customButtonEvents={{...customActions,
         add: () => {onEdit?.(undefined); onOpenChange(true);},
         edit: (_keys, rows) => {if (rows[0] && canPersonalAction(name, 'edit', rows[0])) {onEdit?.(rows[0] as PersonalItem); onOpenChange(true);}},
       }}
+      permanentDelete={name === 'todos' || name === 'messages' && view === 'TRASH'}
+      deleteRows={name === 'items' ? undefined : async (rows, signal) => {
+        await request(`${personalApi}/${name}${name === 'messages' && view === 'TRASH' ? '/trash' : ''}`, {
+          method: 'DELETE', json: rows.map(({id, version}) => ({id, version})), signal, notifyOnError: false,
+        });
+        if (!signal.aborted) await refresh();
+      }}
+      isButtonVisible={button => name !== 'messages' || (view === 'TRASH'
+        ? ['view', 'delete', 'RESTORE'].includes(button.key) : button.key !== 'RESTORE')}
       isButtonDisabled={(button, keys, rows) => write.busy || actions.disabled(button, keys, rows)}
       onRowDoubleClick={record => {if (!write.busy && actions.buttons.some(button => button.key === 'view')) onOpen(record);}}
       formSchemaTransform={formSchemaTransform}

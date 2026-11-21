@@ -17,6 +17,7 @@ import SForm, {type SFormHandle} from '../SForm';
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
 import type {FormFieldType, FormFieldWritePolicy} from '../FormRuntime/contracts.ts';
 import {allowedFieldTypes, applyFieldEdit, changeFieldType, persistentField, calculableField, type FieldEdit} from './dataModel.ts';
+import {businessReferenceField} from './relations/model';
 
 type Props = {initialTab?: 'general' | 'calculation'; calculationScope?: string; document: DesignDocument; field: DesignField; value: FieldEdit; components: readonly ComponentDescriptor[];
   writePolicies: readonly FormFieldWritePolicy[]; disabled: boolean; formRef: RefObject<SFormHandle | null>;
@@ -29,6 +30,8 @@ export default function FieldEditor({initialTab = 'general', calculationScope, d
   const [calculationError, setCalculationError] = useState<string>();
   const [tab, setTab] = useState(initialTab as string);
   const calculated = calculableField(field) && value.calculationMode === 'calculated';
+  const reference = businessReferenceField(document, field);
+  const transient = field.storageMode === 'TRANSIENT';
   const scope = calculationScope ?? 'parent';
   let candidateDocument: DesignDocument | undefined;
   try {
@@ -47,6 +50,10 @@ export default function FieldEditor({initialTab = 'general', calculationScope, d
     submitRequired: {type: 'boolean', title: t('app.designer.required', '提交时必填')},
   };
   const required = ['labelLocalization', 'type', ...(calculated ? [] : ['defaultMode'])];
+  if (transient) {
+    delete properties.storageCode;
+    delete properties.submitRequired;
+  }
   if (calculableField(field)) properties.calculationMode = {type: 'string', title: t('app.calculation.mode', '字段来源'), oneOf: [
     {const: 'stored', title: t('app.calculation.stored', '用户填写')},
     {const: 'calculated', title: t('app.calculation.calculated', '公式计算')},
@@ -63,7 +70,9 @@ export default function FieldEditor({initialTab = 'general', calculationScope, d
   }
   if (persistentField(field)) {
     properties.storageRequired = {type: 'boolean', title: t('app.designer.storageRequired', '存储非空'),
-      description: calculated ? t('app.calculation.requiredHint', '每次保存时，计算结果都必须非空。') : t('app.designer.storageRequiredHint', '草稿也必须满足此约束，需要设置非空默认值。')};
+      description: reference ? t('app.designer.referenceStorageRequiredHint', '保存草稿时也必须选择关联记录。历史空值需要在发布前补齐。')
+        : calculated ? t('app.calculation.requiredHint', '每次保存时，计算结果都必须非空。')
+          : t('app.designer.storageRequiredHint', '草稿也必须满足此约束，需要设置非空默认值。')};
     if (!calculated && writePolicies.length) properties.writePolicy = {type: 'string', title: t('app.designer.writePolicy', '字段写入规则'),
       description: t('app.designer.writePolicyHint', '发布后，写入限制同时约束使用旧版本的页面；旧页面原有的更严格限制仍保留。仅新增时填写的必填字段需在首次保存前填写。'),
       oneOf: [
@@ -74,21 +83,22 @@ export default function FieldEditor({initialTab = 'general', calculationScope, d
   }
   if (!calculated) properties.defaultMode = {type: 'string', title: t('app.designer.defaultMode', '默认值'), oneOf: [
     {const: 'NONE', title: t('app.designer.defaultNone', '不设置')},
-    {const: 'NULL', title: t('app.designer.defaultNull', '空值（NULL）')},
-    {const: 'VALUE', title: t('app.designer.defaultValue', '指定值')},
+    ...(!reference || !value.storageRequired ? [{const: 'NULL', title: t('app.designer.defaultNull', '空值（NULL）')}] : []),
+    ...(!reference ? [{const: 'VALUE', title: t('app.designer.defaultValue', '指定值')}] : []),
   ]};
   if (!calculated && value.defaultMode === 'VALUE') {
     properties.defaultText = {type: 'string', maxLength: 16384, title: t('app.designer.defaultText', '默认内容'),
       description: t('app.designer.defaultHint', '按字段类型填写：布尔值 true/false，日期 YYYY-MM-DD，时间 HH:mm:ss，日期时间使用带时区的 ISO 格式。数字保留精度，JSON 保留原文。')};
     required.push('defaultText');
   }
-  if (value.type !== 'JSON' || value.choices.length) properties.choices = {type: 'array', maxItems: 200,
+  if (!reference && (value.type !== 'JSON' || value.choices.length)) properties.choices = {type: 'array', maxItems: 200,
     title: t('app.designer.choices', '选项'), items: {type: 'object', required: ['value', 'labelLocalization'], properties: {
       value: {type: 'string', title: t('app.designer.choiceValue', '选项值'), minLength: 1, maxLength: 256},
       labelLocalization: localizedTextSchema(t('app.designer.choiceLabel', '显示名称')),
     }}};
   const fromEditor = (data: any): FieldEdit => {
     const next = {...value, ...data} as FieldEdit;
+    if (reference && next.storageRequired) next.defaultMode = 'NONE';
     next.labelLocalization = changedLocalizedDraft(value.label, value.labelLocalization, next.labelLocalization ?? undefined, locale);
     next.label = next.labelLocalization?.defaultValue ?? value.label;
     next.choices = next.choices.map((choice, index) => {

@@ -7,7 +7,12 @@ public record ApplicationPageTarget(
     String description,
     int sortOrder,
     String navigationGroupName,
-    PageResourcePresentation presentation) {
+    PageResourcePresentation presentation,
+    long publicationGeneration) {
+  public ApplicationPageTarget(String pageId, String name, String description, int sortOrder,
+      String navigationGroupName, PageResourcePresentation presentation) {
+    this(pageId, name, description, sortOrder, navigationGroupName, presentation, 0);
+  }
   public ApplicationPageTarget(
       String pageId, String name, String description, int sortOrder, String navigationGroupName) {
     this(pageId, name, description, sortOrder, navigationGroupName, null);

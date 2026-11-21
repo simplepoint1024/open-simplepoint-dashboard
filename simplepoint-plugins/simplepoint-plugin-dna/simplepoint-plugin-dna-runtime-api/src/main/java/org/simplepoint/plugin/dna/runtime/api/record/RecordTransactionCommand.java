@@ -15,6 +15,7 @@ public record RecordTransactionCommand(
     String idempotencyKey,
     long writePolicyVersion
 ) {
+  public static final int MAX_MUTATIONS = 100;
 
   /** Legacy unkeyed transactions retain their original optimistic-conflict semantics. */
   public RecordTransactionCommand(String physicalModelId, RecordSchemaReference schemaReference,
@@ -35,7 +36,7 @@ public record RecordTransactionCommand(
     RecordQueryLimits.writePolicyVersion(writePolicyVersion);
     idempotencyKey = idempotencyKey == null ? null : RecordQueryLimits.idempotencyKey(idempotencyKey);
     mutations = mutations == null ? List.of() : List.copyOf(mutations);
-    if (mutations.isEmpty() || mutations.size() > 100) {
+    if (mutations.isEmpty() || mutations.size() > MAX_MUTATIONS) {
       throw new IllegalArgumentException("Record transaction requires 1 to 100 mutations");
     }
     if (new HashSet<>(mutations.stream().map(RecordMutation::reference).toList()).size()

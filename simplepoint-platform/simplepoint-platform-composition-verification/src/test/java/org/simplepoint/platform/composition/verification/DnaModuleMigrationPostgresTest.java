@@ -57,13 +57,15 @@ class DnaModuleMigrationPostgresTest {
       assertEquals(
           List.of("dna-core", "dna-federation", "dna-runtime", "platform-events"),
           plan.schemas().stream().map(ModuleMigrationPlan.ModuleSchema::module).toList());
-      assertEquals(25, plan.schemas().stream().mapToInt(schema -> schema.tables().size()).sum());
+      assertEquals(30, plan.schemas().stream().mapToInt(schema -> schema.tables().size()).sum());
       Map<String, javax.sql.DataSource> sources =
           split
               ? Map.of("default", primary.source(), "runtime", runtime.source())
               : Map.of("default", primary.source());
       assertTrue(
-          migrations.migrate(plan, sources).stream().allMatch(result -> result.applied() == 1));
+          migrations.migrate(plan, sources).stream()
+              .allMatch(
+                  result -> result.applied() == (result.module().equals("dna-runtime") ? 6 : 1)));
       context.registerBean(ModulePlan.class, () -> modules);
       context.registerBean("dataSource", javax.sql.DataSource.class, primary::source);
       if (split) {
@@ -83,7 +85,7 @@ class DnaModuleMigrationPostgresTest {
                   .getSingleResult());
         }
       }
-      assertEquals(22, entityCount);
+      assertEquals(25, entityCount);
       primary
           .jdbc()
           .update(
@@ -142,11 +144,23 @@ class DnaModuleMigrationPostgresTest {
   }
 
   @Test
-  void runtimeBaselineRetainsTheDeployedConstraintsAndIndexes() {
+  void runtimeBaselineRetainsTheDeployedConstraintsAndIndexes() throws java.io.IOException {
     try (var current = new MigrationPostgresDatabase();
         var legacy = new MigrationPostgresDatabase()) {
       var plan = plan();
-      migrations.migrate(plan, Map.of("default", current.source()));
+      // Compare the immutable V1 baseline, not later additive module migrations, to legacy DDL.
+      try (var baseline =
+          getClass()
+              .getClassLoader()
+              .getResourceAsStream(
+                  "META-INF/simplepoint/modules/dna-runtime/db/postgresql/V1__dna_runtime_foundation.sql")) {
+        current
+            .jdbc()
+            .execute(
+                new String(
+                    java.util.Objects.requireNonNull(baseline).readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8));
+      }
       Path directory = Path.of(System.getProperty("simplepoint.dna.legacy-sql"));
       // JDBC lets PostgreSQL parse the historical DO block and transaction delimiters.
       for (int replay = 0; replay < 2; replay++) {
@@ -214,9 +228,9 @@ class DnaModuleMigrationPostgresTest {
           () -> jdbc.update("update simpoint_dna_resource_projections set generation=1"));
       jdbc.update(
           """
-          update simpoint_dna_resource_projections
-             set owner_key='app-page', generation=1, physical_model_id='model', formally_offline=true
-          """);
+update simpoint_dna_resource_projections
+   set owner_key='app-page', generation=1, physical_model_id='model', formally_offline=true
+""");
       assertThrows(
           DataIntegrityViolationException.class,
           () -> jdbc.update("update simpoint_dna_resource_projections set tenant_id='tenant-b'"));
@@ -248,10 +262,10 @@ class DnaModuleMigrationPostgresTest {
   private static void seedModel(JdbcTemplate jdbc) {
     jdbc.update(
         """
-        insert into simpoint_dna_physical_models
-          (id, tenant_id, app_id, form_id, display_name, status, latest_version, created_at, updated_at)
-        values ('model', 'tenant-a', 'app', 'form', '客户模型', 'DRAFT', 1, now(), now())
-        """);
+insert into simpoint_dna_physical_models
+  (id, tenant_id, app_id, form_id, display_name, status, latest_version, created_at, updated_at)
+values ('model', 'tenant-a', 'app', 'form', '客户模型', 'DRAFT', 1, now(), now())
+""");
   }
 
   @Configuration(proxyBeanMethods = false)

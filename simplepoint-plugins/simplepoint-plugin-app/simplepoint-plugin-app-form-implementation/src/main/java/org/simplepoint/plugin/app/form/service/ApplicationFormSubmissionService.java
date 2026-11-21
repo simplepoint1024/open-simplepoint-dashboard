@@ -44,6 +44,15 @@ public class ApplicationFormSubmissionService {
   /** Validates and persists one intent before starting recoverable data and process operations. */
   public ApplicationFormSubmissionView submit(
       String applicationId, String pageId, SubmitApplicationFormCommand command) {
+    return submit(applicationId, pageId, command, null, null);
+  }
+
+  private ApplicationFormSubmissionView submit(
+      String applicationId,
+      String pageId,
+      SubmitApplicationFormCommand command,
+      PublishedApplicationFormResolver.PublishedApplicationForm resolved,
+      org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope relatedScope) {
     if (command == null) {
       throw invalid("Submission intent is required");
     }
@@ -53,26 +62,36 @@ public class ApplicationFormSubmissionService {
             ? null
             : journal.getOwned(command.previousSubmissionId(), actor.tenantId(), actor.actorId());
     var form =
-        previous == null
-            ? resolver.resolve(applicationId, pageId)
-            : resolver.resolveVersion(
-                applicationId, pageId, previous.formId(), previous.formVersion());
+        resolved != null
+            ? resolved
+            : previous == null
+                ? resolver.resolve(applicationId, pageId)
+                : resolver.resolveVersion(
+                    applicationId, pageId, previous.formId(), previous.formVersion());
     resolver.requireAction(form, "process.start");
     String id =
         codec.fingerprint(
             List.of(actor.tenantId(), applicationId, pageId, command.idempotencyKey()));
-    String fingerprint = codec.fingerprint(List.of(applicationId, pageId, command));
+    String fingerprint =
+        codec.fingerprint(
+            relatedScope == null
+                ? List.of(applicationId, pageId, command)
+                : List.of(
+                    "app.submission.related.v1", applicationId, pageId, command, relatedScope));
     var existing = journal.findExact(id, actor.tenantId(), actor.actorId(), fingerprint);
     if (existing == null) {
       ApplicationFormRuntimeIdentity.requireCurrent(
           command.runtime(), form.formId(), form.formVersion());
-      var authority = contexts.forForm(form);
+      var authority = contexts.forWrite(form);
       var workflowAuthority = FormSubmissionAuthorization.workflowContext();
       var runtime =
           workflow.startForm(
               workflowAuthority, command.definitionId(), command.definitionVersion());
       FormSubmissionMapping.requireBinding(form, runtime, authority);
-      var prospective = records.previewSubmission(form, command);
+      var prospective =
+          relatedScope == null
+              ? records.previewSubmission(form, command)
+              : records.previewSubmission(form, command, relatedScope);
       var variables =
           FormSubmissionMapping.variables(form, runtime, prospective, command.variables());
       var validated =
@@ -92,7 +111,8 @@ public class ApplicationFormSubmissionService {
             || !command.definitionId().equals(previous.definitionId())
             || command.definitionVersion() != previous.definitionVersion()
             || previous.processInstanceId() == null) {
-          throw invalid("Resubmission must retain its process version and an authorized record revision");
+          throw invalid(
+              "Resubmission must retain its process version and an authorized record revision");
         }
         var source =
             workflow.resubmissionForm(workflowAuthority, previous.processInstanceId()).source();
@@ -105,17 +125,47 @@ public class ApplicationFormSubmissionService {
           id,
           fingerprint,
           new AcceptedFormSubmission(
-              form, command, authority, workflowAuthority, validated, previousInstance,
-              FormSubmissionMapping.captureRequirements(form, validated)));
+              form,
+              command,
+              authority,
+              workflowAuthority,
+              validated,
+              previousInstance,
+              FormSubmissionMapping.captureRequirements(form, validated),
+              relatedScope));
     }
     processor.advance(id);
     return journal.getOwned(id, actor.tenantId(), actor.actorId());
   }
 
+  /** Confirms a saved source record under the server-resolved inverse entry. */
+  ApplicationFormSubmissionView submitRelated(
+      PublishedApplicationFormResolver.PublishedApplicationForm form,
+      org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope scope,
+      SubmitApplicationFormCommand command) {
+    if (command == null
+        || command.recordId() == null
+        || command.previousSubmissionId() != null
+        || !command.values().isEmpty()
+        || scope == null
+        || scope.mode()
+            != org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN) {
+      throw invalid("Related submissions require a saved read-only confirmation");
+    }
+    return submit(form.applicationId(), form.pageId(), command, form, scope);
+  }
+
   /** Lists published processes bound to the current authorized form version. */
   public org.simplepoint.plugin.app.form.api.model.ApplicationFormWorkflowDefinitions definitions(
       String applicationId, String pageId, String keyword, int page, int size) {
-    var form = resolver.resolve(applicationId, pageId);
+    return definitions(resolver.resolve(applicationId, pageId), keyword, page, size);
+  }
+
+  org.simplepoint.plugin.app.form.api.model.ApplicationFormWorkflowDefinitions definitions(
+      PublishedApplicationFormResolver.PublishedApplicationForm form,
+      String keyword,
+      int page,
+      int size) {
     resolver.requireAction(form, "process.start");
     var result =
         workflow.definitions(
@@ -155,6 +205,20 @@ public class ApplicationFormSubmissionService {
     resolver.requireAction(form, "process.start");
     var result = journal.getOwned(id, actor.tenantId(), actor.actorId());
     if (!applicationId.equals(result.applicationId()) || !pageId.equals(result.pageId())) {
+      throw invalid("Submission belongs to another page");
+    }
+    return result;
+  }
+
+  ApplicationFormSubmissionView getRelated(
+      PublishedApplicationFormResolver.PublishedApplicationForm form,
+      org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope scope,
+      String id) {
+    resolver.requireAction(form, "process.start");
+    var actor = actors.requireActor();
+    var result = journal.getOwnedRelated(id, actor.tenantId(), actor.actorId(), scope);
+    if (!form.applicationId().equals(result.applicationId())
+        || !form.pageId().equals(result.pageId())) {
       throw invalid("Submission belongs to another page");
     }
     return result;

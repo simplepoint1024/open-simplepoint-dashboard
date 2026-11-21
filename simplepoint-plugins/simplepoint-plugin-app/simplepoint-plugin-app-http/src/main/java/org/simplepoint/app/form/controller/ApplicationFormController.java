@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormReleaseView;
@@ -17,12 +18,14 @@ import org.simplepoint.plugin.app.form.api.model.SaveApplicationFormDraftCommand
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormPublicationService;
 import org.simplepoint.plugin.app.form.api.service.ApplicationFormService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Thin transport for tenant-owned form definitions, drafts and immutable versions. */
@@ -71,6 +74,25 @@ public class ApplicationFormController {
       @PathVariable("applicationId") final String applicationId,
       @PathVariable("formId") final String formId) {
     return Response.okay(formService.get(applicationId, formId));
+  }
+
+  @DeleteMapping("/{formId}")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.forms.delete'))")
+  @Operation(summary = "删除未冻结版本的表单草稿")
+  public org.springframework.http.ResponseEntity<Void> deleteDraft(
+      @PathVariable("applicationId") String applicationId, @PathVariable("formId") String formId,
+      @RequestParam("expectedRevision") long expectedRevision) {
+    formService.deleteDraft(applicationId, formId, expectedRevision);
+    return org.springframework.http.ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('app.workbench.view') and hasAuthority('app.workbench.forms.delete'))")
+  @Operation(summary = "批量删除未冻结版本的表单草稿")
+  public org.springframework.http.ResponseEntity<Void> deleteDrafts(
+      @PathVariable("applicationId") String applicationId, @RequestBody List<ApplicationFormDraftRevision> drafts) {
+    formService.deleteDrafts(applicationId, drafts);
+    return org.springframework.http.ResponseEntity.noContent().build();
   }
 
   /** Reads the current mutable draft. */

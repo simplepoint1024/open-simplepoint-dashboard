@@ -12,6 +12,7 @@ import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormVersionView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormView;
@@ -45,6 +46,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
   private final FormDocumentValidator validator;
   private final FormDocumentCodec codec;
   private final FormStorageProjectionCompiler storageCompiler;
+  private final FormRelationTargetResolver relations;
 
   /** Creates the form domain service from explicit application and document boundaries. */
   public ApplicationFormServiceImpl(
@@ -53,13 +55,15 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
       final FormRequestContext requestContext,
       final FormDocumentValidator validator,
       final FormDocumentCodec codec,
-      final FormStorageProjectionCompiler storageCompiler) {
+      final FormStorageProjectionCompiler storageCompiler,
+      final FormRelationTargetResolver relations) {
     this.entityManager = entityManager;
     this.applicationAccess = applicationAccess;
     this.requestContext = requestContext;
     this.validator = validator;
     this.codec = codec;
     this.storageCompiler = storageCompiler;
+    this.relations = relations;
   }
 
   @Override
@@ -70,7 +74,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
       throw invalid("Form creation command is required");
     }
     String applicationId = required(command.applicationId(), 36, "applicationId");
-    applicationAccess.requireApplicationForUpdate(actor.tenantId(), applicationId);
+    applicationAccess.requireApplicationForFormCreation(actor.tenantId(), applicationId);
     String code = required(command.code(), 63, "code");
     if (!CODE.matcher(code).matches()) {
       throw invalid("Form code must use lower-case letters, numbers, and underscores");
@@ -149,10 +153,51 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
   }
 
   @Override
+  @Transactional
+  public void deleteDraft(String applicationId, String formId, long expectedRevision) {
+    deleteDrafts(applicationId, List.of(new ApplicationFormDraftRevision(formId, expectedRevision)));
+  }
+
+  @Override
+  @Transactional
+  public void deleteDrafts(String applicationId, List<ApplicationFormDraftRevision> drafts) {
+    if (drafts == null || drafts.isEmpty() || drafts.size() > MAX_FORMS_PER_APPLICATION) {
+      throw invalid("Invalid form draft selection");
+    }
+    FormActor actor = requestContext.requireActor();
+    var revisions = new java.util.TreeMap<String, Long>();
+    for (var draft : drafts) {
+      if (draft == null || draft.expectedRevision() == null || draft.expectedRevision() < 0
+          || revisions.putIfAbsent(required(draft.id(), 36, "formId"), draft.expectedRevision()) != null) {
+        throw invalid("Each selected form requires a distinct identity and revision");
+      }
+    }
+    applicationAccess.requireApplicationForUpdate(actor.tenantId(), required(applicationId, 36, "applicationId"));
+    var forms = revisions.entrySet().stream().map(entry -> {
+      ApplicationFormEntity form = requireForm(actor, applicationId, entry.getKey(), true);
+      requireRemovable(form, entry.getValue());
+      return form;
+    }).toList();
+    for (var form : forms) {
+      entityManager.remove(requireDraft(actor.tenantId(), form.getId(), true));
+      entityManager.remove(form);
+    }
+  }
+
+  private static void requireRemovable(ApplicationFormEntity form, long expectedRevision) {
+    if (form.getStatus() != ApplicationFormStatus.DRAFT || form.getLatestVersion() != 0
+        || form.getPhysicalModelId() != null) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.FORM_DELETE_BLOCKED,
+          "Only a draft without frozen versions or a physical model can be removed");
+    }
+    if (form.getDraftRevision() != expectedRevision) throw revisionConflict();
+  }
+
+  @Override
   public ApplicationFormDraftView draft(final String applicationId, final String formId) {
     FormActor actor = requestContext.requireActor();
     ApplicationFormEntity form = requireForm(actor, applicationId, formId, false);
-    return draftView(requireDraft(actor.tenantId(), form.getId(), false));
+    return draftView(form, requireDraft(actor.tenantId(), form.getId(), false));
   }
 
   @Override
@@ -187,7 +232,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     form.setDraftRevision(nextRevision);
     form.setUpdatedAt(now);
     entityManager.flush();
-    return draftView(draft);
+    return draftView(form, draft);
   }
 
   @Override
@@ -209,16 +254,34 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     }
     ApplicationFormDocument document = codec.decode(draft.getDocumentJson());
     validator.validatePublication(document);
+    var published = publishedVersion(form);
+    var current = published == null ? null : codec.decode(published.getDocumentJson());
+    FormCollectionRebinding.validateVersion(document, current);
+    var retired =
+        FormRelationConversion.freezeRetired(
+            document,
+            current,
+            current == null || FormRelationConversion.retiredFields(document).isEmpty()
+                ? List.of()
+                : codec.decodeRelationBindings(current, published.getRelationBindingsJson()));
+    relations.validateInverseViews(applicationId, formId, form.getPhysicalModelId(), document);
     ApplicationFormVersionEntity latest = latestVersion(actor.tenantId(), form);
     if (latest != null) {
       FormDetailEvolutionPolicy.validate(
           codec.decode(latest.getDocumentJson()), document, storageCompiler);
     }
-    if (latest != null && latest.getChecksum().equals(draft.getChecksum())) {
+    if (latest != null
+        && latest.getChecksum().equals(draft.getChecksum())
+        && Boolean.TRUE.equals(
+            storageCompiler.decode(latest.getStorageSchemaJson()).tenantRecordIdentity())) {
       return versionView(latest);
     }
 
-    CompiledStorageProjection storage = storageCompiler.compile(document);
+    var relationBindings =
+        document.relations().isEmpty()
+            ? List.<FormRelationBinding>of()
+            : retired.isEmpty() ? relations.freeze(document) : relations.freeze(document, retired);
+    CompiledStorageProjection storage = storageCompiler.compile(document, relationBindings, true);
     ApplicationFormVersionEntity version = new ApplicationFormVersionEntity();
     version.setId(UUID.randomUUID().toString());
     version.setTenantId(actor.tenantId());
@@ -228,6 +291,7 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     version.setChecksum(draft.getChecksum());
     version.setStorageSchemaJson(storage.json());
     version.setStorageChecksum(storage.checksum());
+    version.setRelationBindingsJson(codec.encodeRelationBindings(document, relationBindings));
     version.setRendererVersion(ApplicationFormApiVersion.RENDERER_V1);
     version.setCreatedBy(actor.actorId());
     version.setCreatedAt(Instant.now());
@@ -236,6 +300,21 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
     entityManager.persist(version);
     entityManager.flush();
     return versionView(version);
+  }
+
+  private ApplicationFormVersionEntity publishedVersion(ApplicationFormEntity form) {
+    if (form.getPublishedVersion() == null) {
+      return null;
+    }
+    return entityManager
+        .createQuery(
+            "from ApplicationFormVersionEntity v where v.tenantId = :tenant and v.formId = :form"
+                + " and v.versionNumber = :version",
+            ApplicationFormVersionEntity.class)
+        .setParameter("tenant", form.getTenantId())
+        .setParameter("form", form.getId())
+        .setParameter("version", form.getPublishedVersion())
+        .getSingleResult();
   }
 
   @Override
@@ -336,14 +415,19 @@ public class ApplicationFormServiceImpl implements ApplicationFormService {
         .getSingleResult();
   }
 
-  private ApplicationFormDraftView draftView(final ApplicationFormDraftEntity draft) {
+  private ApplicationFormDraftView draftView(
+      ApplicationFormEntity form, ApplicationFormDraftEntity draft) {
+    var published = publishedVersion(form);
+    var installed = published == null ? null : codec.decode(published.getDocumentJson());
     return new ApplicationFormDraftView(
         draft.getFormId(),
         draft.getRevision(),
         codec.decode(draft.getDocumentJson()),
         draft.getChecksum(),
         draft.getUpdatedBy(),
-        draft.getUpdatedAt());
+        draft.getUpdatedAt(),
+        installed == null ? List.of() : FormRelationConversion.convertibleSources(installed),
+        installed == null ? List.of() : FormCollectionRebinding.publishedCollections(installed));
   }
 
   private ApplicationFormVersionView versionView(final ApplicationFormVersionEntity version) {

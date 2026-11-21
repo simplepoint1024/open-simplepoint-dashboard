@@ -2,6 +2,7 @@ package org.simplepoint.plugin.app.form.api.service;
 
 import java.util.List;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftView;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormVersionView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormView;
 import org.simplepoint.plugin.app.form.api.model.CreateApplicationFormCommand;
@@ -18,6 +19,12 @@ public interface ApplicationFormService {
 
   /** Reads one form after checking its application binding. */
   ApplicationFormView get(String applicationId, String formId);
+
+  /** Removes a draft that has no immutable versions or physical model. */
+  void deleteDraft(String applicationId, String formId, long expectedRevision);
+
+  /** Validates and removes the selected drafts in one application transaction. */
+  void deleteDrafts(String applicationId, List<ApplicationFormDraftRevision> drafts);
 
   /** Reads the current mutable form draft. */
   ApplicationFormDraftView draft(String applicationId, String formId);

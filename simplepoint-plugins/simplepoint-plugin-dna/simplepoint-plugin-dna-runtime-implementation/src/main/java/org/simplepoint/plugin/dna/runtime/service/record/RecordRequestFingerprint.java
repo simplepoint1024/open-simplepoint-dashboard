@@ -15,6 +15,7 @@ import java.util.List;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordCreateCommand;
+import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordDeleteTransaction;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordTransactionCommand;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,20 @@ class RecordRequestFingerprint {
     this.objectMapper = objectMapper;
   }
 
+  String of(final org.simplepoint.plugin.dna.runtime.api.record.CollectionRecordCommand command) {
+    try {
+      ObjectNode root = objectMapper.valueToTree(command);
+      root.remove(List.of("timeoutMs", "idempotencyKey"));
+      root.put("operation", "record.collection.v1");
+      return sha256(objectMapper.writeValueAsBytes(canonical(root)));
+    } catch (IllegalArgumentException | JsonProcessingException exception) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Collection record cannot be fingerprinted",
+          exception);
+    }
+  }
+
   String of(final org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand command) {
     try {
       ObjectNode root = objectMapper.valueToTree(command);
@@ -36,7 +51,41 @@ class RecordRequestFingerprint {
       root.put("operation", "record.owned.v1");
       return sha256(objectMapper.writeValueAsBytes(canonical(root)));
     } catch (IllegalArgumentException | JsonProcessingException exception) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID, "Owned record cannot be fingerprinted", exception);
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Owned record cannot be fingerprinted",
+          exception);
+    }
+  }
+
+  String of(final org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordCommand command) {
+    try {
+      ObjectNode root = objectMapper.createObjectNode();
+      root.put("operation", "record.owned.related.v1");
+      root.put("aggregate", of(command.command()));
+      root.set("scope", objectMapper.valueToTree(command.scope()));
+      return sha256(objectMapper.writeValueAsBytes(canonical(root)));
+    } catch (IllegalArgumentException | JsonProcessingException exception) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Related record cannot be fingerprinted",
+          exception);
+    }
+  }
+
+  String of(final org.simplepoint.plugin.dna.runtime.api.record.MappedOwnedRecordCommand command) {
+    try {
+      ObjectNode root = objectMapper.createObjectNode();
+      root.put("operation", "record.owned.mapped.v1");
+      root.put("aggregate", of(command.command()));
+      root.set("relatedScope", objectMapper.valueToTree(command.relatedScope()));
+      root.set("confirmations", objectMapper.valueToTree(command.confirmations()));
+      return sha256(objectMapper.writeValueAsBytes(canonical(root)));
+    } catch (IllegalArgumentException | JsonProcessingException exception) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Mapped record cannot be fingerprinted",
+          exception);
     }
   }
 
@@ -53,8 +102,7 @@ class RecordRequestFingerprint {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
           "Record create request cannot be fingerprinted",
-          exception
-      );
+          exception);
     }
   }
 
@@ -68,26 +116,48 @@ class RecordRequestFingerprint {
       root.set("mutations", canonical(objectMapper.valueToTree(command.mutations())));
       return sha256(objectMapper.writeValueAsBytes(root));
     } catch (IllegalArgumentException | JsonProcessingException exception) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
-          "Record transaction cannot be fingerprinted", exception);
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Record transaction cannot be fingerprinted",
+          exception);
+    }
+  }
+
+  String of(OwnedRecordDeleteTransaction command) {
+    try {
+      ObjectNode root = objectMapper.createObjectNode();
+      root.put("operation", "record.owned.delete-transaction.v1");
+      root.put("parents", of(command.parent()));
+      root.set("details", canonical(objectMapper.valueToTree(command.details())));
+      return sha256(objectMapper.writeValueAsBytes(root));
+    } catch (IllegalArgumentException | JsonProcessingException exception) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID, "Owned delete request cannot be fingerprinted", exception);
     }
   }
 
   String of(final RecordWritePolicyPublicationCommand command) {
     try {
       ObjectNode root = objectMapper.valueToTree(command);
-      root.remove("timeoutMs"); // A retry may use a new execution budget without changing the durable intent.
+      // A retry budget does not change the durable publication intent.
+      root.remove("timeoutMs");
       root.put("operation", "record.write-policy.v1");
       return sha256(objectMapper.writeValueAsBytes(canonical(root)));
     } catch (IllegalArgumentException | JsonProcessingException exception) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
-          "Record policy publication cannot be fingerprinted", exception);
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Record policy publication cannot be fingerprinted",
+          exception);
     }
   }
 
-  /** Domain-separated tombstone identity; retains every original check and ignores only the retry budget. */
+  /**
+   * Domain-separated tombstone identity; retains every original check and ignores only the retry
+   * budget.
+   */
   String cancellationOf(final RecordWritePolicyPublicationCommand command) {
-    return sha256(("record.write-policy.cancel.v1\0" + of(command)).getBytes(StandardCharsets.UTF_8));
+    return sha256(
+        ("record.write-policy.cancel.v1\0" + of(command)).getBytes(StandardCharsets.UTF_8));
   }
 
   private JsonNode canonical(final JsonNode value) {
@@ -118,25 +188,39 @@ class RecordRequestFingerprint {
   }
 
   static String deterministicRecordId(
-      final String tenantId,
-      final String physicalModelId,
-      final String idempotencyKey
-  ) {
+      final String tenantId, final String physicalModelId, final String idempotencyKey) {
     return deterministicId("record-create", tenantId, physicalModelId, idempotencyKey);
   }
 
-  static String deterministicOperationId(String tenantId, String physicalModelId, String idempotencyKey) {
+  static String deterministicOperationId(
+      String tenantId, String physicalModelId, String idempotencyKey) {
     return deterministicId("record-transaction", tenantId, physicalModelId, idempotencyKey);
   }
 
-  private static String deterministicId(String namespace, String tenantId, String physicalModelId,
-      String idempotencyKey) {
-    String name = "simplepoint:dna:" + namespace + ":v1\0" + tenantId + "\0"
-        + physicalModelId + "\0" + idempotencyKey;
+  static String deterministicCreateOperationId(
+      String tenantId, String physicalModelId, String idempotencyKey) {
+    return deterministicId("record-create-operation", tenantId, physicalModelId, idempotencyKey);
+  }
+
+  static String deterministicReferenceCopyId(
+      String tenantId, String physicalModelId, String recordId) {
+    return deterministicId("reference-copy", tenantId, physicalModelId, recordId);
+  }
+
+  private static String deterministicId(
+      String namespace, String tenantId, String physicalModelId, String idempotencyKey) {
+    String name =
+        "simplepoint:dna:"
+            + namespace
+            + ":v1\0"
+            + tenantId
+            + "\0"
+            + physicalModelId
+            + "\0"
+            + idempotencyKey;
     byte[] hash;
     try {
-      hash = MessageDigest.getInstance("SHA-256")
-          .digest(name.getBytes(StandardCharsets.UTF_8));
+      hash = MessageDigest.getInstance("SHA-256").digest(name.getBytes(StandardCharsets.UTF_8));
     } catch (NoSuchAlgorithmException exception) {
       throw new IllegalStateException("SHA-256 is unavailable", exception);
     }

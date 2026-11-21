@@ -1,8 +1,9 @@
+import type {MappingIntent} from '../FormRuntime/referenceMapping/model';
 import {Alert, App, Modal, Spin} from 'antd';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {get, post} from '@simplepoint/shared/api/methods';
 import {useOwnedData} from '@simplepoint/shared/hooks/useOwnedData';
-import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
+import {appendQueryParams, isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
@@ -16,7 +17,7 @@ import {missingSubmissionFields} from './submissionValidation';
 import {submissionUrl, type Preparation, type Submission} from './types';
 
 type Definition = {id: string; version: number; name?: string};
-type Props = {applicationId: string; pageId: string; definition?: Definition; previousSubmissionId?: string;
+type Props = {endpoint?: {baseUrl: string; params?: Record<string, string>}; applicationId: string; pageId: string; definition?: Definition; previousSubmissionId?: string;
   expectedForm?: {formId: string; formVersion: number};
   initialRecord?: FormRecord; initialValues?: Record<string, unknown>;
   onClose: () => void; onAccepted?: (submission: Submission) => void};
@@ -30,15 +31,16 @@ const definitions: EntitySelectSource = {
 export default function SubmissionDialog(props: Props) {
   const {t} = useI18n(), selected = usePageSelected(), {modal} = App.useApp();
   const [definition, setDefinition] = useState(props.definition);
-  const url = submissionUrl(props.applicationId, props.pageId);
-  const choices = useOwnedData(['app', 'submission-definitions', url], ({signal}) =>
-    get<{content: Definition[]; totalElements: number}>(url + '/definitions', {page: 0, size: 2}, {signal, notifyOnError: false}),
+  const url = props.endpoint?.baseUrl ?? submissionUrl(props.applicationId, props.pageId);
+  const identity = JSON.stringify([url, props.endpoint?.params]);
+  const choices = useOwnedData(['app', 'submission-definitions', identity], ({signal}) =>
+    get<{content: Definition[]; totalElements: number}>(url + '/definitions', {...props.endpoint?.params, page: 0, size: 2}, {signal, notifyOnError: false}),
     {enabled: !definition, retry: false, staleTime: 0});
   useEffect(() => {
     if (!definition && !choices.isFetching && !choices.isError && choices.data?.totalElements === 1) setDefinition(choices.data.content[0]);
   }, [choices.data, choices.isFetching, choices.isError, definition]);
-  const preparation = useOwnedData(['app', 'submission-preparation', url, definition?.id, definition?.version, props.previousSubmissionId, props.initialRecord?.id, props.initialRecord?.version],
-    ({signal}) => get<Preparation>(url + '/preparation', {definitionId: definition!.id, definitionVersion: definition!.version,
+  const preparation = useOwnedData(['app', 'submission-preparation', identity, definition?.id, definition?.version, props.previousSubmissionId, props.initialRecord?.id, props.initialRecord?.version],
+    ({signal}) => get<Preparation>(url + '/preparation', {...props.endpoint?.params, definitionId: definition!.id, definitionVersion: definition!.version,
       ...(props.previousSubmissionId ? {previousSubmissionId: props.previousSubmissionId} : {})}, {signal, notifyOnError: false}),
     {enabled: !!definition, retry: false, staleTime: Infinity, refetchOnWindowFocus: false, refetchOnReconnect: false});
   const [locked, setLocked] = useState(false);
@@ -58,7 +60,7 @@ export default function SubmissionDialog(props: Props) {
         onButtonEvents={{retry: () => void choices.refetch()}}/>}/>}
     {!definition && !choices.isFetching && !choices.isError && choices.data?.totalElements === 0
       && <Alert type="warning" showIcon title={t('app.submission.noProcess', '当前表单没有可用的已发布审批流程，请联系管理员配置。')}/>}
-    {!definition && !choices.isFetching && !choices.isError && (choices.data?.totalElements ?? 0) > 1 && <EntitySelect endpoint={url + '/definitions'} source={definitions}
+    {!definition && !choices.isFetching && !choices.isError && (choices.data?.totalElements ?? 0) > 1 && <EntitySelect endpoint={appendQueryParams(url + '/definitions', props.endpoint?.params)} source={definitions}
       ariaLabel={t('app.submission.chooseProcess', '选择审批流程')} placeholder={t('app.submission.chooseProcess', '选择审批流程')}
       onChange={id => {if (id) {const [key, version] = id.split(':'); setDefinition({id: key, version: Number(version)});}}}/>}
     {definition && preparation.isPending && <Spin/>}
@@ -66,15 +68,15 @@ export default function SubmissionDialog(props: Props) {
       action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 0, icon: 'ReloadOutlined', text: t('app.retry', '重试')}]}
         onButtonEvents={{retry: () => void preparation.refetch()}}/>}/>}
     {changed && <Alert showIcon type="warning" title={t('app.runtime.versionChanged', '表单已更新，请加载新版本后继续')}/>}
-    {preparation.data && !preparation.isFetching && !preparation.error && !changed && <SubmissionEditor key={JSON.stringify([url, definition, props.previousSubmissionId, props.initialRecord?.id, props.initialRecord?.version])}
+    {preparation.data && !preparation.isFetching && !preparation.error && !changed && <SubmissionEditor key={JSON.stringify([identity, definition, props.previousSubmissionId, props.initialRecord?.id, props.initialRecord?.version])}
       {...props} preparation={preparation.data} url={url} onLock={setLocked} onDirty={setDirty}/>}
   </Modal>;
 }
 
-function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, initialValues, onAccepted, onClose}: Props & {
+function SubmissionEditor({preparation, url, endpoint, onLock, onDirty, initialRecord, initialValues, onAccepted, onClose}: Props & {
   preparation: Preparation; url: string; onLock: (locked: boolean) => void; onDirty: (dirty: boolean) => void;
 }) {
-  const {t} = useI18n(), operation = useOperationScope(url), selected = usePageSelected();
+  const {t} = useI18n(), operation = useOperationScope(JSON.stringify([url, endpoint?.params])), selected = usePageSelected();
   const record = preparation.copyOnResubmission ? undefined : preparation.record ?? initialRecord;
   const confirmRecord = !!initialRecord && !preparation.previousSubmissionId;
   const [values, setValues] = useState(() => {
@@ -90,8 +92,8 @@ function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, ini
   const [accepted, setAccepted] = useState<Submission>();
   const feedback = useRef<HTMLDivElement>(null);
   const [feedbackAttempt, setFeedbackAttempt] = useState(0);
-  const status = useOwnedData(['app', 'submission-status', url, accepted?.id], ({signal}) =>
-    get<Submission>(`${url}/${encodeURIComponent(accepted!.id)}`, undefined, {signal, notifyOnError: false}),
+  const status = useOwnedData(['app', 'submission-status', url, endpoint?.params, accepted?.id], ({signal}) =>
+    get<Submission>(`${url}/${encodeURIComponent(accepted!.id)}`, endpoint?.params, {signal, notifyOnError: false}),
     {enabled: !!accepted && !['SUCCEEDED', 'FAILED'].includes(accepted.status), retry: false,
       refetchInterval: query => query.state.error || ['SUCCEEDED', 'FAILED'].includes(query.state.data?.status ?? '') ? false : 1500});
   useEffect(() => {
@@ -107,7 +109,7 @@ function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, ini
     }
   }, [selected, error, accepted, status.isError, feedbackAttempt]);
   const [dirty, setDirty] = useState(false);
-  const draft = useRef(values);
+  const draft = useRef(values), mappings = useRef<MappingIntent | undefined>(undefined);
   const form = useRef<SFormHandle>(null), meta = useRef<SFormHandle>(null);
   usePageRetention(!dirty && !pending && !operation.busy, dirty || !!pending || operation.busy);
   useEffect(() => {onLock(operation.busy || !!pending);}, [operation.busy, pending, onLock]);
@@ -116,7 +118,7 @@ function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, ini
     const request = operation.begin(); if (!request) return;
     onLock(true); setError('');
     try {
-      const result = await post<Submission>(url, body, {signal: request.signal, notifyOnError: false});
+      const result = await post<Submission>(appendQueryParams(url, endpoint?.params), body, {signal: request.signal, notifyOnError: false});
       if (!operation.current(request.signal)) return;
       setAccepted(result); setPending(undefined); setDirty(false); onAccepted?.(result);
     } catch (cause) {
@@ -131,6 +133,7 @@ function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, ini
     if (frozen || !operation.isSelected()) return;
     const mutation = recordMutation(preparation.form, record, draft.current, 'SUBMITTED', crypto.randomUUID());
     const body = structuredClone({runtime: mutation.body.runtime, idempotencyKey: mutation.body.idempotencyKey,
+      ...(confirmRecord || !mappings.current ? {} : {referenceMappings: mappings.current}),
       expectedVersion: record?.version, values: confirmRecord ? {} : mutation.body.values, recordId: mutation.recordId,
       definitionId: preparation.definitionId, definitionVersion: preparation.definitionVersion,
       previousSubmissionId: preparation.previousSubmissionId, title: data.title, ccUserIds: data.ccUserIds, variables: data.variables});
@@ -145,7 +148,7 @@ function SubmissionEditor({preparation, url, onLock, onDirty, initialRecord, ini
     <PublishedFormRuntime descriptor={preparation.form} record={record} previewState="SUBMITTED" formRef={form} externalSubmit
       value={values} readOnly={confirmRecord} disabled={frozen} submitting={operation.busy}
       onChange={next => {if (!frozen) {setValues(next); setDirty(true);}}}
-      onSubmit={next => {draft.current = next; dispatch(meta.current);}}/>
+      onSubmit={(next, intent) => {draft.current = next; mappings.current = intent; dispatch(meta.current);}}/>
     <SForm ref={meta} hideSubmit disabled={frozen} schema={{type: 'object', required: ['title'], properties: {
       title: {type: 'string', title: t('workflow.instance.title', '事项标题'), minLength: 1, maxLength: 240},
       ccUserIds: {type: 'array', title: t('workflow.instance.ccUsers', '抄送人'), items: {type: 'string'}, uniqueItems: true, maxItems: 50},

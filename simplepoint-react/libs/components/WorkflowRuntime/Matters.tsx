@@ -11,10 +11,13 @@ import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import DataTable from '../DataTable';
 import {useRemoteList} from '../DataTable/useRemoteList';
 import TableActions from '../Table/Actions';
+import DeleteConfirmation from '../Table/DeleteConfirmation';
 import SForm from '../SForm/Lazy';
 import type {SFormHandle} from '../SForm';
 import {useMutationScope} from './useMutationScope';
 import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowArchive} from './useWorkflowArchive';
+import {useWorkflowHistoryRemoval} from './useWorkflowHistoryRemoval';
 import {WorkflowStatus} from './Status';
 import ProgressDrawer from './ProgressDrawer';
 import './style.css';
@@ -37,6 +40,7 @@ function MattersSession({management}: {management: boolean}) {
   const mutation = useMutationScope(), refreshWorkflow = useWorkflowRefresh();
   const [params, setParams] = useSearchParams();
   const [view, setView] = useState<View>(management ? 'all' : params.get('view') === 'copied' ? 'copied' : 'started');
+  const [archived, setArchived] = useState(false);
   const [operation, setOperation] = useState<Operation>();
   const [reason, setReason] = useState<{reason?: string}>({});
   const [pendingReason, setPendingReason] = useState<string>();
@@ -45,7 +49,18 @@ function MattersSession({management}: {management: boolean}) {
   const [diagramId, setDiagramId] = useState<string>();
   const [starting, setStarting] = useState(false);
   const [resubmitting, setResubmitting] = useState<string>();
-  const locked = Boolean(operation || diagramId || busy || starting || resubmitting);
+  const interactionOpen = Boolean(operation || diagramId || busy || starting || resubmitting);
+  const permissions = useData(['workflow', 'runtime-permissions'], ({signal}) => workflowApi.runtimePermissions(signal), {retry: false});
+  const suffix = archived ? '/archived' : '';
+  const started = useRemoteList<WorkflowMatter>('/workflow/matters/started' + suffix, view === 'started');
+  const copied = useRemoteList<WorkflowMatter>('/workflow/matters/copied' + suffix, view === 'copied');
+  const all = useRemoteList<WorkflowMatter>('/workflow/matters/all', management && view === 'all' && permissions.data?.canViewAllInstances === true);
+  const table = view === 'started' ? started : view === 'copied' ? copied : all;
+  const archive = useWorkflowArchive<WorkflowMatter>('/workflow/matters/' + view, archived,
+    !management && !!table.schema && !table.error && !table.tableProps.loading && !interactionOpen);
+  const removal = useWorkflowHistoryRemoval(management && permissions.data?.canViewAllInstances === true,
+    !!table.schema && !table.error && !table.tableProps.loading && !interactionOpen);
+  const locked = interactionOpen || archive.busy || removal.busy || !!removal.target;
   const linkedInstance = params.get('instance'), handledLink = useRef<string | undefined>(undefined);
   usePageRetention(!locked, locked);
   useEffect(() => {void ensure(['workflow']);}, [ensure, locale]);
@@ -55,11 +70,6 @@ function MattersSession({management}: {management: boolean}) {
       handledLink.current = linkedInstance; setDiagramId(linkedInstance);
     }
   }, [linkedInstance, locked, mutation.selected]);
-  const permissions = useData(['workflow', 'runtime-permissions'], ({signal}) => workflowApi.runtimePermissions(signal), {retry: false});
-  const started = useRemoteList<WorkflowMatter>('/workflow/matters/started', view === 'started');
-  const copied = useRemoteList<WorkflowMatter>('/workflow/matters/copied', view === 'copied');
-  const all = useRemoteList<WorkflowMatter>('/workflow/matters/all', management && view === 'all' && permissions.data?.canViewAllInstances === true);
-  const table = view === 'started' ? started : view === 'copied' ? copied : all;
   const close = () => {if (!flight.current && pendingReason === undefined) {setOperation(undefined); setReason({}); setError('');}};
   const perform = async (value?: string) => {
     if (!operation || flight.current) return;
@@ -91,34 +101,61 @@ function MattersSession({management}: {management: boolean}) {
       render: value => <WorkflowStatus value={value}/>},
     {key: 'startedAt', dataIndex: 'startedAt', title: t('workflow.matter.startedAt', '发起时间'), width: 185, render: time},
     {key: 'endedAt', dataIndex: 'endedAt', title: t('workflow.matter.endedAt', '结束时间'), width: 185, render: time},
-    {key: 'actions', title: t('workflow.actions', '操作'), width: 230, fixed: 'right', render: (_, item) =>
-      <TableActions selectedKeys={[item.id]} selectedRows={[item]} isButtonDisabled={() => locked || !mutation.selected}
+    {key: 'actions', title: t('workflow.actions', '操作'), width: removal.actions.length ? 345 : 230, fixed: 'right', render: (_, item) =>
+      <TableActions appearance="row" selectedKeys={[item.id]} selectedRows={[item]}
+        isButtonDisabled={button => locked || !mutation.selected || button.key === 'historyRemoval' && removal.disabled([item])}
         buttons={[
           {key: 'progress', sort: 1, text: t('workflow.action.diagram', '进度'), type: 'link'},
           ...(item.canWithdraw ? [{key: 'withdraw', sort: 2, text: t('workflow.action.withdraw', '撤回'), type: 'link' as const}] : []),
           ...(item.canCancel ? [{key: 'cancel', sort: 3, text: t('workflow.action.cancel', '取消'), danger: true, type: 'link' as const}] : []),
           ...(item.canResubmit ? [{key: 'resubmit', sort: 4, text: t('workflow.action.resubmit', '修改后重新发起'), type: 'link' as const}] : []),
+          ...archive.actions,
+          ...removal.actions,
         ]} onButtonEvents={{progress: () => setDiagramId(item.id),
+          personalArchive: () => void archive.change([item]),
+          historyRemoval: () => removal.choose([item]),
           withdraw: () => {setOperation({item, kind: 'withdraw'}); setReason({}); setError('');},
           cancel: () => {setOperation({item, kind: 'cancel'}); setReason({}); setError('');},
           resubmit: () => setResubmitting(item.id),
         }}/>},
   ];
   return <section className="workflow-personal-page">
+    {removal.batch && <Alert showIcon type={removal.complete ? 'success' : 'info'}
+      title={t('workflow.historyRemoval.progress', '流程历史已清理 {completed}/{total} 条', removal.batch)}/>}
     {table.error && <Alert showIcon type="error" title={resolveApiErrorMessage(table.error, t('workflow.loadFailed', '数据加载失败'))}
       action={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[{key: 'retry', sort: 1, text: t('workflow.retry', '重试')}]}
         onButtonEvents={{retry: table.retry}}/>}/>}
     <DataTable {...table.tableProps} fitContainer storageKey={`personal.workflow.matters.${view}`} columns={table.columns(columns)} scroll={{x: 1380}}
+      selectable={!management || !!removal.actions.length}
+      rowSelection={management ? removal.rowSelection : archive.rowSelection}
       toolbarExtra={<Space wrap><Segmented value={view} disabled={locked} onChange={value => setView(value as View)} options={management ? [
         {value: 'all', label: t('workflow.instances.all', '全部事项')},
       ] : [
         {value: 'started', label: t('workflow.instances.started', '我发起的')},
         {value: 'copied', label: t('workflow.instances.copied', '抄送我的')},
-      ]}/>{!management && permissions.data?.canStartInstances && <TableActions selectedKeys={[]} selectedRows={[]} isButtonDisabled={() => locked}
+      ]}/>{!management && <Segmented value={archived ? 'archived' : 'active'} disabled={locked} options={[
+        {label: t('workflow.personalArchive.active', '当前列表'), value: 'active'},
+        {label: t('workflow.personalArchive.archived', '已归档'), value: 'archived'},
+      ]} onChange={value => {
+        if (value !== (archived ? 'archived' : 'active')) {
+          table.reset(); setArchived(value === 'archived');
+        }
+      }}/>}
+      {!management && <TableActions buttons={archive.actions} selectedKeys={archive.selectedKeys} selectedRows={archive.selectedRows}
+        isButtonDisabled={() => locked} onButtonEvents={{personalArchive: (_keys, rows) => void archive.change(rows)}}/>}
+      {management && <TableActions buttons={removal.actions} selectedKeys={removal.rows.map(row => row.id)}
+        selectedRows={removal.rows} isButtonDisabled={() => locked || removal.disabled(removal.rows)}
+        onButtonEvents={{historyRemoval: (_keys, rows) => removal.choose(rows)}}/>}
+      {!management && permissions.data?.canStartInstances && <TableActions selectedKeys={[]} selectedRows={[]} isButtonDisabled={() => locked}
         buttons={[{key: 'start', sort: 1, text: t('workflow.action.start', '发起流程'), type: 'primary'}]}
         onButtonEvents={{start: () => setStarting(true)}}/>}</Space>}/>
     {starting && <Suspense fallback={<Spin/>}><StartProcess onClose={() => setStarting(false)}/></Suspense>}
     {resubmitting && <Suspense fallback={<Spin/>}><ResubmitProcess id={resubmitting} onClose={() => setResubmitting(undefined)}/></Suspense>}
+    <DeleteConfirmation open={!!removal.target} pending={removal.busy} error={removal.error}
+      onConfirm={() => void removal.submit()} onCancel={removal.close}>
+      {t('workflow.historyRemoval.confirm', '永久清理选中的 {count} 条流程及其审批历史和流程通知？',
+        {count: removal.target?.instances.length ?? 0})}
+    </DeleteConfirmation>
     <Modal wrapClassName="workflow-matter-operation" title={operation?.kind === 'withdraw' ? t('workflow.action.withdraw', '撤回') : t('workflow.action.cancel', '取消')}
       open={Boolean(operation) && mutation.selected} footer={null} closable={!busy && pendingReason === undefined} maskClosable={false} keyboard={!busy && pendingReason === undefined} onCancel={close}>
       <p>{operation?.item.title}</p>

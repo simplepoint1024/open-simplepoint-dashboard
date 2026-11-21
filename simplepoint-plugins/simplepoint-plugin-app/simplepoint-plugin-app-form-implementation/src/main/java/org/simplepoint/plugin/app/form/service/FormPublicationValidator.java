@@ -16,36 +16,61 @@ import org.simplepoint.plugin.dna.runtime.api.schema.LogicalJsonValues;
 /** Publication-only checks; incomplete designs must remain saveable as drafts. */
 final class FormPublicationValidator {
 
-  private FormPublicationValidator() {
-  }
+  private FormPublicationValidator() {}
 
-  /** Requires an input or default for every potentially required field; this is not a general satisfiability proof. */
+  /**
+   * Requires an input or default for every potentially required field; this is not a general
+   * satisfiability proof.
+   */
   static void validate(final ApplicationFormDocument document) {
+    FormRelationPublicationValidator.validate(document);
+    // Snapshot outputs are produced and validated inside DNA's aggregate write transaction.
+    // Optional editable defaults still require a reachable input, since users may decline them.
+    Set<String> managed = FormRecordValueProviders.forRow(document, null, null, null).managed();
     Set<String> editable = new HashSet<>();
     Set<String> visited = new HashSet<>();
     ArrayDeque<String> pending = new ArrayDeque<>();
-    document.scenes().stream().filter(scene -> scene.type() == FormSceneType.MAIN)
+    document.scenes().stream()
+        .filter(scene -> scene.type() == FormSceneType.MAIN)
         .forEach(scene -> pending.add(scene.sceneId()));
     while (!pending.isEmpty()) {
       String sceneId = pending.removeFirst();
       if (visited.add(sceneId)) {
-        document.scenes().stream().filter(scene -> scene.sceneId().equals(sceneId))
+        document.scenes().stream()
+            .filter(scene -> scene.sceneId().equals(sceneId))
             .forEach(scene -> collect(scene.root(), false, editable, pending));
       }
     }
-    var missing = FormSubmissionRequirements.compile(document).stream()
-        .filter(requirement -> requirement.predicate() != FormSubmissionRequirements.Constant.FALSE
-            || requirement.field().submitRequired()
-                && requirement.field().effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY)
-        .map(FormSubmissionRequirements.Requirement::field)
-        .filter(field -> !editable.contains(field.fieldId()) || field.access() != null
-            && !field.access().allows(null)
-            && (field.effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY
-                || !field.access().allows(org.simplepoint.plugin.app.form.api.model.FormRecordState.DRAFT)))
-        .filter(field -> !hasDefault(field.defaultValue()))
-        .map(field -> new FormViolation("fields." + field.fieldId(), "input", Map.of(),
-            "app.publication.requiredInput"))
-        .toList();
+    var missing =
+        FormSubmissionRequirements.compile(document).stream()
+            .filter(
+                requirement ->
+                    requirement.predicate() != FormSubmissionRequirements.Constant.FALSE
+                        || requirement.field().submitRequired()
+                            && requirement.field().effectiveWritePolicy()
+                                == FormFieldWritePolicy.CREATE_ONLY)
+            .map(FormSubmissionRequirements.Requirement::field)
+            .filter(field -> !managed.contains(field.fieldId()))
+            .filter(
+                field ->
+                    !editable.contains(field.fieldId())
+                        || field.access() != null
+                            && !field.access().allows(null)
+                            && (field.effectiveWritePolicy() == FormFieldWritePolicy.CREATE_ONLY
+                                || !field
+                                    .access()
+                                    .allows(
+                                        org.simplepoint.plugin.app.form.api.model.FormRecordState
+                                            .DRAFT)))
+            .filter(field -> !hasDefault(field.defaultValue()))
+            .map(
+                field ->
+                    new FormViolation(
+                        "fields." + field.fieldId(),
+                        "input",
+                        Map.of(),
+                        "app.publication.requiredInput"))
+            .toList();
     if (!missing.isEmpty()) {
       throw new InvalidFormException(missing);
     }
@@ -55,13 +80,13 @@ final class FormPublicationValidator {
       final FormComponentDefinition node,
       final boolean inheritedReadOnly,
       final Set<String> editable,
-      final ArrayDeque<String> pending
-  ) {
+      final ArrayDeque<String> pending) {
     boolean readOnly = inheritedReadOnly || node.readOnly();
     if (!readOnly && node.fieldId() != null) {
       editable.add(node.fieldId());
     }
-    if (!readOnly && node.targetSceneId() != null
+    if (!readOnly
+        && node.targetSceneId() != null
         && ("action.open-dialog".equals(node.componentType())
             || "action.open-drawer".equals(node.componentType()))) {
       pending.add(node.targetSceneId());

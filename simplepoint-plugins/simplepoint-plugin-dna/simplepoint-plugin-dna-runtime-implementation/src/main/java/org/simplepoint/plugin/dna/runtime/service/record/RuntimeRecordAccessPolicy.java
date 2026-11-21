@@ -53,13 +53,36 @@ public class RuntimeRecordAccessPolicy {
 
   /** Resolves effective permissions and rejects unbound or ambiguous page contexts. */
   RecordAccessContext authorize(final RuntimeActor actor, final RuntimeRecordModel model) {
+    return authorizeResource(actor, model, ResourcePolicyContext.get(), false);
+  }
+
+  /** Explicit resources come from trusted relation metadata, never browser-selected headers. */
+  RecordAccessContext authorizeReference(
+      final RuntimeActor actor, final RuntimeRecordModel model, final String resource) {
+    return authorizeResource(actor, model, resource, true);
+  }
+
+  private RecordAccessContext authorizeResource(
+      final RuntimeActor actor,
+      final RuntimeRecordModel model,
+      final String selectedResource,
+      final boolean requireExplicitPolicy) {
     if (model.activeSchema().owner() != null) {
       throw denied("Owned rows require parent-scoped aggregate access");
     }
+    if (model.activeSchema().collection() != null) {
+      throw denied("Collection edges require a dedicated relation operation");
+    }
     AuthorizationContext authorization = AuthorizationContextHolder.getContext();
-    String resourceCode = normalize(ResourcePolicyContext.get());
+    String resourceCode = normalize(selectedResource);
     if (authorization == null || resourceCode == null) {
       throw denied("A server-selected page resource is required for record access");
+    }
+    if (requireExplicitPolicy
+        && (authorization.dataScopeFor(resourceCode) == null
+            || authorization.fieldPermissionsFor(resourceCode) == null)) {
+      // A legacy single-resource RPC context must never lend its source policy to the target.
+      throw denied("Explicit target resource policy is required for reference access");
     }
     Collection<String> resources =
         authorization.getResources() == null ? List.of() : authorization.getResources();
@@ -73,20 +96,23 @@ public class RuntimeRecordAccessPolicy {
       throw denied("The active page resource is not bound to the physical model");
     }
 
-    RecordAccessContext result = fields(actor, model, authorization, resourceCode, rowScope(authorization));
-    return resourceFence == null ? result : result.withGeneration(
-        resourceFence.generation(actor.tenantId(), model.physicalModelId(), resourceCode));
+    RecordAccessContext result =
+        fields(actor, model, authorization, resourceCode, rowScope(authorization, resourceCode));
+    return resourceFence == null
+        ? result
+        : result.withGeneration(
+            resourceFence.generation(actor.tenantId(), model.physicalModelId(), resourceCode));
   }
 
   /** Caller must verify the immutable owner relation and authorize the parent record first. */
   RecordAccessContext owned(
       RuntimeActor actor, RuntimeRecordModel model, RecordAccessContext parent) {
     return fields(
-        actor,
-        model,
-        AuthorizationContextHolder.getContext(),
-        parent.resourceCode(),
-        new DataScopeCondition("ALL", "created_org_dept_id", "created_by", null, Set.of()))
+            actor,
+            model,
+            AuthorizationContextHolder.getContext(),
+            parent.resourceCode(),
+            new DataScopeCondition("ALL", "created_org_dept_id", "created_by", null, Set.of()))
         .withGeneration(parent.resourceGeneration());
   }
 
@@ -99,17 +125,22 @@ public class RuntimeRecordAccessPolicy {
     Set<String> modelFields =
         new LinkedHashSet<>(
             Set.of("id", "record_version", "created_by", "created_at", "updated_by", "updated_at"));
-    modelFields.addAll(org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField.storageCodes());
+    modelFields.addAll(
+        org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField.storageCodes());
     model.requestedSchema().fields().forEach(field -> modelFields.add(field.code()));
     Set<String> readable = new LinkedHashSet<>();
     Set<String> writable = new LinkedHashSet<>();
     Set<String> masked = new LinkedHashSet<>();
-    Map<String, String> permissions = authorization.activeFieldPermissions();
+    Map<String, String> permissions = authorization.fieldPermissionsFor(resourceCode);
     for (String field : modelFields) {
       String permissionField = model.activeCode(field);
       var definition = model.requestedField(field);
-      String access = RecordPermissionModel.access(permissions, model.physicalModelId(),
-          definition == null ? null : definition.fieldId(), permissionField);
+      String access =
+          RecordPermissionModel.access(
+              permissions,
+              model.physicalModelId(),
+              definition == null ? null : definition.fieldId(),
+              permissionField);
       if (access == null || Set.of("EDITABLE", "VISIBLE", "MASKED").contains(access)) {
         readable.add(field);
       }
@@ -130,8 +161,9 @@ public class RuntimeRecordAccessPolicy {
         normalize(authorization.getAttribute(ORGANIZATION_ATTRIBUTE)));
   }
 
-  private static DataScopeCondition rowScope(final AuthorizationContext context) {
-    ResourceDataScope pageScope = context.activeDataScope();
+  private static DataScopeCondition rowScope(
+      final AuthorizationContext context, final String resourceCode) {
+    ResourceDataScope pageScope = context.dataScopeFor(resourceCode);
     if (pageScope != null) {
       return pageScope.condition("created_org_dept_id", "created_by", context);
     }

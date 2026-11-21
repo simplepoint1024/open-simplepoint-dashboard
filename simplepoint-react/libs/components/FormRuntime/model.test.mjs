@@ -33,6 +33,20 @@ test('compiles fields in scene order and retains platform decimal semantics', ()
   assert.deepEqual(model.layout.map(item => item.columnSpan), [12, 12, 24]);
 });
 
+test('server reference capability selects the shared widget without embedding a target URL', () => {
+  const doc = document();
+  doc.fields[0] = {...field('kind', 'UUID'), reference: {relationId: 'customer', allowDrillThrough: true}};
+  const model = runtimeFormModel(doc, 'main');
+  assert.equal(model.uiSchema.kind['ui:widget'], 'FormReference');
+  assert.equal(model.schema.properties.kind['x-ui'].widget, 'FormReference');
+  assert.deepEqual(model.schema.properties.kind['x-form-reference'], {relationId: 'customer', allowDrillThrough: true});
+  assert.equal(model.uiSchema.kind['ui:options'].endpoint, undefined);
+  assert.equal(model.editableFieldIds.includes('kind'), true);
+  const readOnly = runtimeFormModel(doc, 'main', {}, {readOnly: true});
+  assert.equal(readOnly.schema.properties.kind['x-display-only'], true);
+  assert.equal(readOnly.editableFieldIds.includes('kind'), false);
+});
+
 test('numeric inputs and defaults use the platform exact-string validation contract', () => {
   const doc = document();
   const amount = doc.fields[2];

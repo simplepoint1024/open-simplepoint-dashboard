@@ -9,6 +9,7 @@ import MatrixProperties from '../../FormComponents/Matrix/Properties';
 import {DetailFieldsProperties, DetailIndexesProperties} from '../../FormComponents/Detail/Properties';
 import FieldCalculationProperties from '../FieldCalculationProperties';
 import FieldDependencyProperties from '../FieldDependencyProperties';
+import ReferenceProperties from '../../FormComponents/Reference/Properties';
 
 export type DesignerPropertyEditorProps = {
   node: FormComponentDefinition; document: DesignDocument; components: readonly ComponentDescriptor[];
@@ -36,6 +37,7 @@ export class DesignerPropertyRegistry {
   get(type: string) {return this.entries.get(type) ?? [];}
 }
 export const designerPropertyEditors = new DesignerPropertyRegistry([
+  ['field.reference@1', [{key: 'relation', labelKey: 'app.relation.settings', label: '关联配置', icon: 'LinkOutlined', component: ReferenceProperties}]],
   ...standardComponentTypes.filter(type => type !== 'display.divider').map(type => [type + '@1', [{key: 'content', labelKey: 'app.designer.componentSettings', label: '组件配置', icon: 'SettingOutlined', component: StandardProperties}]] as const),
   ['layout.matrix@1', [{key: 'layout', labelKey: 'app.designer.groupLayout', label: '布局与展示', icon: 'LayoutOutlined', component: MatrixProperties}]],
   ['data.detail@1', [

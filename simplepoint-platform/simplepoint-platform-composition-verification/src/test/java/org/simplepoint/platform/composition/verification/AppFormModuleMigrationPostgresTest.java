@@ -50,7 +50,7 @@ class AppFormModuleMigrationPostgresTest {
     var plan = plan(selection);
     assertEquals(11, plan.schemas().getFirst().tables().size());
     assertEquals(
-        1, migrations.migrate(plan, Map.of("default", database.source())).getFirst().applied());
+        4, migrations.migrate(plan, Map.of("default", database.source())).getFirst().applied());
     seed(database.jdbc());
     try (var context = new AnnotationConfigApplicationContext()) {
       context.registerBean(ModulePlan.class, () -> selection);
@@ -81,6 +81,33 @@ class AppFormModuleMigrationPostgresTest {
     migrations.verify(plan, Map.of("default", database.source()));
     assertEquals(
         1L, database.jdbc().queryForObject("select count(*) from simpoint_app_forms", Long.class));
+  }
+
+  @Test
+  void collectionBindingUpgradePreservesExistingImmutableVersionsAndAbsence() {
+    var current = plan(modules.plan(List.of("app-form")));
+    var previous = new ModuleMigrationPlan(current.schemas().stream().map(owner ->
+        owner.module().equals("app-form") ? new ModuleMigrationPlan.ModuleSchema(owner.module(), owner.store(),
+            owner.historyTable(), owner.tables(), Map.of("postgresql", owner.scripts().get("postgresql").subList(0, 3))) : owner).toList());
+    migrations.migrate(previous, Map.of("default", database.source()));
+    seed(database.jdbc());
+    database.jdbc().update("""
+        insert into simpoint_app_form_versions
+          (id, tenant_id, form_id, version_number, document_json, checksum,
+           storage_schema_json, storage_checksum, renderer_version, created_at)
+        values ('old-version', 'tenant-a', 'form', 1, '{"legacy":true}', 'old-checksum',
+                '{"storage":true}', 'old-storage-checksum', '1', now())
+        """);
+    assertEquals(1, migrations.migrate(current, Map.of("default", database.source())).getFirst().applied());
+    var row = database.jdbc().queryForMap("select document_json, checksum, storage_schema_json, storage_checksum, relation_bindings_json, collection_bindings_json from simpoint_app_form_versions where id='old-version'");
+    assertEquals("{\"legacy\":true}", row.get("document_json"));
+    assertEquals("old-checksum", row.get("checksum"));
+    assertEquals("{\"storage\":true}", row.get("storage_schema_json"));
+    assertEquals("old-storage-checksum", row.get("storage_checksum"));
+    org.junit.jupiter.api.Assertions.assertNull(row.get("relation_bindings_json"));
+    org.junit.jupiter.api.Assertions.assertNull(row.get("collection_bindings_json"));
+    assertEquals(0, migrations.migrate(current, Map.of("default", database.source())).getFirst().applied());
+    migrations.verify(current, Map.of("default", database.source()));
   }
 
   @Test
@@ -196,7 +223,11 @@ class AppFormModuleMigrationPostgresTest {
     assertTrue(
         outcomes.stream()
             .allMatch(
-                outcome -> outcome.applied() == (outcome.module().equals("workflow") ? 3 : 1)));
+                outcome -> outcome.applied() == (switch (outcome.module()) {
+                  case "app-form" -> 4;
+                  case "workflow" -> 3;
+                  default -> 1;
+                })));
     seed(database.jdbc());
     assertTrue(
         migrations.migrate(plan, Map.of("default", database.source())).stream()

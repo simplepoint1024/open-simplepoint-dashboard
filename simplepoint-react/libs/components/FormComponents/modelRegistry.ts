@@ -1,4 +1,5 @@
-import type {DesignDocument} from '../FormDesigner/contracts.ts';
+import type {DesignDocument, DesignField} from '../FormDesigner/contracts.ts';
+import {REFERENCE, initializeReferenceField, validateReferenceComponent} from './Reference/model.ts';
 import {DETAIL, initializeDetail, cloneDetail, validateDetail} from './Detail/model.ts';
 import type {FormComponentDefinition as Node} from '../FormRuntime/contracts.ts';
 import {CELL, MATRIX, matrixSize, resizeMatrix, validateMatrix} from './Matrix/model.ts';
@@ -11,8 +12,9 @@ export type FormComponentBehavior = {
   structural?: boolean;
   cells?: (node: Node) => {columns: number; managed: boolean};
   initialize?: (node: Node, identity: () => string, document: DesignDocument) => Node;
+  initializeField?: (field: DesignField) => DesignField;
   validate?: (node: Node, document: DesignDocument) => void;
-  clone?: (node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string>) => ReadonlyMap<string, string> | void;
+  clone?: (node: Node, identity: () => string, document: DesignDocument, source: DesignDocument, parentFields: ReadonlyMap<string, string>, clonedFields: ReadonlyMap<string, string>) => ReadonlyMap<string, string> | void;
 };
 export class FormComponentBehaviorRegistry {
   private readonly behaviors = new Map<string, FormComponentBehavior>();
@@ -26,6 +28,7 @@ export class FormComponentBehaviorRegistry {
   get(node: Pick<Node, 'componentType' | 'componentVersion'>) {return this.behaviors.get(`${node.componentType}@${node.componentVersion}`);}
 }
 export const platformComponentBehaviors = new FormComponentBehaviorRegistry([
+  {type: REFERENCE, version: '1', initializeField: initializeReferenceField, validate: validateReferenceComponent},
   {type: 'layout.tabs', version: '1', initialize: (node, identity) => ({...node, children: [1, 2].map(index => ({
     componentId: identity(), componentType: 'layout.group', componentVersion: '1', columnSpan: 24,
     label: `${node.label} ${index}`, readOnly: false, properties: {}, children: [],

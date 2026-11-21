@@ -1,10 +1,12 @@
 package org.simplepoint.plugin.workflow.api.service;
 
+import java.util.List;
 import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CompleteTaskCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionDetail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionPermissions;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionRevision;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionSummary;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.InstanceDiagram;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
@@ -54,6 +56,15 @@ public interface WorkflowCenterService {
 
   /** Reads a definition editor projection. */
   DefinitionDetail definition(String definitionId);
+
+  /** Removes a draft or an offline definition without dependent instances or form bindings. */
+  void deleteDefinition(String definitionId, long expectedRevision);
+
+  /** Deletes an exact selection in the same workflow and engine transaction. */
+  void deleteDefinitions(List<DefinitionRevision> selection);
+
+  /** Stops new starts on the exact observed published definition and all its versions. */
+  void offlineDefinition(String definitionId, int expectedVersion);
 
   /** Saves a draft using optimistic revision control. */
   DefinitionDetail updateDraft(String definitionId, UpdateDraftCommand command);

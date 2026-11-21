@@ -21,6 +21,23 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
   assert.ok(await evaluate(`document.querySelector('${row('task1')}').textContent.includes('张三')`));
   assert.equal(await evaluate(`document.querySelector('${row('task1')}').textContent.includes('actor')`), false);
   assert.ok(await evaluate(`document.querySelectorAll('${page} th .ant-table-filter-trigger').length>=7`));
+  const selectTwoTasks = async () => {
+    for (const id of ['task1', 'taskreject']) await clickReady(row(id) + ' input[type="checkbox"]');
+  };
+  await selectTwoTasks();
+  const toolbar = page + ' .sp-data-table-toolbar-extra';
+  await clickText(toolbar + ' button', '移入归档');
+  await poll(async () => !await visible(row('task1')) && !await visible(row('taskreject'))
+    && await visible(row('taskclaim')), 'archive removes only the selected rows');
+  await clickText(toolbar + ' .ant-segmented-item', '已归档');
+  await poll(async () => await visible(row('task1')) && await visible(row('taskreject'))
+    && !await visible(row('taskclaim')), 'both rows found inside the archive');
+  await selectTwoTasks();
+  await clickText(toolbar + ' button', '移回列表');
+  await poll(async () => !await visible(row('task1')) && !await visible(row('taskreject')), 'restore empties the archive');
+  await clickText(toolbar + ' .ant-segmented-item', '当前列表');
+  await poll(async () => await visible(row('task1')) && await visible(row('taskreject')), 'both restored rows return to the active list');
+  assert.equal(fixture.personal.tasks.find(item => item.id === 'task1').outcome, 'PENDING');
   await clickText(`${row('task1')} button`, '进度');
   await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('部门审批人')`), 'current candidates visible immediately');
   assert.ok(await evaluate(`document.querySelector('${progress} .workflow-node-history').textContent.includes('李四')`));
@@ -50,7 +67,7 @@ export async function smokeWorkflowPersonal({clickText, clickReady, fill, poll, 
   await poll(() => fixture.writes.length === beforeApprove + 1 && visible(task).then(v => !v), 'approve closes current task');
   assert.deepEqual(fixture.writes.at(-1).data, {variables: {approved: false}, comment: '材料完整，同意', idempotencyKey: 'complete:task1'});
   await outcome('task1', '通过');
-  await clickText(`${row('task1')} button`, '进度');
+  await clickText(`${row('task1')} button`, '查看');
   await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('材料完整，同意')`), 'processed node shows actual comment');
   await clickReady(`${progress} .ant-drawer-close`);
 

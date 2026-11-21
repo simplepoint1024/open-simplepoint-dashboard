@@ -1,4 +1,5 @@
 import {get, post, put} from '@simplepoint/shared/api/methods';
+import {request} from '@simplepoint/shared/api/client';
 import type {WorkflowFormContract, WorkflowRuntimeForm} from '../../components/WorkflowDesigner/contracts';
 
 const root = '/workflow';
@@ -17,6 +18,7 @@ export type WorkflowMatter = {
   canWithdraw: boolean; canCancel: boolean; canResubmit: boolean;
   previousInstanceId?: string; nextInstanceId?: string;
 };
+export type WorkflowRemovalBatch = {id: string; total: number; completed: number};
 
 export type WorkflowResubmission = {source: WorkflowMatter; form: WorkflowRuntimeForm; ccUserIds: string[]};
 export type WorkflowAuditEvent = {id: string; actionType: string; actorName?: string; comment?: string;
@@ -37,6 +39,8 @@ export type DefinitionPermissions = {
   canPublish: boolean;
   canCopyVersion: boolean;
   canStart: boolean;
+  canDelete: boolean;
+  canOffline: boolean;
 };
 export type RuntimePermissions = {
   canClaim: boolean;
@@ -138,6 +142,12 @@ export type NodeExecution = {
 const quiet = {notifyOnError: false} as const;
 
 export const workflowApi = {
+  historyRemovalCapability: (signal?: AbortSignal) =>
+    get<{maxSelection: number}>(`${root}/instances/history-removals/capability`, undefined, {...quiet, signal}),
+  requestHistoryRemoval: (id: string, instances: {id: string; endedAt: string}[], signal?: AbortSignal) =>
+    post<WorkflowRemovalBatch>(`${root}/instances/history-removals`, {id, instances}, {...quiet, signal}),
+  historyRemovalProgress: (id: string, signal?: AbortSignal) =>
+    get<WorkflowRemovalBatch>(`${root}/instances/history-removals/${encodeURIComponent(id)}`, undefined, {...quiet, signal}),
   inboxItem: (id: string, signal?: AbortSignal) =>
     get<WorkflowInboxItem>(`${root}/inbox/tasks/${encodeURIComponent(id)}`, undefined, {...quiet, signal}),
   priorityLiteralPreview: (value: string, signal?: AbortSignal) =>
@@ -152,6 +162,14 @@ export const workflowApi = {
   createDefinition: (data: {key: string; name: string; category?: string; description?: string}, signal?: AbortSignal) =>
     post<DefinitionDetail>(`${root}/definitions`, data, {...quiet, signal}),
   definition: (id: string, signal?: AbortSignal) => get<DefinitionDetail>(`${root}/definitions/${id}`, undefined, {...quiet, signal}),
+  deleteDefinitions: (selection: {id: string; expectedRevision: number}[], signal?: AbortSignal) =>
+    request<void>(`${root}/definitions`, {
+      ...quiet, method: 'DELETE', json: selection, signal,
+    }),
+  offlineDefinition: (id: string, expectedVersion: number, signal?: AbortSignal) =>
+    request<void>(`${root}/definitions/${encodeURIComponent(id)}/offline`, {
+      ...quiet, method: 'PUT', params: {expectedVersion}, signal,
+    }),
   version: (id: string, version: number, signal?: AbortSignal) =>
     get<VersionDetail>(`${root}/definitions/${id}/versions/${version}`, undefined, {...quiet, signal}),
   saveDraft: (id: string, data: {expectedRevision: number; name: string; category?: string;

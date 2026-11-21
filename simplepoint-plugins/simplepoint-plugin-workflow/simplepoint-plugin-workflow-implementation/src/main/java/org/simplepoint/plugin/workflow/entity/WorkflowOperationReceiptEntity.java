@@ -28,6 +28,10 @@ public class WorkflowOperationReceiptEntity {
   private String requestFingerprint;
   @Column(name = "result_json", columnDefinition = "TEXT", nullable = false, updatable = false)
   private String resultJson;
+  @Column(name = "process_instance_id", length = 64, updatable = false)
+  private String processInstanceId;
+  @Column(nullable = false)
+  private boolean purged;
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 }

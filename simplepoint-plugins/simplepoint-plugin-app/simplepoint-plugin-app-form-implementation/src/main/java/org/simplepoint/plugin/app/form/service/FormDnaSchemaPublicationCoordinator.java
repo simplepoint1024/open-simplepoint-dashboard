@@ -222,7 +222,14 @@ public class FormDnaSchemaPublicationCoordinator {
       int physicalModelVersion,
       String migrationId,
       SchemaMigrationStatus status,
-      String detailBindingsJson) {
+      String detailBindingsJson,
+      String collectionBindingsJson) {
+    public PreparedDnaSchema(
+        String physicalModelId, int physicalModelVersion, String migrationId,
+        SchemaMigrationStatus status, String detailBindingsJson) {
+      this(physicalModelId, physicalModelVersion, migrationId, status, detailBindingsJson, null);
+    }
+
     /** Preserves the immutable runtime identity and optional child bindings. */
     public PreparedDnaSchema(
         String physicalModelId,

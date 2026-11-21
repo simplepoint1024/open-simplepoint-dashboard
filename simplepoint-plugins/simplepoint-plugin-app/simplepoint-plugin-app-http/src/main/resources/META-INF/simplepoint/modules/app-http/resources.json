@@ -124,6 +124,57 @@
                 "TENANT"
               ],
               "requireOrgTenant": true
+            },
+            {
+              "code": "app.workbench.apps.delete",
+              "name": "删除应用",
+              "label": "删除应用",
+              "title": "app.application.delete",
+              "alias": "i18n:app.application.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 50,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": true,
+              "scopeTypes": [
+                "TENANT"
+              ]
+            },
+            {
+              "code": "app.workbench.pages.delete",
+              "name": "删除附属页面",
+              "label": "删除附属页面",
+              "title": "app.page.delete",
+              "alias": "i18n:app.page.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 60,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": true,
+              "scopeTypes": [
+                "TENANT"
+              ]
+            },
+            {
+              "code": "app.workbench.forms.delete",
+              "name": "删除表单",
+              "label": "删除表单",
+              "title": "app.form.delete",
+              "alias": "i18n:app.form.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 70,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": true,
+              "scopeTypes": [
+                "TENANT"
+              ]
             }
           ]
         },

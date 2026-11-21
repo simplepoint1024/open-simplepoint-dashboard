@@ -4,7 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
@@ -21,6 +24,14 @@ import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.core.query.InvalidQueryException;
+import org.simplepoint.events.api.EventMessage;
+import org.simplepoint.platform.resource.ApplicationCatalogRemovalEvents;
+import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
+import org.simplepoint.plugin.app.form.api.service.ApplicationFormService;
+import org.simplepoint.plugin.app.form.entity.ApplicationFormEntity;
+import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationRemovalEntity;
+import org.simplepoint.plugin.app.form.service.ApplicationFormRemoval;
+import org.simplepoint.plugin.app.form.service.FormRequestContext;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplication;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationPage;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationReadModel;
@@ -49,6 +60,8 @@ class WorkspaceApplicationQueriesTest {
             .addAnnotatedClass(WorkspaceApplication.class)
             .addAnnotatedClass(WorkspaceApplicationPage.class)
             .addAnnotatedClass(WorkspaceApplicationReadModel.class)
+            .addAnnotatedClass(ApplicationFormEntity.class)
+            .addAnnotatedClass(WorkspaceApplicationRemovalEntity.class)
             .buildMetadata()
             .buildSessionFactory();
   }
@@ -57,7 +70,8 @@ class WorkspaceApplicationQueriesTest {
   void data() {
     session = factory.openSession();
     session.beginTransaction();
-    catalog = new WorkspaceApplicationCatalog(session);
+    catalog = new WorkspaceApplicationCatalog(session,
+        org.mockito.Mockito.mock(org.simplepoint.plugin.app.form.api.service.ApplicationFormService.class));
     context("a", Map.of());
     for (int index = 0; index < 28; index++) {
       var app =
@@ -87,6 +101,7 @@ class WorkspaceApplicationQueriesTest {
     var context = new AuthorizationContext();
     context.setScopeType(AuthorizationScopeType.TENANT);
     context.setUserId("user");
+    context.setResources(List.of("app.workbench.view", "app.workbench.apps.delete"));
     context.setAttributes(Map.of("X-Tenant-Id", tenant));
     context.setFieldPermissions(fields);
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
@@ -102,6 +117,50 @@ class WorkspaceApplicationQueriesTest {
   @AfterAll
   static void close() {
     factory.close();
+  }
+
+  @Test
+  void batchApplicationRemovalChecksTenantAndWaitsForAuthorizationCleanup() {
+    var outbox = new ArrayList<EventMessage>();
+    var removal = new WorkspaceApplicationRemoval(session, new FormRequestContext(),
+        org.mockito.Mockito.mock(ApplicationFormService.class),
+        org.mockito.Mockito.mock(ApplicationFormRemoval.class), outbox::add,
+        org.mockito.Mockito.mock(org.springframework.transaction.PlatformTransactionManager.class));
+    var first = catalog.create(new CreateApplication("First to remove", null, "Main"));
+    var second = catalog.create(new CreateApplication("Second to remove", null, "Main"));
+    for (var app : List.of(first, second)) {
+      var page = session.find(WorkspaceApplicationPage.class, app.application().mainPageId());
+      page.setStatus("OFFLINE");
+      session.find(WorkspaceApplication.class, app.application().id()).setStatus("OFFLINE");
+    }
+    session.flush();
+    session.clear();
+    var selections = List.of(first, second).stream().map(app -> new WorkspaceApplicationRemoval.Selection(
+        app.application().id(), catalog.detail(app.application().id()).application().updatedAt(), UUID.randomUUID())).toList();
+    assertThat(removal.request(selections)).extracting(WorkspaceApplicationRemoval.Progress::phase)
+        .containsExactly("AUTHORIZATION", "AUTHORIZATION");
+    assertThat(removal.request(selections)).hasSize(2);
+    assertThat(outbox).hasSize(2);
+    assertThatThrownBy(() -> catalog.addPage(first.application().id(), new CreatePage("Late", null)))
+        .isInstanceOf(ApplicationFormException.class);
+    assertThat(outbox).allSatisfy(event -> assertThat(ApplicationCatalogRemovalEvents.pages(event)).hasSize(1));
+    context("b", Map.of());
+    assertThat(removal.progress(selections.stream().map(WorkspaceApplicationRemoval.Selection::applicationId).toList()))
+        .isEmpty();
+    assertThatThrownBy(() -> removal.request(selections)).isInstanceOf(ApplicationFormException.class);
+    context("a", Map.of());
+    for (var event : outbox) {
+      var completion = ApplicationCatalogRemovalEvents.completed(event);
+      removal.handle(completion);
+      removal.handle(completion);
+    }
+    session.flush();
+    assertThat(removal.request(selections)).extracting(WorkspaceApplicationRemoval.Progress::phase)
+        .containsExactly("COMPLETED", "COMPLETED");
+    for (var app : List.of(first, second)) {
+      assertThat(session.find(WorkspaceApplication.class, app.application().id())).isNull();
+      assertThat(session.find(WorkspaceApplicationPage.class, app.application().mainPageId())).isNull();
+    }
   }
 
   @Test

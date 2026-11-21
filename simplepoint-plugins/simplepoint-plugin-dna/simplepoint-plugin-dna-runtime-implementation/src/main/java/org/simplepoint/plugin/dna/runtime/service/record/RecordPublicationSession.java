@@ -8,7 +8,10 @@ import org.simplepoint.data.calcite.core.query.CalciteQueryResult;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 
-/** Borrowed publication target transaction. Only its backend owns commit/rollback and connection close. */
+/**
+ * Borrowed publication target transaction. Only its backend owns commit/rollback and connection
+ * close.
+ */
 final class RecordPublicationSession {
   private final Connection connection;
   private final RecordWriteFence fence;
@@ -17,10 +20,21 @@ final class RecordPublicationSession {
   private final Function<RecordSelectPlan, CalciteQueryResult> reader;
   private final Function<RecordSelectPlan, CalciteQueryResult> aggregateReader;
   private final ToIntFunction<RecordSqlStatement> writer;
+  private final java.util.function.Consumer<RecordPublicationLockPlan> locker;
+  private final java.util.function.ToLongFunction<EdgeRetirement> edgeRetirement;
+  private java.util.Set<RecordSqlStatement> lockedStatements;
+  private boolean lockStarted;
 
-  RecordPublicationSession(final Connection connection, final RecordWriteFence fence, final RecordWriteFence.Snapshot admission,
-      final RecordExecutionDeadline deadline, final Function<RecordSelectPlan, CalciteQueryResult> reader,
-      final Function<RecordSelectPlan, CalciteQueryResult> aggregateReader, final ToIntFunction<RecordSqlStatement> writer) {
+  RecordPublicationSession(
+      final Connection connection,
+      final RecordWriteFence fence,
+      final RecordWriteFence.Snapshot admission,
+      final RecordExecutionDeadline deadline,
+      final Function<RecordSelectPlan, CalciteQueryResult> reader,
+      final Function<RecordSelectPlan, CalciteQueryResult> aggregateReader,
+      final ToIntFunction<RecordSqlStatement> writer,
+      final java.util.function.Consumer<RecordPublicationLockPlan> locker,
+      final java.util.function.ToLongFunction<EdgeRetirement> edgeRetirement) {
     this.connection = connection;
     this.fence = fence;
     this.admission = admission;
@@ -28,6 +42,8 @@ final class RecordPublicationSession {
     this.reader = reader;
     this.aggregateReader = aggregateReader;
     this.writer = writer;
+    this.locker = locker;
+    this.edgeRetirement = edgeRetirement;
   }
 
   RecordWriteFence.Snapshot admission() {
@@ -46,16 +62,53 @@ final class RecordPublicationSession {
 
   void write(final RecordSqlStatement statement) {
     deadline.remainingMillis();
+    if (lockStarted && lockedStatements == null
+        || statement.subject() != null
+            && (lockedStatements == null || !lockedStatements.contains(statement))) {
+      throw RecordReferenceAdmission.incompatible();
+    }
     if (writer.applyAsInt(statement) != 1) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED,
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.PERSISTENCE_FAILED,
           "Publication batch mutation did not affect exactly one row");
     }
   }
 
+  /** Set-based removal of outbound links at cutover. No endpoint is added in this write. */
+  void retireReboundEdges(
+      RecordCollectionBinding binding, String actorId, java.time.Instant clock, long expected) {
+    deadline.remainingMillis();
+    if (lockStarted
+        || expected <= 0
+        || edgeRetirement.applyAsLong(new EdgeRetirement(binding, actorId, clock)) != expected) {
+      throw RecordCollectionRebind.conflict();
+    }
+  }
+
+  record EdgeRetirement(RecordCollectionBinding binding, String actorId, java.time.Instant clock) {}
+
+  /** One complete business batch; infrastructure checkpoints do not acquire business row locks. */
+  void lockRows(final RecordPublicationLockPlan plan) {
+    deadline.remainingMillis();
+    if (lockStarted) {
+      throw RecordReferenceAdmission.incompatible();
+    }
+    lockStarted = true;
+    locker.accept(plan);
+    lockedStatements = java.util.Set.copyOf(plan.statements());
+  }
+
   void activate(final RecordPublicationIntent intent) {
     try {
-      fence.publish(connection, intent.key(), intent.command().expectedVersion(), intent.command().targetVersion(),
-          intent.fingerprint(), intent.actorId(), deadline, borrowed -> {});
+      fence.publish(
+          connection,
+          intent.key(),
+          intent.command().expectedVersion(),
+          intent.command().targetVersion(),
+          intent.fingerprint(),
+          intent.actorId(),
+          deadline,
+          borrowed -> {});
     } catch (SQLException failure) {
       throw failed(failure);
     }
@@ -63,8 +116,16 @@ final class RecordPublicationSession {
 
   void cancel(final RecordPublicationIntent intent, final String cancellationFingerprint) {
     try {
-      var resolution = fence.cancel(connection, intent.key(), intent.command().expectedVersion(), intent.command().targetVersion(),
-          intent.fingerprint(), cancellationFingerprint, intent.actorId(), deadline);
+      var resolution =
+          fence.cancel(
+              connection,
+              intent.key(),
+              intent.command().expectedVersion(),
+              intent.command().targetVersion(),
+              intent.fingerprint(),
+              cancellationFingerprint,
+              intent.actorId(),
+              deadline);
       if (!resolution.cancelled()) {
         throw failed(null);
       }
@@ -74,6 +135,7 @@ final class RecordPublicationSession {
   }
 
   private static DnaRuntimeException failed(final Throwable failure) {
-    return new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED, "Publication admission transition failed", failure);
+    return new DnaRuntimeException(
+        DnaRuntimeErrorCode.PERSISTENCE_FAILED, "Publication admission transition failed", failure);
   }
 }

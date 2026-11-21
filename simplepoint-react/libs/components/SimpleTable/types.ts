@@ -53,6 +53,13 @@ export type SimpleTableTreeConfig<T> = {
   loadChildrenPage?: (record: T, page: number, signal: AbortSignal) => Promise<import('../TreeTable/childPages').ChildPage<T>>;
 };
 
+/** Resource details can share the same schema, actions, editor and operation lifecycle. */
+export type SimpleTableContentContext<T> = Pick<TableProps<T>, 'buttons' | 'onButtonEvents' | 'isButtonDisabled' | 'isButtonVisible'> & {
+  data?: Page<T>;
+  loading: boolean;
+  failed: boolean;
+};
+
 export type SimpleTableBeforeSubmitContext = {
   action: SimpleTableSubmitAction;
   formData: any;
@@ -68,11 +75,14 @@ export type SimpleTableAfterSubmitContext = SimpleTableBeforeSubmitContext & {
 };
 
 export interface SimpleTableProps<T> {
+  renderContent?: (context: SimpleTableContentContext<T>) => ReactNode;
   cards?: TableProps<T>['cards'];
   rowActions?: TableProps<T>['rowActions'];
   /** Opt in only if the entire route has no state outside this table that must survive eviction. */
   allowTabEviction?: boolean;
   schemaStaleTime?: number;
+  /** Observed server schema context; included in cache and operation ownership. */
+  schemaParams?: Record<string, string>;
   virtual?: boolean;
   queryContext?: string;
   confirmDiscard?: boolean;
@@ -137,5 +147,7 @@ export interface SimpleTableProps<T> {
   loadPage?: (request: SimpleTablePageRequest) => Promise<Page<T>>;
   /** Executes a resource-specific optimistic delete while preserving the shared confirmation UI. */
   deleteRows?: (rows: T[], signal: AbortSignal) => Promise<unknown> | unknown;
+  /** Names the irreversible effect in the shared confirmation for permanent deletion. */
+  permanentDelete?: boolean;
   tree?: SimpleTableTreeConfig<T>;
 }

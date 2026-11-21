@@ -45,6 +45,25 @@ public class FormSubmissionPreparationService {
       String definitionId,
       int definitionVersion,
       String previousSubmissionId) {
+    return prepare(
+        applicationId, pageId, definitionId, definitionVersion, previousSubmissionId, null);
+  }
+
+  ApplicationFormSubmissionPreparation prepare(
+      PublishedApplicationFormResolver.PublishedApplicationForm form,
+      String definitionId,
+      int definitionVersion) {
+    return prepare(
+        form.applicationId(), form.pageId(), definitionId, definitionVersion, null, form);
+  }
+
+  private ApplicationFormSubmissionPreparation prepare(
+      String applicationId,
+      String pageId,
+      String definitionId,
+      int definitionVersion,
+      String previousSubmissionId,
+      PublishedApplicationFormResolver.PublishedApplicationForm resolved) {
     var actor = actors.requireActor();
     var previous =
         previousSubmissionId == null
@@ -60,10 +79,12 @@ public class FormSubmissionPreparationService {
           ApplicationFormErrorCode.RECORD_INVALID, "Resubmission identity does not match");
     }
     var form =
-        previous == null
-            ? resolver.resolve(applicationId, pageId)
-            : resolver.resolveVersion(
-                applicationId, pageId, previous.formId(), previous.formVersion());
+        resolved != null
+            ? resolved
+            : previous == null
+                ? resolver.resolve(applicationId, pageId)
+                : resolver.resolveVersion(
+                    applicationId, pageId, previous.formId(), previous.formVersion());
     resolver.requireAction(form, "process.start");
     var authority = FormSubmissionAuthorization.workflowContext();
     var source =
@@ -79,8 +100,7 @@ public class FormSubmissionPreparationService {
         source == null
             ? workflow.startForm(authority, definitionId, definitionVersion)
             : source.form();
-    FormSubmissionMapping.requireBinding(
-        form, processForm, contexts.forForm(form));
+    FormSubmissionMapping.requireBinding(form, processForm, contexts.forForm(form));
     var mapped = Set.copyOf(processForm.binding().variableMappings().values());
     var variables =
         processForm.formContract().variables().stream()

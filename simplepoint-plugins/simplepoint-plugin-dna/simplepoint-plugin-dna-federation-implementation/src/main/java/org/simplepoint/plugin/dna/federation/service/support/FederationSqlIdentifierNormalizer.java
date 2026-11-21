@@ -3,6 +3,7 @@ package org.simplepoint.plugin.dna.federation.service.support;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -14,10 +15,10 @@ import org.apache.calcite.sql.util.SqlShuttle;
 /**
  * Normalizes qualified identifiers in SQL by quoting each component for Calcite.
  *
- * <p>Calcite uppercases unquoted identifiers by default. This shuttle rewrites
- * multi-part identifiers (e.g. {@code datasource.schema.table}) into their
- * double-quoted form ({@code "datasource"."schema"."table"}) so that Calcite
- * matches them case-sensitively against the registered federation schemas.</p>
+ * <p>Calcite uppercases unquoted identifiers by default. This shuttle rewrites multi-part
+ * identifiers (e.g. {@code datasource.schema.table}) into their double-quoted form ({@code
+ * "datasource"."schema"."table"}) so that Calcite matches them case-sensitively against the
+ * registered federation schemas.
  */
 public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
 
@@ -36,7 +37,8 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
    * Normalizes qualified identifiers in the given SQL string.
    *
    * @param sql the SQL string
-   * @return the SQL with qualified identifiers properly quoted, or the original SQL if parsing fails
+   * @return the SQL with qualified identifiers properly quoted, or the original SQL if parsing
+   *     fails
    */
   public static String normalize(final String sql) {
     String normalized = trimToNull(sql);
@@ -44,12 +46,16 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
       return null;
     }
     try {
-      SqlParser parser = SqlParser.create(normalized);
+      // This pass locates original identifiers, not database objects. Unicode uppercasing can
+      // expand characters (straße -> STRASSE), preventing the original token from being quoted.
+      SqlParser parser =
+          SqlParser.create(normalized, SqlParser.config().withUnquotedCasing(Casing.UNCHANGED));
       SqlNodeList statements = parser.parseStmtList();
       if (statements.size() != 1 || statements.get(0) == null) {
         return normalized;
       }
-      FederationSqlIdentifierNormalizer normalizer = new FederationSqlIdentifierNormalizer(normalized);
+      FederationSqlIdentifierNormalizer normalizer =
+          new FederationSqlIdentifierNormalizer(normalized);
       statements.get(0).accept(normalizer);
       return normalizer.apply();
     } catch (SqlParseException ex) {
@@ -64,11 +70,12 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
     StringBuilder builder = new StringBuilder(sql);
     replacements.stream()
         .sorted(Comparator.comparingInt(IdentifierReplacement::startOffset).reversed())
-        .forEach(replacement -> builder.replace(
-            replacement.startOffset(),
-            replacement.endOffsetExclusive(),
-            replacement.value()
-        ));
+        .forEach(
+            replacement ->
+                builder.replace(
+                    replacement.startOffset(),
+                    replacement.endOffsetExclusive(),
+                    replacement.value()));
     return builder.toString();
   }
 
@@ -108,17 +115,21 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
       return null;
     }
     String replacement = String.join(".", normalizedComponents);
-    String original = sql.substring(firstComponent.startOffset(), lastComponent.endOffsetExclusive());
+    String original =
+        sql.substring(firstComponent.startOffset(), lastComponent.endOffsetExclusive());
     return original.equals(replacement)
         ? null
-        : new IdentifierReplacement(firstComponent.startOffset(), lastComponent.endOffsetExclusive(), replacement);
+        : new IdentifierReplacement(
+            firstComponent.startOffset(), lastComponent.endOffsetExclusive(), replacement);
   }
 
-  private IdentifierComponentSource resolveComponentSource(final SqlIdentifier identifier, final int index) {
+  private IdentifierComponentSource resolveComponentSource(
+      final SqlIdentifier identifier, final int index) {
     SqlParserPos position = componentPosition(identifier, index);
     int startOffset = toOffset(position.getLineNum(), position.getColumnNum());
     int endOffset = toOffset(position.getEndLineNum(), position.getEndColumnNum());
-    for (int candidateEnd : List.of(Math.min(sql.length(), endOffset), Math.min(sql.length(), endOffset + 1))) {
+    for (int candidateEnd :
+        List.of(Math.min(sql.length(), endOffset), Math.min(sql.length(), endOffset + 1))) {
       if (candidateEnd <= startOffset || candidateEnd > sql.length()) {
         continue;
       }
@@ -131,10 +142,7 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
   }
 
   private boolean matchesParsedComponent(
-      final String candidate,
-      final SqlIdentifier identifier,
-      final int index
-  ) {
+      final String candidate, final SqlIdentifier identifier, final int index) {
     if (candidate == null || candidate.isEmpty()) {
       return false;
     }
@@ -173,8 +181,8 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
   }
 
   /**
-   * Unquotes an identifier component by stripping dialect-specific delimiters.
-   * Handles double-quote ({@code "}), square-bracket ({@code []}), and backtick ({@code `}).
+   * Unquotes an identifier component by stripping dialect-specific delimiters. Handles double-quote
+   * ({@code "}), square-bracket ({@code []}), and backtick ({@code `}).
    */
   static String unquoteIdentifier(final String component) {
     if (component == null || component.length() < 2) {
@@ -192,9 +200,7 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
     return component;
   }
 
-  /**
-   * Quotes an identifier component using Calcite-standard double-quote style.
-   */
+  /** Quotes an identifier component using Calcite-standard double-quote style. */
   static String quoteIdentifier(final String component) {
     return "\"" + component.replace("\"", "\"\"") + "\"";
   }
@@ -227,17 +233,7 @@ public final class FederationSqlIdentifierNormalizer extends SqlShuttle {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
-  private record IdentifierReplacement(
-      int startOffset,
-      int endOffsetExclusive,
-      String value
-  ) {
-  }
+  private record IdentifierReplacement(int startOffset, int endOffsetExclusive, String value) {}
 
-  private record IdentifierComponentSource(
-      int startOffset,
-      int endOffsetExclusive,
-      String text
-  ) {
-  }
+  private record IdentifierComponentSource(int startOffset, int endOffsetExclusive, String text) {}
 }

@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import javax.sql.DataSource;
 import org.apache.calcite.adapter.jdbc.SafeJdbcSchema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.simplepoint.data.calcite.core.query.CalciteSchemaConfigurer;
@@ -35,16 +36,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Assembles physical datasource schemas into one Calcite root tree for query execution.
- */
+/** Assembles physical datasource schemas into one Calcite root tree for query execution. */
 @Component
 public class FederationCalciteCatalogAssembler {
 
   /**
-   * Pattern matching characters safe for Calcite convention/rule descriptions.
-   * Calcite {@code RelOptRule} validates rule descriptions with
-   * {@code [A-Za-z][-A-Za-z0-9_.(),\[\]\s:]*} — only ASCII is allowed.
+   * Pattern matching characters safe for Calcite convention/rule descriptions. Calcite {@code
+   * RelOptRule} validates rule descriptions with {@code [A-Za-z][-A-Za-z0-9_.(),\[\]\s:]*} — only
+   * ASCII is allowed.
    */
   private static final Pattern CALCITE_UNSAFE_CHAR = Pattern.compile("[^A-Za-z0-9_.]");
 
@@ -78,8 +77,7 @@ public class FederationCalciteCatalogAssembler {
       final JdbcDataSourceDefinitionService dataSourceService,
       final JdbcDriverDefinitionService driverService,
       final JdbcDialectManagementService dialectManagementService,
-      final FederationMetadataCacheService metadataCacheService
-  ) {
+      final FederationMetadataCacheService metadataCacheService) {
     this.dataSourceService = dataSourceService;
     this.driverService = driverService;
     this.dialectManagementService = dialectManagementService;
@@ -90,14 +88,12 @@ public class FederationCalciteCatalogAssembler {
   FederationCalciteCatalogAssembler(
       final JdbcDataSourceDefinitionService dataSourceService,
       final JdbcDriverDefinitionService driverService,
-      final JdbcDialectManagementService dialectManagementService
-  ) {
+      final JdbcDialectManagementService dialectManagementService) {
     this(
         dataSourceService,
         driverService,
         dialectManagementService,
-        new FederationMetadataCacheService()
-    );
+        new FederationMetadataCacheService());
   }
 
   /**
@@ -108,9 +104,7 @@ public class FederationCalciteCatalogAssembler {
    * @return assembled Calcite root payload
    */
   public FederationCalciteCatalogAssembly assemble(
-      final String catalogCode,
-      final Collection<JdbcDataSourceDefinition> dataSources
-  ) {
+      final String catalogCode, final Collection<JdbcDataSourceDefinition> dataSources) {
     return assemble(catalogCode, dataSources, null);
   }
 
@@ -125,25 +119,21 @@ public class FederationCalciteCatalogAssembler {
   public FederationCalciteCatalogAssembly assemble(
       final String catalogCode,
       final Collection<JdbcDataSourceDefinition> dataSources,
-      final Map<String, Set<String>> requestedCatalogs
-  ) {
+      final Map<String, Set<String>> requestedCatalogs) {
     long startedAt = System.nanoTime();
     String normalizedCatalogCode = requireValue(catalogCode, "数据源编码不能为空");
     List<JdbcDataSourceDefinition> normalizedDataSources = normalizeDataSources(dataSources);
     if (!schemaCacheEnabled || normalizedDataSources.isEmpty()) {
-      CachedCatalogAssembly assembly = buildCatalogAssembly(
-          normalizedCatalogCode,
-          normalizedDataSources,
-          requestedCatalogs,
-          expireAtMillis()
-      );
+      CachedCatalogAssembly assembly =
+          buildCatalogAssembly(
+              normalizedCatalogCode, normalizedDataSources, requestedCatalogs, expireAtMillis());
       return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), true);
     }
-    String cacheKey = schemaCacheKey(normalizedCatalogCode, normalizedDataSources)
-        + catalogScopeKey(requestedCatalogs)
-        + metadataCacheService.versionToken(
-        normalizedDataSources.stream().map(JdbcDataSourceDefinition::getId).toList()
-    );
+    String cacheKey =
+        schemaCacheKey(normalizedCatalogCode, normalizedDataSources)
+            + catalogScopeKey(requestedCatalogs)
+            + metadataCacheService.versionToken(
+                normalizedDataSources.stream().map(JdbcDataSourceDefinition::getId).toList());
     CachedCatalogAssembly cached = lookupCachedAssembly(cacheKey);
     if (cached != null) {
       return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
@@ -153,14 +143,58 @@ public class FederationCalciteCatalogAssembler {
       if (cached != null) {
         return cached.toRuntimeAssembly(true, toElapsedMs(startedAt), false);
       }
-      CachedCatalogAssembly assembly = buildCatalogAssembly(
-          normalizedCatalogCode,
-          normalizedDataSources,
-          requestedCatalogs,
-          expireAtMillis()
-      );
+      CachedCatalogAssembly assembly =
+          buildCatalogAssembly(
+              normalizedCatalogCode, normalizedDataSources, requestedCatalogs, expireAtMillis());
       schemaCache.put(cacheKey, assembly);
       return assembly.toRuntimeAssembly(false, toElapsedMs(startedAt), false);
+    }
+  }
+
+  /**
+   * Builds an uncached write directory. All JDBC adapters borrow the physical sessions acquired
+   * here; the assembly retains them until execution and admission locks have finished.
+   */
+  public FederationCalciteCatalogAssembly assembleForWrite(
+      final String catalogCode,
+      final Collection<JdbcDataSourceDefinition> dataSources,
+      final Map<String, Set<String>> requestedCatalogs) {
+    long startedAt = System.nanoTime();
+    String code = requireValue(catalogCode, "数据源编码不能为空");
+    var definitions = normalizeDataSources(dataSources);
+    if (dataSources == null
+        || dataSources.size() != 1
+        || definitions.size() != 1
+        || requestedCatalogs == null) {
+      throw new IllegalArgumentException("Writes require one source and an explicit catalog scope");
+    }
+    var sessions = new ArrayList<SimpleDataSource>();
+    try {
+      var definition = definitions.getFirst();
+      var source =
+          resolveJdbcSource(
+              definition,
+              requestedCatalogs.getOrDefault(
+                  definition.getCode().toLowerCase(Locale.ROOT), Set.of()),
+              sessions);
+      var sources = List.of(source);
+      validateRegistrationNames(code, sources);
+      return new FederationCalciteCatalogAssembly(
+          code,
+          List.of(definition.getCode()),
+          root -> configureQueryRootSchema(root, sources),
+          sessions,
+          false,
+          toElapsedMs(startedAt),
+          1,
+          true);
+    } catch (RuntimeException failure) {
+      try {
+        closeDataSources(sessions);
+      } catch (RuntimeException closeFailure) {
+        failure.addSuppressed(closeFailure);
+      }
+      throw failure;
     }
   }
 
@@ -191,13 +225,16 @@ public class FederationCalciteCatalogAssembler {
     }
     List<CachedCatalogAssembly> removed = new ArrayList<>();
     synchronized (schemaCacheMonitor) {
-      schemaCache.entrySet().removeIf(entry -> {
-        boolean matches = entry.getValue().containsDataSource(dataSourceId.trim());
-        if (matches) {
-          removed.add(entry.getValue());
-        }
-        return matches;
-      });
+      schemaCache
+          .entrySet()
+          .removeIf(
+              entry -> {
+                boolean matches = entry.getValue().containsDataSource(dataSourceId.trim());
+                if (matches) {
+                  removed.add(entry.getValue());
+                }
+                return matches;
+              });
     }
     removed.forEach(CachedCatalogAssembly::close);
     return removed.size();
@@ -207,19 +244,15 @@ public class FederationCalciteCatalogAssembler {
       final String normalizedCatalogCode,
       final List<JdbcDataSourceDefinition> dataSources,
       final Map<String, Set<String>> requestedCatalogs,
-      final long expiresAtMillis
-  ) {
+      final long expiresAtMillis) {
     List<ResolvedJdbcSource> jdbcSources = resolveJdbcSources(dataSources, requestedCatalogs);
     validateRegistrationNames(normalizedCatalogCode, jdbcSources);
     return new CachedCatalogAssembly(
         normalizedCatalogCode,
         jdbcSources.stream().map(source -> source.definition().getCode()).toList(),
         jdbcSources,
-        jdbcSources.stream()
-            .flatMap(source -> source.cleanupDataSources().stream())
-            .toList(),
-        expiresAtMillis
-    );
+        jdbcSources.stream().flatMap(source -> source.cleanupDataSources().stream()).toList(),
+        expiresAtMillis);
   }
 
   private CachedCatalogAssembly lookupCachedAssembly(final String cacheKey) {
@@ -237,8 +270,7 @@ public class FederationCalciteCatalogAssembler {
   }
 
   private static List<JdbcDataSourceDefinition> normalizeDataSources(
-      final Collection<JdbcDataSourceDefinition> dataSources
-  ) {
+      final Collection<JdbcDataSourceDefinition> dataSources) {
     if (dataSources == null || dataSources.isEmpty()) {
       return List.of();
     }
@@ -251,22 +283,28 @@ public class FederationCalciteCatalogAssembler {
       definitionsByCode.putIfAbsent(dataSourceCode.toLowerCase(Locale.ROOT), dataSource);
     }
     return definitionsByCode.values().stream()
-        .sorted(Comparator.comparing(JdbcDataSourceDefinition::getCode, Comparator.nullsLast(String::compareTo)))
+        .sorted(
+            Comparator.comparing(
+                JdbcDataSourceDefinition::getCode, Comparator.nullsLast(String::compareTo)))
         .toList();
   }
 
   private static String schemaCacheKey(
-      final String catalogCode,
-      final List<JdbcDataSourceDefinition> dataSources
-  ) {
+      final String catalogCode, final List<JdbcDataSourceDefinition> dataSources) {
     StringBuilder builder = new StringBuilder(catalogCode);
     for (JdbcDataSourceDefinition dataSource : dataSources) {
-      builder.append('\n')
-          .append(valueForKey(dataSource.getId())).append('|')
-          .append(valueForKey(dataSource.getCode())).append('|')
-          .append(valueForKey(dataSource.getDriverId())).append('|')
-          .append(valueForKey(dataSource.getJdbcUrl())).append('|')
-          .append(valueForKey(dataSource.getConnectionProperties())).append('|')
+      builder
+          .append('\n')
+          .append(valueForKey(dataSource.getId()))
+          .append('|')
+          .append(valueForKey(dataSource.getCode()))
+          .append('|')
+          .append(valueForKey(dataSource.getDriverId()))
+          .append('|')
+          .append(valueForKey(dataSource.getJdbcUrl()))
+          .append('|')
+          .append(valueForKey(dataSource.getConnectionProperties()))
+          .append('|')
           .append(valueForKey(dataSource.getUpdatedAt()));
     }
     return builder.toString();
@@ -278,9 +316,7 @@ public class FederationCalciteCatalogAssembler {
     }
     long now = System.currentTimeMillis();
     long ttlMillis = TimeUnit.SECONDS.toMillis(schemaCacheTtlSeconds);
-    return ttlMillis >= Long.MAX_VALUE - now
-        ? Long.MAX_VALUE
-        : now + ttlMillis;
+    return ttlMillis >= Long.MAX_VALUE - now ? Long.MAX_VALUE : now + ttlMillis;
   }
 
   private static long toElapsedMs(final long startedAt) {
@@ -298,95 +334,110 @@ public class FederationCalciteCatalogAssembler {
     return requestedCatalogs.entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .map(entry -> entry.getKey() + ":" + entry.getValue().stream().sorted().toList())
-        .toList().toString();
+        .toList()
+        .toString();
   }
 
   private List<ResolvedJdbcSource> resolveJdbcSources(
       final Collection<JdbcDataSourceDefinition> dataSources,
-      final Map<String, Set<String>> requestedCatalogs
-  ) {
+      final Map<String, Set<String>> requestedCatalogs) {
     if (dataSources == null || dataSources.isEmpty()) {
       return List.of();
     }
     return dataSources.stream()
-        .map(definition -> resolveJdbcSource(definition, requestedCatalogs == null ? null
-            : requestedCatalogs.getOrDefault(definition.getCode().toLowerCase(Locale.ROOT), Set.of())))
+        .map(
+            definition ->
+                resolveJdbcSource(
+                    definition,
+                    requestedCatalogs == null
+                        ? null
+                        : requestedCatalogs.getOrDefault(
+                            definition.getCode().toLowerCase(Locale.ROOT), Set.of())))
         .toList();
   }
 
   private static void configureQueryRootSchema(
-      final SchemaPlus rootSchema,
-      final List<ResolvedJdbcSource> jdbcSources
-  ) {
+      final SchemaPlus rootSchema, final List<ResolvedJdbcSource> jdbcSources) {
     for (ResolvedJdbcSource jdbcSource : jdbcSources) {
       registerDataSourceCatalog(rootSchema, jdbcSource.definition().getCode(), jdbcSource);
     }
   }
 
   private static void registerDataSourceCatalog(
-      final SchemaPlus rootSchema,
-      final String catalogCode,
-      final ResolvedJdbcSource jdbcSource
-  ) {
-    SchemaPlus catalogSchema = addJdbcSchema(
-        rootSchema,
-        catalogCode,
-        jdbcSource.simpleDataSource(),
-        jdbcSource.metadataCatalog(),
-        jdbcSource.metadataSchema()
-    );
+      final SchemaPlus rootSchema, final String catalogCode, final ResolvedJdbcSource jdbcSource) {
+    SchemaPlus catalogSchema =
+        addJdbcSchema(
+            rootSchema,
+            catalogCode,
+            jdbcSource.simpleDataSource(),
+            jdbcSource.metadataCatalog(),
+            jdbcSource.metadataSchema());
     registerPhysicalNamespaces(catalogSchema, jdbcSource.physicalNamespaces());
     registerCatalogNamespaces(catalogSchema, jdbcSource.catalogNamespaces());
   }
 
   private ResolvedJdbcSource resolveJdbcSource(
+      final JdbcDataSourceDefinition definition, final Set<String> requestedCatalogs) {
+    return resolveJdbcSource(definition, requestedCatalogs, null);
+  }
+
+  private ResolvedJdbcSource resolveJdbcSource(
       final JdbcDataSourceDefinition definition,
-      final Set<String> requestedCatalogs
-  ) {
-    JdbcDriverDefinition driver = driverService.findActiveById(requireValue(
-        definition.getDriverId(),
-        "数据源驱动ID不能为空"
-    )).orElseThrow(() -> new IllegalStateException("数据源关联驱动不存在: " + definition.getCode()));
-    Map<String, String> connectionAttributes = parseProperties(definition.getConnectionProperties());
-    SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(requireValue(
-        definition.getId(),
-        "数据源ID不能为空"
-    ));
+      final Set<String> requestedCatalogs,
+      final List<SimpleDataSource> writeSessions) {
+    JdbcDriverDefinition driver =
+        driverService
+            .findActiveById(requireValue(definition.getDriverId(), "数据源驱动ID不能为空"))
+            .orElseThrow(() -> new IllegalStateException("数据源关联驱动不存在: " + definition.getCode()));
+    Map<String, String> connectionAttributes =
+        parseProperties(definition.getConnectionProperties());
+    SimpleDataSource simpleDataSource =
+        dataSourceService.requireSimpleDataSource(requireValue(definition.getId(), "数据源ID不能为空"));
+    try {
+      if (writeSessions != null) {
+        simpleDataSource = pinWriteSource(simpleDataSource, false, writeSessions);
+      }
+    } catch (SQLException failure) {
+      throw new IllegalStateException("Physical write session acquisition failed", failure);
+    }
     try (Connection connection = simpleDataSource.getConnection()) {
       DatabaseMetaData metaData = connection.getMetaData();
-      JdbcDatabaseDialect.SupportContext supportContext = createSupportContext(
-          driver,
-          connection,
-          metaData,
-          connectionAttributes,
-          null
-      );
-      JdbcDatabaseDialect dialect = dialectManagementService.resolveDialect(supportContext)
-          .orElseThrow(() -> new IllegalStateException("未找到可用的数据库方言: " + definition.getCode()));
-      List<ResolvedJdbcCatalogNamespace> catalogNamespaces = resolveCatalogNamespaces(
-          definition,
-          driver,
-          simpleDataSource,
-          metaData,
-          dialect,
-          supportContext,
-          connectionAttributes,
-          requestedCatalogs
-      );
+      if (writeSessions == null) {
+        simpleDataSource =
+            FederationReadDataSource.protect(simpleDataSource, metaData.getDatabaseProductName());
+      }
+      JdbcDatabaseDialect.SupportContext supportContext =
+          createSupportContext(driver, connection, metaData, connectionAttributes, null);
+      JdbcDatabaseDialect dialect =
+          dialectManagementService
+              .resolveDialect(supportContext)
+              .orElseThrow(() -> new IllegalStateException("未找到可用的数据库方言: " + definition.getCode()));
+      List<ResolvedJdbcCatalogNamespace> catalogNamespaces =
+          resolveCatalogNamespaces(
+              definition,
+              driver,
+              simpleDataSource,
+              metaData,
+              dialect,
+              supportContext,
+              connectionAttributes,
+              requestedCatalogs,
+              writeSessions);
       return new ResolvedJdbcSource(
           definition,
           simpleDataSource,
           dialect.metadataCatalog(supportContext.currentCatalog(), supportContext),
           dialect.metadataSchema(supportContext.currentSchema(), supportContext),
-          resolvePhysicalNamespaces(simpleDataSource, metaData, dialect, supportContext.currentCatalog(), supportContext),
+          resolvePhysicalNamespaces(
+              simpleDataSource, metaData, dialect, supportContext.currentCatalog(), supportContext),
           catalogNamespaces,
           catalogNamespaces.stream()
               .filter(ResolvedJdbcCatalogNamespace::transientDataSource)
               .map(ResolvedJdbcCatalogNamespace::simpleDataSource)
-              .toList()
-      );
+              .toList());
     } catch (SQLException ex) {
-      throw new IllegalStateException("联邦数据源注册失败: " + definition.getCode() + " - " + ex.getMessage(), ex);
+      throw new IllegalStateException(
+          "联邦数据源注册失败: " + definition.getCode() + " - " + ex.getMessage(), ex);
     }
   }
 
@@ -398,13 +449,16 @@ public class FederationCalciteCatalogAssembler {
       final JdbcDatabaseDialect dialect,
       final JdbcDatabaseDialect.SupportContext baseSupportContext,
       final Map<String, String> connectionAttributes,
-      final Set<String> requestedCatalogs
-  ) throws SQLException {
-    List<String> visibleCatalogs = dialect.visibleCatalogs(loadCatalogs(baseMetaData), baseSupportContext);
+      final Set<String> requestedCatalogs,
+      final List<SimpleDataSource> writeSessions)
+      throws SQLException {
+    List<String> visibleCatalogs =
+        dialect.visibleCatalogs(loadCatalogs(baseMetaData), baseSupportContext);
     Map<String, String> catalogNamesByLowerCase = new LinkedHashMap<>();
     registerCatalogName(catalogNamesByLowerCase, baseSupportContext.currentCatalog());
     for (String catalogName : visibleCatalogs) {
-      if (requestedCatalogs == null || requestedCatalogs.contains(catalogName.toLowerCase(Locale.ROOT))) {
+      if (requestedCatalogs == null
+          || requestedCatalogs.contains(catalogName.toLowerCase(Locale.ROOT))) {
         registerCatalogName(catalogNamesByLowerCase, catalogName);
       }
     }
@@ -419,41 +473,43 @@ public class FederationCalciteCatalogAssembler {
         continue;
       }
       if (dialect.requiresCatalogConnection(normalizedCatalog, baseSupportContext)) {
-        String targetJdbcUrl = dialect.remapJdbcUrlCatalog(
-            definition.getJdbcUrl(),
-            normalizedCatalog,
-            baseSupportContext
-        );
-        SimpleDataSource targetDataSource = dataSourceService.createTransientSimpleDataSource(
-            definition.getId(),
-            targetJdbcUrl
-        );
+        String targetJdbcUrl =
+            dialect.remapJdbcUrlCatalog(
+                definition.getJdbcUrl(), normalizedCatalog, baseSupportContext);
+        SimpleDataSource targetDataSource =
+            dataSourceService.createTransientSimpleDataSource(definition.getId(), targetJdbcUrl);
+        if (writeSessions != null) {
+          targetDataSource = pinWriteSource(targetDataSource, true, writeSessions);
+        }
         try (Connection targetConnection = targetDataSource.getConnection()) {
           DatabaseMetaData targetMetaData = targetConnection.getMetaData();
-          JdbcDatabaseDialect.SupportContext targetSupportContext = createSupportContext(
-              driver,
-              targetConnection,
-              targetMetaData,
-              connectionAttributes,
-              normalizedCatalog
-          );
+          if (writeSessions == null) {
+            targetDataSource =
+                FederationReadDataSource.protect(
+                    targetDataSource, targetMetaData.getDatabaseProductName());
+          }
+          JdbcDatabaseDialect.SupportContext targetSupportContext =
+              createSupportContext(
+                  driver,
+                  targetConnection,
+                  targetMetaData,
+                  connectionAttributes,
+                  normalizedCatalog);
           namespacesByLowerCase.put(
               catalogKey,
               new ResolvedJdbcCatalogNamespace(
                   normalizedCatalog,
                   targetDataSource,
-                  dialect.metadataCatalog(targetSupportContext.currentCatalog(), targetSupportContext),
+                  dialect.metadataCatalog(
+                      targetSupportContext.currentCatalog(), targetSupportContext),
                   null,
                   resolvePhysicalNamespaces(
                       targetDataSource,
                       targetMetaData,
                       dialect,
                       targetSupportContext.currentCatalog(),
-                      targetSupportContext
-                  ),
-                  true
-              )
-          );
+                      targetSupportContext),
+                  true));
         } catch (RuntimeException | SQLException ex) {
           try {
             targetDataSource.close();
@@ -470,13 +526,25 @@ public class FederationCalciteCatalogAssembler {
                 baseDataSource,
                 dialect.metadataCatalog(normalizedCatalog, baseSupportContext),
                 null,
-                resolvePhysicalNamespaces(baseDataSource, baseMetaData, dialect, normalizedCatalog, baseSupportContext),
-                false
-            )
-        );
+                resolvePhysicalNamespaces(
+                    baseDataSource, baseMetaData, dialect, normalizedCatalog, baseSupportContext),
+                false));
       }
     }
     return List.copyOf(namespacesByLowerCase.values());
+  }
+
+  private static SimpleDataSource pinWriteSource(
+      SimpleDataSource source, boolean owned, List<SimpleDataSource> sessions) throws SQLException {
+    if (sessions.size() >= 32) {
+      if (owned) {
+        source.close();
+      }
+      throw new IllegalArgumentException("A write operation exceeds its physical session limit");
+    }
+    var pinned = FederationWriteDataSource.pin(source, owned);
+    sessions.add(pinned);
+    return pinned;
   }
 
   private static JdbcDatabaseDialect.SupportContext createSupportContext(
@@ -484,43 +552,40 @@ public class FederationCalciteCatalogAssembler {
       final Connection connection,
       final DatabaseMetaData metaData,
       final Map<String, String> connectionAttributes,
-      final String currentCatalogOverride
-  ) throws SQLException {
+      final String currentCatalogOverride)
+      throws SQLException {
     return new JdbcDatabaseDialect.SupportContext(
         driver.getDatabaseType(),
         driver.getDriverClassName(),
         metaData.getDatabaseProductName(),
         metaData.getDatabaseProductVersion(),
-        trimToNull(currentCatalogOverride == null ? connection.getCatalog() : currentCatalogOverride),
+        trimToNull(
+            currentCatalogOverride == null ? connection.getCatalog() : currentCatalogOverride),
         trimToNull(connection.getSchema()),
         trimToNull(metaData.getIdentifierQuoteString()),
-        connectionAttributes == null ? Map.of() : Map.copyOf(connectionAttributes)
-    );
+        connectionAttributes == null ? Map.of() : Map.copyOf(connectionAttributes));
   }
 
   private static void registerCatalogNamespaces(
       final SchemaPlus dataSourceSchema,
-      final List<ResolvedJdbcCatalogNamespace> catalogNamespaces
-  ) {
+      final List<ResolvedJdbcCatalogNamespace> catalogNamespaces) {
     if (catalogNamespaces == null || catalogNamespaces.isEmpty()) {
       return;
     }
     for (ResolvedJdbcCatalogNamespace catalogNamespace : catalogNamespaces) {
-      SchemaPlus catalogSchema = addJdbcSchema(
-          dataSourceSchema,
-          catalogNamespace.name(),
-          catalogNamespace.simpleDataSource(),
-          catalogNamespace.metadataCatalog(),
-          catalogNamespace.metadataSchema()
-      );
+      SchemaPlus catalogSchema =
+          addJdbcSchema(
+              dataSourceSchema,
+              catalogNamespace.name(),
+              catalogNamespace.simpleDataSource(),
+              catalogNamespace.metadataCatalog(),
+              catalogNamespace.metadataSchema());
       registerPhysicalNamespaces(catalogSchema, catalogNamespace.physicalNamespaces());
     }
   }
 
   private static void registerPhysicalNamespaces(
-      final SchemaPlus dataSourceSchema,
-      final List<ResolvedJdbcNamespace> physicalNamespaces
-  ) {
+      final SchemaPlus dataSourceSchema, final List<ResolvedJdbcNamespace> physicalNamespaces) {
     if (physicalNamespaces == null || physicalNamespaces.isEmpty()) {
       return;
     }
@@ -530,29 +595,26 @@ public class FederationCalciteCatalogAssembler {
           physicalNamespace.name(),
           physicalNamespace.simpleDataSource(),
           physicalNamespace.metadataCatalog(),
-          physicalNamespace.metadataSchema()
-      );
+          physicalNamespace.metadataSchema());
     }
   }
 
   /**
-   * Creates a {@link JdbcSchema} with a sanitized convention name and registers it
-   * in the parent schema under the original name. If the original name contains
-   * non-ASCII characters (e.g. Chinese), Calcite's {@code RelOptRule} rejects the
-   * rule description; a sanitized alias is used for the internal convention while
-   * the real name stays in the schema tree so SQL can reference it.
+   * Creates a {@link JdbcSchema} with a sanitized convention name and registers it in the parent
+   * schema under the original name. If the original name contains non-ASCII characters (e.g.
+   * Chinese), Calcite's {@code RelOptRule} rejects the rule description; a sanitized alias is used
+   * for the internal convention while the real name stays in the schema tree so SQL can reference
+   * it.
    */
   private static SchemaPlus addJdbcSchema(
       final SchemaPlus parentSchema,
       final String name,
       final SimpleDataSource dataSource,
       final String catalog,
-      final String schema
-  ) {
+      final String schema) {
     String conventionName = sanitizeCalciteConventionName(name);
-    SafeJdbcSchema jdbcSchema = SafeJdbcSchema.create(
-        parentSchema, conventionName, dataSource, catalog, schema
-    );
+    SafeJdbcSchema jdbcSchema =
+        SafeJdbcSchema.create(parentSchema, conventionName, dataSource, catalog, schema);
     // Register under the sanitized name first so the Linq4j expression resolves.
     parentSchema.add(conventionName, jdbcSchema);
     // If the original name differs, also register under it for SQL access.
@@ -563,9 +625,8 @@ public class FederationCalciteCatalogAssembler {
   }
 
   /**
-   * Replaces characters unsafe for Calcite convention/rule descriptions with
-   * {@code _uXXXX} escape sequences. If the name is already ASCII-safe it is
-   * returned unchanged.
+   * Replaces characters unsafe for Calcite convention/rule descriptions with {@code _uXXXX} escape
+   * sequences. If the name is already ASCII-safe it is returned unchanged.
    */
   static String sanitizeCalciteConventionName(final String name) {
     if (name == null || !CALCITE_UNSAFE_CHAR.matcher(name).find()) {
@@ -574,8 +635,11 @@ public class FederationCalciteCatalogAssembler {
     StringBuilder sb = new StringBuilder(name.length() * 2);
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);
-      if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-          || (c >= '0' && c <= '9') || c == '_' || c == '.') {
+      if ((c >= 'A' && c <= 'Z')
+          || (c >= 'a' && c <= 'z')
+          || (c >= '0' && c <= '9')
+          || c == '_'
+          || c == '.') {
         sb.append(c);
       } else {
         sb.append("_u").append(String.format("%04X", (int) c));
@@ -593,8 +657,8 @@ public class FederationCalciteCatalogAssembler {
       final DatabaseMetaData metaData,
       final JdbcDatabaseDialect dialect,
       final String catalog,
-      final JdbcDatabaseDialect.SupportContext supportContext
-  ) throws SQLException {
+      final JdbcDatabaseDialect.SupportContext supportContext)
+      throws SQLException {
     Map<String, ResolvedJdbcNamespace> namespacesByLowerCase = new LinkedHashMap<>();
     String metadataCatalog = dialect.metadataCatalog(catalog, supportContext);
     registerNamespace(
@@ -603,21 +667,17 @@ public class FederationCalciteCatalogAssembler {
         simpleDataSource,
         metadataCatalog,
         dialect,
-        supportContext
-    );
-    for (String schemaName : dialect.visibleSchemas(
-        loadSchemas(metaData, dialect, catalog, supportContext),
-        catalog,
-        supportContext
-    )) {
+        supportContext);
+    for (String schemaName :
+        dialect.visibleSchemas(
+            loadSchemas(metaData, dialect, catalog, supportContext), catalog, supportContext)) {
       registerNamespace(
           namespacesByLowerCase,
           schemaName,
           simpleDataSource,
           metadataCatalog,
           dialect,
-          supportContext
-      );
+          supportContext);
     }
     return List.copyOf(namespacesByLowerCase.values());
   }
@@ -628,8 +688,7 @@ public class FederationCalciteCatalogAssembler {
       final SimpleDataSource simpleDataSource,
       final String metadataCatalog,
       final JdbcDatabaseDialect dialect,
-      final JdbcDatabaseDialect.SupportContext supportContext
-  ) {
+      final JdbcDatabaseDialect.SupportContext supportContext) {
     String registrationName = trimToNull(schemaName);
     if (registrationName == null) {
       return;
@@ -644,27 +703,26 @@ public class FederationCalciteCatalogAssembler {
     }
     namespacesByLowerCase.put(
         namespaceKey,
-        new ResolvedJdbcNamespace(registrationName, simpleDataSource, metadataCatalog, metadataSchema)
-    );
+        new ResolvedJdbcNamespace(
+            registrationName, simpleDataSource, metadataCatalog, metadataSchema));
   }
 
   private static void registerCatalogName(
-      final Map<String, String> catalogNamesByLowerCase,
-      final String catalogName
-  ) {
+      final Map<String, String> catalogNamesByLowerCase, final String catalogName) {
     String normalizedCatalog = trimToNull(catalogName);
     if (normalizedCatalog == null) {
       return;
     }
-    catalogNamesByLowerCase.putIfAbsent(normalizedCatalog.toLowerCase(Locale.ROOT), normalizedCatalog);
+    catalogNamesByLowerCase.putIfAbsent(
+        normalizedCatalog.toLowerCase(Locale.ROOT), normalizedCatalog);
   }
 
   private static List<String> loadSchemas(
       final DatabaseMetaData metaData,
       final JdbcDatabaseDialect dialect,
       final String catalog,
-      final JdbcDatabaseDialect.SupportContext supportContext
-  ) throws SQLException {
+      final JdbcDatabaseDialect.SupportContext supportContext)
+      throws SQLException {
     String metadataCatalog = dialect.metadataCatalog(catalog, supportContext);
     Set<String> schemas = new LinkedHashSet<>();
     try (ResultSet resultSet = metaData.getSchemas(metadataCatalog, null)) {
@@ -707,16 +765,15 @@ public class FederationCalciteCatalogAssembler {
   }
 
   private static void validateRegistrationNames(
-      final String catalogCode,
-      final List<ResolvedJdbcSource> jdbcSources
-  ) {
+      final String catalogCode, final List<ResolvedJdbcSource> jdbcSources) {
     Set<String> registeredNames = new LinkedHashSet<>();
     for (ResolvedJdbcSource jdbcSource : jdbcSources) {
       String sourceCode = requireValue(jdbcSource.definition().getCode(), "数据源编码不能为空");
       if (!registeredNames.add(sourceCode)) {
         throw new IllegalStateException("数据目录 " + catalogCode + " 下存在重复数据源编码: " + sourceCode);
       }
-      validatePhysicalNamespaceNames(catalogCode, sourceCode, jdbcSource.physicalNamespaces(), jdbcSource.catalogNamespaces());
+      validatePhysicalNamespaceNames(
+          catalogCode, sourceCode, jdbcSource.physicalNamespaces(), jdbcSource.catalogNamespaces());
     }
   }
 
@@ -724,28 +781,39 @@ public class FederationCalciteCatalogAssembler {
       final String catalogCode,
       final String dataSourceCode,
       final List<ResolvedJdbcNamespace> physicalNamespaces,
-      final List<ResolvedJdbcCatalogNamespace> catalogNamespaces
-  ) {
+      final List<ResolvedJdbcCatalogNamespace> catalogNamespaces) {
     Set<String> rootNames = new LinkedHashSet<>();
     for (ResolvedJdbcNamespace physicalNamespace : physicalNamespaces) {
       String namespaceName = requireValue(physicalNamespace.name(), "物理 Schema 编码不能为空");
       if (!rootNames.add(namespaceName)) {
-        throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
-            + " 存在重复物理命名空间: " + namespaceName);
+        throw new IllegalStateException(
+            "数据目录 " + catalogCode + " 下数据源 " + dataSourceCode + " 存在重复物理命名空间: " + namespaceName);
       }
     }
     for (ResolvedJdbcCatalogNamespace catalogNamespace : catalogNamespaces) {
       String catalogName = requireValue(catalogNamespace.name(), "物理 Catalog 编码不能为空");
       if (!rootNames.add(catalogName)) {
-        throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
-            + " 的 catalog 名称与 schema 名称冲突: " + catalogName);
+        throw new IllegalStateException(
+            "数据目录 "
+                + catalogCode
+                + " 下数据源 "
+                + dataSourceCode
+                + " 的 catalog 名称与 schema 名称冲突: "
+                + catalogName);
       }
       Set<String> nestedNames = new LinkedHashSet<>();
       for (ResolvedJdbcNamespace physicalNamespace : catalogNamespace.physicalNamespaces()) {
         String namespaceName = requireValue(physicalNamespace.name(), "物理 Schema 编码不能为空");
         if (!nestedNames.add(namespaceName)) {
-          throw new IllegalStateException("数据目录 " + catalogCode + " 下数据源 " + dataSourceCode
-              + " 的 catalog " + catalogName + " 存在重复 schema 名称: " + namespaceName);
+          throw new IllegalStateException(
+              "数据目录 "
+                  + catalogCode
+                  + " 下数据源 "
+                  + dataSourceCode
+                  + " 的 catalog "
+                  + catalogName
+                  + " 存在重复 schema 名称: "
+                  + namespaceName);
         }
       }
     }
@@ -763,16 +831,18 @@ public class FederationCalciteCatalogAssembler {
       throw new IllegalArgumentException("连接属性格式不正确，请使用 Java Properties 格式", ex);
     }
     Map<String, String> values = new java.util.LinkedHashMap<>();
-    properties.stringPropertyNames().forEach(name -> values.put(name, properties.getProperty(name)));
+    properties
+        .stringPropertyNames()
+        .forEach(name -> values.put(name, properties.getProperty(name)));
     return Map.copyOf(values);
   }
 
   /**
    * Immutable Calcite catalog assembly payload.
    *
-   * @param catalogCode             federation catalog code
+   * @param catalogCode federation catalog code
    * @param physicalDataSourceCodes physical datasource codes registered into the catalog
-   * @param schemaConfigurer        Calcite schema registration callback
+   * @param schemaConfigurer Calcite schema registration callback
    */
   public record FederationCalciteCatalogAssembly(
       String catalogCode,
@@ -782,29 +852,23 @@ public class FederationCalciteCatalogAssembler {
       boolean schemaCacheHit,
       long schemaAssemblyTimeMs,
       int mountedDataSourceCount,
-      boolean closeOnClose
-  ) implements AutoCloseable {
+      boolean closeOnClose)
+      implements AutoCloseable {
 
-    /**
-     * Federation Calcite Catalog Assembly.
-     */
+    /** Federation Calcite Catalog Assembly. */
     public FederationCalciteCatalogAssembly(
         final String catalogCode,
         final List<String> physicalDataSourceCodes,
-        final CalciteSchemaConfigurer schemaConfigurer
-    ) {
+        final CalciteSchemaConfigurer schemaConfigurer) {
       this(catalogCode, physicalDataSourceCodes, schemaConfigurer, List.of());
     }
 
-    /**
-     * Federation Calcite Catalog Assembly.
-     */
+    /** Federation Calcite Catalog Assembly. */
     public FederationCalciteCatalogAssembly(
         final String catalogCode,
         final List<String> physicalDataSourceCodes,
         final CalciteSchemaConfigurer schemaConfigurer,
-        final List<SimpleDataSource> cleanupDataSources
-    ) {
+        final List<SimpleDataSource> cleanupDataSources) {
       this(
           catalogCode,
           physicalDataSourceCodes,
@@ -813,28 +877,63 @@ public class FederationCalciteCatalogAssembler {
           false,
           0L,
           physicalDataSourceCodes == null ? 0 : physicalDataSourceCodes.size(),
-          true
-      );
+          true);
     }
 
     /**
      * Creates an immutable assembly payload.
      *
-     * @param catalogCode             federation catalog code
+     * @param catalogCode federation catalog code
      * @param physicalDataSourceCodes physical datasource codes registered into the catalog
-     * @param schemaConfigurer        Calcite schema registration callback
+     * @param schemaConfigurer Calcite schema registration callback
      */
     public FederationCalciteCatalogAssembly {
       catalogCode = requireValue(catalogCode, "数据目录编码不能为空");
-      physicalDataSourceCodes = physicalDataSourceCodes == null
-          ? List.of()
-          : List.copyOf(physicalDataSourceCodes);
+      physicalDataSourceCodes =
+          physicalDataSourceCodes == null ? List.of() : List.copyOf(physicalDataSourceCodes);
       if (schemaConfigurer == null) {
         throw new IllegalArgumentException("schemaConfigurer 不能为空");
       }
       cleanupDataSources = cleanupDataSources == null ? List.of() : List.copyOf(cleanupDataSources);
       schemaAssemblyTimeMs = Math.max(0L, schemaAssemblyTimeMs);
       mountedDataSourceCount = Math.max(0, mountedDataSourceCount);
+    }
+
+    /** Exact owner sessions used by a write assembly; never a fresh connection or cached borrow. */
+    public List<Connection> writeConnections() throws SQLException {
+      var result = new ArrayList<Connection>();
+      for (var pinned : writeSources()) {
+        result.add(pinned.ownedConnection());
+      }
+      return List.copyOf(result);
+    }
+
+    /**
+     * Resolves a prepared JDBC table's exact source to its execution-owner connection. A source
+     * with the same URL, credentials, directory name or equals() result is not the same binding. No
+     * new connection is acquired, and closed or non-write assemblies cannot resolve bindings.
+     */
+    public Connection writeConnection(DataSource boundSource) throws SQLException {
+      for (var pinned : writeSources()) {
+        if (pinned == boundSource) {
+          return pinned.ownedConnection();
+        }
+      }
+      throw new SQLException("Prepared table is not bound to this physical write scope");
+    }
+
+    private List<FederationWriteDataSource> writeSources() throws SQLException {
+      if (!closeOnClose || cleanupDataSources.isEmpty()) {
+        throw new SQLException("This assembly has no owned physical write sessions");
+      }
+      var sources = new ArrayList<FederationWriteDataSource>();
+      for (var source : cleanupDataSources) {
+        if (!(source instanceof FederationWriteDataSource pinned)) {
+          throw new SQLException("This assembly is not a physical write scope");
+        }
+        sources.add(pinned);
+      }
+      return List.copyOf(sources);
     }
 
     @Override
@@ -850,23 +949,19 @@ public class FederationCalciteCatalogAssembler {
       List<String> physicalDataSourceCodes,
       List<ResolvedJdbcSource> jdbcSources,
       List<SimpleDataSource> cleanupDataSources,
-      long expiresAtMillis
-  ) implements AutoCloseable {
+      long expiresAtMillis)
+      implements AutoCloseable {
 
     private CachedCatalogAssembly {
       catalogCode = requireValue(catalogCode, "数据目录编码不能为空");
-      physicalDataSourceCodes = physicalDataSourceCodes == null
-          ? List.of()
-          : List.copyOf(physicalDataSourceCodes);
+      physicalDataSourceCodes =
+          physicalDataSourceCodes == null ? List.of() : List.copyOf(physicalDataSourceCodes);
       jdbcSources = jdbcSources == null ? List.of() : List.copyOf(jdbcSources);
       cleanupDataSources = cleanupDataSources == null ? List.of() : List.copyOf(cleanupDataSources);
     }
 
     private FederationCalciteCatalogAssembly toRuntimeAssembly(
-        final boolean cacheHit,
-        final long assemblyTimeMs,
-        final boolean closeOnClose
-    ) {
+        final boolean cacheHit, final long assemblyTimeMs, final boolean closeOnClose) {
       return new FederationCalciteCatalogAssembly(
           catalogCode,
           physicalDataSourceCodes,
@@ -875,8 +970,7 @@ public class FederationCalciteCatalogAssembler {
           cacheHit,
           assemblyTimeMs,
           physicalDataSourceCodes.size(),
-          closeOnClose
-      );
+          closeOnClose);
     }
 
     private boolean expired(final long nowMillis) {
@@ -898,7 +992,8 @@ public class FederationCalciteCatalogAssembler {
 
   private static void closeDataSources(final List<SimpleDataSource> cleanupDataSources) {
     RuntimeException failure = null;
-    List<SimpleDataSource> dataSources = cleanupDataSources == null ? List.of() : cleanupDataSources;
+    List<SimpleDataSource> dataSources =
+        cleanupDataSources == null ? List.of() : cleanupDataSources;
     for (SimpleDataSource cleanupDataSource : dataSources) {
       if (cleanupDataSource == null) {
         continue;
@@ -925,17 +1020,13 @@ public class FederationCalciteCatalogAssembler {
       String metadataSchema,
       List<ResolvedJdbcNamespace> physicalNamespaces,
       List<ResolvedJdbcCatalogNamespace> catalogNamespaces,
-      List<SimpleDataSource> cleanupDataSources
-  ) {
-  }
+      List<SimpleDataSource> cleanupDataSources) {}
 
   private record ResolvedJdbcNamespace(
       String name,
       SimpleDataSource simpleDataSource,
       String metadataCatalog,
-      String metadataSchema
-  ) {
-  }
+      String metadataSchema) {}
 
   private record ResolvedJdbcCatalogNamespace(
       String name,
@@ -943,7 +1034,5 @@ public class FederationCalciteCatalogAssembler {
       String metadataCatalog,
       String metadataSchema,
       List<ResolvedJdbcNamespace> physicalNamespaces,
-      boolean transientDataSource
-  ) {
-  }
+      boolean transientDataSource) {}
 }

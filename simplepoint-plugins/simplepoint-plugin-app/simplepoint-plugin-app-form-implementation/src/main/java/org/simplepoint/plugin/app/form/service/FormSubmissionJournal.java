@@ -14,6 +14,7 @@ import org.simplepoint.plugin.app.form.api.model.ApplicationFormRecordView;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormSubmissionView;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormEntity;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormSubmissionEntity;
+import org.simplepoint.plugin.app.form.entity.ApplicationRemovedSubmissionEntity;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ProcessInstanceSummary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -51,6 +52,10 @@ public class FormSubmissionJournal {
     if (existing != null) {
       return checked(existing, form.tenantId(), accepted.dataAuthority().actorId(), fingerprint);
     }
+    requireNotRemoved(id, form.tenantId());
+    if (accepted.command().previousSubmissionId() != null) {
+      requireNotRemoved(accepted.command().previousSubmissionId(), form.tenantId());
+    }
     FormResourceLifecycleGuard.requireAvailable(entityManager, form.tenantId(), form.pageId());
     var row = new ApplicationFormSubmissionEntity();
     row.setId(id);
@@ -82,7 +87,16 @@ public class FormSubmissionJournal {
   public ApplicationFormSubmissionView findExact(
       String id, String tenant, String actor, String fingerprint) {
     var row = entityManager.find(ApplicationFormSubmissionEntity.class, id);
-    return row == null ? null : checked(row, tenant, actor, fingerprint);
+    if (row != null) return checked(row, tenant, actor, fingerprint);
+    requireNotRemoved(id, tenant);
+    return null;
+  }
+
+  private void requireNotRemoved(String id, String tenant) {
+    var receipt = entityManager.find(ApplicationRemovedSubmissionEntity.class, id);
+    if (receipt != null && tenant.equals(receipt.getTenantId())) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_NOT_FOUND, "Submission is unavailable");
+    }
   }
 
   /** Returns bounded submission metadata only to its original tenant and actor. */
@@ -93,6 +107,22 @@ public class FormSubmissionJournal {
           ApplicationFormErrorCode.RECORD_NOT_FOUND, "Submission is unavailable");
     }
     return view(row);
+  }
+
+  /** Related status reads retain the accepted scope as well as the original tenant and actor. */
+  public ApplicationFormSubmissionView getOwnedRelated(
+      String id,
+      String tenant,
+      String actor,
+      org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope scope) {
+    var result = getOwned(id, tenant, actor);
+    var row = entityManager.find(ApplicationFormSubmissionEntity.class, id);
+    var accepted = codec.read(row.getIntentJson(), AcceptedFormSubmission.class);
+    if (scope == null || !scope.equals(accepted.relatedScope())) {
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.RECORD_NOT_FOUND, "Submission is unavailable");
+    }
+    return result;
   }
 
   /**
@@ -200,16 +230,30 @@ public class FormSubmissionJournal {
 
   /** Ends only a pre-data intent whose DNA operation has a durable negative receipt. */
   public void rejected(String id, String token) {
+    rejected(id, token, ApplicationFormErrorCode.RECORD_OPERATION_REJECTED);
+  }
+
+  /**
+   * Preserves the durable negative receipt's safe diagnostic without permitting arbitrary terminal
+   * errors.
+   */
+  public void rejected(String id, String token, ApplicationFormErrorCode code) {
+    if (code != ApplicationFormErrorCode.RECORD_OPERATION_REJECTED
+        && code != ApplicationFormErrorCode.RECORD_REFERENCE_CONFLICT) {
+      throw conflict("Only a durable data rejection may terminate an uncommitted submission");
+    }
     var row = locked(id, token);
     if (row == null) {
       return;
     }
-    if (!"PREPARED".equals(row.getStep()) || row.getSnapshotJson() != null || row.getProcessInstanceId() != null) {
+    if (!"PREPARED".equals(row.getStep())
+        || row.getSnapshotJson() != null
+        || row.getProcessInstanceId() != null) {
       throw conflict("Only an uncommitted submission may be rejected");
     }
     row.setStep("TERMINAL");
     ready(row, "FAILED", clock.instant());
-    row.setErrorCode("RECORD_OPERATION_REJECTED");
+    row.setErrorCode(code.name());
   }
 
   /** Explicit retry keeps the same intent, data receipt and process operation key. */

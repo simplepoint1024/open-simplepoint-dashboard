@@ -41,6 +41,9 @@ await node('--experimental-strip-types', '--test', ...tests);
 await node('scripts/ui-standards/audit.mjs', '--strict');
 await node('scripts/sync-i18n-bundles.mjs', '--check');
 await pnpm('--filter', './modules/*', '--if-present', 'run', 'build');
+await node('scripts/smoke-reference-display.mjs');
+await node('scripts/smoke-relation-authoring.mjs');
+await node('scripts/smoke-reference-navigation.mjs');
 await node('scripts/check-mf-entry-sizes.mjs');
 await node('scripts/smoke-mf.mjs');
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKSPACE_PREFERENCE_ONLY: '1'});
@@ -52,6 +55,7 @@ await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_FIELD_PROTECTED_
 for (const mode of ['writes', 'readonly', 'permissions']) await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_CATALOG_ONLY: mode});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_LIFECYCLE_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_PERSONAL_ONLY: '1'});
+await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_FORM_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_SCROLL_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_MULTI_ONLY: '1'});
 await run(process.execPath, ['scripts/smoke-mf.mjs'], {MF_SMOKE_WORKFLOW_LOOP_ONLY: '1'});

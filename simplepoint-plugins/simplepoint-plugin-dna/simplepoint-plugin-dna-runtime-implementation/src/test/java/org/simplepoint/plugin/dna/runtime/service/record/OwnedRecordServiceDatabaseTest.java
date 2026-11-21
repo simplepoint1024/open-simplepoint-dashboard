@@ -21,6 +21,7 @@ import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.model.RuntimeMetadataTarget;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand;
+import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordDeleteTransaction;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordModel;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordRow;
@@ -78,6 +79,37 @@ class OwnedRecordServiceDatabaseTest {
     assertThat(service.findResult(update).version()).isEqualTo(1);
     assertThatThrownBy(() -> service.get(query(created.recordId())))
         .isInstanceOf(DnaRuntimeException.class);
+  }
+
+  @Test
+  void batchDeleteRollsBackEveryParentAndDetailOnStaleVersionAndReplaysSuccess() throws Exception {
+    var database = databaseFixture();
+    var first = database.service().execute(command("batch-first",
+        new RecordCreateMutation("parent", Map.of("title", "First")),
+        List.of(new OwnedRecordRow(null, null, Map.of("title", "First detail")))));
+    var second = database.service().execute(command("batch-second",
+        new RecordCreateMutation("parent", Map.of("title", "Second")),
+        List.of(new OwnedRecordRow(null, null, Map.of("title", "Second detail")))));
+    var firstDelete = new RecordDeleteMutation("first", first.recordId(), first.version());
+    var stale = new OwnedRecordDeleteTransaction(new RecordTransactionCommand("model-1", SCHEMA,
+        List.of(firstDelete, new RecordDeleteMutation("second", second.recordId(), second.version() + 1)),
+        30_000, "batch-stale"), List.of(CHILD));
+    assertThatThrownBy(() -> database.transactions().deleteOwned(stale))
+        .isInstanceOf(DnaRuntimeException.class);
+    for (var table : List.of("records", "details")) {
+      assertThat(database.jdbc().queryForObject(
+          "select count(*) from " + table + " where deleted_at is null", Long.class)).isEqualTo(2);
+    }
+    var current = new OwnedRecordDeleteTransaction(new RecordTransactionCommand("model-1", SCHEMA,
+        List.of(firstDelete, new RecordDeleteMutation("second", second.recordId(), second.version())),
+        30_000, "batch-current"), List.of(CHILD));
+    var receipt = database.transactions().deleteOwned(current);
+    assertThat(receipt.results()).hasSize(2);
+    assertThat(database.transactions().deleteOwned(current).results()).isEqualTo(receipt.results());
+    for (var table : List.of("records", "details")) {
+      assertThat(database.jdbc().queryForObject(
+          "select count(*) from " + table + " where deleted_at is null", Long.class)).isZero();
+    }
   }
 
   @Test
@@ -200,6 +232,60 @@ class OwnedRecordServiceDatabaseTest {
   }
 
   @Test
+  void copiedHistoryRedactsRevokedTargetValuesWhileRetainingUnrelatedSourceValues()
+      throws Exception {
+    var database = databaseFixture();
+    var base =
+        command(
+            "protected-history",
+            new RecordCreateMutation("parent", Map.of("title", "Sensitive copy", "amount", "1.23")),
+            List.of());
+    var command =
+        new OwnedRecordCommand(
+            base.parent(), base.details(), new OwnedRecordSnapshotRequest(List.of(CHILD)));
+    database.service().execute(command);
+    var values = database.service().snapshot(command);
+    var origin = RecordReferenceCopyStoreTest.origin();
+    var titleOrigin =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceCopyOrigin(
+            origin.relationId(),
+            origin.mappingId(),
+            origin.mode(),
+            "title",
+            origin.mappingRevision(),
+            origin.targetModelId(),
+            origin.targetAppId(),
+            origin.targetFormId(),
+            origin.targetResourceCode(),
+            origin.targetRecordId(),
+            origin.targetVersion(),
+            origin.targetFieldId(),
+            origin.requirements());
+    var captured =
+        RecordStoredSnapshot.capture(values, null)
+            .withCopyOrigins(
+                List.of(
+                    new RecordReferenceCopySnapshot(
+                        null,
+                        values.parent().id(),
+                        values.parent().version(),
+                        List.of(titleOrigin))));
+    // Privileged test setup simulates a v3 capture from the new transactional backend. Public
+    // form writes remain gated. This reader must apply the actual source and target policies.
+    database
+        .jdbc()
+        .update(
+            "UPDATE simpoint_dna_record_snapshots_v1 SET snapshot_json = ?",
+            new ObjectMapper().writeValueAsString(captured));
+    var visible = database.service().snapshot(command);
+    assertThat(visible.parent().values())
+        .containsEntry("amount", "1.23")
+        .doesNotContainKey("title");
+    assertThat(new ObjectMapper().writeValueAsString(visible))
+        .doesNotContain("Sensitive copy", "requirements", "copyOrigins", "customers-page");
+  }
+
+  @Test
   void failedAggregateDoesNotLeaveBusinessSnapshots() throws Exception {
     var database = databaseFixture();
     var service = database.service();
@@ -217,6 +303,406 @@ class OwnedRecordServiceDatabaseTest {
     rejected(() -> service.snapshot(captured));
     rejected(() -> service.findResult(captured));
     assertBusinessRollback(database);
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+  void copiedHistoryKeepsOldValueButRechecksCurrentTargetMaskAndDeletion(boolean withDerived)
+      throws Exception {
+    var database = databaseFixture();
+    var target =
+        database
+            .service()
+            .execute(
+                command(
+                    "copy-target",
+                    new RecordCreateMutation("parent", Map.of("title", "Original source")),
+                    List.of()));
+    var base =
+        command(
+            "copy-source",
+            new RecordCreateMutation(
+                "parent", Map.of("title", "Original source", "amount", "1.23")),
+            List.of());
+    var command =
+        new OwnedRecordCommand(
+            base.parent(), base.details(), new OwnedRecordSnapshotRequest(List.of(CHILD)));
+    database.service().execute(command);
+    var values = database.service().snapshot(command);
+    var requirement =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceReadRequirement(
+            "model-1",
+            "app",
+            "form",
+            "target-page",
+            target.recordId(),
+            null,
+            null,
+            List.of("title"));
+    var origin =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceCopyOrigin(
+            "relation",
+            "mapping",
+            org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceMapping.Mode
+                .SERVER_SNAPSHOT,
+            "title",
+            "a".repeat(64),
+            "model-1",
+            "app",
+            "form",
+            "target-page",
+            target.recordId(),
+            0,
+            "title",
+            List.of(requirement));
+    var captured =
+        RecordStoredSnapshot.capture(values, null)
+            .withCopyOrigins(
+                List.of(
+                    new RecordReferenceCopySnapshot(
+                        null,
+                        values.parent().id(),
+                        0,
+                        List.of(origin),
+                        withDerived
+                            ? List.of(
+                                new RecordDerivedCopyOrigin(
+                                    1,
+                                    "amount",
+                                    1,
+                                    "a".repeat(64),
+                                    List.of(
+                                        new RecordAggregateReadRequirement(
+                                            "model-1", values.parent().id(), List.of("title"))),
+                                    List.of(requirement)))
+                            : List.of())));
+    database
+        .jdbc()
+        .update(
+            "UPDATE simpoint_dna_record_snapshots_v1 SET snapshot_json = ?",
+            new ObjectMapper().writeValueAsString(captured));
+    var access = database.access();
+    var targetAccess =
+        new RecordAccessContext(
+            access.actor(),
+            "target-page",
+            access.readableFields(),
+            Set.of(),
+            Set.of(),
+            access.rowScope(),
+            access.organizationId(),
+            1);
+    when(database.models().resolveCurrent(access.actor(), "model-1")).thenReturn(database.parent());
+    when(database.policies().authorizeReference(access.actor(), database.parent(), "target-page"))
+        .thenReturn(targetAccess);
+    var authority = new org.simplepoint.core.AuthorizationContext();
+    authority.setResourceDataScopes(
+        Map.of("target-page", new org.simplepoint.core.ResourceDataScope("ALL", Set.of(), false)));
+    authority.setResourceFieldPermissions(Map.of("target-page", Map.of()));
+    org.simplepoint.core.RequestContextHolder.setContext(
+        org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, authority);
+    try {
+      assertThat(database.service().snapshot(command).parent().values())
+          .containsEntry("title", "Original source");
+      database
+          .service()
+          .execute(
+              command(
+                  "change-target",
+                  new RecordUpdateMutation(
+                      "parent", target.recordId(), 0, Map.of("title", "Changed later")),
+                  List.of()));
+      assertThat(database.service().snapshot(command).parent().values())
+          .containsEntry("title", "Original source");
+      var masked =
+          new RecordAccessContext(
+              targetAccess.actor(),
+              targetAccess.resourceCode(),
+              targetAccess.readableFields(),
+              Set.of(),
+              Set.of("title"),
+              targetAccess.rowScope(),
+              null,
+              1);
+      when(database.policies().authorizeReference(access.actor(), database.parent(), "target-page"))
+          .thenReturn(masked);
+      assertThat(database.service().snapshot(command).parent().values()).doesNotContainKey("title");
+      if (withDerived) {
+        assertThat(database.service().snapshot(command).parent().values())
+            .doesNotContainKey("amount");
+      } else {
+        assertThat(database.service().snapshot(command).parent().values())
+            .containsEntry("amount", "1.23");
+      }
+      when(database.policies().authorizeReference(access.actor(), database.parent(), "target-page"))
+          .thenReturn(targetAccess);
+      database
+          .service()
+          .execute(
+              command(
+                  "delete-target",
+                  new RecordDeleteMutation("parent", target.recordId(), 1),
+                  List.of()));
+      assertThat(database.service().snapshot(command).parent().values()).doesNotContainKey("title");
+      if (withDerived) {
+        assertThat(database.service().snapshot(command).parent().values())
+            .doesNotContainKey("amount");
+      } else {
+        assertThat(database.service().snapshot(command).parent().values())
+            .containsEntry("amount", "1.23");
+      }
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(
+          org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"false,false", "true,false", "true,true"})
+  void currentPageLookupAndAggregateDetailApplyProofAfterTheSourceReadAndRejectInference(
+      boolean withDerived, boolean calculate) throws Exception {
+    var f = databaseFixture();
+    var target =
+        f.service()
+            .execute(
+                command(
+                    "current-target",
+                    new RecordCreateMutation("parent", Map.of("title", "Customer")),
+                    List.of()));
+    var source =
+        f.service()
+            .execute(
+                command(
+                    "current-copy",
+                    new RecordCreateMutation(
+                        "parent", Map.of("title", "Copied", "amount", "12.34")),
+                    List.of()));
+    var requirement =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceReadRequirement(
+            "model-1",
+            "app",
+            "form",
+            "target-page",
+            target.recordId(),
+            null,
+            null,
+            List.of("title"));
+    var origin =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceCopyOrigin(
+            "relation",
+            "mapping",
+            org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceMapping.Mode
+                .SERVER_SNAPSHOT,
+            "title",
+            "a".repeat(64),
+            "model-1",
+            "app",
+            "form",
+            "target-page",
+            target.recordId(),
+            0,
+            "title",
+            List.of(requirement));
+    var key = new RecordReferenceCopyStore.Key("tenant-a", "model-1", source.recordId());
+    var derived =
+        withDerived
+            ? List.of(
+                new RecordDerivedCopyOrigin(
+                    1,
+                    "amount",
+                    1,
+                    "a".repeat(64),
+                    List.of(
+                        new RecordAggregateReadRequirement(
+                            "model-1", source.recordId(), List.of("title"))),
+                    List.of(requirement)))
+            : List.<RecordDerivedCopyOrigin>of();
+    var originJson =
+        (String)
+            new RecordReferenceCopyStore()
+                .write(key, "fixture", null, 0, List.of(origin), derived, java.time.Instant.EPOCH)
+                .parameters()
+                .getLast();
+    f.jdbc()
+        .update(
+            "INSERT INTO simpoint_dna_reference_copies_v1 (id, tenant_id, record_version,"
+                + " created_by, created_at, updated_by, updated_at, model_id, source_record_id,"
+                + " origins_json) VALUES (?, ?, 0, 'fixture', CURRENT_TIMESTAMP, 'fixture',"
+                + " CURRENT_TIMESTAMP, ?, ?, ?)",
+            key.id(),
+            key.tenantId(),
+            key.modelId(),
+            key.recordId(),
+            originJson);
+    var policy =
+        new RecordCalculationPolicy(
+            1,
+            "app",
+            "form",
+            calculate
+                ? new RecordSchemaReference(
+                    1,
+                    new org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec(
+                            new com.fasterxml.jackson.databind.ObjectMapper())
+                        .encode(f.parent().requestedSchema())
+                        .checksum())
+                : SCHEMA,
+            new org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinition(
+                "1", calculate ? Map.of("amount", "LEN([title])") : Map.of(), Map.of()),
+            Map.of("model-1", withDerived ? Set.of("title", "amount") : Set.of("title")));
+    var parameters =
+        new RecordCalculationStore()
+            .insert(
+                new RecordWriteFenceKey("tenant-a", "model-1"),
+                1,
+                "fixture",
+                java.time.Instant.EPOCH,
+                policy)
+            .parameters();
+    f.jdbc()
+        .update(
+            "INSERT INTO simpoint_dna_record_calculations_v1 (id, tenant_id, model_id,"
+                + " policy_revision, definition_checksum, definition_json) VALUES (?, ?, ?, ?, ?,"
+                + " ?)",
+            parameters.get(0),
+            parameters.get(1),
+            parameters.get(7),
+            parameters.get(8),
+            parameters.get(9),
+            parameters.get(10));
+    f.jdbc().update("UPDATE simpoint_dna_record_write_fences_v1 SET write_revision = 1");
+    var raw = f.access();
+    when(f.models().resolve(raw.actor(), "model-1", policy.parentSchema())).thenReturn(f.parent());
+    var targetAccess =
+        new RecordAccessContext(
+            raw.actor(),
+            "target-page",
+            raw.readableFields(),
+            Set.of(),
+            Set.of(),
+            raw.rowScope(),
+            null,
+            1);
+    when(f.models().resolveCurrent(raw.actor(), "model-1")).thenReturn(f.parent());
+    when(f.policies().authorizeReference(raw.actor(), f.parent(), "target-page"))
+        .thenReturn(targetAccess);
+    var authority = new org.simplepoint.core.AuthorizationContext();
+    authority.setResourceDataScopes(
+        Map.of("target-page", new org.simplepoint.core.ResourceDataScope("ALL", Set.of(), false)));
+    authority.setResourceFieldPermissions(Map.of("target-page", Map.of()));
+    org.simplepoint.core.RequestContextHolder.setContext(
+        org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, authority);
+    try {
+      var lookup =
+          new RecordLookupQuery("model-1", SCHEMA, source.recordId(), List.of("title", "amount"));
+      final var page =
+          new org.simplepoint.plugin.dna.runtime.api.record.RecordPageQuery(
+              "model-1", SCHEMA, 0, 500, List.of("title", "amount"), null, List.of());
+      assertThat(f.queries().get(lookup).values()).containsEntry("title", "Copied");
+      if (withDerived) {
+        assertThat(
+                f.queries()
+                    .get(
+                        new RecordLookupQuery(
+                            "model-1", SCHEMA, source.recordId(), List.of("amount")))
+                    .values())
+            .containsExactlyEntriesOf(Map.of("amount", "12.34"));
+      }
+      assertThat(f.service().get(new OwnedRecordQuery(lookup, List.of(CHILD))).parent().values())
+          .containsEntry("title", "Copied");
+      assertThat(f.queries().page(page).total()).isEqualTo(2);
+      var edit =
+          new OwnedRecordCommand(
+              new RecordTransactionCommand(
+                  "model-1",
+                  SCHEMA,
+                  List.of(
+                      new RecordUpdateMutation(
+                          "parent", source.recordId(), 0, Map.of("title", "Edited title"))),
+                  30_000,
+                  "edit-with-origin",
+                  1),
+              List.of(new OwnedRecordSet(CHILD, List.of())));
+      assertThat(f.service().execute(edit).version()).isEqualTo(1);
+      assertThat(f.service().execute(edit).version()).isEqualTo(1);
+      assertThat(f.queries().get(lookup).values()).containsEntry("title", "Edited title");
+      var preview =
+          new OwnedRecordCommand(
+              new RecordTransactionCommand(
+                  "model-1",
+                  SCHEMA,
+                  List.of(
+                      new RecordUpdateMutation(
+                          "parent", source.recordId(), 1, Map.of("title", "Preview"))),
+                  30_000,
+                  "preview-with-origin",
+                  1),
+              List.of());
+      assertThat(f.service().preview(preview).values()).containsEntry("title", "Preview");
+      if (calculate) {
+        assertThat(f.queries().get(lookup).values()).containsEntry("amount", "12.00");
+        assertThat(f.service().preview(preview).values()).containsEntry("amount", "7.00");
+      }
+      assertThat(
+              f.jdbc()
+                  .queryForObject(
+                      "SELECT record_version FROM simpoint_dna_reference_copies_v1 WHERE id = ?",
+                      Long.class,
+                      key.id()))
+          .isEqualTo(1);
+      var mask =
+          new RecordAccessContext(
+              raw.actor(),
+              "target-page",
+              raw.readableFields(),
+              Set.of(),
+              Set.of("title"),
+              raw.rowScope(),
+              null,
+              1);
+      when(f.policies().authorizeReference(raw.actor(), f.parent(), "target-page"))
+          .thenReturn(mask);
+      var projected = f.queries().get(lookup).values();
+      assertThat(projected).doesNotContainKey("title");
+      var maskedPreview = f.service().preview(preview);
+      assertThat(maskedPreview.values()).doesNotContainKey("title");
+      if (withDerived) {
+        assertThat(projected).doesNotContainKey("amount");
+        assertThat(maskedPreview.values()).doesNotContainKey("amount");
+      } else {
+        assertThat(projected).containsEntry("amount", "12.34");
+      }
+      assertThat(f.service().get(new OwnedRecordQuery(lookup, List.of(CHILD))).parent().values())
+          .doesNotContainKey("title");
+      var hiddenPage = f.queries().page(page);
+      assertThat(hiddenPage.records()).hasSize(2);
+      assertThat(hiddenPage.total()).isEqualTo(2);
+      assertThat(
+              hiddenPage.records().stream()
+                  .filter(row -> row.id().equals(source.recordId()))
+                  .findFirst()
+                  .orElseThrow()
+                  .values())
+          .doesNotContainKey("title");
+      var filter =
+          new org.simplepoint.plugin.dna.runtime.api.record.RecordFilter(
+              org.simplepoint.plugin.dna.runtime.api.record.RecordFilterOperator.EQUALS,
+              "title",
+              List.of("Copied"),
+              List.of());
+      assertThatThrownBy(
+              () ->
+                  f.queries()
+                      .count(
+                          new org.simplepoint.plugin.dna.runtime.api.record.RecordCountQuery(
+                              "model-1", SCHEMA, filter)))
+          .isInstanceOf(DnaRuntimeException.class);
+      f.jdbc().update("UPDATE simpoint_dna_reference_copies_v1 SET record_version = 2");
+      assertThatThrownBy(() -> f.queries().get(lookup)).isInstanceOf(DnaRuntimeException.class);
+    } finally {
+      org.simplepoint.core.RequestContextHolder.clearContext(
+          org.simplepoint.core.RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
+    }
   }
 
   private static OwnedRecordQuery query(String id) {
@@ -245,7 +731,12 @@ class OwnedRecordServiceDatabaseTest {
   }
 
   private static void assertBusinessRollback(DatabaseFixture database) {
-    for (String table : List.of("records", "details", "simpoint_dna_record_snapshots_v1")) {
+    for (String table :
+        List.of(
+            "records",
+            "details",
+            "simpoint_dna_record_snapshots_v1",
+            "simpoint_dna_reference_copies_v1")) {
       assertThat(database.jdbc().queryForObject("select count(*) from " + table, Long.class))
           .isZero();
     }
@@ -257,7 +748,15 @@ class OwnedRecordServiceDatabaseTest {
         .isEqualTo(1);
   }
 
-  private record DatabaseFixture(OwnedRecordService service, JdbcTemplate jdbc) {}
+  private record DatabaseFixture(
+      OwnedRecordService service,
+      JdbcTemplate jdbc,
+      RuntimeRecordModel parent,
+      RuntimeRecordModelResolver models,
+      RuntimeRecordAccessPolicy policies,
+      RecordAccessContext access,
+      RecordQueryServiceImpl queries,
+      RecordTransactionServiceImpl transactions) {}
 
   private static DatabaseFixture databaseFixture() throws Exception {
     JdbcDataSource h2 = new JdbcDataSource();
@@ -282,6 +781,10 @@ class OwnedRecordServiceDatabaseTest {
               + ", model_id VARCHAR(64), operation_key VARCHAR(128), request_fingerprint"
               + " VARCHAR(64), snapshot_json CLOB)");
       statement.execute("CREATE TABLE records (" + system + ", amount DECIMAL(24,2))");
+      statement.execute(
+          "CREATE TABLE simpoint_dna_reference_copies_v1 ("
+              + system.replace(", title VARCHAR(128) NOT NULL", "")
+              + ", model_id VARCHAR(64), source_record_id VARCHAR(36), origins_json CLOB)");
       statement.execute(
           "CREATE TABLE details ("
               + system
@@ -396,6 +899,10 @@ class OwnedRecordServiceDatabaseTest {
     var audit = mock(RecordAuditSupport.class);
     var admission = new RecordAdmissionController(new DnaRuntimeExecutionProperties());
     var observer = mock(RecordExecutionObserver.class);
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    var schemas = new org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec(mapper);
+    var calculation = new RecordCalculationWriteSupport(models, schemas, compiler);
+    var fingerprints = new RecordRequestFingerprint(mapper);
     var service =
         new OwnedRecordService(
             context,
@@ -403,16 +910,31 @@ class OwnedRecordServiceDatabaseTest {
             policies,
             compiler,
             backend,
-            new RecordRequestFingerprint(new ObjectMapper()),
+            fingerprints,
             admission,
             audit,
             observer,
-            new RecordCalculationWriteSupport(
-                models,
-                new org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec(
-                    new ObjectMapper().findAndRegisterModules()),
-                compiler),
-            RecordCalculationTestSupport.access(models, policies, compiler));
-    return new DatabaseFixture(service, new JdbcTemplate(h2));
+            calculation,
+            RecordCalculationTestSupport.access(models, policies, compiler),
+            schemas);
+    return new DatabaseFixture(
+        service,
+        new JdbcTemplate(h2),
+        parent,
+        models,
+        policies,
+        access,
+        new RecordQueryServiceImpl(
+            context,
+            models,
+            policies,
+            compiler,
+            backend,
+            audit,
+            admission,
+            observer,
+            RecordCalculationTestSupport.access(models, policies, compiler)),
+        new RecordTransactionServiceImpl(context, models, policies, compiler, backend, audit,
+            admission, observer, fingerprints, calculation));
   }
 }

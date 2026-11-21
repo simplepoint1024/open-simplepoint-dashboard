@@ -4,6 +4,7 @@ import type {DesignDocument} from './contracts.ts';
 import {calculationFields} from './calculationModel.ts';
 import {fieldDependencies, type AnalyzedField} from './fieldAnalysis.ts';
 import {validateDesignField} from './dataModel.ts';
+import {businessReferenceField} from './relations/model.ts';
 
 export function calculationErrorText(code: string, t: TranslateFn): string {
   const messages: Record<string, string> = {
@@ -29,7 +30,9 @@ export type DesignIssue = AnalyzedField & {code: string; line?: number; column?:
 export function designIssues(document: DesignDocument, functions?: readonly FormulaFunction[]): DesignIssue[] {
   const graph = fieldDependencies(document), issues: DesignIssue[] = [];
   for (const target of graph.fields) {
-    try {validateDesignField(target.field);}
+    const reference = target.field.storageMode === 'REFERENCE'
+      && businessReferenceField(document, target.field, target.scope === 'parent' ? undefined : target.scope);
+    try {validateDesignField(target.field, reference);}
     catch {issues.push({...target, code: 'FIELD_VALIDATION'});}
     if (!target.field.calculation) continue;
     if (graph.cyclic.has(target.key)) {issues.push({...target, code: 'DEPENDENCY_CYCLE'}); continue;}

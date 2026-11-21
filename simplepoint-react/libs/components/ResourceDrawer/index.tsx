@@ -22,12 +22,14 @@ type Props = {
   minHeight?: number;
   /** Preserve established full-height editors that own their internal padding. */
   bodyPadding?: number;
+  /** A bounded overlay stack owns the active PageSection and retains hidden read-only scene state. */
+  preserveContents?: boolean;
 };
 const viewportSize = (right: boolean) => typeof window === 'undefined' ? 900 : right ? window.innerWidth : window.innerHeight;
 
 /** Shared configuration drawer: retained-page ownership, bounded resize and optional inspector collapse. */
 export default function ResourceDrawer({open, title, children, rootClassName, locked = false, onClose,
-  defaultHeight = 480, minHeight = 240, placement = 'bottom', defaultWidth = 880, minWidth = 320, collapsible = false, bodyPadding}: Props) {
+  defaultHeight = 480, minHeight = 240, placement = 'bottom', defaultWidth = 880, minWidth = 320, collapsible = false, bodyPadding, preserveContents = false}: Props) {
   const selected = usePageSelected();
   const right = placement === 'right';
   const initialSize = right ? defaultWidth : defaultHeight, minimumSize = right ? minWidth : minHeight;
@@ -76,7 +78,7 @@ export default function ResourceDrawer({open, title, children, rootClassName, lo
       onMouseDown={startResize} onKeyDown={resizeWithKeyboard}/>
   );
   return <Drawer rootClassName={rootClassName} title={title} placement={placement} size={size}
-    open={open && selected} destroyOnHidden={!collapsible && !open} closable={!locked} keyboard={!locked} mask={{closable: false}}
+    open={open && selected} destroyOnHidden={!preserveContents && !collapsible && !open} closable={!locked} keyboard={!locked} mask={{closable: false}}
     closeIcon={collapsible ? <Tooltip title={t('table.collapseConfiguration', '收起面板')}>{createIcon(right ? 'RightOutlined' : 'DownOutlined')}</Tooltip> : undefined}
     onClose={() => {if (selected && !locked) onClose();}}
     drawerRender={panel => <>{resizeHandle}{panel}</>}

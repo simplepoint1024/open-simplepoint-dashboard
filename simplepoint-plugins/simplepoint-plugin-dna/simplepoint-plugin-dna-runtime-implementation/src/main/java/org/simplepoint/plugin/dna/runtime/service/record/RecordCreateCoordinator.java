@@ -34,17 +34,17 @@ class RecordCreateCoordinator {
     PreparedRecordTransaction prepared = prepare(command);
     String fingerprint = fingerprints.of(command);
     RecordCreateReceiptClaim claim = claim(prepared, command, fingerprint);
-    if (claim.completedResult() != null) {
-      return claim.completedResult();
-    }
-    if (transactions.hasCommittedCreate(prepared, claim.recordId())) {
-      return complete(prepared, command, fingerprint, claim.recordId(), claim.operationAt());
+    var operation = transactions.createOperation(prepared, command, fingerprint);
+    var committed = recover(prepared, command, fingerprint, claim, operation);
+    if (committed != null) {
+      return committed;
     }
     try {
       RecordCommandResult created = transactions.executePreparedCreate(
           prepared,
           claim.recordId(),
-          claim.operationAt()
+          claim.operationAt(),
+          operation
       );
       return receipts.complete(
           prepared.access().actor(),
@@ -77,9 +77,26 @@ class RecordCreateCoordinator {
     if (claim == null) {
       return null;
     }
+    return recover(prepared, command, fingerprint, claim,
+        transactions.createOperation(prepared, command, fingerprint));
+  }
+
+  private RecordCommandResult recover(
+      PreparedRecordTransaction prepared,
+      RecordCreateCommand command,
+      String fingerprint,
+      RecordCreateReceiptClaim claim,
+      RecordOperationIdentity operation) {
     if (claim.completedResult() != null) {
       return claim.completedResult();
     }
+    if (operation != null) {
+      var committed = transactions.findPreparedCreateResult(prepared, operation);
+      if (committed != null) {
+        return receipts.complete(prepared.access().actor(), command, fingerprint, committed);
+      }
+    }
+    // Before target-side receipts were introduced, the deterministic record ID proved success.
     return transactions.hasCommittedCreate(prepared, claim.recordId())
         ? complete(prepared, command, fingerprint, claim.recordId(), claim.operationAt()) : null;
   }

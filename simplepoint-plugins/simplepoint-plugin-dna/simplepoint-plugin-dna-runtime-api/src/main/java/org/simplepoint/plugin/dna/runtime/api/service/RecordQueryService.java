@@ -12,6 +12,10 @@ public interface RecordQueryService {
   /** Returns one stable server page. */
   RecordPageView page(RecordPageQuery query);
 
+  /** Returns readable target IDs without fetching current label values. */
+  java.util.List<String> visibleReferences(
+      org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceVisibilityQuery query);
+
   /** Returns the count produced from the same predicate contract as paging. */
   long count(RecordCountQuery query);
 

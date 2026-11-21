@@ -66,6 +66,9 @@ public final class WorkflowModels {
       Instant updatedAt) {}
 
   /** Definition editor projection including draft, history and capabilities. */
+  public record DefinitionRevision(String id, Long expectedRevision) {}
+
+  /** Definition editor projection including draft, history and capabilities. */
   public record DefinitionDetail(
       DefinitionSummary definition,
       String bpmnXml,
@@ -79,7 +82,9 @@ public final class WorkflowModels {
       boolean canEdit,
       boolean canPublish,
       boolean canCopyVersion,
-      boolean canStart) {}
+      boolean canStart,
+      boolean canDelete,
+      boolean canOffline) {}
 
   /** Server-derived task and instance capabilities for the current actor. */
   public record RuntimePermissions(

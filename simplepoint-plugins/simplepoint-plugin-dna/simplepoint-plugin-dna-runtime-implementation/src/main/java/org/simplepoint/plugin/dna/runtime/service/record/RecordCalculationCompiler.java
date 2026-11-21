@@ -25,8 +25,10 @@ final class RecordCalculationCompiler {
 
   RecordCalculationCompiler(final PhysicalSchemaCodec schemas, final Clock clock) {
     this.schemas = Objects.requireNonNull(schemas, "schemas");
-    this.engine = new FormulaEngine(StandardFunctions.all(),
-        Clock.tick(clock.withZone(ZoneOffset.UTC), Duration.ofNanos(1000)));
+    this.engine =
+        new FormulaEngine(
+            StandardFunctions.all(),
+            Clock.tick(clock.withZone(ZoneOffset.UTC), Duration.ofNanos(1000)));
   }
 
   /**
@@ -34,10 +36,16 @@ final class RecordCalculationCompiler {
    * result adapter is mandatory so downstream formulas cannot bypass physical field validation.
    * Compilation does not install or activate the definition and does not authorize record reads.
    */
-  Compiled compile(final RuntimeRecordModel parent, final RecordCalculationDefinition definition,
-      final Map<String, RuntimeRecordModel> children, final BiFunction<LogicalFieldDefinition, Object, Object> results) {
+  Compiled compile(
+      final RuntimeRecordModel parent,
+      final RecordCalculationDefinition definition,
+      final Map<String, RuntimeRecordModel> children,
+      final BiFunction<LogicalFieldDefinition, Object, Object> results) {
     Objects.requireNonNull(results, "results");
-    if (parent.activeSchema().owner() != null || parent.requestedSchema().owner() != null
+    if (parent.activeSchema().owner() != null
+        || parent.requestedSchema().owner() != null
+        || parent.activeSchema().collection() != null
+        || parent.requestedSchema().collection() != null
         || !children.keySet().equals(definition.details().keySet())) {
       throw invalid("Calculation aggregate scope does not match the resolved models");
     }
@@ -50,7 +58,10 @@ final class RecordCalculationCompiler {
         var child = children.get(entry.getKey());
         if (!declared.physicalModelId().equals(child.physicalModelId())
             || declared.schemaReference().version() != child.requestedVersion()
-            || !declared.schemaReference().checksum().equals(schemas.encode(child.requestedSchema()).checksum())) {
+            || !declared
+                .schemaReference()
+                .checksum()
+                .equals(schemas.encode(child.requestedSchema()).checksum())) {
           throw invalid("Calculation detail schema identity does not match");
         }
         requireOwnedTarget(parent, child);
@@ -58,23 +69,44 @@ final class RecordCalculationCompiler {
       }
       var constraints = new RecordCalculationConstraints(fields, definition);
       var validation = new RecordAggregateValidation(fields, definition.validationsOrEmpty());
-      var transitions = new RecordStateTransitionValidation(fields.get("parent"), definition.formulas().keySet(), definition.stateTransitions());
+      var transitions =
+          new RecordStateTransitionValidation(
+              fields.get("parent"), definition.formulas().keySet(), definition.stateTransitions());
       var writes = new RecordFieldWriteValidation(fields, definition);
-      return new Compiled(new FormulaAggregatePlan(engine, root, details,
-          (scope, field, value) -> constraints.validate(scope, field, results.apply(fields.get(scope).get(field), value))),
-          Map.copyOf(fields), definition, constraints, validation, transitions, writes);
+      var references = new RecordReferenceRules(parent, children, definition, fields);
+      return new Compiled(
+          new FormulaAggregatePlan(
+              engine,
+              root,
+              details,
+              (scope, field, value) ->
+                  constraints.validate(
+                      scope, field, results.apply(fields.get(scope).get(field), value))),
+          Map.copyOf(fields),
+          definition,
+          constraints,
+          validation,
+          transitions,
+          writes,
+          references);
     } catch (FormulaException failure) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
-          "Invalid calculation graph: " + failure.code(), failure);
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID,
+          "Invalid calculation graph: " + failure.code(),
+          failure);
     }
   }
 
-  private static FormulaAggregatePlan.Scope scope(final String name, final RuntimeRecordModel model,
-      final Map<String, String> formulas, final Map<String, Map<String, LogicalFieldDefinition>> scopes) {
+  private static FormulaAggregatePlan.Scope scope(
+      final String name,
+      final RuntimeRecordModel model,
+      final Map<String, String> formulas,
+      final Map<String, Map<String, LogicalFieldDefinition>> scopes) {
     Map<String, LogicalFieldDefinition> fields = new LinkedHashMap<>();
     var owner = model.requestedSchema().owner();
     for (var field : model.requestedSchema().fields()) {
-      if (owner != null && (field.fieldId().equals(owner.parentFieldId()) || "row_order".equals(field.code()))) {
+      if (owner != null
+          && (field.fieldId().equals(owner.parentFieldId()) || "row_order".equals(field.code()))) {
         continue;
       }
       fields.put(field.fieldId(), model.activeField(field.code()));
@@ -93,12 +125,14 @@ final class RecordCalculationCompiler {
     return new FormulaAggregatePlan.Scope(inputs, formulas);
   }
 
-  private static void requireOwnedTarget(final RuntimeRecordModel parent, final RuntimeRecordModel child) {
+  private static void requireOwnedTarget(
+      final RuntimeRecordModel parent, final RuntimeRecordModel child) {
     var owner = child.activeSchema().owner();
     var target = parent.target().metadataTarget();
     var detailTarget = child.target().metadataTarget();
     // Form ids differ for owned models; ownership is defined by their immutable parent relation.
-    if (owner == null || !owner.equals(child.requestedSchema().owner())
+    if (owner == null
+        || !owner.equals(child.requestedSchema().owner())
         || !owner.parentModelId().equals(parent.physicalModelId())
         || child.physicalModelId().equals(parent.physicalModelId())
         || !child.appId().equals(parent.appId())
@@ -115,8 +149,13 @@ final class RecordCalculationCompiler {
   }
 
   /** Trusted physical fields and dependency graph for transaction execution and read policy. */
-  record Compiled(FormulaAggregatePlan plan, Map<String, Map<String, LogicalFieldDefinition>> fields,
-      RecordCalculationDefinition definition, RecordCalculationConstraints constraints, RecordAggregateValidation validation,
-      RecordStateTransitionValidation transitions, RecordFieldWriteValidation writes) {
-  }
+  record Compiled(
+      FormulaAggregatePlan plan,
+      Map<String, Map<String, LogicalFieldDefinition>> fields,
+      RecordCalculationDefinition definition,
+      RecordCalculationConstraints constraints,
+      RecordAggregateValidation validation,
+      RecordStateTransitionValidation transitions,
+      RecordFieldWriteValidation writes,
+      RecordReferenceRules references) {}
 }

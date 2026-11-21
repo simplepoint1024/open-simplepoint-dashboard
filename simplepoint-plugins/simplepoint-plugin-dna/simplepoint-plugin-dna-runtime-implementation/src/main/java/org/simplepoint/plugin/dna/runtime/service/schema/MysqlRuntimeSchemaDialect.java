@@ -85,8 +85,19 @@ public class MysqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect {
   }
 
   @Override
+  String buildDropForeignKeySql(JdbcDatabaseDialect core, JdbcDatabaseDialect.SupportContext context,
+      String table, String name) {
+    return "ALTER TABLE " + table + " DROP FOREIGN KEY " + core.quoteIdentifier(name, context);
+  }
+
+  @Override
   int minimumMajorVersion() {
     return 8;
+  }
+
+  @Override
+  boolean alterIncludesColumnComment() {
+    return true;
   }
 
   @Override
@@ -113,6 +124,8 @@ public class MysqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect {
         )
     );
     capabilities.put(DialectOperation.DML_GENERATED_KEYS, DialectCapability.supported());
+    capabilities.put(DialectOperation.ADD_FOREIGN_KEY, DialectCapability.supported());
+    capabilities.put(DialectOperation.DROP_FOREIGN_KEY, DialectCapability.supported());
     capabilities.put(DialectOperation.ADD_COLUMN, DialectCapability.supported());
     capabilities.put(DialectOperation.DROP_COLUMN, DialectCapability.supported());
     capabilities.put(DialectOperation.RENAME_COLUMN, DialectCapability.supported());

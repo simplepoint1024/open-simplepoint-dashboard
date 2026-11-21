@@ -24,7 +24,9 @@ import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverter;
 
-/** Complete tenant-owned aggregate input, stable keyset scans and exact immutable computed patches. */
+/**
+ * Complete tenant-owned aggregate input, stable keyset scans and exact immutable computed patches.
+ */
 final class RecordPublicationRows {
   private final RecordPublicationIntent intent;
   private final RuntimeRecordModel parent;
@@ -34,17 +36,38 @@ final class RecordPublicationRows {
   private final RecordCalculationEvaluator evaluator;
   private final StandardLogicalValueConverter values = new StandardLogicalValueConverter();
 
-  RecordPublicationRows(final RecordPublicationIntent intent, final Map<String, RecordPublicationPatchCompiler.Resolved> models,
-      final RecordSqlCompiler sql, final PhysicalSchemaCodec schemas) {
+  RecordPublicationRows(
+      final RecordPublicationIntent intent,
+      final Map<String, RecordPublicationPatchCompiler.Resolved> models,
+      final RecordSqlCompiler sql,
+      final PhysicalSchemaCodec schemas) {
     this.intent = intent;
     this.parent = models.get(intent.key().modelId()).model();
     this.sql = sql;
     this.schemas = schemas;
     var scopes = new LinkedHashMap<String, RuntimeRecordModel>();
-    intent.command().calculation().details().forEach((scope, definition) -> scopes.put(scope, models.get(definition.physicalModelId()).model()));
+    intent
+        .command()
+        .calculation()
+        .details()
+        .forEach(
+            (scope, definition) ->
+                scopes.put(scope, models.get(definition.physicalModelId()).model()));
     this.details = Map.copyOf(scopes);
-    this.evaluator = new RecordCalculationEvaluator(new RecordCalculationCompiler(schemas, Clock.fixed(intent.clock(), ZoneOffset.UTC)),
-        parent, intent.command().calculation(), details);
+    this.evaluator =
+        new RecordCalculationEvaluator(
+            new RecordCalculationCompiler(schemas, Clock.fixed(intent.clock(), ZoneOffset.UTC)),
+            parent,
+            intent.command().calculation(),
+            details);
+  }
+
+  Map<String, Set<String>> queryProtection(final RecordCalculationStore.Installed previous) {
+    return RecordQueryProtection.derive(
+        previous == null ? Map.of() : previous.policy().queryProtection(),
+        parent.physicalModelId(),
+        intent.command().calculation(),
+        evaluator.dependencies());
   }
 
   RecordSelectPlan count() {
@@ -68,20 +91,35 @@ final class RecordPublicationRows {
   }
 
   /** Read only identities for the batch; large aggregates are loaded and encoded one at a time. */
-  List<String> identities(final String cursor, final int limit, final Function<RecordSelectPlan, CalciteQueryResult> reader) {
+  List<String> identities(
+      final String cursor,
+      final int limit,
+      final Function<RecordSelectPlan, CalciteQueryResult> reader) {
     if (cursor != null) {
       RecordPublicationAggregate.requireId(cursor);
     }
     var model = active(parent);
-    var filter = cursor == null ? null : new RecordFilter(RecordFilterOperator.GREATER_THAN, "id", List.of(cursor), List.of());
-    var plan = page(model, List.of("id"), filter, List.of(new RecordSort("id", RecordSortDirection.ASC)), limit);
+    var filter =
+        cursor == null
+            ? null
+            : new RecordFilter(RecordFilterOperator.GREATER_THAN, "id", List.of(cursor), List.of());
+    var plan =
+        page(
+            model,
+            List.of("id"),
+            filter,
+            List.of(new RecordSort("id", RecordSortDirection.ASC)),
+            limit);
     var result = reader.apply(plan);
     if (result.truncated() || result.rows().size() > limit) {
       throw invalid();
     }
     var ids = new LinkedHashSet<String>();
     for (var row : result.rows()) {
-      if (row.size() != 2 || !(row.getFirst() instanceof String id) || id.equals(cursor) || !ids.add(id)) {
+      if (row.size() != 2
+          || !(row.getFirst() instanceof String id)
+          || id.equals(cursor)
+          || !ids.add(id)) {
         throw invalid();
       }
       RecordPublicationAggregate.requireId(id);
@@ -90,75 +128,170 @@ final class RecordPublicationRows {
     return List.copyOf(ids);
   }
 
-  RecordPublicationAggregate calculate(final String parentId, final Function<RecordSelectPlan, CalciteQueryResult> reader) {
-    var root = read(parent, new RecordFilter(RecordFilterOperator.EQUALS, "id", List.of(parentId), List.of()), List.of(), 2, reader);
+  RecordPublicationAggregate calculate(
+      final String parentId, final Function<RecordSelectPlan, CalciteQueryResult> reader) {
+    var root =
+        read(
+            parent,
+            new RecordFilter(RecordFilterOperator.EQUALS, "id", List.of(parentId), List.of()),
+            List.of(),
+            2,
+            reader);
     if (root.size() != 1) {
       throw invalid();
     }
     var collections = new LinkedHashMap<String, List<RecordView>>();
     var inputs = new LinkedHashMap<String, List<Map<String, Object>>>();
-    details.forEach((scope, model) -> {
-      String parentColumn = model.activeSchema().fields().stream()
-          .filter(field -> field.fieldId().equals(model.activeSchema().owner().parentFieldId())).findFirst().orElseThrow().code();
-      var rows = read(model, new RecordFilter(RecordFilterOperator.EQUALS, parentColumn, List.of(parentId), List.of()),
-          List.of(new RecordSort("row_order", RecordSortDirection.ASC), new RecordSort("id", RecordSortDirection.ASC)), 41, reader);
-      if (rows.size() > 40) {
-        throw invalid();
-      }
-      collections.put(scope, rows);
-      inputs.put(scope, rows.stream().map(RecordView::values).toList());
-    });
-    var output = evaluator.evaluate(root.getFirst().values(), inputs);
+    details.forEach(
+        (scope, model) -> {
+          String parentColumn =
+              model.activeSchema().fields().stream()
+                  .filter(
+                      field -> field.fieldId().equals(model.activeSchema().owner().parentFieldId()))
+                  .findFirst()
+                  .orElseThrow()
+                  .code();
+          var rows =
+              read(
+                  model,
+                  new RecordFilter(
+                      RecordFilterOperator.EQUALS, parentColumn, List.of(parentId), List.of()),
+                  List.of(
+                      new RecordSort("row_order", RecordSortDirection.ASC),
+                      new RecordSort("id", RecordSortDirection.ASC)),
+                  41,
+                  reader);
+          if (rows.size() > 40) {
+            throw invalid();
+          }
+          collections.put(scope, rows);
+          inputs.put(scope, rows.stream().map(RecordView::values).toList());
+        });
+    var source = intent.command().conversionSource();
+    String retiredColumn =
+        source == null
+            ? null
+            : parent.activeSchema().fields().stream()
+                .filter(field -> field.fieldId().equals(source.source().fieldId()))
+                .findFirst()
+                .orElseThrow(RecordPublicationRows::invalid)
+                .code();
+    var output =
+        evaluator.evaluate(withClearedReference(root.getFirst().values(), retiredColumn), inputs);
+    var replacement = withClearedReference(output.parent(), retiredColumn);
     var patches = new ArrayList<RecordPublicationAggregate.Row>();
-    patches.add(patch(parent, root.getFirst(), null, output.parent()));
-    details.forEach((scope, model) -> {
-      var rows = collections.get(scope);
-      var computed = output.details().get(scope);
-      if (computed == null || computed.size() != rows.size()) {
-        throw invalid();
-      }
-      for (int index = 0; index < rows.size(); index++) {
-        var patch = patch(model, rows.get(index), parentId, computed.get(index));
-        if (!patch.changes().isEmpty()) {
-          patches.add(patch);
-        }
-      }
-    });
-    return new RecordPublicationAggregate(1, parentId, patches);
+    patches.add(patch(parent, root.getFirst(), null, replacement));
+    details.forEach(
+        (scope, model) -> {
+          var rows = collections.get(scope);
+          var computed = output.details().get(scope);
+          if (computed == null || computed.size() != rows.size()) {
+            throw invalid();
+          }
+          for (int index = 0; index < rows.size(); index++) {
+            var patch = patch(model, rows.get(index), parentId, computed.get(index));
+            patches.add(patch);
+          }
+        });
+    Map<String, List<RecordView>> before = new LinkedHashMap<>();
+    before.put(parent.physicalModelId(), root);
+    Map<String, List<RecordView>> after = new LinkedHashMap<>();
+    details.forEach(
+        (scope, model) -> {
+          var rows = collections.get(scope);
+          before.put(model.physicalModelId(), rows);
+          List<RecordView> projected = new ArrayList<>();
+          for (int index = 0; index < rows.size(); index++) {
+            projected.add(prospective(rows.get(index), output.details().get(scope).get(index)));
+          }
+          after.put(model.physicalModelId(), List.copyOf(projected));
+        });
+    return RecordPublicationCopyOrigins.attach(
+        intent,
+        parent,
+        details,
+        evaluator.dependencies(),
+        before,
+        new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView(
+            prospective(root.getFirst(), replacement), after),
+        patches,
+        reader);
   }
 
-  private RecordPublicationAggregate.Row patch(final RuntimeRecordModel model, final RecordView row,
-      final String parentId, final Map<String, Object> computed) {
+  private static Map<String, Object> withClearedReference(
+      Map<String, Object> values, String column) {
+    if (column == null) {
+      return values;
+    }
+    var replacement = new LinkedHashMap<>(values);
+    replacement.put(column, null);
+    return replacement;
+  }
+
+  private static RecordView prospective(RecordView row, Map<String, Object> computed) {
+    Map<String, Object> values = new LinkedHashMap<>(row.values());
+    values.putAll(computed);
+    return new RecordView(row.id(), Math.addExact(row.version(), 1), values);
+  }
+
+  private RecordPublicationAggregate.Row patch(
+      final RuntimeRecordModel model,
+      final RecordView row,
+      final String parentId,
+      final Map<String, Object> computed) {
     var changes = new LinkedHashMap<String, RecordPublicationAggregate.Change>();
     for (var entry : computed.entrySet()) {
-      var field = model.activeSchema().fields().stream().filter(value -> value.code().equals(entry.getKey())).findFirst().orElseThrow();
-      // Keep the public query wire shape; normalize exact values only at the durable staging boundary.
+      var field =
+          model.activeSchema().fields().stream()
+              .filter(value -> value.code().equals(entry.getKey()))
+              .findFirst()
+              .orElseThrow();
+      // Keep the public query wire shape; normalize exact values only at the durable staging
+      // boundary.
       var previous = values.normalize(field, row.values().get(field.code()));
       var candidate = values.normalize(field, entry.getValue());
       if (!previous.equals(candidate)) {
         changes.put(field.fieldId(), new RecordPublicationAggregate.Change(previous, candidate));
       }
     }
-    return new RecordPublicationAggregate.Row(model.physicalModelId(), row.id(), parentId, row.version(),
-        (String) row.values().get("updated_by"), (String) row.values().get("updated_at"), changes);
+    return new RecordPublicationAggregate.Row(
+        model.physicalModelId(),
+        row.id(),
+        parentId,
+        row.version(),
+        (String) row.values().get("updated_by"),
+        (String) row.values().get("updated_at"),
+        changes);
   }
 
-  private List<RecordView> read(final RuntimeRecordModel historical, final RecordFilter filter, final List<RecordSort> sorts,
-      final int limit, final Function<RecordSelectPlan, CalciteQueryResult> reader) {
+  private List<RecordView> read(
+      final RuntimeRecordModel historical,
+      final RecordFilter filter,
+      final List<RecordSort> sorts,
+      final int limit,
+      final Function<RecordSelectPlan, CalciteQueryResult> reader) {
     var model = active(historical);
     var fields = new ArrayList<>(model.requestedFieldCodes());
     fields.add("updated_by");
     fields.add("updated_at");
     var combined = new LinkedHashMap<String, RecordView>();
-    // Only columns are chunked: each query reads the same bounded row set in the borrowed transaction.
+    // Only columns are chunked: each query reads the same bounded row set in the borrowed
+    // transaction.
     for (int offset = 0; offset < fields.size(); offset += 90) {
-      var plan = page(model, fields.subList(offset, Math.min(fields.size(), offset + 90)), filter, sorts, limit);
+      var plan =
+          page(
+              model,
+              fields.subList(offset, Math.min(fields.size(), offset + 90)),
+              filter,
+              sorts,
+              limit);
       var result = reader.apply(plan);
       if (result.truncated() || result.rows().size() > limit) {
         throw invalid();
       }
       var rows = RecordQueryServiceImpl.views(result, plan, model, access(model));
-      if (offset > 0 && !List.copyOf(combined.keySet()).equals(rows.stream().map(RecordView::id).toList())) {
+      if (offset > 0
+          && !List.copyOf(combined.keySet()).equals(rows.stream().map(RecordView::id).toList())) {
         throw invalid();
       }
       var seen = new java.util.HashSet<String>();
@@ -174,30 +307,60 @@ final class RecordPublicationRows {
           }
           merged.putAll(previous.values());
         }
-        combined.put(row.id(), new RecordView(row.id(), row.version(), java.util.Collections.unmodifiableMap(merged)));
+        combined.put(
+            row.id(),
+            new RecordView(row.id(), row.version(), java.util.Collections.unmodifiableMap(merged)));
       }
     }
     return List.copyOf(combined.values());
   }
 
-  private RecordSelectPlan page(final RuntimeRecordModel model, final List<String> fields, final RecordFilter filter,
-      final List<RecordSort> sorts, final int limit) {
-    return sql.page(model, access(model), new RecordPageQuery(model.physicalModelId(),
-        new RecordSchemaReference(model.activeVersion(), schemas.encode(model.activeSchema()).checksum()), 0, limit, fields, filter, sorts));
+  private RecordSelectPlan page(
+      final RuntimeRecordModel model,
+      final List<String> fields,
+      final RecordFilter filter,
+      final List<RecordSort> sorts,
+      final int limit) {
+    return sql.page(
+        model,
+        access(model),
+        new RecordPageQuery(
+            model.physicalModelId(),
+            new RecordSchemaReference(
+                model.activeVersion(), schemas.encode(model.activeSchema()).checksum()),
+            0,
+            limit,
+            fields,
+            filter,
+            sorts));
   }
 
   private RecordAccessContext access(final RuntimeRecordModel model) {
     var fields = new LinkedHashSet<>(model.requestedFieldCodes());
     fields.addAll(List.of("id", "record_version", "updated_by", "updated_at"));
-    return new RecordAccessContext(new RuntimeActor(intent.key().tenantId(), intent.actorId()), null, fields, Set.of(), Set.of(), null, null);
+    return new RecordAccessContext(
+        new RuntimeActor(intent.key().tenantId(), intent.actorId()),
+        null,
+        fields,
+        Set.of(),
+        Set.of(),
+        null,
+        null);
   }
 
   private static RuntimeRecordModel active(final RuntimeRecordModel model) {
-    return new RuntimeRecordModel(model.physicalModelId(), model.appId(), model.formId(), model.activeVersion(), 
-        model.activeSchema(), model.target());
+    return new RuntimeRecordModel(
+        model.physicalModelId(),
+        model.appId(),
+        model.formId(),
+        model.activeVersion(),
+        model.activeSchema(),
+        model.target());
   }
 
   private static DnaRuntimeException invalid() {
-    return new DnaRuntimeException(DnaRuntimeErrorCode.PERSISTENCE_FAILED, "Publication aggregate input is incomplete or inconsistent");
+    return new DnaRuntimeException(
+        DnaRuntimeErrorCode.PERSISTENCE_FAILED,
+        "Publication aggregate input is incomplete or inconsistent");
   }
 }

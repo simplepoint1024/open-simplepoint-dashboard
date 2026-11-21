@@ -51,8 +51,8 @@ export function ErrorNotice({error, retry}: {error: unknown; retry?: () => void}
 
 /** Scope-bound, abortable single-flight writes; failures never discard the user's draft. */
 export function usePersonalWrite() {
-  const client = useQueryClient();
   const scope = useQueryScope();
+  const refresh = usePersonalRefresh();
   const request = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -64,8 +64,7 @@ export function usePersonalWrite() {
     try {
       const result = await operation(controller.signal);
       if (controller.signal.aborted || JSON.stringify(scope) !== getQueryScopeSnapshot()) return undefined;
-      await Promise.all([['personal'], ...['items', 'todos', 'messages'].map(kind => [`/common/personal/${kind}`])]
-        .map(key => client.invalidateQueries({queryKey: scopedQueryKey(scope, key)})));
+      await refresh();
       return result;
     } catch (cause) {
       if (!controller.signal.aborted) setError(cause);
@@ -77,4 +76,10 @@ export function usePersonalWrite() {
     }
   }
   return {run, busy, error, clearError: () => setError(null)};
+}
+
+export function usePersonalRefresh() {
+  const client = useQueryClient(), scope = useQueryScope();
+  return () => Promise.all([['personal'], ...['items', 'todos', 'messages'].map(kind => [`/common/personal/${kind}`])]
+    .map(key => client.invalidateQueries({queryKey: scopedQueryKey(scope, key)})));
 }

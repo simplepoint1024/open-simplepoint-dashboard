@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchDatabaseTest.locked;
 import static org.simplepoint.plugin.dna.runtime.service.record.RecordPublicationPatchDatabaseTest.update;
 
@@ -136,6 +137,12 @@ class RecordMaintenanceControlDatabaseTest {
       migrateControlSchema(url, user, password, schema);
       try (var factory =
           new MetadataSources(registry)
+              .addAnnotatedClass(
+                  org.simplepoint.plugin.dna.runtime.entity.PhysicalRelationCatalogEntity.class)
+              .addAnnotatedClass(
+                  org.simplepoint.plugin.dna.runtime.entity.PhysicalRelationDefinitionEntity.class)
+              .addAnnotatedClass(
+                  org.simplepoint.plugin.dna.runtime.entity.PhysicalRelationGuardEntity.class)
               .addAnnotatedClass(PhysicalModelEntity.class)
               .addAnnotatedClass(PhysicalModelBindingEntity.class)
               .addAnnotatedClass(PhysicalModelVersionEntity.class)
@@ -156,8 +163,22 @@ class RecordMaintenanceControlDatabaseTest {
         var maintenance =
             new RecordMaintenanceControl(
                 em, models, bindings, versions, db.fixture().codec, db.backend());
-        var control = new RecordPublicationControlFence(maintenance, manager);
-        transactions.executeWithoutResult(status -> seed(em, db));
+        var relations =
+            new org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog(
+                em,
+                new org.simplepoint.plugin.dna.runtime.service.relation
+                    .PhysicalRelationCatalogBoundary(em),
+                versions,
+                bindings,
+                db.fixture().codec,
+                new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver(
+                    models, bindings, versions, db.fixture().codec));
+        var control = new RecordPublicationControlFence(maintenance, manager, relations);
+        transactions.executeWithoutResult(
+            status -> {
+              seed(em, db);
+              relations.initialize(TENANT);
+            });
         try (var connection = RecordPublicationPatchDatabaseTest.transaction(db)) {
           db.fence().initialize(connection, db.fixture().intent.key(), "publisher", 30_000);
           connection.commit();
@@ -190,7 +211,9 @@ class RecordMaintenanceControlDatabaseTest {
                     new PhysicalSchemaValidator(new StandardLogicalValueConverter()),
                     context,
                     audit,
-                    maintenance),
+                    maintenance,
+                    relations,
+                    ownership(db)),
                 manager);
         var publication =
             proxy(
@@ -201,8 +224,16 @@ class RecordMaintenanceControlDatabaseTest {
                     repositories.getRepository(SchemaMigrationRepository.class),
                     repositories.getRepository(SchemaMigrationStepRepository.class),
                     db.fixture().codec,
+                    new org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec(
+                        new com.fasterxml.jackson.databind.ObjectMapper(),
+                        new org.simplepoint.plugin.dna.runtime.service.schema
+                            .PhysicalSchemaSnapshotCodec(
+                            new com.fasterxml.jackson.databind.ObjectMapper())),
+                    new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver(
+                        models, bindings, versions, db.fixture().codec),
                     audit,
-                    maintenance),
+                    maintenance,
+                    relations),
                 manager);
         var events = mock(EventPublisher.class);
         var offline = new PhysicalResourceOfflineHandler(em, events, maintenance);
@@ -216,7 +247,8 @@ class RecordMaintenanceControlDatabaseTest {
                 physical,
                 publication,
                 offline,
-                events));
+                events,
+                relations));
       }
     } finally {
       RequestContextHolder.clearContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY);
@@ -582,6 +614,7 @@ class RecordMaintenanceControlDatabaseTest {
       binding.setCatalogName(target.catalogName());
       binding.setSchemaName(target.schemaName());
       binding.setTableName(target.tableName());
+      binding.setPhysicalNamespaceId(db.namespaceId());
       binding.setIsolationMode(PhysicalIsolationMode.SHARED_DATABASE);
       em.persist(binding);
       for (int number : List.of(1, 2)) {
@@ -648,7 +681,37 @@ class RecordMaintenanceControlDatabaseTest {
       PhysicalModelServiceImpl physical,
       SchemaPublicationStateService publication,
       PhysicalResourceOfflineHandler offline,
-      EventPublisher events) {}
+      EventPublisher events,
+      org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog relations) {}
+
+  private static org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry
+      ownership(Database db) throws java.sql.SQLException {
+    var provider =
+        mock(
+            org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider
+                .class);
+    try (var connection = db.source().getConnection()) {
+      var metadata = connection.getMetaData();
+      var identity =
+          new org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity(
+              metadata.getDatabaseProductName(), metadata.getDatabaseProductVersion(),
+              metadata.getDatabaseMajorVersion(), metadata.getDatabaseMinorVersion());
+      when(provider.open(org.mockito.ArgumentMatchers.any()))
+          .thenReturn(
+              new org.simplepoint.plugin.dna.runtime.service.schema.ManagedRuntimeDataSourceProvider
+                  .ManagedRuntimeDataSource(
+                  new org.simplepoint.data.datasource.jdbc.SimpleDataSource(db.source()),
+                  false,
+                  db.context(),
+                  db.core(),
+                  db.dialect(),
+                  identity,
+                  db.catalog(),
+                  db.schema()));
+    }
+    return new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry(
+        provider);
+  }
 
   private static void await(CountDownLatch latch) {
     try {

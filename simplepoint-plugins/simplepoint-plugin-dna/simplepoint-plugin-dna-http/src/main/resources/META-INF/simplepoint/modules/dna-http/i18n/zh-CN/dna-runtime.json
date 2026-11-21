@@ -109,5 +109,6 @@
   "dna.runtime.definition.system.rowOrder": "行顺序",
   "dna.runtime.action.publishReviewed": "执行已评审迁移",
   "dna.runtime.publishFailed": "迁移未完成，请检查状态或重新评审计划",
+  "dna.runtime.error.RECORD_REFERENCE_CONFLICT": "操作与现有关联关系冲突，请检查关联记录是否可用或仍被引用。",
   "dna.runtime.error.RECORD_OPERATION_REJECTED": "数据不符合约束，本次提交已终止。请检查重复编号或必填内容后重新提交。"
 }

@@ -25,16 +25,32 @@ import org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind;
 /** Compiles typed management conditions to portable, parameter-bound Calcite predicates. */
 final class RecordValueConditionCompiler {
 
-  private RecordValueConditionCompiler() {
+  private RecordValueConditionCompiler() {}
+
+  static String compile(
+      final RuntimeRecordModel model,
+      final RecordAccessContext access,
+      final RecordValueCondition condition,
+      final RecordSqlParameters parameters,
+      final RecordJsonSemantics semantics) {
+    return compile(
+        model, field -> access.queryable(model, field), condition, parameters, semantics);
   }
 
-  static String compile(final RuntimeRecordModel model, final RecordAccessContext access,
-      final RecordValueCondition condition, final RecordSqlParameters parameters, final RecordJsonSemantics semantics) {
+  private static String compile(
+      final RuntimeRecordModel model,
+      final java.util.function.Predicate<String> readable,
+      final RecordValueCondition condition,
+      final RecordSqlParameters parameters,
+      final RecordJsonSemantics semantics) {
     if (condition.operator().constant()) {
       return condition.operator() == RecordValueConditionOperator.TRUE ? "(1 = 1)" : "(1 = 0)";
     }
     if (condition.operator().group()) {
-      List<String> children = condition.children().stream().map(child -> compile(model, access, child, parameters, semantics)).toList();
+      List<String> children =
+          condition.children().stream()
+              .map(child -> compile(model, readable, child, parameters, semantics))
+              .toList();
       return switch (condition.operator()) {
         case AND -> "(" + String.join(" AND ", children) + ")";
         case OR -> "(" + String.join(" OR ", children) + ")";
@@ -43,13 +59,17 @@ final class RecordValueConditionCompiler {
       };
     }
     LogicalFieldDefinition field = model.requestedField(condition.field());
-    if (field == null || !access.readableFields().contains(field.code()) || access.maskedFields().contains(field.code())) {
+    if (field == null || !readable.test(field.code())) {
       throw invalid();
     }
     String column = "\"" + model.activeCode(field.code()) + "\"";
-    if (condition.operator() == RecordValueConditionOperator.IS_EMPTY || condition.operator() == RecordValueConditionOperator.IS_NOT_EMPTY) {
-      String empty = RecordCompletenessPredicate.compile(column, field.type(), parameters, semantics);
-      return condition.operator() == RecordValueConditionOperator.IS_EMPTY ? "(" + empty + ")" : "(NOT (" + empty + "))";
+    if (condition.operator() == RecordValueConditionOperator.IS_EMPTY
+        || condition.operator() == RecordValueConditionOperator.IS_NOT_EMPTY) {
+      String empty =
+          RecordCompletenessPredicate.compile(column, field.type(), parameters, semantics);
+      return condition.operator() == RecordValueConditionOperator.IS_EMPTY
+          ? "(" + empty + ")"
+          : "(NOT (" + empty + "))";
     }
     try {
       return comparison(column, model.activeField(field.code()), condition, parameters);
@@ -59,27 +79,50 @@ final class RecordValueConditionCompiler {
     }
   }
 
-  private static String comparison(final String column, final LogicalFieldDefinition field,
-      final RecordValueCondition condition, final RecordSqlParameters parameters) {
+  /** Checks a declaration without reading records or manufacturing an execution authorization. */
+  static void validateDefinition(
+      final RuntimeRecordModel model, final RecordValueCondition condition) {
+    compile(
+        model,
+        field -> true,
+        condition,
+        new RecordSqlParameters(),
+        RecordJsonSemantics.STRUCTURAL_V1);
+  }
+
+  private static String comparison(
+      final String column,
+      final LogicalFieldDefinition field,
+      final RecordValueCondition condition,
+      final RecordSqlParameters parameters) {
     var operator = condition.operator();
-    boolean negative = operator == RecordValueConditionOperator.NOT_EQUALS || operator == RecordValueConditionOperator.NOT_IN;
-    String symbol = switch (operator) {
-      case EQUALS, NOT_EQUALS, IN, NOT_IN -> "=";
-      case GREATER_THAN -> ">";
-      case GREATER_THAN_OR_EQUAL -> ">=";
-      case LESS_THAN -> "<";
-      case LESS_THAN_OR_EQUAL -> "<=";
-      default -> throw invalid();
-    };
-    List<String> equalities = condition.values().stream()
-        .map(value -> scalar(column, field, symbol, value, parameters)).toList();
+    boolean negative =
+        operator == RecordValueConditionOperator.NOT_EQUALS
+            || operator == RecordValueConditionOperator.NOT_IN;
+    String symbol =
+        switch (operator) {
+          case EQUALS, NOT_EQUALS, IN, NOT_IN -> "=";
+          case GREATER_THAN -> ">";
+          case GREATER_THAN_OR_EQUAL -> ">=";
+          case LESS_THAN -> "<";
+          case LESS_THAN_OR_EQUAL -> "<=";
+          default -> throw invalid();
+        };
+    List<String> equalities =
+        condition.values().stream()
+            .map(value -> scalar(column, field, symbol, value, parameters))
+            .toList();
     // SQL NULL never escapes a scalar condition, including through nested NOT/AND/OR.
     String positive = "(" + column + " IS NOT NULL AND (" + String.join(" OR ", equalities) + "))";
     return negative ? "(NOT " + positive + ")" : positive;
   }
 
-  private static String scalar(final String column, final LogicalFieldDefinition field, final String symbol,
-      final LogicalValue value, final RecordSqlParameters parameters) {
+  private static String scalar(
+      final String column,
+      final LogicalFieldDefinition field,
+      final String symbol,
+      final LogicalValue value,
+      final RecordSqlParameters parameters) {
     return switch (field.type()) {
       case STRING, TEXT -> {
         kind(value, LogicalValueKind.STRING);
@@ -102,8 +145,10 @@ final class RecordValueConditionCompiler {
       }
       case INT32, INT64 -> {
         kind(value, LogicalValueKind.INTEGER);
-        Object number = field.type() == LogicalFieldType.INT32
-            ? (Object) Integer.valueOf(value.canonicalValue()) : Long.valueOf(value.canonicalValue());
+        Object number =
+            field.type() == LogicalFieldType.INT32
+                ? (Object) Integer.valueOf(value.canonicalValue())
+                : Long.valueOf(value.canonicalValue());
         yield column + " " + symbol + " " + parameters.add(number);
       }
       case DECIMAL -> decimal(column, field, symbol, value, parameters);
@@ -116,21 +161,29 @@ final class RecordValueConditionCompiler {
       case JSON -> {
         kind(value, LogicalValueKind.JSON);
         equalityOnly(symbol);
-        yield column + " = " + parameters.add(new RecordJsonParameter(LogicalJsonValues.canonicalize(value.canonicalValue())));
+        yield column
+            + " = "
+            + parameters.add(
+                new RecordJsonParameter(LogicalJsonValues.canonicalize(value.canonicalValue())));
       }
       case BINARY -> throw invalid();
     };
   }
 
-  private static String decimal(final String column, final LogicalFieldDefinition field, final String symbol,
-      final LogicalValue value, final RecordSqlParameters parameters) {
+  private static String decimal(
+      final String column,
+      final LogicalFieldDefinition field,
+      final String symbol,
+      final LogicalValue value,
+      final RecordSqlParameters parameters) {
     kind(value, LogicalValueKind.DECIMAL);
     BigDecimal number = new BigDecimal(value.canonicalValue());
     if (number.precision() > 2000 || Math.abs((long) number.scale()) > 1000) {
       throw invalid();
     }
     // Use ACTIVE storage bounds: a historical schema may have a narrower scale or precision.
-    BigDecimal maximum = BigDecimal.TEN.pow(field.precision()).subtract(BigDecimal.ONE).movePointLeft(field.scale());
+    BigDecimal maximum =
+        BigDecimal.TEN.pow(field.precision()).subtract(BigDecimal.ONE).movePointLeft(field.scale());
     if (number.compareTo(maximum) > 0) {
       return "<".equals(symbol) || "<=".equals(symbol) ? "1 = 1" : "1 = 0";
     }
@@ -142,12 +195,17 @@ final class RecordValueConditionCompiler {
     if (!aligned && "=".equals(symbol)) {
       return "1 = 0";
     }
-    String comparison = !aligned && "<".equals(symbol) ? "<=" : !aligned && ">=".equals(symbol) ? ">" : symbol;
+    String comparison =
+        !aligned && "<".equals(symbol) ? "<=" : !aligned && ">=".equals(symbol) ? ">" : symbol;
     return column + " " + comparison + " " + parameters.add(floor);
   }
 
-  private static String temporal(final String column, final LogicalFieldType type, final String symbol,
-      final LogicalValue value, final RecordSqlParameters parameters) {
+  private static String temporal(
+      final String column,
+      final LogicalFieldType type,
+      final String symbol,
+      final LogicalValue value,
+      final RecordSqlParameters parameters) {
     final String targetType;
     final String floor;
     final boolean aligned;
@@ -155,14 +213,17 @@ final class RecordValueConditionCompiler {
       kind(value, LogicalValueKind.TIME);
       LocalTime time = LocalTime.parse(value.canonicalValue());
       aligned = time.getNano() % 1000 == 0;
-      floor = time.truncatedTo(ChronoUnit.MICROS).format(DateTimeFormatter.ofPattern("HH:mm:ss.SSSSSS"));
+      floor =
+          time.truncatedTo(ChronoUnit.MICROS)
+              .format(DateTimeFormatter.ofPattern("HH:mm:ss.SSSSSS"));
       targetType = "TIME(6)";
     } else {
       kind(value, LogicalValueKind.DATETIME);
       Instant instant = Instant.parse(value.canonicalValue());
       aligned = instant.getNano() % 1000 == 0;
-      floor = LocalDateTime.ofInstant(instant.truncatedTo(ChronoUnit.MICROS), ZoneOffset.UTC)
-          .format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSSSSS"));
+      floor =
+          LocalDateTime.ofInstant(instant.truncatedTo(ChronoUnit.MICROS), ZoneOffset.UTC)
+              .format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSSSSS"));
       targetType = "TIMESTAMP(6)";
     }
     // Runtime physical temporal columns have microsecond precision. Compare an off-grid
@@ -170,16 +231,33 @@ final class RecordValueConditionCompiler {
     if (!aligned && "=".equals(symbol)) {
       return "1 = 0";
     }
-    String comparison = !aligned && "<".equals(symbol) ? "<=" : !aligned && ">=".equals(symbol) ? ">" : symbol;
-    return column + " " + comparison + " CAST(" + textParameter(floor, parameters) + " AS " + targetType + ")";
+    String comparison =
+        !aligned && "<".equals(symbol) ? "<=" : !aligned && ">=".equals(symbol) ? ">" : symbol;
+    return column
+        + " "
+        + comparison
+        + " CAST("
+        + textParameter(floor, parameters)
+        + " AS "
+        + targetType
+        + ")";
   }
 
-  private static String textEquality(final String column, final String value, final RecordSqlParameters parameters) {
+  private static String textEquality(
+      final String column, final String value, final RecordSqlParameters parameters) {
     // REPLACE matches exact text in the supported PostgreSQL/MySQL dialects. Comparing the
     // lengths as well prevents a repetition of the expected text from looking equal. No
     // collation-sensitive text equality, trimming, hash collision or service-side scan is involved.
-    return "(CHAR_LENGTH(" + column + ") = CHAR_LENGTH(" + textParameter(value, parameters) + ")"
-        + " AND CHAR_LENGTH(REPLACE(" + column + ", " + textParameter(value, parameters) + ", '')) = 0)";
+    return "(CHAR_LENGTH("
+        + column
+        + ") = CHAR_LENGTH("
+        + textParameter(value, parameters)
+        + ")"
+        + " AND CHAR_LENGTH(REPLACE("
+        + column
+        + ", "
+        + textParameter(value, parameters)
+        + ", '')) = 0)";
   }
 
   private static String textParameter(final String value, final RecordSqlParameters parameters) {
@@ -199,7 +277,9 @@ final class RecordValueConditionCompiler {
   }
 
   private static DnaRuntimeException invalid() {
-    return new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_QUERY_INVALID,
-        "Inspection condition requires known readable fields, supported comparisons and matching typed literals");
+    return new DnaRuntimeException(
+        DnaRuntimeErrorCode.RECORD_QUERY_INVALID,
+        "Inspection condition requires known readable fields, supported comparisons and matching"
+            + " typed literals");
   }
 }

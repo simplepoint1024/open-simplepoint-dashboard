@@ -31,7 +31,15 @@ export type FormFieldWritePolicy = 'EDITABLE' | 'CREATE_ONLY' | 'UNTIL_SUBMITTED
 export type FormFieldValidation = {minLength?: number; maxLength?: number; pattern?: string; patternMessage?: string};
 export type FormFieldAccess = {readOnly?: boolean; create?: 'WRITE' | 'HIDDEN'; edit?: 'WRITE' | 'READ' | 'HIDDEN'};
 export type FormPresentation = {listFieldOrder: string[]; labelWidth?: number | null};
+export type FormReferenceValueMode = 'LIVE' | 'SERVER_SNAPSHOT' | 'EDITABLE_DEFAULT';
+export type FormRuntimeReference = {relationId: string; allowDrillThrough: boolean;
+  contextual?: boolean | null; searchable?: boolean | null;
+  mappings?: {mappingId: string; destinationFieldId: string; mode: FormReferenceValueMode; nullPolicy?: 'CLEAR' | 'PRESERVE' | 'REJECT' | null}[];
+  mappingWritable?: boolean | null;
+  contextInputs?: {source: 'FORM' | 'ROW'; fieldId: string; type: FormFieldType}[]};
 export type FormFieldDefinition = {
+  reference?: FormRuntimeReference | null;
+  referenceValueMode?: FormReferenceValueMode | null;
   /** Server-owned output; expressions and dependency metadata are never exposed to runtime clients. */
   calculated?: boolean | null;
   access?: FormFieldAccess | null;

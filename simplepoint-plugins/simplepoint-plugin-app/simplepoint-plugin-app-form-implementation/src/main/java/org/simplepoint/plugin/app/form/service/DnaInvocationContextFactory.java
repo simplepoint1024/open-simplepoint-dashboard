@@ -1,13 +1,17 @@
 package org.simplepoint.plugin.app.form.service;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationContextHolder;
 import org.simplepoint.core.ResourceDataScope;
 import org.simplepoint.core.ResourcePolicyContext;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
+import org.simplepoint.plugin.dna.runtime.api.context.DnaResourcePolicy;
 
 /** Captures the current platform authorization policy for one trusted APP-to-DNA call. */
 public class DnaInvocationContextFactory {
@@ -15,10 +19,50 @@ public class DnaInvocationContextFactory {
   private static final String ORGANIZATION_ATTRIBUTE = "X-Org-Dept-Id";
 
   private final FormRequestContext requestContext;
+  private final FormRelationTargetResolver relations;
 
   /** Creates the factory over the canonical form actor resolver. */
-  public DnaInvocationContextFactory(final FormRequestContext requestContext) {
+  public DnaInvocationContextFactory(
+      final FormRequestContext requestContext, final FormRelationTargetResolver relations) {
     this.requestContext = requestContext;
+    this.relations = java.util.Objects.requireNonNull(relations, "relations");
+  }
+
+  /**
+   * Captures current target policies for writes and accepted submission intents, never for plain
+   * lists.
+   */
+  public DnaInvocationContext forWrite(
+      final PublishedApplicationFormResolver.PublishedApplicationForm form) {
+    return form.document().relations().isEmpty()
+        ? forForm(form)
+        : forRelations(form, relations.availableForWrite(form));
+  }
+
+  /** Returns an exact target context, or null when a delegated request omitted its own policy. */
+  public DnaInvocationContext forRelatedRead(
+      final PublishedApplicationFormResolver.PublishedApplicationForm source,
+      final PublishedApplicationFormResolver.PublishedApplicationForm target) {
+    var combined = forRelations(source, List.of(target));
+    if (target.resourceCode().equals(combined.resourceCode())) {
+      return combined;
+    }
+    var policy = combined.additionalResourcePolicies().get(target.resourceCode());
+    if (policy == null) {
+      return null;
+    }
+    return new DnaInvocationContext(
+        combined.tenantId(),
+        combined.actorId(),
+        combined.organizationId(),
+        target.resourceCode(),
+        combined.administrator(),
+        combined.resources(),
+        policy.dataScopeType(),
+        policy.departmentIds(),
+        policy.dataScopeIncludeSelf(),
+        policy.dataScopeExpressions(),
+        policy.fieldPermissions());
   }
 
   /** Produces a bounded immutable snapshot; DNA revalidates its model and resource bindings. */
@@ -53,7 +97,127 @@ public class DnaInvocationContextFactory {
         context.departmentIds(),
         context.dataScopeIncludeSelf(),
         context.dataScopeExpressions(),
-        permissions);
+        permissions,
+        context.additionalResourcePolicies());
+  }
+
+  /** A delegated publication must supply the target's policy, never the initiating page's defaults. */
+  DnaInvocationContext forCollectionMigrationRead(
+      PublishedApplicationFormResolver.PublishedApplicationForm target) {
+    var authorization = AuthorizationContextHolder.getContext();
+    if (authorization == null
+        || !authorization.isResourcePolicyDefaultsResolved()
+            && (resourceScope(authorization, target.resourceCode()) == null
+                || resourceFields(authorization, target.resourceCode()) == null)
+            && !Boolean.TRUE.equals(authorization.getIsAdministrator())) {
+      throw new org.simplepoint.plugin.app.form.api.error.ApplicationFormException(
+          org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.RESOURCE_ACCESS_DENIED,
+          "The target page's record policy is unavailable");
+    }
+    return forForm(target);
+  }
+
+  /**
+   * Captures only server-resolved relation participants. Missing target grants stay absent so an
+   * unchanged retained reference need not disclose or reauthorize an inaccessible target.
+   */
+  public DnaInvocationContext forRelations(
+      final PublishedApplicationFormResolver.PublishedApplicationForm source,
+      final Collection<PublishedApplicationFormResolver.PublishedApplicationForm> targets) {
+    if (targets == null || targets.size() > 50) {
+      throw new IllegalArgumentException("Related form budget exceeded");
+    }
+    var actor = requestContext.requireActor();
+    if (!actor.tenantId().equals(source.tenantId())) {
+      throw new IllegalArgumentException("Related forms must share the active tenant");
+    }
+    var primary = forForm(source);
+    var authorization = AuthorizationContextHolder.getContext();
+    Map<String, String> primaryFields = primary.fieldPermissions();
+    Map<String, DnaResourcePolicy> policies = new TreeMap<>();
+    Map<String, PublishedApplicationFormResolver.PublishedApplicationForm> identities =
+        new HashMap<>();
+    identities.put(source.resourceCode(), source);
+    for (var target : targets) {
+      if (!actor.tenantId().equals(target.tenantId())) {
+        throw new IllegalArgumentException("Related forms must share the active tenant");
+      }
+      var prior = identities.putIfAbsent(target.resourceCode(), target);
+      if (prior != null) {
+        if (!prior.applicationId().equals(target.applicationId())
+            || !prior.formId().equals(target.formId())
+            || !prior.physicalModelId().equals(target.physicalModelId())) {
+          throw new IllegalArgumentException("Related resource has conflicting form identities");
+        }
+      }
+      if (!primary.administrator() && !primary.resources().contains(target.resourceCode())) {
+        continue;
+      }
+      if (!target.resourceCode().equals(primary.resourceCode())
+          && !authorization.isResourcePolicyDefaultsResolved()
+          && (resourceScope(authorization, target.resourceCode()) == null
+              || resourceFields(authorization, target.resourceCode()) == null)) {
+        // RPC/submission contexts may contain all grant names but only a subset of page policies.
+        // Missing target policy cannot be reconstructed from the source page's top-level scope.
+        continue;
+      }
+      var selected = forForm(target);
+      if (target.resourceCode().equals(primary.resourceCode())) {
+        primaryFields = restrictTogether(primaryFields, selected.fieldPermissions());
+        continue;
+      }
+      var previous = policies.get(target.resourceCode());
+      var targetFields =
+          previous == null
+              ? selected.fieldPermissions()
+              : restrictTogether(previous.fieldPermissions(), selected.fieldPermissions());
+      policies.put(
+          target.resourceCode(),
+          new DnaResourcePolicy(
+              "1",
+              selected.dataScopeType() == null
+                  ? selected.administrator() ? "ALL" : "DENY"
+                  : selected.dataScopeType(),
+              selected.departmentIds(),
+              selected.dataScopeIncludeSelf(),
+              selected.dataScopeExpressions(),
+              targetFields));
+    }
+    return new DnaInvocationContext(
+        primary.tenantId(),
+        primary.actorId(),
+        primary.organizationId(),
+        primary.resourceCode(),
+        primary.administrator(),
+        primary.resources(),
+        primary.dataScopeType() == null
+            ? primary.administrator() ? "ALL" : "DENY"
+            : primary.dataScopeType(),
+        primary.departmentIds(),
+        primary.dataScopeIncludeSelf(),
+        primary.dataScopeExpressions(),
+        primaryFields,
+        policies);
+  }
+
+  private static Map<String, String> restrictTogether(
+      Map<String, String> left, Map<String, String> right) {
+    var result = new HashMap<>(left);
+    var order = List.of("HIDDEN", "MASKED", "VISIBLE", "EDITABLE");
+    right.forEach(
+        (field, access) ->
+            result.merge(
+                field,
+                access,
+                (first, second) -> {
+                  int a = order.indexOf(first);
+                  int b = order.indexOf(second);
+                  if (a < 0 || b < 0) {
+                    throw new IllegalArgumentException("Invalid related field access");
+                  }
+                  return a <= b ? first : second;
+                }));
+    return Map.copyOf(result);
   }
 
   /**
@@ -97,7 +261,7 @@ public class DnaInvocationContextFactory {
     return context.getResourceDataScopes().get(resourceCode);
   }
 
-  private static Map<String, String> resourceFields(
+  static Map<String, String> resourceFields(
       final AuthorizationContext context, final String resourceCode) {
     if (context == null || resourceCode == null || context.getResourceFieldPermissions() == null) {
       return null;

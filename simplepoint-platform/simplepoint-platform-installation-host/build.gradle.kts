@@ -4,11 +4,16 @@ application { mainClass.set("org.simplepoint.installation.host.InstallationMain"
 dependencies {
     implementation(project(":simplepoint-platform:simplepoint-platform-installation-jdbc"))
     implementation(project(":simplepoint-platform:simplepoint-platform-installation-dictionary"))
+    implementation(project(":simplepoint-platform:simplepoint-platform-installation-ownership"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-api"))
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation"))
     implementation(project(":simplepoint-data:simplepoint-data-migrations"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-oidc:simplepoint-plugin-oidc-service"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-router-implementation"))
     implementation(project(":simplepoint-plugins:simplepoint-plugins-rbac:simplepoint-plugin-rbac-tenant-implementation"))
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("com.mysql:mysql-connector-j")
     implementation(project(":simplepoint-platform:simplepoint-platform-composition-spring"))
     implementation(project(":simplepoint-platform:simplepoint-platform-http-servlet"))
     implementation(project(":simplepoint-platform:simplepoint-platform-bootstrap"))
@@ -34,8 +39,14 @@ dependencies {
 
 tasks.test {
     val tenantPostgres = providers.environmentVariable("SP_TENANT_PACKAGE_TEST_POSTGRES_URL").isPresent
+    val physicalPostgres = providers.environmentVariable("PHYSICAL_OWNERSHIP_TEST_POSTGRES_URL").isPresent
+    val physicalMysql = providers.environmentVariable("PHYSICAL_OWNERSHIP_TEST_MYSQL_URL").isPresent
     inputs.property("tenantAdoptionPostgres", tenantPostgres)
-    outputs.upToDateWhen { !tenantPostgres }
-    outputs.doNotCacheIf("Verifies offline tenant adoption against disposable PostgreSQL schemas") { tenantPostgres }
+    inputs.property("physicalOwnershipPostgres", physicalPostgres)
+    inputs.property("physicalOwnershipMysql", physicalMysql)
+    outputs.upToDateWhen { !tenantPostgres && !physicalPostgres && !physicalMysql }
+    outputs.doNotCacheIf("Verifies offline installation against disposable native databases") {
+        tenantPostgres || physicalPostgres || physicalMysql
+    }
 }
 

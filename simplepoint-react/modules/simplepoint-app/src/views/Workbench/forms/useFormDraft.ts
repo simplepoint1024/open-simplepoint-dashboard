@@ -15,12 +15,16 @@ export default function useFormDraft(endpoint: string, initial: FormDraft, edita
   const [document, setDocument] = useState(initial.document), [saved, setSaved] = useState(initial.document);
   const [revision, setRevision] = useState(initial.revision), [reset, setReset] = useState(0);
   const [checksum, setChecksum] = useState(initial.checksum);
+  const [convertibleRelationIds, setConvertibleRelationIds] = useState(initial.convertibleRelationIds);
+  const [publishedCollections, setPublishedCollections] = useState(initial.publishedCollections);
   const [error, setError] = useState(''), [conflict, setConflict] = useState(false), [retry, setRetry] = useState<SaveRequest>();
   const documentRef = useRef(document); documentRef.current = document;
   const dirty = !sameDesignDocument(document, saved);
   usePageRetention(!dirty && !operation.busy && !retry, dirty || operation.busy || Boolean(retry));
   const accept = (result: FormDraft, snapshot: DesignDocument) => {
     setRevision(result.revision); setChecksum(result.checksum); setSaved(snapshot); setRetry(undefined); setConflict(false); setError('');
+    setConvertibleRelationIds(result.convertibleRelationIds);
+    setPublishedCollections(result.publishedCollections);
   };
   const send = async (request: SaveRequest) => {
     if (!editable || conflict) return false;
@@ -69,7 +73,23 @@ export default function useFormDraft(endpoint: string, initial: FormDraft, edita
       if (operation.current(controller.signal)) setError(resolveApiErrorMessage(cause, t('app.designer.loadFailed', '草稿加载失败')));
     } finally {operation.finish(controller);}
   };
+  const refreshRelationSources = async () => {
+    const controller = operation.begin(); if (!controller) return;
+    try {
+      const remote = await get<FormDraft>(endpoint, undefined, {signal: controller.signal, notifyOnError: false});
+      if (operation.current(controller.signal) && remote.formId === initial.formId) {
+        setConvertibleRelationIds(remote.convertibleRelationIds);
+        setPublishedCollections(remote.publishedCollections);
+      }
+    } catch {
+      if (operation.current(controller.signal)) {
+        setConvertibleRelationIds(undefined);
+        setPublishedCollections(undefined);
+      }
+    } finally {operation.finish(controller);}
+  };
   return {document, dirty, revision, checksum, reset, error, conflict, retry, busy: operation.busy, selected: operation.selected,
+    convertibleRelationIds, publishedCollections, refreshRelationSources,
     disabled: !editable || !operation.selected || conflict || Boolean(retry), save, reload,
     change: (next: DesignDocument) => {
       if (!editable || !operation.isSelected() || conflict || retry) return;

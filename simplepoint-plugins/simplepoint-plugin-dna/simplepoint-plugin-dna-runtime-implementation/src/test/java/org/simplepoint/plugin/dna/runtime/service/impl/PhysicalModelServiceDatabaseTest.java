@@ -64,47 +64,56 @@ class PhysicalModelServiceDatabaseTest {
   private PhysicalModelBindingRepository bindingRepository;
   private PhysicalModelVersionRepository versionRepository;
   private DnaRuntimeAuditEventRepository auditRepository;
+  private org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry
+      ownership;
+  private final String namespaceId = UUID.randomUUID().toString();
 
   @BeforeEach
   void setUp() {
-    var registry = new StandardServiceRegistryBuilder()
-        .applySetting("hibernate.connection.url", "jdbc:h2:mem:dna-runtime-" + UUID.randomUUID())
-        .applySetting("hibernate.hbm2ddl.auto", "create-drop")
-        .build();
-    factory = new MetadataSources(registry)
-        .addAnnotatedClass(PhysicalModelEntity.class)
-        .addAnnotatedClass(PhysicalModelBindingEntity.class)
-        .addAnnotatedClass(PhysicalModelVersionEntity.class)
-        .addAnnotatedClass(PhysicalModelResourceBindingEntity.class)
-        .addAnnotatedClass(DnaRuntimeAuditEventEntity.class)
-        .addAnnotatedClass(RecordCreateReceiptEntity.class)
-        .addAnnotatedClass(SchemaMigrationEntity.class)
-        .addAnnotatedClass(SchemaMigrationStepEntity.class)
-        .buildMetadata()
-        .buildSessionFactory();
+    var registry =
+        new StandardServiceRegistryBuilder()
+            .applySetting(
+                "hibernate.connection.url", "jdbc:h2:mem:dna-runtime-" + UUID.randomUUID())
+            .applySetting("hibernate.hbm2ddl.auto", "create-drop")
+            .build();
+    factory =
+        new MetadataSources(registry)
+            .addAnnotatedClass(PhysicalModelEntity.class)
+            .addAnnotatedClass(PhysicalModelBindingEntity.class)
+            .addAnnotatedClass(PhysicalModelVersionEntity.class)
+            .addAnnotatedClass(PhysicalModelResourceBindingEntity.class)
+            .addAnnotatedClass(DnaRuntimeAuditEventEntity.class)
+            .addAnnotatedClass(RecordCreateReceiptEntity.class)
+            .addAnnotatedClass(SchemaMigrationEntity.class)
+            .addAnnotatedClass(SchemaMigrationStepEntity.class)
+            .buildMetadata()
+            .buildSessionFactory();
     session = factory.openSession();
     session.beginTransaction();
     configureRepositories();
 
-    service = new PhysicalModelServiceImpl(
-        modelRepository,
-        bindingRepository,
-        versionRepository,
-        request -> new PhysicalBindingTarget(
-            "forms-primary",
-            null,
-            "forms",
-            PhysicalIsolationMode.SHARED_DATABASE
-        ),
-        new DefaultPhysicalTableNamingStrategy(),
-        new PhysicalSchemaCodec(new ObjectMapper().findAndRegisterModules()),
-        new PhysicalSchemaValidator(
-            new StandardLogicalValueConverter()
-        ),
-        new RuntimeRequestContext(),
-        new JpaDnaRuntimeAuditPublisher(auditRepository),
-        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
-    );
+    ownership =
+        mock(
+            org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry.class);
+    when(ownership.reserve(anyString(), anyString(), any(), anyString())).thenReturn(namespaceId);
+
+    service =
+        new PhysicalModelServiceImpl(
+            modelRepository,
+            bindingRepository,
+            versionRepository,
+            request ->
+                new PhysicalBindingTarget(
+                    "forms-primary", null, "forms", PhysicalIsolationMode.SHARED_DATABASE),
+            new DefaultPhysicalTableNamingStrategy(),
+            new PhysicalSchemaCodec(new ObjectMapper().findAndRegisterModules()),
+            new PhysicalSchemaValidator(new StandardLogicalValueConverter()),
+            new RuntimeRequestContext(),
+            new JpaDnaRuntimeAuditPublisher(auditRepository),
+            org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl
+                .available(modelRepository),
+            mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class),
+            ownership);
   }
 
   @AfterEach
@@ -136,25 +145,45 @@ class PhysicalModelServiceDatabaseTest {
     assertThat(count(PhysicalModelBindingEntity.class)).isEqualTo(1);
     assertThat(count(PhysicalModelVersionEntity.class)).isEqualTo(1);
     assertThat(count(DnaRuntimeAuditEventEntity.class)).isEqualTo(1);
-    PhysicalModelBindingEntity binding = session.createQuery(
-        "from PhysicalModelBindingEntity",
-        PhysicalModelBindingEntity.class
-    ).getSingleResult();
+    PhysicalModelBindingEntity binding =
+        session
+            .createQuery("from PhysicalModelBindingEntity", PhysicalModelBindingEntity.class)
+            .getSingleResult();
     assertThat(binding.getDataSourceId()).isEqualTo("forms-primary");
     assertThat(binding.getTableName()).hasSize(30).startsWith("spf_");
-    DnaRuntimeAuditEventEntity audit = session.createQuery(
-        "from DnaRuntimeAuditEventEntity",
-        DnaRuntimeAuditEventEntity.class
-    ).getSingleResult();
+    assertThat(binding.getPhysicalNamespaceId()).isEqualTo(namespaceId);
+    org.mockito.Mockito.verify(ownership)
+        .reserve(
+            org.mockito.ArgumentMatchers.eq("tenant-a"),
+            org.mockito.ArgumentMatchers.eq(created.id()),
+            any(),
+            org.mockito.ArgumentMatchers.eq(binding.getTableName()));
+    DnaRuntimeAuditEventEntity audit =
+        session
+            .createQuery("from DnaRuntimeAuditEventEntity", DnaRuntimeAuditEventEntity.class)
+            .getSingleResult();
     assertThat(audit.getDataSourceId()).isEqualTo("forms-primary");
     assertThat(audit.getDurationMillis()).isNotNegative();
     assertThat(audit.getAffectedRows()).isNull();
 
     authorize("tenant-b", "user-b");
+    assertCode(() -> service.get(created.id()), DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND);
+  }
+
+  @Test
+  void unavailableOwnershipDoesNotCreateControlRecordsOrSuccessAudit() {
+    authorize("tenant-a", "user-a");
+    when(ownership.reserve(anyString(), anyString(), any(), anyString()))
+        .thenThrow(
+            new DnaRuntimeException(
+                DnaRuntimeErrorCode.PHYSICAL_OWNERSHIP_UNAVAILABLE, "Installation required"));
     assertCode(
-        () -> service.get(created.id()),
-        DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND
-    );
+        () -> service.register(registration("form-a", "name")),
+        DnaRuntimeErrorCode.PHYSICAL_OWNERSHIP_UNAVAILABLE);
+    assertThat(count(PhysicalModelEntity.class)).isZero();
+    assertThat(count(PhysicalModelBindingEntity.class)).isZero();
+    assertThat(count(PhysicalModelVersionEntity.class)).isZero();
+    assertThat(count(DnaRuntimeAuditEventEntity.class)).isZero();
   }
 
   @Test
@@ -164,28 +193,59 @@ class PhysicalModelServiceDatabaseTest {
 
     assertCode(
         () -> service.register(registration("form-a", "other_name")),
-        DnaRuntimeErrorCode.PHYSICAL_MODEL_ALREADY_EXISTS
-    );
+        DnaRuntimeErrorCode.PHYSICAL_MODEL_ALREADY_EXISTS);
 
-    var secondVersion = service.createVersion(
-        created.id(),
-        new PhysicalModelVersionCommand(
-            created.lockVersion(),
-            schema("renamed_name")
-        )
-    );
+    var secondVersion =
+        service.createVersion(
+            created.id(),
+            new PhysicalModelVersionCommand(created.lockVersion(), schema("renamed_name")));
     assertThat(secondVersion.version()).isEqualTo(2);
     assertThat(service.get(created.id()).lockVersion()).isEqualTo(1);
     assertThat(count(PhysicalModelVersionEntity.class)).isEqualTo(2);
     assertThat(count(DnaRuntimeAuditEventEntity.class)).isEqualTo(2);
 
     assertCode(
-        () -> service.createVersion(
-            created.id(),
-            new PhysicalModelVersionCommand(created.lockVersion(), schema("third_name"))
-        ),
-        DnaRuntimeErrorCode.PHYSICAL_MODEL_VERSION_CONFLICT
-    );
+        () ->
+            service.createVersion(
+                created.id(),
+                new PhysicalModelVersionCommand(created.lockVersion(), schema("third_name"))),
+        DnaRuntimeErrorCode.PHYSICAL_MODEL_VERSION_CONFLICT);
+  }
+
+  @Test
+  void tenantIdentityCanBeEnabledButCannotBeRemovedThroughAnOrdinaryVersion() {
+    authorize("tenant-a", "user-a");
+    var created = service.register(registration("form-a", "name"));
+    var original = schema("name");
+    var enabled =
+        new PhysicalSchemaDefinition(
+            original.contractVersion(),
+            original.fields(),
+            original.indexes(),
+            original.owner(),
+            true);
+    service.createVersion(
+        created.id(), new PhysicalModelVersionCommand(created.lockVersion(), enabled));
+    var current = service.get(created.id());
+    assertThat(current.latestSchema().schema().tenantRecordIdentity()).isTrue();
+    for (var disabled :
+        List.of(
+            original,
+            new PhysicalSchemaDefinition(
+                original.contractVersion(),
+                original.fields(),
+                original.indexes(),
+                original.owner(),
+                false))) {
+      assertCode(
+          () ->
+              service.createVersion(
+                  created.id(), new PhysicalModelVersionCommand(current.lockVersion(), disabled)),
+          DnaRuntimeErrorCode.INVALID_ARGUMENT);
+    }
+    assertThat(service.get(created.id()).latestVersion()).isEqualTo(2);
+    assertThat(count(PhysicalModelVersionEntity.class)).isEqualTo(2);
+    assertThat(count(DnaRuntimeAuditEventEntity.class)).isEqualTo(2);
   }
 
   @Test
@@ -195,10 +255,12 @@ class PhysicalModelServiceDatabaseTest {
         .thenThrow(new DataAccessResourceFailureException("password=secret"));
 
     assertThatThrownBy(() -> service.register(registration("form-a", "name")))
-        .isInstanceOfSatisfying(DnaRuntimeException.class, exception -> {
-          assertThat(exception.errorCode()).isEqualTo(DnaRuntimeErrorCode.PERSISTENCE_FAILED);
-          assertThat(exception.getMessage()).doesNotContain("password=secret");
-        });
+        .isInstanceOfSatisfying(
+            DnaRuntimeException.class,
+            exception -> {
+              assertThat(exception.errorCode()).isEqualTo(DnaRuntimeErrorCode.PERSISTENCE_FAILED);
+              assertThat(exception.getMessage()).doesNotContain("password=secret");
+            });
   }
 
   private void configureRepositories() {
@@ -208,33 +270,31 @@ class PhysicalModelServiceDatabaseTest {
     auditRepository = mock(DnaRuntimeAuditEventRepository.class);
 
     when(modelRepository.existsActiveByForm(anyString(), anyString(), anyString()))
-        .thenAnswer(call -> countQuery(
-            "select count(model) from PhysicalModelEntity model "
-                + "where model.tenantId = :tenant and model.appId = :app "
-                + "and model.formId = :form and model.deletedAt is null",
-            Map.of(
-                "tenant", call.getArgument(0),
-                "app", call.getArgument(1),
-                "form", call.getArgument(2)
-            )
-        ) > 0);
-    when(bindingRepository.existsActiveTarget(
-        anyString(),
-        anyString(),
-        anyString(),
-        anyString()
-    )).thenAnswer(call -> countQuery(
-        "select count(binding) from PhysicalModelBindingEntity binding "
-            + "where binding.dataSourceId = :source and binding.catalogName = :catalog "
-            + "and binding.schemaName = :schema and binding.tableName = :table "
-            + "and binding.deletedAt is null",
-        Map.of(
-            "source", call.getArgument(0),
-            "catalog", call.getArgument(1),
-            "schema", call.getArgument(2),
-            "table", call.getArgument(3)
-        )
-    ) > 0);
+        .thenAnswer(
+            call ->
+                countQuery(
+                        "select count(model) from PhysicalModelEntity model "
+                            + "where model.tenantId = :tenant and model.appId = :app "
+                            + "and model.formId = :form and model.deletedAt is null",
+                        Map.of(
+                            "tenant", call.getArgument(0),
+                            "app", call.getArgument(1),
+                            "form", call.getArgument(2)))
+                    > 0);
+    when(bindingRepository.existsActiveTarget(anyString(), anyString(), anyString(), anyString()))
+        .thenAnswer(
+            call ->
+                countQuery(
+                        "select count(binding) from PhysicalModelBindingEntity binding where"
+                            + " binding.dataSourceId = :source and binding.catalogName = :catalog"
+                            + " and binding.schemaName = :schema and binding.tableName = :table and"
+                            + " binding.deletedAt is null",
+                        Map.of(
+                            "source", call.getArgument(0),
+                            "catalog", call.getArgument(1),
+                            "schema", call.getArgument(2),
+                            "table", call.getArgument(3)))
+                    > 0);
 
     when(modelRepository.save(any(PhysicalModelEntity.class)))
         .thenAnswer(call -> persist(call.getArgument(0)));
@@ -244,66 +304,63 @@ class PhysicalModelServiceDatabaseTest {
         .thenAnswer(call -> persist(call.getArgument(0)));
     when(auditRepository.save(any(DnaRuntimeAuditEventEntity.class)))
         .thenAnswer(call -> persist(call.getArgument(0)));
-    doAnswer(call -> {
-      session.flush();
-      return null;
-    }).when(modelRepository).flush();
+    doAnswer(
+            call -> {
+              session.flush();
+              return null;
+            })
+        .when(modelRepository)
+        .flush();
 
     when(modelRepository.findActiveById(anyString(), anyString()))
         .thenAnswer(call -> findModel(call.getArgument(0), call.getArgument(1)));
     when(modelRepository.findActiveByForm(anyString(), anyString(), anyString()))
-        .thenAnswer(call -> unique(
-            "from PhysicalModelEntity model where model.tenantId = :tenant "
-                + "and model.appId = :app and model.formId = :form "
-                + "and model.deletedAt is null",
-            PhysicalModelEntity.class,
-            Map.of(
-                "tenant", call.getArgument(0),
-                "app", call.getArgument(1),
-                "form", call.getArgument(2)
-            )
-        ));
+        .thenAnswer(
+            call ->
+                unique(
+                    "from PhysicalModelEntity model where model.tenantId = :tenant "
+                        + "and model.appId = :app and model.formId = :form "
+                        + "and model.deletedAt is null",
+                    PhysicalModelEntity.class,
+                    Map.of(
+                        "tenant", call.getArgument(0),
+                        "app", call.getArgument(1),
+                        "form", call.getArgument(2))));
     when(modelRepository.findActiveByIdForUpdate(anyString(), anyString()))
         .thenAnswer(call -> findModel(call.getArgument(0), call.getArgument(1)));
     when(bindingRepository.findActiveByModel(anyString(), anyString()))
-        .thenAnswer(call -> unique(
-            "from PhysicalModelBindingEntity binding "
-                + "where binding.tenantId = :tenant and binding.physicalModelId = :model "
-                + "and binding.deletedAt is null",
-            PhysicalModelBindingEntity.class,
-            Map.of("tenant", call.getArgument(0), "model", call.getArgument(1))
-        ));
+        .thenAnswer(
+            call ->
+                unique(
+                    "from PhysicalModelBindingEntity binding "
+                        + "where binding.tenantId = :tenant and binding.physicalModelId = :model "
+                        + "and binding.deletedAt is null",
+                    PhysicalModelBindingEntity.class,
+                    Map.of("tenant", call.getArgument(0), "model", call.getArgument(1))));
     when(versionRepository.findActiveVersion(anyString(), anyString(), anyInt()))
-        .thenAnswer(call -> unique(
-            "from PhysicalModelVersionEntity version "
-                + "where version.tenantId = :tenant and version.physicalModelId = :model "
-                + "and version.versionNumber = :version and version.deletedAt is null",
-            PhysicalModelVersionEntity.class,
-            Map.of(
-                "tenant", call.getArgument(0),
-                "model", call.getArgument(1),
-                "version", call.getArgument(2)
-            )
-        ));
+        .thenAnswer(
+            call ->
+                unique(
+                    "from PhysicalModelVersionEntity version "
+                        + "where version.tenantId = :tenant and version.physicalModelId = :model "
+                        + "and version.versionNumber = :version and version.deletedAt is null",
+                    PhysicalModelVersionEntity.class,
+                    Map.of(
+                        "tenant", call.getArgument(0),
+                        "model", call.getArgument(1),
+                        "version", call.getArgument(2))));
   }
 
-  private Optional<PhysicalModelEntity> findModel(
-      final String tenantId,
-      final String modelId
-  ) {
+  private Optional<PhysicalModelEntity> findModel(final String tenantId, final String modelId) {
     return unique(
         "from PhysicalModelEntity model where model.tenantId = :tenant "
             + "and model.id = :model and model.deletedAt is null",
         PhysicalModelEntity.class,
-        Map.of("tenant", tenantId, "model", modelId)
-    );
+        Map.of("tenant", tenantId, "model", modelId));
   }
 
   private <T> Optional<T> unique(
-      final String hql,
-      final Class<T> type,
-      final Map<String, Object> parameters
-  ) {
+      final String hql, final Class<T> type, final Map<String, Object> parameters) {
     var query = session.createQuery(hql, type);
     parameters.forEach(query::setParameter);
     return query.uniqueResultOptional();
@@ -317,10 +374,9 @@ class PhysicalModelServiceDatabaseTest {
 
   private long count(final Class<?> type) {
     session.flush();
-    return session.createQuery(
-        "select count(entity) from " + type.getSimpleName() + " entity",
-        Long.class
-    ).getSingleResult();
+    return session
+        .createQuery("select count(entity) from " + type.getSimpleName() + " entity", Long.class)
+        .getSingleResult();
   }
 
   private <T> T persist(final T entity) {
@@ -331,34 +387,26 @@ class PhysicalModelServiceDatabaseTest {
   }
 
   private static PhysicalModelRegistrationCommand registration(
-      final String formId,
-      final String fieldCode
-  ) {
+      final String formId, final String fieldCode) {
     return new PhysicalModelRegistrationCommand(
-        "app-a",
-        formId,
-        "Customer Form",
-        "default",
-        schema(fieldCode)
-    );
+        "app-a", formId, "Customer Form", "default", schema(fieldCode));
   }
 
   private static PhysicalSchemaDefinition schema(final String fieldCode) {
     return new PhysicalSchemaDefinition(
         DnaRuntimeApiVersion.CURRENT,
-        List.of(new LogicalFieldDefinition(
-            "field-1",
-            fieldCode,
-            "Name",
-            LogicalFieldType.STRING,
-            false,
-            128,
-            null,
-            null,
-            null
-        )),
-        List.of()
-    );
+        List.of(
+            new LogicalFieldDefinition(
+                "field-1",
+                fieldCode,
+                "Name",
+                LogicalFieldType.STRING,
+                false,
+                128,
+                null,
+                null,
+                null)),
+        List.of());
   }
 
   private static void authorize(final String tenantId, final String actorId) {
@@ -368,12 +416,10 @@ class PhysicalModelServiceDatabaseTest {
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
   }
 
-  private static void assertCode(
-      final Runnable operation,
-      final DnaRuntimeErrorCode expected
-  ) {
+  private static void assertCode(final Runnable operation, final DnaRuntimeErrorCode expected) {
     assertThatThrownBy(operation::run)
-        .isInstanceOfSatisfying(DnaRuntimeException.class, exception ->
-            assertThat(exception.errorCode()).isEqualTo(expected));
+        .isInstanceOfSatisfying(
+            DnaRuntimeException.class,
+            exception -> assertThat(exception.errorCode()).isEqualTo(expected));
   }
 }

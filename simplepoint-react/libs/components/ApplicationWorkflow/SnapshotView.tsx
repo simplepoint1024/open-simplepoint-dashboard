@@ -8,6 +8,8 @@ import FormRuntime from '../FormRuntime';
 import TableActions from '../Table/Actions';
 import type {SubmissionSnapshot} from './types';
 
+const EMPTY_REFERENCE_SNAPSHOTS = [] as const;
+
 /** Snapshot authorization is server-side; a failed refresh never leaves an actionable stale view. */
 export default function SnapshotView({url, onValidityChange}: {url: string; onValidityChange?: (valid: boolean) => void}) {
   const {t} = useI18n();
@@ -23,5 +25,6 @@ export default function SnapshotView({url, onValidityChange}: {url: string; onVa
   const {form, record} = query.data;
   return <FormRuntime key={JSON.stringify([url, form.formId, form.formVersion, record.id, record.version])}
     document={form.document} sceneId={form.sceneId} value={record.values}
+    referenceSnapshots={record.referenceSnapshots ?? EMPTY_REFERENCE_SNAPSHOTS}
     systemValues={record.systemValues} systemLabels={record.systemLabels} recordState={record.state} readOnly/>;
 }

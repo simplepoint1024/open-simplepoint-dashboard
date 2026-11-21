@@ -91,6 +91,32 @@
               "publicAccess": false,
               "grantable": true,
               "disabled": false
+            },
+            {
+              "code": "workflow.definitions.delete",
+              "name": "删除流程定义",
+              "label": "删除流程定义",
+              "title": "workflow.definition.delete",
+              "alias": "i18n:workflow.definition.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 140,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            },
+            {
+              "code": "workflow.definitions.offline",
+              "name": "下线流程",
+              "label": "下线流程",
+              "title": "workflow.definition.offline",
+              "alias": "i18n:workflow.definition.offline",
+              "type": "ACTION",
+              "icon": "StopOutlined",
+              "sort": 150,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
             }
           ]
         },
@@ -204,6 +230,20 @@
           "disabled": false,
           "scopeTypes": [
             "TENANT"
+          ],
+          "children": [
+            {
+              "code": "workflow.instances.delete",
+              "name": "永久删除流程历史",
+              "label": "永久删除流程历史",
+              "alias": "i18n:workflow.historyRemoval.action",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 120,
+              "publicAccess": false,
+              "grantable": true,
+              "disabled": false
+            }
           ]
         }
       ]

@@ -29,31 +29,56 @@ public class FormRecordInvariantService {
   private final FormDocumentCodec codec;
   private final FormRequestContext context;
 
-  /** Metadata reads share the publication form lock; no remote call occurs inside this transaction. */
-  public FormRecordInvariantService(final EntityManager entityManager, final FormDocumentCodec codec, final FormRequestContext context) {
+  /**
+   * Metadata reads share the publication form lock; no remote call occurs inside this transaction.
+   */
+  public FormRecordInvariantService(
+      final EntityManager entityManager,
+      final FormDocumentCodec codec,
+      final FormRequestContext context) {
     this.entityManager = entityManager;
     this.codec = codec;
     this.context = context;
   }
 
-  /** The target write fence rejects this plan if publication advances after the metadata transaction ends. */
+  /**
+   * The target write fence rejects this plan if publication advances after the metadata transaction
+   * ends.
+   */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public Plan resolve(final PublishedApplicationForm runtime) {
     if (!context.requireActor().tenantId().equals(runtime.tenantId())) {
       throw conflict();
     }
-    var form = entityManager.createQuery("from ApplicationFormEntity f where f.tenantId = :tenant "
-            + "and f.applicationId = :app and f.id = :form", ApplicationFormEntity.class)
-        .setParameter("tenant", runtime.tenantId()).setParameter("app", runtime.applicationId()).setParameter("form", runtime.formId())
-        .setLockMode(LockModeType.PESSIMISTIC_READ).getResultStream().findFirst().orElseThrow(FormRecordInvariantService::conflict);
-    if (form.getWritePolicyVersion() != runtime.writeAdmissionVersion() || form.getPublishedVersion() == null
+    var form =
+        entityManager
+            .createQuery(
+                "from ApplicationFormEntity f where f.tenantId = :tenant "
+                    + "and f.applicationId = :app and f.id = :form",
+                ApplicationFormEntity.class)
+            .setParameter("tenant", runtime.tenantId())
+            .setParameter("app", runtime.applicationId())
+            .setParameter("form", runtime.formId())
+            .setLockMode(LockModeType.PESSIMISTIC_READ)
+            .getResultStream()
+            .findFirst()
+            .orElseThrow(FormRecordInvariantService::conflict);
+    if (form.getWritePolicyVersion() != runtime.writeAdmissionVersion()
+        || form.getPublishedVersion() == null
         || form.getPublishedVersion() != runtime.writePolicyVersion()) {
       throw conflict();
     }
-    var versions = entityManager.createQuery("select distinct b.formVersion from ApplicationFormPageBindingEntity b "
-            + "where b.tenantId = :tenant and b.formId = :form and b.status = :active", Integer.class)
-        .setParameter("tenant", runtime.tenantId()).setParameter("form", runtime.formId())
-        .setParameter("active", ApplicationFormPageBindingStatus.ACTIVE).setMaxResults(1001).getResultList();
+    var versions =
+        entityManager
+            .createQuery(
+                "select distinct b.formVersion from ApplicationFormPageBindingEntity b "
+                    + "where b.tenantId = :tenant and b.formId = :form and b.status = :active",
+                Integer.class)
+            .setParameter("tenant", runtime.tenantId())
+            .setParameter("form", runtime.formId())
+            .setParameter("active", ApplicationFormPageBindingStatus.ACTIVE)
+            .setMaxResults(1001)
+            .getResultList();
     if (versions.size() > 1000 || !versions.contains(runtime.formVersion())) {
       throw conflict();
     }
@@ -63,17 +88,31 @@ public class FormRecordInvariantService {
     var other = new ArrayList<ApplicationFormDocument>();
     for (int number : new TreeSet<>(versions)) {
       if (number != runtime.formVersion()) {
-        other.add(FormWritePolicyProjection.apply(codec.decode(version(runtime, number, budget).getDocumentJson()), document));
+        other.add(
+            FormWritePolicyProjection.apply(
+                codec.decode(version(runtime, number, budget).getDocumentJson()), document));
       }
     }
-    return new Plan(document, governing.getPhysicalModelVersion(), governing.getStorageChecksum(), other);
+    return new Plan(
+        document, governing.getPhysicalModelVersion(), governing.getStorageChecksum(), other);
   }
 
-  private ApplicationFormVersionEntity version(final PublishedApplicationForm runtime, final int number, final FormActiveDefinitionBudget budget) {
-    var version = entityManager.createQuery("from ApplicationFormVersionEntity v where v.tenantId = :tenant "
-            + "and v.formId = :form and v.versionNumber = :version", ApplicationFormVersionEntity.class)
-        .setParameter("tenant", runtime.tenantId()).setParameter("form", runtime.formId()).setParameter("version", number)
-        .getResultStream().findFirst().orElseThrow(FormRecordInvariantService::conflict);
+  private ApplicationFormVersionEntity version(
+      final PublishedApplicationForm runtime,
+      final int number,
+      final FormActiveDefinitionBudget budget) {
+    var version =
+        entityManager
+            .createQuery(
+                "from ApplicationFormVersionEntity v where v.tenantId = :tenant "
+                    + "and v.formId = :form and v.versionNumber = :version",
+                ApplicationFormVersionEntity.class)
+            .setParameter("tenant", runtime.tenantId())
+            .setParameter("form", runtime.formId())
+            .setParameter("version", number)
+            .getResultStream()
+            .findFirst()
+            .orElseThrow(FormRecordInvariantService::conflict);
     budget.include(number, version.getDocumentJson());
     if (version.getPhysicalModelVersion() == null || version.getStorageChecksum() == null) {
       throw conflict();
@@ -82,37 +121,80 @@ public class FormRecordInvariantService {
   }
 
   private static ApplicationFormException conflict() {
-    return new ApplicationFormException(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT, "The active form requirements changed; reload the page");
+    return new ApplicationFormException(
+        ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT,
+        "The active form requirements changed; reload the page");
   }
 
-  /** Detached plan used with a version-checked record and the original mutation admission generation. */
-  public record Plan(ApplicationFormDocument governing, int physicalVersion, String storageChecksum, List<ApplicationFormDocument> documents) {
+  /**
+   * Detached plan used with a version-checked record and the original mutation admission
+   * generation.
+   */
+  public record Plan(
+      ApplicationFormDocument governing,
+      int physicalVersion,
+      String storageChecksum,
+      List<ApplicationFormDocument> documents) {
     /** Keeps the captured page set immutable outside the metadata transaction. */
     public Plan {
       documents = List.copyOf(documents);
     }
 
-    /** Uses the activated storage defaults; explicit nulls must never acquire historical page defaults. */
+    /**
+     * Uses the activated storage defaults; explicit nulls must never acquire historical page
+     * defaults.
+     */
     public Map<String, Object> createDefaults() {
       Map<String, Object> values = new LinkedHashMap<>();
-      governing.fields().stream().filter(field -> field.storageMode() == FormStorageMode.STORED)
-          .forEach(field -> values.put(field.fieldId(), FormRecordPayloadCompiler.value(field.defaultValue())));
+      governing.fields().stream()
+          .filter(field -> field.storageMode() == FormStorageMode.STORED)
+          .forEach(
+              field ->
+                  values.put(
+                      field.fieldId(), FormRecordPayloadCompiler.value(field.defaultValue())));
       return values;
     }
 
     /** Historical transient inputs cannot change persisted invariants on another page. */
-    public void validate(final FormRecordPayloadCompiler compiler, final Map<String, Object> existing,
-        final Map<String, Object> requested, final FormRecordState current, final FormRecordState target) {
+    public void validate(
+        final FormRecordPayloadCompiler compiler,
+        final Map<String, Object> existing,
+        final Map<String, Object> requested,
+        final FormRecordState current,
+        final FormRecordState target) {
+      validate(compiler, existing, requested, current, target, null);
+    }
+
+    /**
+     * Final DNA policy contains all active page rules; only confirmed value outputs are deferred.
+     */
+    void validate(
+        FormRecordPayloadCompiler compiler,
+        Map<String, Object> existing,
+        Map<String, Object> requested,
+        FormRecordState current,
+        FormRecordState target,
+        org.simplepoint.plugin.app.form.api.model.relation.FormReferenceMappingIntent mappings) {
       for (var document : documents) {
-        Set<String> persistent = document.fields().stream().filter(field -> field.storageMode() == FormStorageMode.STORED)
-            .map(field -> field.fieldId()).collect(Collectors.toSet());
+        Set<String> persistent =
+            document.fields().stream()
+                .filter(field -> field.storageMode() == FormStorageMode.STORED)
+                .map(field -> field.fieldId())
+                .collect(Collectors.toSet());
         Map<String, Object> changes = new LinkedHashMap<>();
-        requested.forEach((field, value) -> {
-          if (persistent.contains(field)) {
-            changes.put(field, value);
-          }
-        });
-        compiler.compile(document, existing, changes, current, target);
+        requested.forEach(
+            (field, value) -> {
+              if (persistent.contains(field)) {
+                changes.put(field, value);
+              }
+            });
+        compiler.compile(
+            document,
+            existing,
+            changes,
+            current,
+            target,
+            FormRecordValueProviders.forRow(document, null, null, mappings));
       }
     }
   }

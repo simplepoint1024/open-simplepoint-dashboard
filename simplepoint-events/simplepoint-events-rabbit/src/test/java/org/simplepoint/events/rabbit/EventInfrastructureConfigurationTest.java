@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.events.api.EventPublisher;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +27,9 @@ class EventInfrastructureConfigurationTest {
   void explicitInfrastructureStartsWithPublisherOnlyAndStopsItsWorkers() {
     runner.withPropertyValues("simplepoint.events.enabled=true", "simplepoint.events.service=app")
         .run(context -> {
-          assertThat(context).hasNotFailed().hasSingleBean(EventPublisher.class);
+          assertThat(context).hasNotFailed();
+          assertThat(context.getBean(PublisherProbe.class).publisher()).isNotNull();
+          assertThat(context).hasSingleBean(org.simplepoint.events.jdbc.JdbcEventStore.class);
           assertThat(context.getBean(EventWorkers.class).isRunning()).isTrue();
         });
   }
@@ -44,6 +47,12 @@ class EventInfrastructureConfigurationTest {
 
   @Configuration(proxyBeanMethods = false)
   static class Database {
+    @Bean
+    @ConditionalOnProperty(prefix = "simplepoint.events", name = "enabled", havingValue = "true")
+    PublisherProbe publisherProbe(EventPublisher publisher) {
+      return new PublisherProbe(publisher);
+    }
+
     @Bean
     DataSource dataSource() {
       var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
@@ -66,4 +75,6 @@ class EventInfrastructureConfigurationTest {
       return connection;
     }
   }
+
+  private record PublisherProbe(EventPublisher publisher) {}
 }

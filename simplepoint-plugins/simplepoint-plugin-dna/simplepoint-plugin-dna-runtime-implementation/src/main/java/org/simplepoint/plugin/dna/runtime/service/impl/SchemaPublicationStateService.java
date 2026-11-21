@@ -31,9 +31,13 @@ import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelVersionReposit
 import org.simplepoint.plugin.dna.runtime.repository.SchemaMigrationRepository;
 import org.simplepoint.plugin.dna.runtime.repository.SchemaMigrationStepRepository;
 import org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl;
+import org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog;
 import org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan;
+import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver;
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PlannedSchemaStep;
+import org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec;
+import org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec.PlanBinding;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -45,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SchemaPublicationStateService {
 
+  private final PhysicalRelationCatalog relations;
   private final RecordMaintenanceControl maintenance;
   private final PhysicalModelRepository modelRepository;
   private final PhysicalModelBindingRepository bindingRepository;
@@ -52,6 +57,8 @@ public class SchemaPublicationStateService {
   private final SchemaMigrationRepository migrationRepository;
   private final SchemaMigrationStepRepository stepRepository;
   private final PhysicalSchemaCodec schemaCodec;
+  private final SchemaPlanCodec planCodec;
+  private final PhysicalReferenceResolver referenceResolver;
   private final DnaRuntimeAuditPublisher auditPublisher;
 
   /** Creates the durable state coordinator. */
@@ -62,9 +69,12 @@ public class SchemaPublicationStateService {
       final SchemaMigrationRepository migrationRepository,
       final SchemaMigrationStepRepository stepRepository,
       final PhysicalSchemaCodec schemaCodec,
+      final SchemaPlanCodec planCodec,
+      final PhysicalReferenceResolver referenceResolver,
       final DnaRuntimeAuditPublisher auditPublisher,
-      final RecordMaintenanceControl maintenance
-  ) {
+      final RecordMaintenanceControl maintenance,
+      final PhysicalRelationCatalog relations) {
+    this.relations = relations;
     this.maintenance = maintenance;
     this.modelRepository = modelRepository;
     this.bindingRepository = bindingRepository;
@@ -72,42 +82,43 @@ public class SchemaPublicationStateService {
     this.migrationRepository = migrationRepository;
     this.stepRepository = stepRepository;
     this.schemaCodec = schemaCodec;
+    this.planCodec = planCodec;
+    this.referenceResolver = referenceResolver;
     this.auditPublisher = auditPublisher;
   }
 
   /** Claims a new target version while holding the model row lock. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public PublicationClaim claim(
-      final RuntimeActor actor,
-      final String modelId,
-      final SchemaPublicationCommand command
-  ) {
+      final RuntimeActor actor, final String modelId, final SchemaPublicationCommand command) {
+    relations.write(actor.tenantId());
     PhysicalModelEntity model = requireLockedModel(actor.tenantId(), modelId);
-    SchemaMigrationEntity existing = migrationRepository.findByTargetVersion(
-        actor.tenantId(),
-        modelId,
-        command.targetVersion()
-    ).orElse(null);
+    SchemaMigrationEntity existing =
+        migrationRepository
+            .findByTargetVersion(actor.tenantId(), modelId, command.targetVersion())
+            .orElse(null);
     if (existing != null) {
       return new PublicationClaim(false, work(actor.tenantId(), existing, model));
     }
+    relations.requireMutable(actor.tenantId(), modelId, null);
     requireExpectedVersion(model, command.expectedLockVersion());
     if (command.targetVersion() != model.getLatestVersion()) {
       throw conflict("Only the latest immutable model version can be published");
     }
-    migrationRepository.findNonterminalByModel(actor.tenantId(), modelId)
-        .ifPresent(value -> {
-          throw conflict("Another schema publication is already active for this model");
-        });
+    migrationRepository
+        .findNonterminalByModel(actor.tenantId(), modelId)
+        .ifPresent(
+            value -> {
+              throw conflict("Another schema publication is already active for this model");
+            });
     if (model.getStatus() != PhysicalModelStatus.DRAFT
-        && model.getStatus() != PhysicalModelStatus.FAILED) {
+        && model.getStatus() != PhysicalModelStatus.FAILED
+        && (model.getStatus() != PhysicalModelStatus.ACTIVE
+            || Objects.equals(model.getActiveVersion(), command.targetVersion()))) {
       throw conflict("The physical model is not ready to start publication");
     }
-    PhysicalModelVersionEntity version = requireVersion(
-        actor.tenantId(),
-        modelId,
-        command.targetVersion()
-    );
+    PhysicalModelVersionEntity version =
+        requireVersion(actor.tenantId(), modelId, command.targetVersion());
     final PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), modelId);
     SchemaMigrationEntity migration = new SchemaMigrationEntity();
     migration.setId(UUID.randomUUID().toString());
@@ -129,42 +140,43 @@ public class SchemaPublicationStateService {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.SCHEMA_MIGRATION_CONFLICT,
           "Schema publication conflicts with another request",
-          exception
-      );
+          exception);
     }
-    auditPublisher.publish(audit(
-        DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_STARTED,
-        DnaRuntimeAuditOutcome.SUCCEEDED,
-        null,
-        model,
-        binding,
-        migration,
-        actor
-    ));
+    auditPublisher.publish(
+        audit(
+            DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_STARTED,
+            DnaRuntimeAuditOutcome.SUCCEEDED,
+            null,
+            model,
+            binding,
+            migration,
+            actor));
     return new PublicationClaim(true, work(actor.tenantId(), migration, model));
   }
 
   /** Reclaims a failed migration and resets incomplete steps for an explicit retry. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public PublicationClaim claimRetry(
-      final RuntimeActor actor,
-      final String migrationId,
-      final long expectedLockVersion
-  ) {
+      final RuntimeActor actor, final String migrationId, final long expectedLockVersion) {
+    relations.write(actor.tenantId());
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
-    PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
+    relations.requireMutable(actor.tenantId(), model.getId(), migrationId);
     requireExpectedVersion(model, expectedLockVersion);
+    boolean canRetry = model.getStatus() == PhysicalModelStatus.FAILED
+        || model.getStatus() == PhysicalModelStatus.ACTIVE && previousVersionCanServe(migration, model);
     if (migration.getStatus() != SchemaMigrationStatus.FAILED
-        || model.getStatus() != PhysicalModelStatus.FAILED) {
+        || migration.getTargetVersion() != model.getLatestVersion()
+        || !canRetry) {
       throw conflict("Only a failed schema publication can be retried");
     }
-    migrationRepository.findNonterminalByModel(actor.tenantId(), model.getId())
-        .ifPresent(value -> {
-          throw conflict("Another schema publication is already active for this model");
-        });
+    migrationRepository
+        .findNonterminalByModel(actor.tenantId(), model.getId())
+        .ifPresent(
+            value -> {
+              throw conflict("Another schema publication is already active for this model");
+            });
     maintenance.requireAvailable(actor.tenantId(), model);
     transition(model, PhysicalModelStatus.VALIDATING, actor.actorId());
     migration.setStatus(SchemaMigrationStatus.VALIDATING);
@@ -173,10 +185,8 @@ public class SchemaPublicationStateService {
     migration.setStartedAt(Instant.now());
     migration.setFinishedAt(null);
     migration.setUpdatedBy(actor.actorId());
-    for (SchemaMigrationStepEntity step : stepRepository.findByMigration(
-        actor.tenantId(),
-        migrationId
-    )) {
+    for (SchemaMigrationStepEntity step :
+        stepRepository.findByMigration(actor.tenantId(), migrationId)) {
       if (step.getStatus() == SchemaMigrationStepStatus.FAILED
           || step.getStatus() == SchemaMigrationStepStatus.RUNNING) {
         step.setStatus(SchemaMigrationStepStatus.PENDING);
@@ -196,20 +206,33 @@ public class SchemaPublicationStateService {
       final RuntimeActor actor,
       final String migrationId,
       final String executionToken,
-      final InitialSchemaPlan plan
-  ) {
+      final InitialSchemaPlan plan) {
+    relations.write(actor.tenantId());
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
     requireExecutionToken(migration, executionToken);
-    final PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    final PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
     requireStatus(migration, SchemaMigrationStatus.VALIDATING);
     requireModelStatus(model, PhysicalModelStatus.VALIDATING);
-    List<SchemaMigrationStepEntity> existing = stepRepository.findByMigration(
+    List<SchemaMigrationStepEntity> existing =
+        stepRepository.findByMigration(actor.tenantId(), migrationId);
+    var binding = planBinding(actor.tenantId(), migration, model);
+    if (migration.getPlanJson() == null && migration.getPlanChecksum() == null) {
+      var encoded = planCodec.encode(binding, plan);
+      migration.setPlanJson(encoded.json());
+      migration.setPlanChecksum(encoded.checksum());
+    } else if (!plan.equals(
+        planCodec.decode(binding, migration.getPlanJson(), migration.getPlanChecksum()))) {
+      throw drift("A publication retry cannot replace its original validated plan");
+    }
+    relations.prepare(
         actor.tenantId(),
-        migrationId
-    );
+        actor.actorId(),
+        migration,
+        schemaCodec.decode(
+            requireVersion(actor.tenantId(), model.getId(), migration.getTargetVersion())
+                .getSchemaJson()),
+        binding.target());
     if (existing.isEmpty()) {
       plan.steps().forEach(step -> stepRepository.save(toEntity(step, migration, actor)));
     } else {
@@ -228,16 +251,11 @@ public class SchemaPublicationStateService {
   /** Starts execution after the validated plan and steps are committed. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void start(
-      final RuntimeActor actor,
-      final String migrationId,
-      final String executionToken
-  ) {
+      final RuntimeActor actor, final String migrationId, final String executionToken) {
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
     requireExecutionToken(migration, executionToken);
-    final PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    final PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
     requireStatus(migration, SchemaMigrationStatus.READY);
     requireModelStatus(model, PhysicalModelStatus.READY);
     migration.setStatus(SchemaMigrationStatus.MIGRATING);
@@ -251,8 +269,7 @@ public class SchemaPublicationStateService {
       final RuntimeActor actor,
       final String migrationId,
       final String executionToken,
-      final int sequence
-  ) {
+      final int sequence) {
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
     requireExecutionToken(migration, executionToken);
     requireStatus(migration, SchemaMigrationStatus.MIGRATING);
@@ -278,8 +295,7 @@ public class SchemaPublicationStateService {
       final String migrationId,
       final String executionToken,
       final String stepId,
-      final SchemaMigrationStepStatus status
-  ) {
+      final SchemaMigrationStepStatus status) {
     if (status != SchemaMigrationStepStatus.SUCCEEDED
         && status != SchemaMigrationStepStatus.SKIPPED) {
       throw new IllegalArgumentException("A finished step must be SUCCEEDED or SKIPPED");
@@ -288,8 +304,10 @@ public class SchemaPublicationStateService {
     requireExecutionToken(migration, executionToken);
     requireStatus(migration, SchemaMigrationStatus.MIGRATING);
     touch(migration, actor.actorId());
-    SchemaMigrationStepEntity step = stepRepository.findActiveById(actor.tenantId(), stepId)
-        .orElseThrow(() -> notFound("Schema migration step was not found"));
+    SchemaMigrationStepEntity step =
+        stepRepository
+            .findActiveById(actor.tenantId(), stepId)
+            .orElseThrow(() -> notFound("Schema migration step was not found"));
     if (!migrationId.equals(step.getMigrationId())) {
       throw conflict("Schema migration step does not belong to this publication");
     }
@@ -302,20 +320,18 @@ public class SchemaPublicationStateService {
   /** Advances a fully executed publication to post-DDL verification. */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void verifying(
-      final RuntimeActor actor,
-      final String migrationId,
-      final String executionToken
-  ) {
+      final RuntimeActor actor, final String migrationId, final String executionToken) {
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
     requireExecutionToken(migration, executionToken);
-    final PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    final PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
     requireStatus(migration, SchemaMigrationStatus.MIGRATING);
-    boolean incomplete = stepRepository.findByMigration(actor.tenantId(), migrationId).stream()
-        .anyMatch(step -> step.getStatus() != SchemaMigrationStepStatus.SUCCEEDED
-            && step.getStatus() != SchemaMigrationStepStatus.SKIPPED);
+    boolean incomplete =
+        stepRepository.findByMigration(actor.tenantId(), migrationId).stream()
+            .anyMatch(
+                step ->
+                    step.getStatus() != SchemaMigrationStepStatus.SUCCEEDED
+                        && step.getStatus() != SchemaMigrationStepStatus.SKIPPED);
     if (incomplete) {
       throw conflict("Schema publication still has incomplete steps");
     }
@@ -330,21 +346,27 @@ public class SchemaPublicationStateService {
       final RuntimeActor actor,
       final String migrationId,
       final String executionToken,
-      final String verifiedChecksum
-  ) {
+      final String verifiedChecksum) {
+    relations.write(actor.tenantId());
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
     requireExecutionToken(migration, executionToken);
-    final PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    final PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
     requireStatus(migration, SchemaMigrationStatus.VERIFYING);
     if (!Objects.equals(migration.getTargetPhysicalChecksum(), verifiedChecksum)) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.SCHEMA_VERIFICATION_FAILED,
-          "Published table structure does not match the target snapshot"
-      );
+          "Published table structure does not match the target snapshot");
     }
+    var relationBinding = planBinding(actor.tenantId(), migration, model);
+    relations.activate(
+        actor.tenantId(),
+        actor.actorId(),
+        migration,
+        schemaCodec.decode(
+            requireVersion(actor.tenantId(), model.getId(), migration.getTargetVersion())
+                .getSchemaJson()),
+        relationBinding.target());
     migration.setVerifiedSchemaChecksum(verifiedChecksum);
     migration.setStatus(SchemaMigrationStatus.ACTIVE);
     migration.setFinishedAt(Instant.now());
@@ -353,15 +375,15 @@ public class SchemaPublicationStateService {
     model.setActiveVersion(migration.getTargetVersion());
     transition(model, PhysicalModelStatus.ACTIVE, actor.actorId());
     PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), model.getId());
-    auditPublisher.publish(audit(
-        DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_SUCCEEDED,
-        DnaRuntimeAuditOutcome.SUCCEEDED,
-        null,
-        model,
-        binding,
-        migration,
-        actor
-    ));
+    auditPublisher.publish(
+        audit(
+            DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_SUCCEEDED,
+            DnaRuntimeAuditOutcome.SUCCEEDED,
+            null,
+            model,
+            binding,
+            migration,
+            actor));
     return view(actor.tenantId(), migration);
   }
 
@@ -371,47 +393,43 @@ public class SchemaPublicationStateService {
       final RuntimeActor actor,
       final String migrationId,
       final String executionToken,
-      final DnaRuntimeErrorCode errorCode
-  ) {
-    SchemaMigrationEntity migration = migrationRepository.findActiveByIdForUpdate(
-        actor.tenantId(),
-        migrationId
-    ).orElse(null);
+      final DnaRuntimeErrorCode errorCode) {
+    SchemaMigrationEntity migration =
+        migrationRepository.findActiveByIdForUpdate(actor.tenantId(), migrationId).orElse(null);
     if (migration == null
         || migration.getStatus() == SchemaMigrationStatus.ACTIVE
         || !Objects.equals(migration.getExecutionToken(), executionToken)) {
       return;
     }
-    final PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    final PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
+    PhysicalModelStatus failedStatus = failedModelStatus(migration, model);
     migration.setStatus(SchemaMigrationStatus.FAILED);
     migration.setErrorCode(errorCode.name());
     migration.setFinishedAt(Instant.now());
     migration.setUpdatedBy(actor.actorId());
     stepRepository.findByMigration(actor.tenantId(), migrationId).stream()
         .filter(step -> step.getStatus() == SchemaMigrationStepStatus.RUNNING)
-        .forEach(step -> {
-          step.setStatus(SchemaMigrationStepStatus.FAILED);
-          step.setErrorCode(errorCode.name());
-          step.setFinishedAt(Instant.now());
-          step.setUpdatedBy(actor.actorId());
-        });
-    if (model.getStatus() != PhysicalModelStatus.FAILED
-        && PhysicalModelTransitions.canTransition(model.getStatus(), PhysicalModelStatus.FAILED)) {
-      transition(model, PhysicalModelStatus.FAILED, actor.actorId());
+        .forEach(
+            step -> {
+              step.setStatus(SchemaMigrationStepStatus.FAILED);
+              step.setErrorCode(errorCode.name());
+              step.setFinishedAt(Instant.now());
+              step.setUpdatedBy(actor.actorId());
+            });
+    if (PhysicalModelTransitions.canTransition(model.getStatus(), failedStatus)) {
+      transition(model, failedStatus, actor.actorId());
     }
     PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), model.getId());
-    auditPublisher.publish(audit(
-        DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_FAILED,
-        DnaRuntimeAuditOutcome.FAILED,
-        errorCode,
-        model,
-        binding,
-        migration,
-        actor
-    ));
+    auditPublisher.publish(
+        audit(
+            DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_FAILED,
+            DnaRuntimeAuditOutcome.FAILED,
+            errorCode,
+            model,
+            binding,
+            migration,
+            actor));
   }
 
   /** Fences an inactive publication and records an operator-visible interrupted failure. */
@@ -420,28 +438,25 @@ public class SchemaPublicationStateService {
       final RuntimeActor actor,
       final String migrationId,
       final long expectedLockVersion,
-      final Instant staleBefore
-  ) {
+      final Instant staleBefore) {
     SchemaMigrationEntity migration = requireLockedMigration(actor.tenantId(), migrationId);
-    PhysicalModelEntity model = requireLockedModel(
-        actor.tenantId(),
-        migration.getPhysicalModelId()
-    );
+    PhysicalModelEntity model =
+        requireLockedModel(actor.tenantId(), migration.getPhysicalModelId());
     requireExpectedVersion(model, expectedLockVersion);
     if (migration.getStatus().terminal()) {
       throw conflict("Only a nonterminal schema publication can be recovered");
     }
-    PhysicalModelStatus expectedModelStatus = PhysicalModelStatus.valueOf(
-        migration.getStatus().name()
-    );
+    PhysicalModelStatus expectedModelStatus =
+        PhysicalModelStatus.valueOf(migration.getStatus().name());
     requireModelStatus(model, expectedModelStatus);
-    Instant lastActivity = migration.getUpdatedAt() == null
-        ? migration.getStartedAt() : migration.getUpdatedAt();
+    Instant lastActivity =
+        migration.getUpdatedAt() == null ? migration.getStartedAt() : migration.getUpdatedAt();
     if (lastActivity == null || lastActivity.isAfter(staleBefore)) {
       throw conflict("Schema publication is still within its activity window");
     }
 
     DnaRuntimeErrorCode errorCode = DnaRuntimeErrorCode.SCHEMA_PUBLICATION_INTERRUPTED;
+    PhysicalModelStatus failedStatus = failedModelStatus(migration, model);
     migration.setExecutionToken(UUID.randomUUID().toString());
     migration.setStatus(SchemaMigrationStatus.FAILED);
     migration.setErrorCode(errorCode.name());
@@ -449,126 +464,112 @@ public class SchemaPublicationStateService {
     migration.setUpdatedBy(actor.actorId());
     stepRepository.findByMigration(actor.tenantId(), migrationId).stream()
         .filter(step -> step.getStatus() == SchemaMigrationStepStatus.RUNNING)
-        .forEach(step -> {
-          step.setStatus(SchemaMigrationStepStatus.FAILED);
-          step.setErrorCode(errorCode.name());
-          step.setFinishedAt(Instant.now());
-          step.setUpdatedBy(actor.actorId());
-        });
-    transition(model, PhysicalModelStatus.FAILED, actor.actorId());
+        .forEach(
+            step -> {
+              step.setStatus(SchemaMigrationStepStatus.FAILED);
+              step.setErrorCode(errorCode.name());
+              step.setFinishedAt(Instant.now());
+              step.setUpdatedBy(actor.actorId());
+            });
+    transition(model, failedStatus, actor.actorId());
     PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), model.getId());
-    auditPublisher.publish(audit(
-        DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_RECOVERED,
-        DnaRuntimeAuditOutcome.FAILED,
-        errorCode,
-        model,
-        binding,
-        migration,
-        actor
-    ));
+    auditPublisher.publish(
+        audit(
+            DnaRuntimeAuditEventType.SCHEMA_PUBLICATION_RECOVERED,
+            DnaRuntimeAuditOutcome.FAILED,
+            errorCode,
+            model,
+            binding,
+            migration,
+            actor));
     return view(actor.tenantId(), migration);
   }
 
   /** Reads one tenant-scoped migration projection. */
   @Transactional(readOnly = true)
   public SchemaPublicationView get(final String tenantId, final String migrationId) {
-    return view(tenantId, migrationRepository.findActiveById(tenantId, migrationId)
-        .orElseThrow(() -> notFound("Schema migration was not found")));
+    return view(
+        tenantId,
+        migrationRepository
+            .findActiveById(tenantId, migrationId)
+            .orElseThrow(() -> notFound("Schema migration was not found")));
   }
 
   /** Reads the tenant-scoped idempotent migration for one model version. */
   @Transactional(readOnly = true)
   public SchemaPublicationView getByTargetVersion(
-      final String tenantId,
-      final String modelId,
-      final int targetVersion
-  ) {
-    return view(tenantId, migrationRepository.findByTargetVersion(
+      final String tenantId, final String modelId, final int targetVersion) {
+    return view(
         tenantId,
-        modelId,
-        targetVersion
-    ).orElseThrow(() -> notFound("Schema migration was not found")));
+        migrationRepository
+            .findByTargetVersion(tenantId, modelId, targetVersion)
+            .orElseThrow(() -> notFound("Schema migration was not found")));
   }
 
   /** Loads trusted planning inputs without exposing the physical binding to callers. */
   @Transactional(readOnly = true)
   public PlanningWork planningWork(
-      final RuntimeActor actor,
-      final String modelId,
-      final int targetVersion
-  ) {
-    PhysicalModelEntity model = modelRepository.findActiveById(actor.tenantId(), modelId)
-        .orElseThrow(() -> new DnaRuntimeException(
-            DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
-            "Physical model was not found in the active tenant"
-        ));
+      final RuntimeActor actor, final String modelId, final int targetVersion) {
+    PhysicalModelEntity model =
+        modelRepository
+            .findActiveById(actor.tenantId(), modelId)
+            .orElseThrow(
+                () ->
+                    new DnaRuntimeException(
+                        DnaRuntimeErrorCode.PHYSICAL_MODEL_NOT_FOUND,
+                        "Physical model was not found in the active tenant"));
     if (targetVersion < 1 || targetVersion > model.getLatestVersion()) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "Target model version is outside the registered version range"
-      );
+          "Target model version is outside the registered version range");
     }
     PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), modelId);
-    PhysicalModelVersionEntity version = requireVersion(
-        actor.tenantId(),
-        modelId,
-        targetVersion
-    );
-    PhysicalSchemaDefinition currentSchema = model.getActiveVersion() == null
-        ? null : schemaCodec.decode(requireVersion(
-        actor.tenantId(),
-        modelId,
-        model.getActiveVersion()
-    ).getSchemaJson());
+    PhysicalModelVersionEntity version = requireVersion(actor.tenantId(), modelId, targetVersion);
+    PhysicalSchemaDefinition currentSchema =
+        model.getActiveVersion() == null
+            ? null
+            : schemaCodec.decode(
+                requireVersion(actor.tenantId(), modelId, model.getActiveVersion())
+                    .getSchemaJson());
     return new PlanningWork(
         modelId,
         model.getDisplayName(),
         targetVersion,
-        new PhysicalSchemaTarget(
-            modelId,
-            new RuntimeMetadataTarget(
-                binding.getDataSourceId(),
-                binding.getCatalogName(),
-                binding.getSchemaName(),
-                binding.getTableName()
-            )
-        ),
+        referenceTarget(
+            actor.tenantId(), modelId, binding, schemaCodec.decode(version.getSchemaJson())),
         currentSchema,
-        schemaCodec.decode(version.getSchemaJson())
-    );
+        schemaCodec.decode(version.getSchemaJson()));
   }
 
   /** Returns current step rows for execution checksum validation. */
   @Transactional(readOnly = true)
   public List<PersistedStep> steps(final String tenantId, final String migrationId) {
     return stepRepository.findByMigration(tenantId, migrationId).stream()
-        .map(step -> new PersistedStep(
-            step.getId(),
-            step.getSequence(),
-            step.getOperation().name(),
-            step.getStatementChecksum(),
-            step.getStatus()
-        ))
+        .map(
+            step ->
+                new PersistedStep(
+                    step.getId(),
+                    step.getSequence(),
+                    step.getOperation().name(),
+                    step.getStatementChecksum(),
+                    step.getStatus(),
+                    step.getAttempts()))
         .toList();
   }
 
   private PublicationWork work(
       final String tenantId,
       final SchemaMigrationEntity migration,
-      final PhysicalModelEntity model
-  ) {
+      final PhysicalModelEntity model) {
     PhysicalModelBindingEntity binding = requireBinding(tenantId, model.getId());
-    PhysicalModelVersionEntity version = requireVersion(
-        tenantId,
-        model.getId(),
-        migration.getTargetVersion()
-    );
-    PhysicalSchemaDefinition currentSchema = migration.getFromVersion() == null
-        ? null : schemaCodec.decode(requireVersion(
-        tenantId,
-        model.getId(),
-        migration.getFromVersion()
-    ).getSchemaJson());
+    PhysicalModelVersionEntity version =
+        requireVersion(tenantId, model.getId(), migration.getTargetVersion());
+    PhysicalSchemaDefinition currentSchema =
+        migration.getFromVersion() == null
+            ? null
+            : schemaCodec.decode(
+                requireVersion(tenantId, model.getId(), migration.getFromVersion())
+                    .getSchemaJson());
     return new PublicationWork(
         migration.getId(),
         migration.getExecutionToken(),
@@ -577,28 +578,60 @@ public class SchemaPublicationStateService {
         model.getAppId(),
         model.getFormId(),
         migration.getTargetVersion(),
-        new PhysicalSchemaTarget(
-            model.getId(),
-            new RuntimeMetadataTarget(
-                binding.getDataSourceId(),
-                binding.getCatalogName(),
-                binding.getSchemaName(),
-                binding.getTableName()
-            )
-        ),
+        referenceTarget(
+            tenantId, model.getId(), binding, schemaCodec.decode(version.getSchemaJson())),
         currentSchema,
-        schemaCodec.decode(version.getSchemaJson())
-    );
+        schemaCodec.decode(version.getSchemaJson()),
+        migration.getPlanJson() == null && migration.getPlanChecksum() == null
+            ? null
+            : planCodec.decode(
+                planBinding(tenantId, migration, model),
+                migration.getPlanJson(),
+                migration.getPlanChecksum()));
   }
 
-  private SchemaPublicationView view(
-      final String tenantId,
-      final SchemaMigrationEntity migration
-  ) {
-    List<SchemaMigrationStepView> steps = stepRepository.findByMigration(
+  private PlanBinding planBinding(
+      String tenantId, SchemaMigrationEntity migration, PhysicalModelEntity model) {
+    var binding = requireBinding(tenantId, model.getId());
+    return new PlanBinding(
         tenantId,
-        migration.getId()
-    ).stream().map(SchemaPublicationStateService::stepView).toList();
+        migration.getId(),
+        referenceTarget(
+            tenantId,
+            model.getId(),
+            binding,
+            schemaCodec.decode(
+                requireVersion(tenantId, model.getId(), migration.getTargetVersion())
+                    .getSchemaJson())),
+        migration.getFromVersion(),
+        migration.getTargetVersion(),
+        migration.getTargetSchemaChecksum());
+  }
+
+  private PhysicalSchemaTarget referenceTarget(
+      String tenant,
+      String modelId,
+      PhysicalModelBindingEntity binding,
+      PhysicalSchemaDefinition schema) {
+    var target =
+        new PhysicalSchemaTarget(
+                modelId,
+                new RuntimeMetadataTarget(
+                    binding.getDataSourceId(),
+                    binding.getCatalogName(),
+                    binding.getSchemaName(),
+                    binding.getTableName()))
+            .withOwnership(binding.getPhysicalNamespaceId(), tenant);
+    return schema.references().isEmpty()
+        ? target
+        : referenceResolver.resolve(tenant, target, schema);
+  }
+
+  private SchemaPublicationView view(final String tenantId, final SchemaMigrationEntity migration) {
+    List<SchemaMigrationStepView> steps =
+        stepRepository.findByMigration(tenantId, migration.getId()).stream()
+            .map(SchemaPublicationStateService::stepView)
+            .toList();
     return new SchemaPublicationView(
         migration.getId(),
         migration.getPhysicalModelId(),
@@ -612,8 +645,7 @@ public class SchemaPublicationStateService {
         migration.getErrorCode(),
         migration.getStartedAt(),
         migration.getFinishedAt(),
-        steps
-    );
+        steps);
   }
 
   private static SchemaMigrationStepView stepView(final SchemaMigrationStepEntity step) {
@@ -626,15 +658,13 @@ public class SchemaPublicationStateService {
         step.getAttempts(),
         step.getErrorCode(),
         step.getStartedAt(),
-        step.getFinishedAt()
-    );
+        step.getFinishedAt());
   }
 
   private static SchemaMigrationStepEntity toEntity(
       final PlannedSchemaStep step,
       final SchemaMigrationEntity migration,
-      final RuntimeActor actor
-  ) {
+      final RuntimeActor actor) {
     SchemaMigrationStepEntity entity = new SchemaMigrationStepEntity();
     entity.setId(UUID.randomUUID().toString());
     entity.setTenantId(actor.tenantId());
@@ -654,9 +684,7 @@ public class SchemaPublicationStateService {
   }
 
   private static void validatePersistedSteps(
-      final List<SchemaMigrationStepEntity> persisted,
-      final List<PlannedSchemaStep> planned
-  ) {
+      final List<SchemaMigrationStepEntity> persisted, final List<PlannedSchemaStep> planned) {
     if (persisted.size() != planned.size()) {
       throw drift("Persisted migration plan has a different number of steps");
     }
@@ -676,41 +704,35 @@ public class SchemaPublicationStateService {
   }
 
   private SchemaMigrationEntity requireLockedMigration(
-      final String tenantId,
-      final String migrationId
-  ) {
-    return migrationRepository.findActiveByIdForUpdate(tenantId, migrationId)
+      final String tenantId, final String migrationId) {
+    return migrationRepository
+        .findActiveByIdForUpdate(tenantId, migrationId)
         .orElseThrow(() -> notFound("Schema migration was not found"));
   }
 
-  private PhysicalModelBindingEntity requireBinding(
-      final String tenantId,
-      final String modelId
-  ) {
-    return bindingRepository.findActiveByModel(tenantId, modelId)
-        .orElseThrow(() -> new DnaRuntimeException(
-            DnaRuntimeErrorCode.PERSISTENCE_FAILED,
-            "Physical model binding is inconsistent"
-        ));
+  private PhysicalModelBindingEntity requireBinding(final String tenantId, final String modelId) {
+    return bindingRepository
+        .findActiveByModel(tenantId, modelId)
+        .orElseThrow(
+            () ->
+                new DnaRuntimeException(
+                    DnaRuntimeErrorCode.PERSISTENCE_FAILED,
+                    "Physical model binding is inconsistent"));
   }
 
   private PhysicalModelVersionEntity requireVersion(
-      final String tenantId,
-      final String modelId,
-      final int version
-  ) {
-    return versionRepository.findActiveVersion(tenantId, modelId, version)
-        .orElseThrow(() -> new DnaRuntimeException(
-            DnaRuntimeErrorCode.PERSISTENCE_FAILED,
-            "Physical model version is inconsistent"
-        ));
+      final String tenantId, final String modelId, final int version) {
+    return versionRepository
+        .findActiveVersion(tenantId, modelId, version)
+        .orElseThrow(
+            () ->
+                new DnaRuntimeException(
+                    DnaRuntimeErrorCode.PERSISTENCE_FAILED,
+                    "Physical model version is inconsistent"));
   }
 
   private SchemaMigrationStepEntity requireStep(
-      final String tenantId,
-      final String migrationId,
-      final int sequence
-  ) {
+      final String tenantId, final String migrationId, final int sequence) {
     return stepRepository.findByMigration(tenantId, migrationId).stream()
         .filter(step -> step.getSequence() == sequence)
         .findFirst()
@@ -718,49 +740,54 @@ public class SchemaPublicationStateService {
   }
 
   private static void requireExpectedVersion(
-      final PhysicalModelEntity model,
-      final long expectedVersion
-  ) {
+      final PhysicalModelEntity model, final long expectedVersion) {
     if (model.getLockVersion() != expectedVersion) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_VERSION_CONFLICT,
-          "The physical model was changed by another request"
-      );
+          "The physical model was changed by another request");
     }
   }
 
   private static void requireStatus(
-      final SchemaMigrationEntity migration,
-      final SchemaMigrationStatus status
-  ) {
+      final SchemaMigrationEntity migration, final SchemaMigrationStatus status) {
     if (migration.getStatus() != status) {
       throw conflict("Schema migration state changed concurrently");
     }
   }
 
   private static void requireExecutionToken(
-      final SchemaMigrationEntity migration,
-      final String executionToken
-  ) {
+      final SchemaMigrationEntity migration, final String executionToken) {
     if (!Objects.equals(migration.getExecutionToken(), executionToken)) {
       throw conflict("Schema publication execution was fenced by another request");
     }
   }
 
+  private static PhysicalModelStatus failedModelStatus(
+      final SchemaMigrationEntity migration, final PhysicalModelEntity model) {
+    return migration.getStatus() == SchemaMigrationStatus.VALIDATING
+            && previousVersionCanServe(migration, model)
+        ? PhysicalModelStatus.ACTIVE
+        : PhysicalModelStatus.FAILED;
+  }
+
+  private static boolean previousVersionCanServe(
+      final SchemaMigrationEntity migration, final PhysicalModelEntity model) {
+    // No DDL can start until the plan and its checkpoints have committed.
+    return migration.getFromVersion() != null
+        && migration.getFromVersion().equals(model.getActiveVersion())
+        && migration.getPlanJson() == null
+        && migration.getPlanChecksum() == null;
+  }
+
   private static void requireModelStatus(
-      final PhysicalModelEntity model,
-      final PhysicalModelStatus status
-  ) {
+      final PhysicalModelEntity model, final PhysicalModelStatus status) {
     if (model.getStatus() != status) {
       throw conflict("Physical model state changed concurrently");
     }
   }
 
   private static void transition(
-      final PhysicalModelEntity model,
-      final PhysicalModelStatus target,
-      final String actorId
-  ) {
+      final PhysicalModelEntity model, final PhysicalModelStatus target, final String actorId) {
     PhysicalModelTransitions.requireTransition(model.getStatus(), target);
     model.setStatus(target);
     model.setUpdatedBy(actorId);
@@ -778,8 +805,7 @@ public class SchemaPublicationStateService {
       final PhysicalModelEntity model,
       final PhysicalModelBindingEntity binding,
       final SchemaMigrationEntity migration,
-      final RuntimeActor actor
-  ) {
+      final RuntimeActor actor) {
     return new DnaRuntimeAuditEvent(
         UUID.randomUUID().toString(),
         type,
@@ -794,8 +820,7 @@ public class SchemaPublicationStateService {
         null,
         Math.max(0L, Duration.between(migration.getStartedAt(), Instant.now()).toMillis()),
         outcome,
-        errorCode
-    );
+        errorCode);
   }
 
   private static DnaRuntimeException notFound(final String message) {
@@ -811,8 +836,7 @@ public class SchemaPublicationStateService {
   }
 
   /** Result of an idempotent publication claim. */
-  public record PublicationClaim(boolean execute, PublicationWork work) {
-  }
+  public record PublicationClaim(boolean execute, PublicationWork work) {}
 
   /** Detached trusted work context used outside the control-plane transaction. */
   public record PublicationWork(
@@ -825,8 +849,33 @@ public class SchemaPublicationStateService {
       int targetVersion,
       PhysicalSchemaTarget target,
       PhysicalSchemaDefinition currentSchema,
-      PhysicalSchemaDefinition schema
-  ) {
+      PhysicalSchemaDefinition schema,
+      InitialSchemaPlan persistedPlan) {
+    /** Creates initial work before a durable physical plan has been prepared. */
+    public PublicationWork(
+        String migrationId,
+        String executionToken,
+        String physicalModelId,
+        String displayName,
+        String appId,
+        String formId,
+        int targetVersion,
+        PhysicalSchemaTarget target,
+        PhysicalSchemaDefinition currentSchema,
+        PhysicalSchemaDefinition schema) {
+      this(
+          migrationId,
+          executionToken,
+          physicalModelId,
+          displayName,
+          appId,
+          formId,
+          targetVersion,
+          target,
+          currentSchema,
+          schema,
+          null);
+    }
   }
 
   /** Minimal persisted step identity used to bind an in-memory plan to durable rows. */
@@ -835,8 +884,17 @@ public class SchemaPublicationStateService {
       int sequence,
       String operation,
       String statementChecksum,
-      SchemaMigrationStepStatus status
-  ) {
+      SchemaMigrationStepStatus status,
+      int attempts) {
+    /** Preserves the legacy constructor for a step with no recorded execution attempt. */
+    public PersistedStep(
+        String stepId,
+        int sequence,
+        String operation,
+        String statementChecksum,
+        SchemaMigrationStepStatus status) {
+      this(stepId, sequence, operation, statementChecksum, status, 0);
+    }
   }
 
   /** Detached read-only input for schema plan previews. */
@@ -846,8 +904,5 @@ public class SchemaPublicationStateService {
       int targetVersion,
       PhysicalSchemaTarget target,
       PhysicalSchemaDefinition currentSchema,
-      PhysicalSchemaDefinition schema
-  ) {
-  }
-
+      PhysicalSchemaDefinition schema) {}
 }

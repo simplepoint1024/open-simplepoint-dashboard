@@ -123,7 +123,9 @@ class RuntimeRecordModelResolverTest {
             modelRepository,
             bindingRepository,
             versionRepository,
-            codec
+            codec,
+            new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver(
+                modelRepository, bindingRepository, versionRepository, codec)
         ),
         new RuntimeActor("tenant-a", "user-a"),
         requestedEncoded.checksum()

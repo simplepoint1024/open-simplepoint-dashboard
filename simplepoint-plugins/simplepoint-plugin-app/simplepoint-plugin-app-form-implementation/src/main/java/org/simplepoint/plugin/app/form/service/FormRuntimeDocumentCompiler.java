@@ -29,26 +29,33 @@ public class FormRuntimeDocumentCompiler {
   }
 
   /** Internal projection with an already intersected current and historical permission floor. */
-  ApplicationFormRuntimeDocument compile(final PublishedApplicationForm form, final Map<String, String> policy) {
+  ApplicationFormRuntimeDocument compile(
+      final PublishedApplicationForm form, final Map<String, String> policy) {
     Map<String, String> permissions = FormCalculationPermissions.restrict(form, policy);
     Map<String, FieldAccess> accessByField = new HashMap<>();
+    var retired = FormRelationConversion.retiredFields(form.document());
     form.document()
         .fields()
         .forEach(
             field ->
                 accessByField.put(
                     field.fieldId(),
-                    access(
-                        field,
-                        RecordPermissionModel.access(
-                            permissions,
-                            form.physicalModelId(),
-                            field.fieldId(),
-                            field.storageCode()))));
+                    retired.contains(field.fieldId())
+                        ? FieldAccess.HIDDEN
+                        : access(
+                            field,
+                            RecordPermissionModel.access(
+                                permissions,
+                                form.physicalModelId(),
+                                field.fieldId(),
+                                field.storageCode()))));
     List<ApplicationFormRuntimeFieldDefinition> fields =
         form.document().fields().stream()
             .filter(field -> accessByField.get(field.fieldId()) != FieldAccess.HIDDEN)
-            .map(field -> runtimeField(field, accessByField.get(field.fieldId())))
+            .map(
+                field ->
+                    runtimeField(
+                        form, null, field, accessByField.get(field.fieldId()), permissions))
             .toList();
     List<FormSceneDefinition> scenes =
         form.document().scenes().stream().map(scene -> runtimeScene(scene, accessByField)).toList();
@@ -100,6 +107,8 @@ public class FormRuntimeDocumentCompiler {
                           .map(
                               field ->
                                   runtimeField(
+                                      form,
+                                      detail.detailId(),
                                       field,
                                       access(
                                           field,
@@ -107,7 +116,8 @@ public class FormRuntimeDocumentCompiler {
                                               permissions,
                                               binding.physicalModelId(),
                                               field.fieldId(),
-                                              field.storageCode()))))
+                                              field.storageCode())),
+                                      permissions))
                           .toList(),
                       detail.fields().stream()
                           .filter(
@@ -121,7 +131,8 @@ public class FormRuntimeDocumentCompiler {
                                               field.storageCode()))
                                       != FieldAccess.EDITABLE)
                           .map(FormFieldDefinition::fieldId)
-                          .toList(), detail.labelLocalization());
+                          .toList(),
+                      detail.labelLocalization());
                 })
             .toList(),
         form.document().constraints().stream()
@@ -165,7 +176,11 @@ public class FormRuntimeDocumentCompiler {
   }
 
   private static ApplicationFormRuntimeFieldDefinition runtimeField(
-      final FormFieldDefinition field, final FieldAccess access) {
+      final PublishedApplicationForm form,
+      final String detailId,
+      final FormFieldDefinition field,
+      final FieldAccess access,
+      final Map<String, String> permissions) {
     return new ApplicationFormRuntimeFieldDefinition(
         field.fieldId(),
         field.label(),
@@ -179,7 +194,31 @@ public class FormRuntimeDocumentCompiler {
         field.writePolicy(),
         access == FieldAccess.MASKED ? null : field.validation(),
         field.access(),
-        field.calculation() != null ? Boolean.TRUE : null, field.labelLocalization());
+        field.calculation() != null ? Boolean.TRUE : null,
+        field.labelLocalization(),
+        reference(form, detailId, field.fieldId(), access, permissions),
+        FormReferenceMappingProjection.mode(form, detailId, field.fieldId()));
+  }
+
+  private static org.simplepoint.plugin.app.form.api.model.relation.FormRuntimeReference reference(
+      PublishedApplicationForm form,
+      String detailId,
+      String fieldId,
+      FieldAccess access,
+      Map<String, String> permissions) {
+    if (access == FieldAccess.HIDDEN || access == FieldAccess.MASKED) {
+      return null;
+    }
+    return form.document().relations().stream()
+        .filter(
+            relation ->
+                relation.referenceView() != null
+                    && relation.sourceField() != null
+                    && java.util.Objects.equals(detailId, relation.sourceField().detailId())
+                    && fieldId.equals(relation.sourceField().fieldId()))
+        .findFirst()
+        .map(relation -> FormReferenceInputProjection.project(form, relation, permissions))
+        .orElse(null);
   }
 
   private static FormSceneDefinition runtimeScene(
@@ -214,7 +253,8 @@ public class FormRuntimeDocumentCompiler {
         component.targetSceneId(),
         component.readOnly() || access != FieldAccess.EDITABLE,
         component.properties(),
-        children, component.labelLocalization());
+        children,
+        component.labelLocalization());
   }
 
   private static boolean visible(

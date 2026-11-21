@@ -7,6 +7,7 @@ import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.model.PhysicalModelStatus;
 import org.simplepoint.plugin.dna.runtime.entity.PhysicalModelEntity;
+import org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -15,11 +16,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Holds control model locks across one bounded publication target transaction, including commit. */
 @Component
 public class RecordPublicationControlFence {
+  private final PhysicalRelationCatalog relations;
   private final RecordMaintenanceControl maintenance;
   private final TransactionTemplate transactions;
 
   /** Control transactions only fence metadata; the target journal owns publication recovery. */
-  public RecordPublicationControlFence(final RecordMaintenanceControl maintenance, final PlatformTransactionManager manager) {
+  public RecordPublicationControlFence(final RecordMaintenanceControl maintenance, final PlatformTransactionManager manager, final PhysicalRelationCatalog relations) {
+    this.relations = relations;
     this.maintenance = maintenance;
     this.transactions = new TransactionTemplate(manager);
     this.transactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -37,6 +40,7 @@ public class RecordPublicationControlFence {
     var attempt = new TransactionTemplate(java.util.Objects.requireNonNull(transactions.getTransactionManager()), transactions);
     attempt.setTimeout(Math.max(1, (deadline.remainingMillis() + 999) / 1000));
     return attempt.execute(status -> {
+      relations.admitModels(tenant, models);
       var locked = maintenance.lockModels(tenant, models);
       for (var model : locked.values()) {
         if (model.getStatus() != PhysicalModelStatus.ACTIVE || model.getActiveVersion() == null) {

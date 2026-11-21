@@ -57,11 +57,18 @@ final class FormSubmissionRequirements {
     }
     Map<String, List<Predicate>> occurrences = new HashMap<>();
     document.scenes().forEach(scene -> project(scene.root(), Constant.TRUE, states, occurrences));
-    return document.fields().stream().filter(field -> calculated ? field.persistent() : persistent(field)).map(field -> {
-      List<Predicate> predicates = occurrences.get(field.fieldId());
-      Predicate required = predicates == null ? constant(field.submitRequired()) : any(predicates);
-      return new Requirement(field, required);
-    }).toList();
+    var retired = FormRelationConversion.retiredFields(document);
+    return document.fields().stream()
+        .filter(field -> !retired.contains(field.fieldId()))
+        .filter(field -> calculated ? field.persistent() : persistent(field))
+        .map(
+            field -> {
+              List<Predicate> predicates = occurrences.get(field.fieldId());
+              Predicate required =
+                  predicates == null ? constant(field.submitRequired()) : any(predicates);
+              return new Requirement(field, required);
+            })
+        .toList();
   }
 
   private static void collect(final FormComponentDefinition component,

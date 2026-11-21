@@ -38,9 +38,21 @@ public class FormDetailSchemaCoordinator {
       String parentModelId,
       ApplicationFormDocument document,
       boolean recover) {
+    return prepare(context, applicationId, formId, parentModelId, document, List.of(), recover);
+  }
+
+  /** Prepares owned detail schemas using the same frozen target bindings as their root form. */
+  public String prepare(
+      DnaInvocationContext context,
+      String applicationId,
+      String formId,
+      String parentModelId,
+      ApplicationFormDocument document,
+      List<FormRelationBinding> relationBindings,
+      boolean recover) {
     List<FormDetailBinding> bindings = new ArrayList<>();
     for (var detail : document.details()) {
-      var projection = storage.compileDetail(detail, parentModelId);
+      var projection = storage.compileDetail(document, detail, parentModelId, relationBindings);
       String childFormId =
           UUID.nameUUIDFromBytes(
                   (formId + ":detail:" + detail.detailId()).getBytes(StandardCharsets.UTF_8))
@@ -74,6 +86,37 @@ public class FormDetailSchemaCoordinator {
           ApplicationFormErrorCode.PUBLICATION_FAILED,
           "Cannot encode detail schema bindings",
           failure);
+    }
+  }
+
+  /** Prepares pure collection schemas without including them in owned detail bindings. */
+  public String prepareCollections(
+      DnaInvocationContext context, String applicationId, String formId, String sourceModelId,
+      ApplicationFormDocument document, List<FormRelationBinding> targetBindings, boolean recover) {
+    var targets = FormRelationPublicationProjection.bindings(document, targetBindings);
+    var edges = new ArrayList<FormCollectionSchemaBinding>();
+    for (var relation : document.relations()) {
+      if (relation.sourceField() != null) {
+        continue;
+      }
+      var projection = storage.compileCollection(sourceModelId, targets.get(relation.relationId()));
+      var result = publications.prepare(
+          context,
+          new FormDnaSchemaPublicationCoordinator.DnaSchemaPreparationRequest(
+              applicationId, projection.schema().collection().modelFormId(formId), relation.relationId(),
+              "default", null, projection.schema(), projection.checksum(), recover));
+      if (!result.active()) {
+        return null;
+      }
+      edges.add(new FormCollectionSchemaBinding(relation.relationId(), result.physicalModelId(),
+          new org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference(
+              result.physicalModelVersion(), projection.checksum())));
+    }
+    try {
+      return mapper.writeValueAsString(edges);
+    } catch (JsonProcessingException failure) {
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.PUBLICATION_FAILED, "Cannot encode collection schema bindings", failure);
     }
   }
 

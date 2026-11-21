@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-plugins:simplepoint-plugin-workflow:simplepoint-plugin-workflow-api"))
     implementation(project(":simplepoint-data:simplepoint-data-jpa"))
     implementation(project(":simplepoint-plugins:simplepoint-plugin-personal:simplepoint-plugin-personal-api"))
     implementation("org.springframework:spring-tx")

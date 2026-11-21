@@ -27,7 +27,8 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicatio
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 
 class RecordCalculationPublicationServiceTest {
-  private final RecordPublicationPatchFixture fixture = new RecordPublicationPatchFixture("db", "forms");
+  private final RecordPublicationPatchFixture fixture =
+      new RecordPublicationPatchFixture("db", "forms");
   private final RuntimeRequestContext context = mock(RuntimeRequestContext.class);
   private final RuntimeRecordModelResolver models = mock(RuntimeRecordModelResolver.class);
   private final RuntimeCalciteRecordBackend backend = mock(RuntimeCalciteRecordBackend.class);
@@ -36,7 +37,8 @@ class RecordCalculationPublicationServiceTest {
   private final RecordExecutionObserver observer = mock(RecordExecutionObserver.class);
   private final RecordAdmissionController admission = mock(RecordAdmissionController.class);
   private final RecordAdmissionController.Permit permit = mock(RecordAdmissionController.Permit.class);
-  private final RuntimeRequestContext.RuntimeActor actor = new RuntimeRequestContext.RuntimeActor("tenant-a", "publisher");
+  private final RuntimeRequestContext.RuntimeActor actor =
+      new RuntimeRequestContext.RuntimeActor("tenant-a", "publisher");
   private final RecordWritePolicyServiceImpl service = new RecordWritePolicyServiceImpl(context, models, mock(RecordSqlCompiler.class), backend,
       mock(RecordRequestFingerprint.class), admission, audit, observer, calculations);
 
@@ -47,6 +49,7 @@ class RecordCalculationPublicationServiceTest {
 
   @Test
   void keepsManagementAuthorizationBeforeAnyMetadataOrTargetWork() {
+    assertCode(() -> service.inspectReferenceCollection(null), DnaRuntimeErrorCode.RECORD_ACCESS_DENIED);
     assertCode(() -> service.publish(command()), DnaRuntimeErrorCode.RECORD_ACCESS_DENIED);
     assertCode(() -> service.cancel(command()), DnaRuntimeErrorCode.RECORD_ACCESS_DENIED);
     verifyNoInteractions(context, models, backend, calculations, admission);
@@ -60,7 +63,8 @@ class RecordCalculationPublicationServiceTest {
     when(calculations.publish(actor, command())).thenReturn(pending);
     assertThat(service.publish(command())).isEqualTo(pending);
     verifyNoInteractions(backend, audit);
-    verify(observer).record(eq("policy-publication"), eq("pending"), eq(fixture.parent), any(), anyLong());
+    verify(observer)
+        .record(eq("policy-publication"), eq("pending"), eq(fixture.parent), any(), anyLong());
     verify(permit).close();
     var complete = new RecordWritePolicyPublicationView(true, 1, fixture.intent.fingerprint(), Map.of());
     when(calculations.publish(actor, command())).thenReturn(complete);
@@ -73,12 +77,15 @@ class RecordCalculationPublicationServiceTest {
     authorize();
     var progress = new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 4, 1, 1,
         DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED);
-    var blocked = new RecordWritePolicyPublicationView(false, 0, fixture.intent.fingerprint(), Map.of(), Map.of("invariant", 1L), progress);
+    var blocked =
+        new RecordWritePolicyPublicationView(
+            false, 0, fixture.intent.fingerprint(), Map.of(), Map.of("invariant", 1L), progress);
     when(calculations.publish(actor, command())).thenReturn(blocked);
     assertThat(service.publish(command())).isEqualTo(blocked);
     verify(audit).failure(eq(DnaRuntimeAuditEventType.RECORD_WRITE_POLICY_PUBLISHED), eq(fixture.parent), any(), anyLong(),
         eq(DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED));
-    verify(observer).record(eq("policy-publication"), eq("blocked"), eq(fixture.parent), any(), anyLong());
+    verify(observer)
+        .record(eq("policy-publication"), eq("blocked"), eq(fixture.parent), any(), anyLong());
   }
 
   @Test
@@ -90,7 +97,8 @@ class RecordCalculationPublicationServiceTest {
     assertThat(service.cancel(command())).isEqualTo(restoring);
     verifyNoInteractions(audit);
     verify(backend).cancelUnstartedCalculationPolicy(eq(fixture.parent), eq(actor), eq(command()), any(), any(), any());
-    verify(observer).record(eq("policy-cancellation"), eq("restoring"), eq(fixture.parent), any(), anyLong());
+    verify(observer)
+        .record(eq("policy-cancellation"), eq("restoring"), eq(fixture.parent), any(), anyLong());
     var cancelled = new RecordWritePolicyCancellationView(true, 1, fixture.intent.fingerprint(), "c".repeat(64));
     when(calculations.cancel(actor, command())).thenReturn(cancelled);
     assertThat(service.cancel(command())).isEqualTo(cancelled);
@@ -101,12 +109,26 @@ class RecordCalculationPublicationServiceTest {
   void rejectsTheWrongOwnerBeforeEnteringTheCoordinatorAndReleasesAdmissionOnFailure() {
     authorize();
     var base = command();
-    var wrong = new RecordWritePolicyPublicationCommand(base.physicalModelId(), "other-app", base.formId(), base.schemaReference(),
-        0, 1, base.publicationKey(), base.policyChecksum(), Map.of(), 1000, Map.of(), base.calculation());
+    var wrong =
+        new RecordWritePolicyPublicationCommand(
+            base.physicalModelId(),
+            "other-app",
+            base.formId(),
+            base.schemaReference(),
+            0,
+            1,
+            base.publicationKey(),
+            base.policyChecksum(),
+            Map.of(),
+            1000,
+            Map.of(),
+            base.calculation());
     assertThatThrownBy(() -> service.publish(wrong)).isInstanceOf(DnaRuntimeException.class);
     assertThatThrownBy(() -> service.cancel(wrong)).isInstanceOf(DnaRuntimeException.class);
     verifyNoInteractions(calculations, admission);
-    when(calculations.publish(actor, base)).thenThrow(new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, "test failure"));
+    when(calculations.publish(actor, base))
+        .thenThrow(
+            new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, "test failure"));
     assertCode(() -> service.publish(base), DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED);
     verify(permit).close();
     verify(audit).failure(eq(DnaRuntimeAuditEventType.RECORD_WRITE_POLICY_PUBLISHED), any(), any(), anyLong(),

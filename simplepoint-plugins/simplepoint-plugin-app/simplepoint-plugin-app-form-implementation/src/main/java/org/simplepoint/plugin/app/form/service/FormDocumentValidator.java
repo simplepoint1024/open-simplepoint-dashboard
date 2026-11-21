@@ -88,7 +88,7 @@ public class FormDocumentValidator {
       invalid("Form document exceeds its field, scene, or rule budget");
     }
 
-    Map<String, FormFieldDefinition> fields = validateFields(document.fields());
+    Map<String, FormFieldDefinition> fields = validateFields(document, null, document.fields());
     validateIndexes(document.indexes(), fields);
     if (document.presentation() != null) {
       var presentation = document.presentation();
@@ -103,6 +103,7 @@ public class FormDocumentValidator {
     SceneValidation scenes = validateScenes(document.scenes(), fields);
     validateRules(document.rules(), fields, scenes);
     validateDetails(document);
+    FormRelationDocumentValidator.validate(document);
     FormAggregateValidation.validateDefinition(document);
     FormComponentValues.validateDefinition(document);
     if (FormCalculationCompiler.hasCalculations(document)) {
@@ -134,19 +135,26 @@ public class FormDocumentValidator {
           .anyMatch(
               field ->
                   (field.storageMode() != FormStorageMode.STORED
+                          && !(field.storageMode() == FormStorageMode.REFERENCE
+                              && FormRelationDocumentValidator.isReference(
+                                  document, detail.detailId(), field.fieldId()))
                           && !(field.storageMode() == FormStorageMode.COMPUTED
-                              && field.calculation() != null))
+                              && field.calculation() != null)
+                          && !(field.storageMode() == FormStorageMode.TRANSIENT
+                              && !field.submitRequired()))
                       || "parent_record_id".equals(field.storageCode())
                       || "row_order".equals(field.storageCode())
                       || "owned_parent".equals(field.fieldId())
                       || "owned_order".equals(field.fieldId()))) {
-        invalid("Detail fields require persistent values and cannot use ownership column names");
+        invalid(
+            "Detail fields require persistent or optional transient values without ownership"
+                + " names");
       }
       if (detail.indexes().stream()
           .anyMatch(index -> "owned_parent_order".equals(index.storageCode()))) {
         invalid("Detail indexes cannot use the ownership index name");
       }
-      validateIndexes(detail.indexes(), validateFields(detail.fields()));
+      validateIndexes(detail.indexes(), validateFields(document, detail.detailId(), detail.fields()));
     }
     for (var scene : document.scenes()) {
       validateDetailBindings(scene.root(), identities, new HashSet<>());
@@ -173,6 +181,8 @@ public class FormDocumentValidator {
   }
 
   private Map<String, FormFieldDefinition> validateFields(
+      final ApplicationFormDocument document,
+      final String detailId,
       final List<FormFieldDefinition> definitions) {
     Map<String, FormFieldDefinition> fields = new HashMap<>();
     Set<String> codes = new HashSet<>();
@@ -218,7 +228,7 @@ public class FormDocumentValidator {
           }
         }
       }
-      validateStorageConstraint(field);
+      validateStorageConstraint(document, detailId, field);
     }
     return Map.copyOf(fields);
   }
@@ -238,13 +248,17 @@ public class FormDocumentValidator {
     }
   }
 
-  private static void validateStorageConstraint(final FormFieldDefinition field) {
+  private static void validateStorageConstraint(
+      final ApplicationFormDocument document, final String detailId, final FormFieldDefinition field) {
     if (!field.storageRequired()) {
       return;
     }
-    boolean persisted = field.persistent();
-    if (!persisted
+    boolean requiredReference = field.defaultValue() == null
+        && field.storageMode() == FormStorageMode.REFERENCE
+        && FormRelationDocumentValidator.isBusinessReference(document, detailId, field.fieldId());
+    if (!field.persistent()
         || field.calculation() == null
+            && !requiredReference
             && (field.defaultValue() == null
                 || field.defaultValue().kind() == FormValueKind.NULL)) {
       invalid("A storage-required field must be persistent and have a non-null default value");
@@ -565,7 +579,19 @@ public class FormDocumentValidator {
     }
   }
 
-  private void validateCondition(
+  /** Reuses the form condition type rules for target-root relation predicates. */
+  static void validateRelationCondition(
+      final FormCondition condition, final List<FormFieldDefinition> targetFields) {
+    Map<String, FormFieldDefinition> persistent =
+        targetFields.stream()
+            .filter(FormFieldDefinition::persistent)
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    FormFieldDefinition::fieldId, java.util.function.Function.identity()));
+    validateCondition(condition, 1, new int[] {0}, persistent);
+  }
+
+  private static void validateCondition(
       final FormCondition condition,
       final int depth,
       final int[] nodes,
@@ -634,7 +660,7 @@ public class FormDocumentValidator {
     }
   }
 
-  private void validateValue(
+  private static void validateValue(
       final FormFieldType type, final FormValue value, final String message) {
     if (value == null || value.kind() == FormValueKind.NULL) {
       return;
@@ -730,12 +756,13 @@ public class FormDocumentValidator {
       Objects.requireNonNull(persistentInputs, "persistentInputs");
     }
   }
-  private static void requireLocalizedLabel(String label, org.simplepoint.api.locale.LocalizedText value) {
+
+  private static void requireLocalizedLabel(
+      String label, org.simplepoint.api.locale.LocalizedText value) {
     if (value != null && !java.util.Objects.equals(label, value.defaultValue())) {
       throw new org.simplepoint.plugin.app.form.api.error.ApplicationFormException(
           org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode.DOCUMENT_INVALID,
           "Localized label must retain its declared default label");
     }
   }
-
 }

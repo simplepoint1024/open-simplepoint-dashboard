@@ -9,7 +9,9 @@ import org.simplepoint.plugin.dna.runtime.api.service.RecordInspectionService;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 import org.springframework.stereotype.Service;
 
-/** Tenant/owner-scoped management inspection; deliberately does not use a page reader's data scope. */
+/**
+ * Tenant/owner-scoped management inspection; deliberately does not use a page reader's data scope.
+ */
 @Service
 public class RecordInspectionServiceImpl implements RecordInspectionService {
 
@@ -24,10 +26,14 @@ public class RecordInspectionServiceImpl implements RecordInspectionService {
   private final RecordExecutionObserver observer;
 
   /** Uses the same execution, admission, audit and metrics infrastructure as Record reads. */
-  public RecordInspectionServiceImpl(final RuntimeRequestContext requestContext,
-      final RuntimeRecordModelResolver modelResolver, final RecordSqlCompiler compiler,
-      final RuntimeCalciteRecordBackend backend, final RecordAdmissionController admission,
-      final RecordAuditSupport audit, final RecordExecutionObserver observer) {
+  public RecordInspectionServiceImpl(
+      final RuntimeRequestContext requestContext,
+      final RuntimeRecordModelResolver modelResolver,
+      final RecordSqlCompiler compiler,
+      final RuntimeCalciteRecordBackend backend,
+      final RecordAdmissionController admission,
+      final RecordAuditSupport audit,
+      final RecordExecutionObserver observer) {
     this.requestContext = requestContext;
     this.modelResolver = modelResolver;
     this.compiler = compiler;
@@ -41,19 +47,35 @@ public class RecordInspectionServiceImpl implements RecordInspectionService {
   public RecordCompletenessView inspectCompleteness(final RecordCompletenessQuery query) {
     RecordManagementAccess.requireAuthority();
     var actor = requestContext.requireActor();
-    RuntimeRecordModel model = modelResolver.resolve(actor, query.physicalModelId(), query.schemaReference());
-    RecordAccessContext access = RecordManagementAccess.forOwner(actor, model, query.appId(), query.formId());
+    RuntimeRecordModel model =
+        modelResolver.resolve(actor, query.physicalModelId(), query.schemaReference());
+    RecordAccessContext access =
+        RecordManagementAccess.forOwner(actor, model, query.appId(), query.formId());
     long startedAt = System.nanoTime();
     try (RecordAdmissionController.Permit ignored = admission.enter(actor.tenantId())) {
-      RecordSelectPlan plan = compiler.completeness(model, access, query);
-      RecordCompletenessView result = RecordCompletenessResult.read(query, backend.aggregateQuery(model, actor.tenantId(), plan, TIMEOUT_MS));
-      audit.success(DnaRuntimeAuditEventType.RECORD_QUERIED, model, access, result.recordCount(), elapsed(startedAt));
+      RecordCompletenessView result =
+          RecordCompletenessResult.read(
+              query,
+              backend.inspect(
+                  model,
+                  access,
+                  TIMEOUT_MS,
+                  protectedAccess -> compiler.completeness(model, protectedAccess, query)));
+      audit.success(
+          DnaRuntimeAuditEventType.RECORD_QUERIED,
+          model,
+          access,
+          result.recordCount(),
+          elapsed(startedAt));
       observer.record("completeness", "succeeded", model, access, elapsed(startedAt));
       return result;
     } catch (RuntimeException exception) {
-      DnaRuntimeErrorCode code = exception instanceof DnaRuntimeException failure
-          ? failure.errorCode() : DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED;
-      audit.failure(DnaRuntimeAuditEventType.RECORD_QUERIED, model, access, elapsed(startedAt), code);
+      DnaRuntimeErrorCode code =
+          exception instanceof DnaRuntimeException failure
+              ? failure.errorCode()
+              : DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED;
+      audit.failure(
+          DnaRuntimeAuditEventType.RECORD_QUERIED, model, access, elapsed(startedAt), code);
       observer.record("completeness", "failed", model, access, elapsed(startedAt));
       throw exception;
     }

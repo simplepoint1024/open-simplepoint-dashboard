@@ -20,7 +20,7 @@ export function InboxDetail({kind, id, close, readOnly = false}: {kind: Kind; id
   const selected = usePageSelected();
   const query = useData(['personal', kind, 'detail', id], ({signal}) => get<Entry>(`${personalApi}/${kind}/${encodeURIComponent(id)}`, undefined, {signal}));
   const entry = query.data;
-  const actions = usePersonalActions(kind);
+  const actions = usePersonalActions(kind, {changed: action => {if (action === 'delete' || action === 'RESTORE') close();}});
   return <Drawer open={selected} title={kind === 'todos' ? t('personal.todoDetails', '待办详情') : t('personal.messageDetails', '消息详情')}
     size={600} onClose={close} closable={!actions.busy} keyboard={!actions.busy} mask={{closable: !actions.busy}}>
     <ErrorNotice error={query.error} retry={() => void query.refetch()} />
@@ -58,7 +58,11 @@ function Inbox({kind}: {kind: Kind}) {
   return <main className="sp-personal" tabIndex={0}>
     <Tabs activeKey={view} onChange={value => {if (!creating) setView(value);}} items={kind === 'todos'
       ? ['PENDING', 'DONE', 'CANCELLED'].map(key => ({key, label: statuses[key as keyof typeof statuses]}))
-      : [{key: 'ALL', label: t('personal.inbox', '收件箱')}, {key: 'UNREAD', label: t('personal.unreadMessages', '未读消息')}, {key: 'ARCHIVED', label: t('personal.archived', '已归档')}]} />
+      : [{key: 'ALL', label: t('personal.inbox', '收件箱')}, {key: 'UNREAD', label: t('personal.unreadMessages', '未读消息')},
+        {key: 'ARCHIVED', label: t('personal.archived', '已归档')}, {key: 'TRASH', label: t('personal.trash', '回收站')}]} />
+    {kind === 'messages' && view === 'TRASH' && <Typography.Text type="secondary">
+      {t('personal.messageTrashRetention', '回收站中的消息保留 30 天，可恢复或提前永久删除。')}
+    </Typography.Text>}
     <PersonalTable<Entry> key={view} name={kind} view={view} columns={columns} onOpen={open}
       open={creating} onOpenChange={setCreating} onSaved={() => setView('PENDING')} />
     {params.get('id') && !creating && <InboxDetail key={params.get('id')} kind={kind} id={params.get('id')!} close={() => setParams({})} />}

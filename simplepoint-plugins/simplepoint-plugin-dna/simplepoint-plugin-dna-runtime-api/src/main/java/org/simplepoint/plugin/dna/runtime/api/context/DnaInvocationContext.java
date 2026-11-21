@@ -1,10 +1,8 @@
 package org.simplepoint.plugin.dna.runtime.api.context;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import static org.simplepoint.plugin.dna.runtime.api.context.DnaPolicyValues.*;
+
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,15 +18,38 @@ public record DnaInvocationContext(
     Set<String> departmentIds,
     boolean dataScopeIncludeSelf,
     List<String> dataScopeExpressions,
-    Map<String, String> fieldPermissions
-) {
+    Map<String, String> fieldPermissions,
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+        Map<String, DnaResourcePolicy> additionalResourcePolicies) {
 
-  private static final Set<String> DATA_SCOPES = Set.of(
-      "ALL", "SELF", "DEPT", "DEPT_AND_BELOW", "CUSTOM", "DENY"
-  );
-  private static final Set<String> FIELD_ACCESS = Set.of(
-      "EDITABLE", "VISIBLE", "MASKED", "HIDDEN"
-  );
+  /** Legacy single-resource invocations retain their exact wire shape. */
+  public DnaInvocationContext(
+      String tenantId,
+      String actorId,
+      String organizationId,
+      String resourceCode,
+      boolean administrator,
+      Set<String> resources,
+      String dataScopeType,
+      Set<String> departmentIds,
+      boolean dataScopeIncludeSelf,
+      List<String> dataScopeExpressions,
+      Map<String, String> fieldPermissions) {
+    this(
+        tenantId,
+        actorId,
+        organizationId,
+        resourceCode,
+        administrator,
+        resources,
+        dataScopeType,
+        departmentIds,
+        dataScopeIncludeSelf,
+        dataScopeExpressions,
+        fieldPermissions,
+        Map.of());
+  }
 
   /** Validates the service boundary and defensively copies all policy collections. */
   public DnaInvocationContext {
@@ -36,84 +57,60 @@ public record DnaInvocationContext(
     actorId = required(actorId, "actorId", 64);
     organizationId = optional(organizationId, "organizationId", 255);
     resourceCode = optional(resourceCode, "resourceCode", 200);
-    dataScopeType = optional(dataScopeType, "dataScopeType", 32);
-    dataScopeType = dataScopeType == null ? null : dataScopeType.toUpperCase(Locale.ROOT);
     resources = normalizeSet(resources);
-    departmentIds = normalizeSet(departmentIds);
-    dataScopeExpressions = normalizeList(dataScopeExpressions);
-    fieldPermissions = normalizePermissions(fieldPermissions);
     validateStrings(resources, "resources", 512, 200);
-    validateStrings(departmentIds, "departmentIds", 1_000, 255);
-    validateStrings(dataScopeExpressions, "dataScopeExpressions", 32, 4_000);
-    if (dataScopeType != null && !DATA_SCOPES.contains(dataScopeType)) {
-      throw new IllegalArgumentException("dataScopeType is invalid");
-    }
-    if (fieldPermissions.size() > 512 || fieldPermissions.entrySet().stream().anyMatch(entry ->
-        entry.getKey() == null || entry.getKey().isBlank() || entry.getKey().length() > 200
-            || !FIELD_ACCESS.contains(entry.getValue()))) {
-      throw new IllegalArgumentException("fieldPermissions is invalid");
-    }
-  }
-
-  private static String required(final String value, final String name, final int maximum) {
-    String normalized = optional(value, name, maximum);
-    if (normalized == null) {
-      throw new IllegalArgumentException(name + " is required");
-    }
-    return normalized;
-  }
-
-  private static String optional(final String value, final String name, final int maximum) {
-    if (value == null) {
-      return null;
-    }
-    String normalized = value.trim();
-    if (normalized.isEmpty() || normalized.length() > maximum) {
-      throw new IllegalArgumentException(name + " is invalid");
-    }
-    return normalized;
-  }
-
-  private static void validateStrings(
-      final Collection<String> values,
-      final String name,
-      final int maximumSize,
-      final int maximumLength
-  ) {
-    if (values.size() > maximumSize || values.stream().anyMatch(value ->
-        value == null || value.isBlank() || value.length() > maximumLength)) {
-      throw new IllegalArgumentException(name + " is invalid");
-    }
-  }
-
-  private static Set<String> normalizeSet(final Set<String> values) {
-    if (values == null) {
-      return Set.of();
-    }
-    Set<String> normalized = new LinkedHashSet<>();
-    values.forEach(value -> normalized.add(value == null ? null : value.trim()));
-    return java.util.Collections.unmodifiableSet(normalized);
-  }
-
-  private static List<String> normalizeList(final List<String> values) {
-    if (values == null) {
-      return List.of();
-    }
-    return java.util.Collections.unmodifiableList(values.stream()
-        .map(value -> value == null ? null : value.trim()).toList());
-  }
-
-  private static Map<String, String> normalizePermissions(final Map<String, String> values) {
-    if (values == null) {
-      return Map.of();
-    }
-    Map<String, String> normalized = new LinkedHashMap<>();
-    values.forEach((key, value) -> {
-      if (key == null || value == null) {
-        throw new IllegalArgumentException("fieldPermissions is invalid");
+    var policy =
+        policy(dataScopeType, departmentIds, dataScopeExpressions, fieldPermissions, false);
+    dataScopeType = policy.scope();
+    departmentIds = policy.departments();
+    dataScopeExpressions = policy.expressions();
+    fieldPermissions = policy.fields();
+    Map<String, DnaResourcePolicy> policies = new java.util.TreeMap<>();
+    if (additionalResourcePolicies != null) {
+      if (additionalResourcePolicies.size() > 50)
+        throw new IllegalArgumentException("Related resource policy budget exceeded");
+      for (var entry : additionalResourcePolicies.entrySet()) {
+        String code = required(entry.getKey(), "related resource", 200);
+        if (code.equals(resourceCode)
+            || entry.getValue() == null
+            || policies.putIfAbsent(code, entry.getValue()) != null
+            || !administrator && !resources.contains(code)) {
+          throw new IllegalArgumentException("Related resource policy identity is invalid");
+        }
       }
-      normalized.put(key.trim(), value.trim().toUpperCase(Locale.ROOT));
-    });
-    return Map.copyOf(normalized);
+    }
+    if (!policies.isEmpty() && resourceCode == null)
+      throw new IllegalArgumentException("Related policies require a source resource");
+    long fields = fieldPermissions.size();
+    long expressions = dataScopeExpressions.size();
+    long departments = departmentIds.size();
+    long totalText = policyText(departmentIds, dataScopeExpressions, fieldPermissions);
+    long text = dataScopeExpressions.stream().mapToLong(String::length).sum();
+    for (var related : policies.values()) {
+      fields += related.fieldPermissions().size();
+      departments += related.departmentIds().size();
+      totalText +=
+          policyText(
+              related.departmentIds(), related.dataScopeExpressions(), related.fieldPermissions());
+      expressions += related.dataScopeExpressions().size();
+      text += related.dataScopeExpressions().stream().mapToLong(String::length).sum();
+    }
+    if (fields > 4096
+        || expressions > 256
+        || text > 262144
+        || departments > 5000
+        || totalText > 2_097_152) {
+      throw new IllegalArgumentException("Related resource policy aggregate budget exceeded");
+    }
+    additionalResourcePolicies = java.util.Collections.unmodifiableMap(policies);
+  }
+
+  private static long policyText(
+      Set<String> departments, List<String> expressions, Map<String, String> fields) {
+    return departments.stream().mapToLong(String::length).sum()
+        + expressions.stream().mapToLong(String::length).sum()
+        + fields.entrySet().stream()
+            .mapToLong(entry -> entry.getKey().length() + entry.getValue().length())
+            .sum();
   }
 }

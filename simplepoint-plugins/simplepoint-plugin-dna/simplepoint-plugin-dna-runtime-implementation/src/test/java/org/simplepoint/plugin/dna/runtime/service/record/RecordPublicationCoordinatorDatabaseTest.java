@@ -51,7 +51,10 @@ class RecordPublicationCoordinatorDatabaseTest {
     var fixture = db.fixture();
     var repositories = new JpaRepositoryFactory(control.em());
     var resolver = new RuntimeRecordModelResolver(repositories.getRepository(PhysicalModelRepository.class),
-        repositories.getRepository(PhysicalModelBindingRepository.class), repositories.getRepository(PhysicalModelVersionRepository.class), fixture.codec);
+        repositories.getRepository(PhysicalModelBindingRepository.class), repositories.getRepository(PhysicalModelVersionRepository.class), fixture.codec,
+        new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver(
+            repositories.getRepository(PhysicalModelRepository.class), repositories.getRepository(PhysicalModelBindingRepository.class),
+            repositories.getRepository(PhysicalModelVersionRepository.class), fixture.codec));
     var metadata = new RecordPublicationMetadata(control.em(), resolver, fixture.codec);
     var batches = new RecordPublicationBatchExecutor(fixture.codec, fixture.sql);
     var coordinator = new RecordPublicationCoordinator(control.control(), metadata, db.backend(), batches, new RecordRequestFingerprint(new ObjectMapper()));

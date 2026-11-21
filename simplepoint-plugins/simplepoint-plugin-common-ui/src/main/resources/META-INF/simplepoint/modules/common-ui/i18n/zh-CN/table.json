@@ -162,5 +162,6 @@
   "table.resizeConfigurationWidth": "调整配置面板宽度",
   "table.collapseConfiguration": "收起面板",
   "table.expandConfiguration": "展开面板",
-  "table.actions": "操作"
+  "table.actions": "操作",
+  "table.confirmPermanentDeleteContent": "永久删除选中的 {count} 条记录？"
 }

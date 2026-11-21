@@ -21,7 +21,85 @@ public record ApplicationFormRuntimeFieldDefinition(
     @com.fasterxml.jackson.annotation.JsonInclude(
             com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
         @org.simplepoint.api.schema.LocalizedField(maxLength = 120)
-        org.simplepoint.api.locale.LocalizedText labelLocalization) {
+        org.simplepoint.api.locale.LocalizedText labelLocalization,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        org.simplepoint.plugin.app.form.api.model.relation.FormRuntimeReference reference,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        org.simplepoint.plugin.app.form.api.model.relation.FormReferenceMapping.Mode
+            referenceValueMode) {
+
+  /** Keeps ordinary runtime field metadata unchanged when no relation provides its value. */
+  public ApplicationFormRuntimeFieldDefinition(
+      String fieldId,
+      String label,
+      FormFieldType type,
+      boolean submitRequired,
+      Integer length,
+      Integer precision,
+      Integer scale,
+      FormValue defaultValue,
+      List<FormChoiceOption> choices,
+      FormFieldWritePolicy writePolicy,
+      FormFieldValidation validation,
+      FormFieldAccess access,
+      Boolean calculated,
+      org.simplepoint.api.locale.LocalizedText labelLocalization,
+      org.simplepoint.plugin.app.form.api.model.relation.FormRuntimeReference reference) {
+    this(
+        fieldId,
+        label,
+        type,
+        submitRequired,
+        length,
+        precision,
+        scale,
+        defaultValue,
+        choices,
+        writePolicy,
+        validation,
+        access,
+        calculated,
+        labelLocalization,
+        reference,
+        null);
+  }
+
+  /**
+   * Existing snapshots do not acquire reference capabilities from field names or raw UUID values.
+   */
+  public ApplicationFormRuntimeFieldDefinition(
+      String fieldId,
+      String label,
+      FormFieldType type,
+      boolean submitRequired,
+      Integer length,
+      Integer precision,
+      Integer scale,
+      FormValue defaultValue,
+      List<FormChoiceOption> choices,
+      FormFieldWritePolicy writePolicy,
+      FormFieldValidation validation,
+      FormFieldAccess access,
+      Boolean calculated,
+      org.simplepoint.api.locale.LocalizedText labelLocalization) {
+    this(
+        fieldId,
+        label,
+        type,
+        submitRequired,
+        length,
+        precision,
+        scale,
+        defaultValue,
+        choices,
+        writePolicy,
+        validation,
+        access,
+        calculated,
+        labelLocalization,
+        null);
+  }
+
   /** Retains source and snapshot compatibility when translated labels are absent. */
   public ApplicationFormRuntimeFieldDefinition(
       String fieldId,

@@ -14,7 +14,6 @@ public class RecordCalculationProvisioner {
 
   /** Creates or verifies the immutable definition table without changing existing definitions. */
   public void prepare(final PhysicalSchemaTarget model) {
-    RuntimeInfrastructureSchema.prepare(backend, RecordCalculationSchema.target(model),
-        "DNA immutable record calculation definitions v1", RecordCalculationSchema.definition());
+    RuntimeInfrastructureSchema.prepare(backend, model, RuntimeInfrastructureTable.CALCULATIONS);
   }
 }

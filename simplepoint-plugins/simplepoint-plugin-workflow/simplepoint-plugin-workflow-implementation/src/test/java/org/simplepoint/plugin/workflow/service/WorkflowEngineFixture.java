@@ -32,9 +32,12 @@ import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionVersionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowEngineSignalEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInboxReadModel;
+import org.simplepoint.plugin.workflow.entity.WorkflowHistoryRemovalBatchEntity;
+import org.simplepoint.plugin.workflow.entity.WorkflowHistoryRemovalEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceWatcherEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowMatterReadModel;
+import org.simplepoint.plugin.workflow.entity.WorkflowPersonalArchiveEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowNotificationOutboxEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowStartableReadModel;
 import org.springframework.context.support.StaticApplicationContext;
@@ -106,8 +109,11 @@ abstract class WorkflowEngineFixture {
                 org.simplepoint.plugin.workflow.entity.WorkflowFormBindingEntity.class)
             .addAnnotatedClass(WorkflowEngineSignalEntity.class)
             .addAnnotatedClass(WorkflowInboxReadModel.class)
+            .addAnnotatedClass(WorkflowHistoryRemovalBatchEntity.class)
+            .addAnnotatedClass(WorkflowHistoryRemovalEntity.class)
             .addAnnotatedClass(WorkflowCandidateReadModel.class)
             .addAnnotatedClass(WorkflowMatterReadModel.class)
+            .addAnnotatedClass(WorkflowPersonalArchiveEntity.class)
             .addAnnotatedClass(WorkflowStartableReadModel.class)
             .buildMetadata()
             .buildSessionFactory();

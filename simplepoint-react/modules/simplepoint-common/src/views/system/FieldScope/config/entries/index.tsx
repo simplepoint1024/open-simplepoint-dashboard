@@ -120,7 +120,7 @@ export default function FieldEntries({value = EMPTY, onChange, disabled, canInte
       <div className="field-permission-field-table" ref={container}>
         {!selected ? <Empty description={t('permissions.selectResource', '请从左侧选择资源权限点')} /> :
           <Table virtual size="small" rowKey={keyOf} dataSource={rows} loading={selectedPage.isFetching}
-            settings={false} pagination={false}
+            settings={false} pagination={false} selectable={false}
             query={{mode: 'local', scope: 'complete', contextKey: selected.pageCode, fields: {
               title: {type: 'string'}, accessName: {type: 'string'},
             }}}

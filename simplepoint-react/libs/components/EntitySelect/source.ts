@@ -6,5 +6,6 @@ export function isEntitySelectSource(value: unknown): value is EntitySelectSourc
   const source = value as EntitySelectSource;
   return typeof source.key === 'string' && !!source.key.trim()
     && typeof source.searchParams === 'function' && typeof source.option === 'function'
+    && (source.search === undefined || typeof source.search === 'function')
     && (source.resolve === undefined || typeof source.resolve === 'function');
 }

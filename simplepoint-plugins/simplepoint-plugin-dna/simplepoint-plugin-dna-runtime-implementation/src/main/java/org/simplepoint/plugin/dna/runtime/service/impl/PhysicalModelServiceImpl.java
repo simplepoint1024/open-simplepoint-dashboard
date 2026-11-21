@@ -28,6 +28,8 @@ import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelBindingReposit
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelRepository;
 import org.simplepoint.plugin.dna.runtime.repository.PhysicalModelVersionRepository;
 import org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceControl;
+import org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog;
+import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalModelOwnershipRegistry;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaCodec.EncodedSchema;
 import org.simplepoint.plugin.dna.runtime.service.support.PhysicalSchemaValidator;
@@ -46,6 +48,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private static final Set<PhysicalModelStatus> VERSIONABLE_STATES =
       Set.of(PhysicalModelStatus.DRAFT, PhysicalModelStatus.ACTIVE, PhysicalModelStatus.FAILED);
 
+  private final PhysicalRelationCatalog relations;
   private final RecordMaintenanceControl maintenance;
   private final PhysicalModelRepository modelRepository;
   private final PhysicalModelBindingRepository bindingRepository;
@@ -56,6 +59,7 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
   private final PhysicalSchemaValidator schemaValidator;
   private final RuntimeRequestContext requestContext;
   private final DnaRuntimeAuditPublisher auditPublisher;
+  private final PhysicalModelOwnershipRegistry ownership;
 
   /** Creates the transactional registry from replaceable persistence and policy ports. */
   public PhysicalModelServiceImpl(
@@ -68,7 +72,11 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       final PhysicalSchemaValidator schemaValidator,
       final RuntimeRequestContext requestContext,
       final DnaRuntimeAuditPublisher auditPublisher,
-      final RecordMaintenanceControl maintenance) {
+      final RecordMaintenanceControl maintenance,
+      final PhysicalRelationCatalog relations,
+      final PhysicalModelOwnershipRegistry ownership) {
+    this.ownership = ownership;
+    this.relations = relations;
     this.maintenance = maintenance;
     this.modelRepository = modelRepository;
     this.bindingRepository = bindingRepository;
@@ -89,6 +97,11 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       throw invalidArgument("Registration command is required");
     }
     RuntimeActor actor = requestContext.requireActor();
+    relations.initialize(actor.tenantId());
+    if (command.initialSchema().owner() != null) {
+      relations.requireMutable(
+          actor.tenantId(), command.initialSchema().owner().parentModelId(), null);
+    }
     if (modelExists(actor.tenantId(), command.appId(), command.formId())) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.PHYSICAL_MODEL_ALREADY_EXISTS,
@@ -117,6 +130,8 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
         newBinding(modelId, tableName, catalogName, schemaName, target, actor);
     PhysicalModelVersionEntity version =
         newVersion(modelId, 1, command.initialSchema().contractVersion(), encoded, actor);
+
+    binding.setPhysicalNamespaceId(ownership.reserve(actor.tenantId(), modelId, target, tableName));
 
     try {
       modelRepository.save(model);
@@ -212,6 +227,8 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       throw invalidArgument("Version command is required");
     }
     RuntimeActor actor = requestContext.requireActor();
+    relations.write(actor.tenantId());
+    relations.requireMutable(actor.tenantId(), modelId, null);
     PhysicalModelEntity model = requireModel(actor.tenantId(), modelId, true);
     PhysicalModelBindingEntity binding = requireBinding(actor.tenantId(), modelId);
     if (model.getLockVersion() != command.expectedLockVersion()) {
@@ -223,8 +240,8 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
           "A schema version cannot be created while the model is " + model.getStatus());
     }
     maintenance.requireAvailable(actor.tenantId(), model);
-    if (model.getStatus() != PhysicalModelStatus.DRAFT) {
-      PhysicalModelTransitions.requireTransition(model.getStatus(), PhysicalModelStatus.DRAFT);
+    if (model.getStatus() == PhysicalModelStatus.FAILED) {
+      PhysicalModelTransitions.requireTransition(PhysicalModelStatus.FAILED, PhysicalModelStatus.DRAFT);
       model.setStatus(PhysicalModelStatus.DRAFT);
     }
 
@@ -234,8 +251,21 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
     if (!java.util.Objects.equals(previousSchema.owner(), command.schema().owner())) {
       throw invalidArgument("A physical model owner relation is immutable");
     }
+    if (Boolean.TRUE.equals(previousSchema.tenantRecordIdentity())
+        && !Boolean.TRUE.equals(command.schema().tenantRecordIdentity())) {
+      throw invalidArgument(
+          "Tenant-qualified record identity cannot be removed by ordinary schema evolution");
+    }
+    if (previousSchema.references().stream()
+        .anyMatch(
+            previous ->
+                command.schema().references().stream().noneMatch(previous::canEvolveTo))) {
+      throw invalidArgument(
+          "Removing or replacing a reference requires an explicit relation migration");
+    }
     int nextVersion = model.getLatestVersion() + 1;
     schemaValidator.validate(command.schema());
+    relations.requireCompatibleTarget(actor.tenantId(), modelId, command.schema());
     EncodedSchema encoded = schemaCodec.encode(command.schema());
     PhysicalModelVersionEntity version =
         newVersion(modelId, nextVersion, command.schema().contractVersion(), encoded, actor);
@@ -271,7 +301,8 @@ public class PhysicalModelServiceImpl implements PhysicalModelService {
       if (forUpdate) {
         return maintenance.lockModels(tenantId, java.util.List.of(modelId)).get(modelId);
       }
-      return modelRepository.findActiveById(tenantId, modelId)
+      return modelRepository
+          .findActiveById(tenantId, modelId)
           .orElseThrow(
               () ->
                   new DnaRuntimeException(

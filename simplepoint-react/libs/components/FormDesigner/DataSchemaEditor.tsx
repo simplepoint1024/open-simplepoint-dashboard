@@ -1,7 +1,9 @@
 import {createIcon} from '@simplepoint/shared/types/icon';
 import HelpTip from '../HelpTip';
 import {designerFormContext} from './presentation';
-import {useRef, useState} from 'react';
+import {useContext, useRef, useState} from 'react';
+import {DesignerRelationContext} from './relations/Context';
+import RelationEditor from './relations/Editor';
 import {Alert, Modal, Tabs} from 'antd';
 import {useI18n} from '@simplepoint/shared/hooks/useI18n';
 import {usePageRetention, usePageSelected} from '@simplepoint/shared/page/hooks';
@@ -10,7 +12,7 @@ import TableActions from '../Table/Actions';
 import SForm, {type SFormHandle} from '../SForm';
 import type {ComponentDescriptor, DesignDocument, DesignField} from './contracts.ts';
 import type {FormFieldWritePolicy} from '../FormRuntime/contracts.ts';
-import {newDataField} from './model.ts';
+import {newDataField, newTransientField} from './model.ts';
 import {sameDesignValue} from './draftState.ts';
 import FieldDefinitionDialog from './FieldDefinitionDialog';
 import {applyIndexEdit, DataEditError, fieldEdit, newIndex, persistentField, removeIndex,
@@ -21,10 +23,15 @@ type Session = {kind: 'field'; base: DesignField; value: FieldEdit; creating: bo
   | {kind: 'index'; base: DesignIndex; value: IndexEdit; creating: boolean}
   | {kind: 'remove'; base: DesignIndex};
 type Props = {calculationScope?: string; modelScope?: 'form' | 'detail'; section?: 'fields' | 'indexes'; compact?: boolean; document: DesignDocument; components: readonly ComponentDescriptor[]; writePolicies: readonly FormFieldWritePolicy[];
+  relationOwner?: {document: DesignDocument; detailId: string; onChange: (document: DesignDocument) => void};
   disabled: boolean; onChange: (document: DesignDocument) => void; onReuse?: (field: DesignField) => void; maxFields?: number; maxIndexes?: number};
 
-export default function DataSchemaEditor({document, components, writePolicies, disabled, onChange, onReuse, maxFields = 300, maxIndexes = 50, section, compact = false, modelScope = 'form', calculationScope = 'parent'}: Props) {
+export default function DataSchemaEditor({document, components, writePolicies, disabled, onChange, onReuse, maxFields = 300, maxIndexes = 50, section, compact = false, modelScope = 'form', calculationScope = 'parent', relationOwner}: Props) {
   const {t} = useI18n(), selected = usePageSelected();
+  const directory = useContext(DesignerRelationContext);
+  const [relationField, setRelationField] = useState<string>();
+  const canConfigureRelations = Boolean(directory && components.some(item => item.type === 'field.reference' && item.version === '1')
+    && (modelScope === 'form' || relationOwner));
   const [tab, setTab] = useState('fields'), [session, setSession] = useState<Session>();
   const [failure, setFailure] = useState('');
   const [discarding, setDiscarding] = useState(false);
@@ -33,7 +40,7 @@ export default function DataSchemaEditor({document, components, writePolicies, d
   const initial = session?.kind === 'field' ? fieldEdit(session.base) : session?.kind === 'index'
     ? {unique: session.base.unique, fields: session.base.fieldIds.map(fieldId => ({fieldId}))} : undefined;
   const dirty = Boolean(session && session.kind !== 'remove' && !sameDesignValue(initial, session.value));
-  usePageRetention(!session, Boolean(session));
+  usePageRetention(!session && !relationField, Boolean(session || relationField));
   const close = () => {
     if (!selected) return;
     if (dirty) setDiscarding(true);
@@ -58,7 +65,11 @@ export default function DataSchemaEditor({document, components, writePolicies, d
     }
   };
   const indexFields = (index: DesignIndex) => index.fieldIds.map(id => document.fields.find(field => field.fieldId === id)?.label ?? id).join(' → ');
+  const retiredFields = new Set((document.relations ?? []).flatMap(relation =>
+    relation.retiredByCollectionId ? [relation.sourceField.fieldId] : []));
   const newField = () => {const base = newDataField(document, 'STRING', t('app.designer.newFieldName', '新字段'));
+    open({kind: 'field', base, value: fieldEdit(base), creating: true});};
+  const newTemporaryField = () => {const base = newTransientField(document, 'STRING', t('app.designer.newFieldName', '新字段'));
     open({kind: 'field', base, value: fieldEdit(base), creating: true});};
   const editIndex = (base: DesignIndex, creating = false) => open({kind: 'index', base, creating,
     value: {unique: base.unique, fields: base.fieldIds.map(fieldId => ({fieldId}))}});
@@ -76,17 +87,22 @@ export default function DataSchemaEditor({document, components, writePolicies, d
         fields: {label: {type: 'string'}, storageCode: {type: 'string'}, type: {type: 'string'}}}}
       toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'addField', icon: 'PlusOutlined', sort: 0, text: t('app.designer.addField', '新增字段'), disabled: locked || document.fields.length >= maxFields},
-      ]} onButtonEvents={{addField: newField}}/>}
+        {key: 'addTransientField', icon: 'EyeOutlined', sort: 1, text: t('app.designer.addTransientField', '新增临时字段'), disabled: locked || document.fields.length >= maxFields},
+      ]} onButtonEvents={{addField: newField, addTransientField: newTemporaryField}}/>}
       columns={[
         {key: 'label', dataIndex: 'label', width: compact ? 140 : undefined, title: t('app.designer.fieldLabel', '字段名称')},
         {key: 'storageCode', dataIndex: 'storageCode', title: t('app.designer.storageCode', '字段编码')},
         {key: 'type', dataIndex: 'type', width: compact ? 80 : undefined, title: t('app.designer.fieldType', '数据类型')},
         {key: 'default', title: t('app.designer.defaultMode', '默认值'), render: (_: unknown, field: DesignField) => field.defaultValue == null ? '—'
           : field.defaultValue.kind === 'NULL' ? 'NULL' : <span title={field.defaultValue.value ?? ''}>{(field.defaultValue.value ?? '').slice(0, 80)}</span>},
-        {key: 'actions', width: compact ? 80 : undefined, fixed: compact ? 'right' as const : undefined, title: t('app.designer.actions', '操作'), render: (_: unknown, field: DesignField) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
-          {key: 'edit', icon: 'EditOutlined', sort: 0, text: compact ? t('table.button.edit', '编辑') : t('app.designer.editField', '编辑字段'), disabled: locked},
-          ...(onReuse ? [{key: 'reuse', icon: 'PlusOutlined', sort: 1, text: t('app.designer.reuse', '添加到当前场景'), disabled: locked}] : []),
+        {key: 'actions', width: compact ? canConfigureRelations ? 180 : 80 : undefined, fixed: compact ? 'right' as const : undefined, title: t('app.designer.actions', '操作'), render: (_: unknown, field: DesignField) => <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
+          {key: 'edit', icon: 'EditOutlined', sort: 0, text: compact ? t('table.button.edit', '编辑') : t('app.designer.editField', '编辑字段'), disabled: locked || retiredFields.has(field.fieldId)},
+          ...(canConfigureRelations && !retiredFields.has(field.fieldId) && field.type === 'UUID' && ['STORED', 'REFERENCE'].includes(field.storageMode) && !field.choices.length
+            && (!field.defaultValue || field.defaultValue.kind === 'NULL') ? [{key: 'relation', icon: 'LinkOutlined', sort: 1,
+              text: t('app.relation.configure', '配置关联'), disabled: locked}] : []),
+          ...(onReuse ? [{key: 'reuse', icon: 'PlusOutlined', sort: 1, text: t('app.designer.reuse', '添加到当前场景'), disabled: locked || retiredFields.has(field.fieldId)}] : []),
         ]} onButtonEvents={{edit: () => open({kind: 'field', base: structuredClone(field), value: fieldEdit(field), creating: false}),
+          relation: () => {if (!locked && canConfigureRelations) setRelationField(field.fieldId);},
           reuse: () => {if (!locked) onReuse?.(field);}}}/>},
       ].filter(column => !compact || !['storageCode', 'default'].includes(column.key))}/> : <DataTable<DesignIndex> cards={compact ? false : undefined} settings={!compact} selectable={!compact} scroll={compact ? {x: 370} : undefined} rowKey="indexId" storageKey="app.form.designer.indexes" dataSource={document.indexes} pagination={compact ? false : {defaultPageSize: 50}}
       toolbarExtra={<TableActions selectedKeys={[]} selectedRows={[]} buttons={[
@@ -102,6 +118,9 @@ export default function DataSchemaEditor({document, components, writePolicies, d
           {key: 'remove', icon: 'DeleteOutlined', sort: 1, text: compact ? t('table.button.delete', '删除') : t('app.designer.removeIndex', '移除索引'), danger: true, disabled: locked},
         ]} onButtonEvents={{edit: () => editIndex(structuredClone(index)), remove: () => open({kind: 'remove', base: structuredClone(index)})}}/>},
       ].filter(column => !compact || column.key !== 'code')}/>}
+    {relationField && canConfigureRelations && <RelationEditor document={relationOwner?.document ?? document}
+      source={{fieldId: relationField, ...(relationOwner ? {detailId: relationOwner.detailId} : {})}} disabled={locked}
+      onChange={relationOwner?.onChange ?? onChange} onClose={() => setRelationField(undefined)}/>}
     {session?.kind === 'field' && <FieldDefinitionDialog key={session.base.fieldId} field={session.base}
       scope={calculationScope} modelScope={modelScope} creating={session.creating} className="sp-form-data-modal" document={document}
       components={components} writePolicies={writePolicies} disabled={locked} onDocumentChange={onChange}

@@ -341,6 +341,23 @@
               "scopeTypes": [
                 "TENANT"
               ]
+            },
+            {
+              "code": "personal.todos.delete",
+              "name": "删除待办",
+              "label": "删除待办",
+              "title": "personal.delete",
+              "alias": "i18n:personal.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 150,
+              "publicAccess": true,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": true,
+              "scopeTypes": [
+                "TENANT"
+              ]
             }
           ]
         },
@@ -468,6 +485,44 @@
               "requireOrgTenant": false,
               "grantable": false,
               "disabled": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.delete",
+              "name": "删除消息",
+              "label": "删除消息",
+              "title": "personal.delete",
+              "alias": "i18n:personal.delete",
+              "type": "ACTION",
+              "icon": "DeleteOutlined",
+              "sort": 160,
+              "publicAccess": true,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": false,
+              "scopeTypes": [
+                "PLATFORM",
+                "TENANT",
+                "PERSONAL"
+              ]
+            },
+            {
+              "code": "personal.messages.RESTORE",
+              "name": "恢复消息",
+              "label": "恢复消息",
+              "title": "personal.restore",
+              "alias": "i18n:personal.restore",
+              "type": "ACTION",
+              "icon": "RollbackOutlined",
+              "sort": 170,
+              "publicAccess": true,
+              "grantable": true,
+              "disabled": false,
+              "requireOrgTenant": false,
               "scopeTypes": [
                 "PLATFORM",
                 "TENANT",

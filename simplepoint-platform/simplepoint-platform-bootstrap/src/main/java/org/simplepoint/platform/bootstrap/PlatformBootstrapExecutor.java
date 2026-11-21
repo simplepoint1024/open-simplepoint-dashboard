@@ -8,9 +8,12 @@ import org.simplepoint.platform.bootstrap.service.PlatformContributionService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
-/** Executes platform bootstrap contributions. */
+/** Seeds platform data before legacy declaration runners register tenant resources. */
 @Slf4j
+@Order(Ordered.LOWEST_PRECEDENCE - 1)
 public final class PlatformBootstrapExecutor implements ApplicationRunner {
 
   private final String serviceName;

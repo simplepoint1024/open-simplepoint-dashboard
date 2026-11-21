@@ -25,7 +25,7 @@ export function createPersonalFixture() {
     if (kind === 'overview') {
       const items = records.items.filter(r => !r.deletedAt && !r.archived && ['TODO', 'IN_PROGRESS'].includes(r.status));
       const todos = records.todos.filter(r => r.status === 'PENDING');
-      const messages = records.messages.filter(r => !r.readAt && !r.archived);
+      const messages = records.messages.filter(r => !r.deletedAt && !r.readAt && !r.archived);
       respond({activeItems: items.length, overdueItems: 0, pendingTodos: todos.length, unreadMessages: messages.length,
         items: items.slice(0, 5), todos: todos.slice(0, 5), messages: messages.slice(0, 5)}); return true;
     }
@@ -49,7 +49,32 @@ export function createPersonalFixture() {
       const chunks = []; for await (const chunk of req) chunks.push(chunk);
       body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
     }
-    if (kind === 'messages' && id === 'read-all') { list.forEach(r => {if (!r.archived) {r.readAt = now; r.version++;}}); respond({success: true}); return true; }
+    if (kind === 'messages' && id === 'read-all') { list.forEach(r => {if (!r.deletedAt && !r.archived) {r.readAt = now; r.version++;}}); respond({success: true}); return true; }
+    if (req.method === 'DELETE' && ['messages', 'todos'].includes(kind)
+      || req.method === 'POST' && kind === 'messages' && id === 'actions' && action === 'batch') {
+      const selection = req.method === 'DELETE' ? id && id !== 'trash'
+        ? [{id: decodeURIComponent(id), version: Number(url.searchParams.get('expectedVersion'))}] : body : body.records;
+      const selected = selection.map(({id, version}) => list.find(row => row.id === id && row.version === version));
+      if (!selected.length || selected.some(row => !row) || new Set(selected).size !== selected.length) {
+        respond({message: 'Selection changed'}, 409); return true;
+      }
+      if (req.method === 'DELETE') {
+        for (const row of selected) {
+          if (kind === 'messages' && id !== 'trash') {row.deletedAt = now; row.version++;}
+          else list.splice(list.indexOf(row), 1);
+        }
+      } else {
+        for (const row of selected) {
+          if (body.action === 'READ') row.readAt = now;
+          if (body.action === 'UNREAD') row.readAt = null;
+          if (body.action === 'ARCHIVE') {row.archived = true; row.readAt ??= now;}
+          if (body.action === 'UNARCHIVE') row.archived = false;
+          if (body.action === 'RESTORE') row.deletedAt = null;
+          row.version++;
+        }
+      }
+      respond({success: true}); return true;
+    }
     let record = id ? list.find(r => r.id === decodeURIComponent(id)) : null;
     if (req.method === 'POST' && !id) {
       record = {id: 'created-' + (++count), version: 0, createdAt: now, updatedAt: now, status: kind === 'items' ? 'TODO' : 'PENDING',
@@ -76,7 +101,9 @@ export function createPersonalFixture() {
     const view = url.searchParams.get('view'), status = url.searchParams.get('status'), keyword = url.searchParams.get('keyword') || '';
     let rows = action === 'history' ? events.get(id) || [] : list.filter(r => (!status || r.status === status) && r.title.includes(keyword));
     if (!action && kind === 'items') rows = rows.filter(r => view === 'TRASH' ? !!r.deletedAt : !r.deletedAt && (view === 'ARCHIVED' ? r.archived : !r.archived));
-    if (!action && kind === 'messages') rows = rows.filter(r => !!r.archived === (url.searchParams.get('archived') === 'true') && (url.searchParams.get('unreadOnly') !== 'true' || !r.readAt));
+    if (!action && kind === 'messages') rows = rows.filter(r => url.searchParams.get('trash') === 'true'
+      ? !!r.deletedAt : !r.deletedAt && !!r.archived === (url.searchParams.get('archived') === 'true')
+        && (url.searchParams.get('unreadOnly') !== 'true' || !r.readAt));
     const filters = JSON.parse(url.searchParams.get('filters') || '{}');
     for (const [field, condition] of Object.entries(filters)) {
       if (condition.startsWith('{')) {

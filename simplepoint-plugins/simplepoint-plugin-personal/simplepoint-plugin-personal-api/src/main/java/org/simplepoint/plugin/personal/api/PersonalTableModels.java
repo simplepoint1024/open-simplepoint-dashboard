@@ -279,7 +279,17 @@ public final class PersonalTableModels {
         argumentMinSize = 1,
         argumentMaxSize = 1,
         danger = false,
-        authority = "personal.todos.REOPEN")
+        authority = "personal.todos.REOPEN"),
+    @ButtonDeclaration(
+        key = "delete",
+        title = "i18n:personal.delete",
+        icon = "DeleteOutlined",
+        color = "danger",
+        sort = 5,
+        argumentMinSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
+        danger = true,
+        authority = "personal.todos.delete")
   })
   @org.simplepoint.core.query.TableQuery(
       model = org.simplepoint.plugin.personal.api.entity.PersonalTodo.class)
@@ -357,7 +367,7 @@ public final class PersonalTableModels {
         color = "blue",
         sort = 1,
         argumentMinSize = 1,
-        argumentMaxSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
         danger = false,
         authority = "personal.messages.READ"),
     @ButtonDeclaration(
@@ -367,7 +377,7 @@ public final class PersonalTableModels {
         color = "orange",
         sort = 2,
         argumentMinSize = 1,
-        argumentMaxSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
         danger = false,
         authority = "personal.messages.UNREAD"),
     @ButtonDeclaration(
@@ -377,7 +387,7 @@ public final class PersonalTableModels {
         color = "blue",
         sort = 3,
         argumentMinSize = 1,
-        argumentMaxSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
         danger = false,
         authority = "personal.messages.ARCHIVE"),
     @ButtonDeclaration(
@@ -387,7 +397,7 @@ public final class PersonalTableModels {
         color = "blue",
         sort = 4,
         argumentMinSize = 1,
-        argumentMaxSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
         danger = false,
         authority = "personal.messages.UNARCHIVE"),
     @ButtonDeclaration(
@@ -399,7 +409,27 @@ public final class PersonalTableModels {
         argumentMinSize = 0,
         argumentMaxSize = 0,
         danger = false,
-        authority = "personal.messages.readAll")
+        authority = "personal.messages.readAll"),
+    @ButtonDeclaration(
+        key = "delete",
+        title = "i18n:personal.delete",
+        icon = "DeleteOutlined",
+        color = "danger",
+        sort = 6,
+        argumentMinSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
+        danger = true,
+        authority = "personal.messages.delete"),
+    @ButtonDeclaration(
+        key = "RESTORE",
+        title = "i18n:personal.restore",
+        icon = "RollbackOutlined",
+        color = "blue",
+        sort = 7,
+        argumentMinSize = 1,
+        argumentMaxSize = org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE,
+        danger = false,
+        authority = "personal.messages.RESTORE")
   })
   @org.simplepoint.core.query.TableQuery(
       model = org.simplepoint.plugin.personal.api.entity.PersonalMessage.class)

@@ -14,17 +14,59 @@ record AcceptedFormSubmission(
     WorkflowInvocationContext workflowAuthority,
     RuntimeForm workflow,
     String previousInstanceId,
-    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-    java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement> snapshotRequirements) {
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement>
+            snapshotRequirements,
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope relatedScope) {
 
   /** Legacy accepted operations retain the exact snapshot request and durable receipt identity. */
-  AcceptedFormSubmission(PublishedApplicationForm form, SubmitApplicationFormCommand command, DnaInvocationContext dataAuthority,
-      WorkflowInvocationContext workflowAuthority, RuntimeForm workflow, String previousInstanceId) {
+  AcceptedFormSubmission(
+      PublishedApplicationForm form,
+      SubmitApplicationFormCommand command,
+      DnaInvocationContext dataAuthority,
+      WorkflowInvocationContext workflowAuthority,
+      RuntimeForm workflow,
+      String previousInstanceId) {
     this(form, command, dataAuthority, workflowAuthority, workflow, previousInstanceId, null);
   }
 
+  /** Existing accepted submissions retain absent optional scope metadata. */
+  AcceptedFormSubmission(
+      PublishedApplicationForm form,
+      SubmitApplicationFormCommand command,
+      DnaInvocationContext dataAuthority,
+      WorkflowInvocationContext workflowAuthority,
+      RuntimeForm workflow,
+      String previousInstanceId,
+      java.util.List<org.simplepoint.plugin.dna.runtime.api.record.RecordSnapshotFieldRequirement>
+          snapshotRequirements) {
+    this(
+        form,
+        command,
+        dataAuthority,
+        workflowAuthority,
+        workflow,
+        previousInstanceId,
+        snapshotRequirements,
+        null);
+  }
+
   AcceptedFormSubmission {
-    snapshotRequirements = new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(java.util.List.of(),
-        snapshotRequirements).requirements();
+    if (relatedScope != null
+        && (relatedScope.mode()
+                != org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN
+            || command.recordId() == null
+            || command.previousSubmissionId() != null
+            || !command.values().isEmpty())) {
+      throw new IllegalArgumentException(
+          "Related submissions confirm one saved record without replacing business values");
+    }
+    snapshotRequirements =
+        new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordSnapshotRequest(
+                java.util.List.of(), snapshotRequirements)
+            .requirements();
   }
 }

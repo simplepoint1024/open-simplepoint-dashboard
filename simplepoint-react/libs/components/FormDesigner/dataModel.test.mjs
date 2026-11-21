@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {newDataField} from './model.ts';
+import {newDataField, newTransientField} from './model.ts';
 import {allowedFieldTypes, applyFieldEdit, applyIndexEdit, changeFieldType, fieldEdit, newIndex, removeIndex} from './dataModel.ts';
 
 const component = (type, types = [], container = false) => ({type, version: '1', container, fieldRequired: types.length > 0,
@@ -14,6 +14,26 @@ const source = (type = 'STRING') => {const document = empty(); document.fields.p
 const apply = (document, changes, base = document.fields[0]) => applyFieldEdit(document, base,
   {...fieldEdit(base), ...changes}, components, ['EDITABLE', 'CREATE_ONLY', 'UNTIL_SUBMITTED']);
 const fails = (action, code) => assert.throws(action, error => error.code === code);
+
+test('temporary fields retain distinct identities without acquiring storage labels, indexes or write policies', () => {
+  let document = empty();
+  for (const scope of ['form', 'detail']) {
+    const base = newTransientField(document, 'STRING', 'Current name');
+    document = applyFieldEdit(document, base, fieldEdit(base), components, ['EDITABLE'], true, scope);
+    const saved = document.fields[0];
+    assert.equal(saved.fieldId, base.fieldId);
+    assert.equal(saved.storageMode, 'TRANSIENT');
+    assert.equal(saved.storageCode, undefined);
+    assert.equal(saved.storageLabel, undefined);
+    assert.equal(saved.writePolicy, undefined);
+    fails(() => apply(document, {writePolicy: 'CREATE_ONLY'}, saved), 'constraints');
+    fails(() => applyIndexEdit(document, newIndex(), {unique: false, fieldIds: [saved.fieldId]}, true), 'indexFields');
+  }
+  assert.equal(document.fields.length, 2);
+  const edited = apply(document, {label: '当前客户名称', length: 120});
+  assert.equal(edited.fields[0].storageMode, 'TRANSIENT');
+  assert.equal(edited.fields[0].storageLabel, undefined);
+});
 
 test('editing changes only the chosen field and preserves immutable storage identities', () => {
   const document = source(), base = structuredClone(document.fields[0]);
@@ -61,6 +81,22 @@ test('exact defaults honor precision, scale, integer bounds and null semantics',
   const json = '{"id":9223372036854775807,"amount":1.234567890123456789}';
   assert.equal(apply(source('JSON'), {defaultMode: 'VALUE', defaultText: json}).fields[0].defaultValue.value, json);
   fails(() => apply(source('JSON'), {defaultMode: 'VALUE', defaultText: '{bad}'}), 'defaultValue');
+});
+
+test('a business reference can require storage without inventing a default record', () => {
+  const document = source('UUID');
+  const field = document.fields[0];
+  field.storageMode = 'REFERENCE';
+  fails(() => apply(document, {storageRequired: true}), 'defaultValue');
+  document.relations = [{
+    contractVersion: '1', relationId: 'customer', cardinality: 'MANY_TO_ONE',
+    sourceField: {fieldId: field.fieldId},
+    target: {applicationId: 'app', formId: 'customers', accessResourceId: 'page'},
+  }];
+  const saved = apply(document, {storageRequired: true}).fields[0];
+  assert.equal(saved.storageRequired, true);
+  assert.equal(saved.defaultValue, null);
+  fails(() => apply(document, {storageRequired: true, defaultMode: 'NULL'}), 'defaultValue');
 });
 
 test('choices and defaults use semantic equality without silently dropping incompatible values', () => {

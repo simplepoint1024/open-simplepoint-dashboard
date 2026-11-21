@@ -5,6 +5,7 @@ import java.util.Map;
 import org.simplepoint.plugin.dna.runtime.api.audit.DnaRuntimeAuditEventType;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceCollectionPreflightQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationView;
@@ -43,6 +44,15 @@ public class RecordWritePolicyServiceImpl implements RecordWritePolicyService {
   }
 
   @Override
+  public long inspectReferenceCollection(final RecordReferenceCollectionPreflightQuery query) {
+    RecordManagementAccess.requireAuthority();
+    var actor = context.requireActor();
+    try (RecordAdmissionController.Permit ignored = admission.enter(actor.tenantId())) {
+      return calculations.inspectReferenceCollection(actor, query);
+    }
+  }
+
+  @Override
   public RecordWritePolicyPublicationView publish(final RecordWritePolicyPublicationCommand command) {
     RecordManagementAccess.requireAuthority();
     var actor = context.requireActor();
@@ -58,8 +68,16 @@ public class RecordWritePolicyServiceImpl implements RecordWritePolicyService {
         audit.failure(DnaRuntimeAuditEventType.RECORD_WRITE_POLICY_PUBLISHED, model, access,
             elapsed(startedAt), DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED);
       }
-      observer.record("policy-publication", result.published() ? "succeeded"
-          : result.violations().isEmpty() && result.valueViolations().isEmpty() ? "pending" : "blocked", model, access, elapsed(startedAt));
+      observer.record(
+          "policy-publication",
+          result.published()
+              ? "succeeded"
+              : result.violations().isEmpty() && result.valueViolations().isEmpty()
+                  ? "pending"
+                  : "blocked",
+          model,
+          access,
+          elapsed(startedAt));
       return result;
     } catch (RuntimeException exception) {
       var code = exception instanceof DnaRuntimeException failure ? failure.errorCode() : DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED;
@@ -86,8 +104,14 @@ public class RecordWritePolicyServiceImpl implements RecordWritePolicyService {
         audit.success(result.cancelled() ? DnaRuntimeAuditEventType.RECORD_WRITE_POLICY_CANCELLED
             : DnaRuntimeAuditEventType.RECORD_WRITE_POLICY_PUBLISHED, model, access, 0, elapsed(startedAt));
       }
-      observer.record("policy-cancellation", result.progress() != null ? "restoring" : result.cancelled() ? "cancelled" : "already-published",
-          model, access, elapsed(startedAt));
+      observer.record(
+          "policy-cancellation",
+          result.progress() != null
+              ? "restoring"
+              : result.cancelled() ? "cancelled" : "already-published",
+          model,
+          access,
+          elapsed(startedAt));
       return result;
     } catch (RuntimeException exception) {
       var code = exception instanceof DnaRuntimeException failure ? failure.errorCode() : DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED;

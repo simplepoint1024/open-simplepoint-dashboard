@@ -104,6 +104,10 @@ public class PublishedApplicationFormResolver {
           "The activated form write policy is unavailable");
     }
     ApplicationFormDocument document = codec.decode(version.getDocumentJson());
+    List<FormRelationBinding> relationBindings = codec.decodeRelationBindings(document, version.getRelationBindingsJson());
+    if (!FormRelationConversion.retiredFields(document).isEmpty()) {
+      document = FormWritePolicyProjection.apply(document, document);
+    }
     ApplicationFormDocument calculationDocument = null;
     List<FormDetailBinding> detailBindings =
         codec.decodeDetailBindings(version.getDetailBindingsJson());
@@ -126,6 +130,7 @@ public class PublishedApplicationFormResolver {
                           "The activated form write policy is unavailable"));
       requireDnaBinding(form, governing);
       var governingDocument = codec.decode(governing.getDocumentJson());
+      relationBindings = codec.decodeRelationBindings(governingDocument, governing.getRelationBindingsJson());
       document = FormWritePolicyProjection.apply(document, governingDocument);
       if (FormCalculationCompiler.hasCalculations(governingDocument)) {
         calculationDocument = governingDocument;
@@ -147,7 +152,7 @@ public class PublishedApplicationFormResolver {
         document,
         writePolicyVersion,
         form.getWritePolicyVersion(),
-        detailBindings, calculationDocument);
+        detailBindings, calculationDocument, relationBindings);
   }
 
   /**
@@ -182,10 +187,12 @@ public class PublishedApplicationFormResolver {
         .setParameter("version", form.getPublishedVersion()).setMaxResults(1).getResultList().stream().findFirst()
         .orElseThrow(() -> failure(ApplicationFormErrorCode.VERSION_NOT_FOUND, "Current form policy is unavailable"));
     requireDnaBinding(form, version);
+    var document = codec.decode(version.getDocumentJson());
     return new PublishedApplicationForm(historical.tenantId(), historical.applicationId(), historical.pageId(), historical.pageName(),
         historical.formId(), historical.formName(), version.getVersionNumber(), historical.resourceCode(), historical.physicalModelId(),
-        version.getPhysicalModelVersion(), version.getStorageChecksum(), codec.decode(version.getDocumentJson()),
-        version.getVersionNumber(), form.getWritePolicyVersion(), codec.decodeDetailBindings(version.getDetailBindingsJson()));
+        version.getPhysicalModelVersion(), version.getStorageChecksum(), document,
+        version.getVersionNumber(), form.getWritePolicyVersion(), codec.decodeDetailBindings(version.getDetailBindingsJson()), null,
+        codec.decodeRelationBindings(document, version.getRelationBindingsJson()));
   }
 
   /** Requires one page child action for a mutation. */
@@ -265,10 +272,27 @@ public class PublishedApplicationFormResolver {
       long writeAdmissionVersion,
       List<FormDetailBinding> detailBindings,
       @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-      ApplicationFormDocument calculationDocument) {
+      ApplicationFormDocument calculationDocument,
+      @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY)
+      List<FormRelationBinding> relationBindings) {
     /** Preserves the immutable runtime identity and optional child bindings. */
     public PublishedApplicationForm {
       detailBindings = detailBindings == null ? List.of() : List.copyOf(detailBindings);
+      relationBindings = relationBindings == null ? List.of() : List.copyOf(relationBindings);
+      if (relationBindings.size() > 50
+          || relationBindings.stream().map(FormRelationBinding::relationId).distinct().count() != relationBindings.size()) {
+        throw new IllegalArgumentException("Runtime relation bindings must have bounded unique identities");
+      }
+    }
+
+    /** Legacy accepted snapshots retain the original JSON when no relation bindings were present. */
+    public PublishedApplicationForm(String tenantId, String applicationId, String pageId, String pageName, String formId,
+        String formName, int formVersion, String resourceCode, String physicalModelId, int physicalModelVersion,
+        String storageChecksum, ApplicationFormDocument document, int writePolicyVersion, long writeAdmissionVersion,
+        List<FormDetailBinding> detailBindings, ApplicationFormDocument calculationDocument) {
+      this(tenantId, applicationId, pageId, pageName, formId, formName, formVersion, resourceCode, physicalModelId,
+          physicalModelVersion, storageChecksum, document, writePolicyVersion, writeAdmissionVersion, detailBindings,
+          calculationDocument, List.of());
     }
 
     /** Legacy accepted operations preserve their serialized shape when no separate calculation scope existed. */

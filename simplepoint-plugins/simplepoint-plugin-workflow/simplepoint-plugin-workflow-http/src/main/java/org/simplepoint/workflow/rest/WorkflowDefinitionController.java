@@ -2,11 +2,13 @@ package org.simplepoint.workflow.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import java.util.Map;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionDetail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionPermissions;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionRevision;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionSummary;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PublishDefinitionCommand;
@@ -16,7 +18,9 @@ import org.simplepoint.plugin.workflow.api.model.WorkflowModels.VersionSummary;
 import org.simplepoint.plugin.workflow.api.service.WorkflowCenterService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -74,6 +78,32 @@ public class WorkflowDefinitionController {
   @Operation(summary = "读取流程定义、草稿和版本目录")
   public Response<DefinitionDetail> definition(@PathVariable("id") final String id) {
     return Response.okay(service.definition(id));
+  }
+
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete'))")
+  @Operation(summary = "删除未发布的流程定义草稿")
+  public ResponseEntity<Void> deleteDefinition(
+      @PathVariable("id") String id, @RequestParam("expectedRevision") long expectedRevision) {
+    service.deleteDefinition(id, expectedRevision);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.delete'))")
+  @Operation(summary = "批量删除流程定义")
+  public ResponseEntity<Void> deleteDefinitions(@RequestBody List<DefinitionRevision> selection) {
+    service.deleteDefinitions(selection);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PutMapping("/{id}/offline")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('workflow.definitions.view') and hasAuthority('workflow.definitions.offline'))")
+  @Operation(summary = "下线流程定义")
+  public ResponseEntity<Void> offlineDefinition(
+      @PathVariable("id") String id, @RequestParam("expectedVersion") int expectedVersion) {
+    service.offlineDefinition(id, expectedVersion);
+    return ResponseEntity.noContent().build();
   }
 
   /** Saves a draft revision. */

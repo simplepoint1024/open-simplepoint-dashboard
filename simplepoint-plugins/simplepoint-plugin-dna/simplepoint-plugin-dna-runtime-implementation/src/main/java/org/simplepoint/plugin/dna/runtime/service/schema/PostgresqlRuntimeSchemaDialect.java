@@ -96,6 +96,8 @@ public class PostgresqlRuntimeSchemaDialect extends AbstractRuntimeSchemaDialect
     capabilities.put(DialectOperation.ATOMIC_DDL, DialectCapability.supported());
     capabilities.put(DialectOperation.DML_RETURNING, DialectCapability.supported());
     capabilities.put(DialectOperation.DML_GENERATED_KEYS, DialectCapability.supported());
+    capabilities.put(DialectOperation.ADD_FOREIGN_KEY, DialectCapability.supported());
+    capabilities.put(DialectOperation.DROP_FOREIGN_KEY, DialectCapability.supported());
     capabilities.put(DialectOperation.ADD_COLUMN, DialectCapability.supported());
     capabilities.put(DialectOperation.DROP_COLUMN, DialectCapability.supported());
     capabilities.put(DialectOperation.RENAME_COLUMN, DialectCapability.supported());

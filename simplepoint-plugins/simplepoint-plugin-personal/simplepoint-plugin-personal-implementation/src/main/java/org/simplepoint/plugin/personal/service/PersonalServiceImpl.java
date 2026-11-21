@@ -22,6 +22,8 @@ import org.simplepoint.plugin.personal.api.PersonalModels.EventView;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemView;
 import org.simplepoint.plugin.personal.api.PersonalModels.MessageView;
+import org.simplepoint.plugin.personal.api.PersonalModels.MessageSelection;
+import org.simplepoint.plugin.personal.api.PersonalModels.RecordRevision;
 import org.simplepoint.plugin.personal.api.PersonalModels.Overview;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoView;
@@ -33,6 +35,7 @@ import org.simplepoint.plugin.personal.api.entity.PersonalMessage;
 import org.simplepoint.plugin.personal.api.entity.PersonalTodo;
 import org.simplepoint.plugin.personal.repository.PersonalRepository;
 import org.simplepoint.plugin.personal.repository.PersonalRepository.Filter;
+import org.simplepoint.plugin.workflow.api.model.WorkflowLinks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -401,15 +404,28 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
   }
 
   @Override
+  @Transactional
+  public void deleteTodo(String id, long expectedVersion) {
+    deleteTodos(List.of(new RecordRevision(id, expectedVersion)));
+  }
+
+  @Override
+  @Transactional
+  public void deleteTodos(List<RecordRevision> records) {
+    selection(PersonalTodo.class, records).forEach(repository::remove);
+  }
+
+  @Override
   public Page<MessageView> messages(
       String keyword,
       boolean unreadOnly,
       boolean archived,
+      boolean trash,
       Pageable page,
       Map<String, String> filters) {
     Map<String, Object> equal = new LinkedHashMap<>();
-    equal.put("archived", archived);
-    if (unreadOnly) {
+    if (!trash) equal.put("archived", archived);
+    if (!trash && unreadOnly) {
       equal.put("readAt", null);
     }
     var target = current();
@@ -421,7 +437,7 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
                 target.workspace(),
                 equal,
                 text(keyword, 100, "搜索词"),
-                false,
+                trash,
                 false,
                 clock.instant(),
                 Map.copyOf(filters)),
@@ -432,7 +448,10 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
 
   @Override
   public MessageView message(String id) {
-    return messageView(owned(PersonalMessage.class, id, false));
+    var target = current();
+    return repository.message(target.userId(), target.workspace(), required(id, 64, "ID"))
+        .map(this::messageView)
+        .orElseThrow(() -> new java.util.NoSuchElementException("记录不存在或无权访问"));
   }
 
   @Override
@@ -440,8 +459,15 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
   public MessageView messageAction(String id, ActionInput input) {
     require(input != null, "缺少操作");
     String action = required(input.action(), 32, "操作");
-    var message = owned(PersonalMessage.class, id, false);
+    if ("RESTORE".equals(action)) requireMessageAuthority(action);
+    var message = owned(PersonalMessage.class, id, "RESTORE".equals(action));
     revision(message, input.version());
+    changeMessage(message, action);
+    repository.flush();
+    return messageView(message);
+  }
+
+  private void changeMessage(PersonalMessage message, String action) {
     switch (action) {
       case "READ" -> {
         if (message.getReadAt() == null) {
@@ -456,11 +482,66 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
         }
       }
       case "UNARCHIVE" -> message.setArchived(false);
+      case "RESTORE" -> message.setDeletedAt(null);
       default -> throw new IllegalArgumentException("不支持的消息操作");
     }
     message.setUpdatedAt(clock.instant());
-    repository.flush();
-    return messageView(message);
+  }
+
+  @Override
+  @Transactional
+  public void deleteMessage(String id, long expectedVersion) {
+    deleteMessages(List.of(new RecordRevision(id, expectedVersion)));
+  }
+
+  @Override
+  @Transactional
+  public void deleteMessages(List<RecordRevision> records) {
+    var now = clock.instant();
+    selection(PersonalMessage.class, records).forEach(message -> {
+      message.setDeletedAt(now);
+      message.setUpdatedAt(now);
+    });
+  }
+
+  @Override
+  @Transactional
+  public void purgeMessages(List<RecordRevision> records) {
+    selection(PersonalMessage.class, records, true).forEach(repository::remove);
+  }
+
+  @Override
+  @Transactional
+  public void changeMessages(MessageSelection input) {
+    require(input != null && input.action() != null && Set.of("READ", "UNREAD", "ARCHIVE", "UNARCHIVE", "RESTORE")
+        .contains(input.action()), "不支持的消息操作");
+    boolean restoring = "RESTORE".equals(input.action());
+    requireMessageAuthority(input.action());
+    selection(PersonalMessage.class, input.records(), restoring)
+        .forEach(message -> changeMessage(message, input.action()));
+  }
+
+  private static void requireMessageAuthority(String action) {
+    var context = AuthorizationContextHolder.getContext();
+    if (context == null || !Boolean.TRUE.equals(context.getIsAdministrator())
+        && (context.getResources() == null || !context.getResources().contains("personal.messages." + action))) {
+      throw new AccessDeniedException("没有此消息操作权限");
+    }
+  }
+
+  private <T extends OwnedRecord> List<T> selection(Class<T> type, List<RecordRevision> records) {
+    return selection(type, records, false);
+  }
+
+  private <T extends OwnedRecord> List<T> selection(Class<T> type, List<RecordRevision> records, boolean trash) {
+    require(records != null && !records.isEmpty() && records.size() <= TablePagination.MAX_PAGE_SIZE, "无效的记录选择");
+    Set<String> seen = new HashSet<>();
+    return records.stream().map(entry -> {
+      require(entry != null && entry.id() != null && seen.add(entry.id()), "无效或重复的记录");
+      T record = owned(type, entry.id(), trash);
+      revision(record, entry.version());
+      return record;
+    }).toList();
   }
 
   @Override
@@ -526,10 +607,17 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
   @Transactional
   public MessageView deliverMessage(DeliveryTarget target, Delivery input) {
     validateDelivery(target, input);
-    var existing =
-        repository.find(
-            PersonalMessage.class,
-            filter(target, Map.of("source", input.source(), "sourceKey", input.sourceKey())));
+    if ("workflow".equals(input.source()) && target.workspace().startsWith("TENANT:")) {
+      String instance = WorkflowLinks.instance(input.linkPath());
+      if (instance != null) {
+        var fence = repository.lockWorkflowDelivery(target.workspace(), instance);
+        if (fence.isRemoved()) {
+          return new MessageView(fence.getId(), 0L, null, null, 0, input.source(), null, null, false, clock.instant());
+        }
+      }
+    }
+    var existing = repository.deliveredMessage(
+        target.userId(), target.workspace(), input.source(), input.sourceKey());
     if (existing.isPresent()) {
       return messageView(existing.get());
     }
@@ -683,6 +771,7 @@ public class PersonalServiceImpl implements PersonalService, PersonalInboxGatewa
         message.getLinkPath(),
         message.getReadAt(),
         message.isArchived(),
+        message.getDeletedAt(),
         message.getCreatedAt());
   }
 }

@@ -21,6 +21,8 @@ class RuntimeExceptionHandlerTest {
             DnaRuntimeErrorCode.RECORD_NOT_FOUND, HttpStatus.NOT_FOUND,
             DnaRuntimeErrorCode.RECORD_VERSION_CONFLICT, HttpStatus.CONFLICT,
             DnaRuntimeErrorCode.RECORD_MAINTENANCE_IN_PROGRESS, HttpStatus.CONFLICT,
+            DnaRuntimeErrorCode.PHYSICAL_OWNERSHIP_CONFLICT, HttpStatus.CONFLICT,
+            DnaRuntimeErrorCode.PHYSICAL_OWNERSHIP_UNAVAILABLE, HttpStatus.UNPROCESSABLE_CONTENT,
             DnaRuntimeErrorCode.RECORD_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS,
             DnaRuntimeErrorCode.DIALECT_OPERATION_UNSUPPORTED, HttpStatus.UNPROCESSABLE_CONTENT,
             DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, HttpStatus.INTERNAL_SERVER_ERROR);

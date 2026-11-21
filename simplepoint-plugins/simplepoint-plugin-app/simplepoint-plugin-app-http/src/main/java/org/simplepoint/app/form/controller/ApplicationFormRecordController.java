@@ -124,4 +124,13 @@ public class ApplicationFormRecordController {
         idempotencyKey);
     return Response.okay();
   }
+
+  @DeleteMapping
+  @Operation(summary = "批量删除无明细的表单记录")
+  public Response<Void> deleteBatch(@PathVariable("applicationId") String applicationId,
+      @PathVariable("pageId") String pageId,
+      @RequestBody org.simplepoint.plugin.app.form.api.model.DeleteApplicationFormRecordsCommand command) {
+    records.deleteBatch(applicationId, pageId, command);
+    return Response.okay();
+  }
 }

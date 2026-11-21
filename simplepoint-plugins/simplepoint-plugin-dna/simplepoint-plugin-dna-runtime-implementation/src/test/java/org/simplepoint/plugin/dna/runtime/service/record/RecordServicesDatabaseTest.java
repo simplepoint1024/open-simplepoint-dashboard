@@ -228,6 +228,34 @@ class RecordServicesDatabaseTest {
     );
   }
 
+  @Test
+  void typedPageConditionKeepsNegationNullSemanticsAndMatchingTotalsAcrossPages() throws Exception {
+    var fixture = fixture();
+    fixture.transactions().execute(new RecordTransactionCommand("model-1", SCHEMA, List.of(
+        new RecordCreateMutation("one", Map.of("title", "First", "amount", 1)),
+        new RecordCreateMutation("two", Map.of("title", "Second")),
+        new RecordCreateMutation("three", Map.of("title", "\u3000\uFEFF", "amount", 2))), 10_000));
+    var condition = new org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition(
+        org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionOperator.NOT_EQUALS, "amount",
+        List.of(new org.simplepoint.plugin.dna.runtime.api.schema.LogicalValue(
+            org.simplepoint.plugin.dna.runtime.api.schema.LogicalValueKind.INTEGER, "1")), List.of());
+    var identities = new java.util.HashSet<String>();
+    for (int page = 0; page < 2; page++) {
+      var result = fixture.queries().page(new RecordPageQuery("model-1", SCHEMA, page, 1,
+          List.of("title", "amount"), null, List.of(), condition));
+      assertThat(result.total()).isEqualTo(2);
+      assertThat(result.records()).hasSize(1);
+      identities.add(result.records().getFirst().id());
+    }
+    assertThat(identities).hasSize(2);
+    var empty = new org.simplepoint.plugin.dna.runtime.api.record.RecordValueCondition(
+        org.simplepoint.plugin.dna.runtime.api.record.RecordValueConditionOperator.IS_EMPTY, "title", List.of(), List.of());
+    var whitespace = fixture.queries().page(new RecordPageQuery("model-1", SCHEMA, 0, 50,
+        List.of("title"), null, List.of(), empty));
+    assertThat(whitespace.total()).isEqualTo(1);
+    assertThat(whitespace.records()).singleElement().satisfies(record -> assertThat(record.values().get("title")).isEqualTo("\u3000\uFEFF"));
+  }
+
   private static RecordCreateReceiptStore inMemoryReceipts() {
     RecordCreateReceiptStore receipts = mock(RecordCreateReceiptStore.class);
     AtomicReference<RecordCreateReceiptClaim> state = new AtomicReference<>();

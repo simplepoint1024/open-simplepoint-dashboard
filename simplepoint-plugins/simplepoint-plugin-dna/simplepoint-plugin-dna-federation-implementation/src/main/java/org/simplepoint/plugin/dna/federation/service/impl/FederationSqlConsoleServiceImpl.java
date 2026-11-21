@@ -25,6 +25,7 @@ import org.simplepoint.data.datasource.jdbc.SimpleDataSource;
 import org.simplepoint.plugin.dna.core.api.entity.JdbcDataSourceDefinition;
 import org.simplepoint.plugin.dna.core.api.service.JdbcDataSourceDefinitionService;
 import org.simplepoint.plugin.dna.federation.api.entity.FederationQueryPolicy;
+import org.simplepoint.plugin.dna.federation.api.error.FederationSqlWriteException;
 import org.simplepoint.plugin.dna.federation.api.repository.FederationQueryPolicyRepository;
 import org.simplepoint.plugin.dna.federation.api.service.FederationQueryAuditService;
 import org.simplepoint.plugin.dna.federation.api.service.FederationSqlConsoleService;
@@ -38,24 +39,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/**
- * Federation SQL console service implementation.
- */
+/** Federation SQL console service implementation. */
 @Service
 public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FederationSqlConsoleServiceImpl.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(FederationSqlConsoleServiceImpl.class);
 
-  /** Default statement timeout (in seconds) for DDL and DML execution to prevent indefinite hangs. */
+  /**
+   * Default statement timeout (in seconds) for DDL and DML execution to prevent indefinite hangs.
+   */
   private static final int DDL_DML_STATEMENT_TIMEOUT_SECONDS = 60;
 
-  private static final Pattern SMART_DML_PATTERN = Pattern.compile(
-      "\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", Pattern.CASE_INSENSITIVE
-  );
+  private static final Pattern SMART_DML_PATTERN =
+      Pattern.compile("\\s*(INSERT|UPDATE|DELETE|MERGE|UPSERT)\\b", Pattern.CASE_INSENSITIVE);
 
-  private static final Pattern SMART_FLUSH_CACHE_PATTERN = Pattern.compile(
-      "\\s*FLUSH\\s+CACHE\\s*;?\\s*", Pattern.CASE_INSENSITIVE
-  );
+  private static final Pattern SMART_FLUSH_CACHE_PATTERN =
+      Pattern.compile("\\s*FLUSH\\s+CACHE\\s*;?\\s*", Pattern.CASE_INSENSITIVE);
 
   private final JdbcDataSourceDefinitionService dataSourceService;
 
@@ -73,6 +73,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
 
   private final FederationSqlAuditor sqlAuditor;
 
+  private final FederationSqlWriteOwnership writeOwnership;
+
   /**
    * Creates a SQL console service implementation.
    *
@@ -82,6 +84,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
    * @param catalogAssembler Calcite catalog assembler
    * @param queryEngine Calcite query engine
    * @param metadataCacheService metadata cache service
+   * @param writeOwnership mandatory physical ownership boundary for console writes
    */
   public FederationSqlConsoleServiceImpl(
       final JdbcDataSourceDefinitionService dataSourceService,
@@ -89,8 +92,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       final FederationQueryAuditService auditService,
       final FederationCalciteCatalogAssembler catalogAssembler,
       final CalciteQueryEngine queryEngine,
-      final FederationMetadataCacheService metadataCacheService
-  ) {
+      final FederationMetadataCacheService metadataCacheService,
+      final FederationSqlWriteOwnership writeOwnership) {
     this.dataSourceService = dataSourceService;
     this.policyRepository = policyRepository;
     this.catalogAssembler = catalogAssembler;
@@ -99,11 +102,13 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
     this.dmlProcessor = new FederationDmlStatementProcessor(dataSourceService);
     this.ddlProcessor = new FederationDdlStatementProcessor(dataSourceService);
     this.sqlAuditor = new FederationSqlAuditor(auditService);
+    this.writeOwnership = Objects.requireNonNull(writeOwnership, "writeOwnership");
   }
 
   /** {@inheritDoc} */
   @Override
-  public FederationQueryModels.SqlExplainResult explain(final FederationQueryModels.SqlConsoleRequest request) {
+  public FederationQueryModels.SqlExplainResult explain(
+      final FederationQueryModels.SqlConsoleRequest request) {
     try (PreparedExecution prepared = prepare(null, request)) {
       return new FederationQueryModels.SqlExplainResult(
           prepared.catalogCode(),
@@ -120,62 +125,62 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           prepared.schemaAssemblyTimeMs(),
           prepared.mountedDataSourceCount(),
           prepared.analysis().pushedDownOperators(),
-          prepared.analysis().platformJoin()
-      );
+          prepared.analysis().platformJoin());
     }
   }
 
   /** {@inheritDoc} */
   @Override
-  public FederationQueryModels.SqlQueryResult execute(final FederationQueryModels.SqlConsoleRequest request) {
+  public FederationQueryModels.SqlQueryResult execute(
+      final FederationQueryModels.SqlConsoleRequest request) {
     return execute((String) null, request);
   }
 
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlQueryResult execute(
-      final String dataSourceId,
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final String dataSourceId, final FederationQueryModels.SqlConsoleRequest request) {
     PreparedExecution prepared = null;
     long startedAt = System.nanoTime();
     try {
       prepared = prepare(dataSourceId, request);
-      CalciteQueryResult result = queryEngine.execute(
-          prepared.queryRequest(),
-          prepared.assembly().schemaConfigurer(),
-          prepared.analysis()
-      );
-      List<String> resultSources = FederationSqlAnalysisUtils.resolveResponseDataSources(
-          result.analysis().planText(),
-          prepared.assembly().physicalDataSourceCodes(),
-          prepared.dataSources()
-      );
-      String pushdownSummary = FederationSqlAnalysisUtils.buildPushdownSummary(result.analysis(), resultSources);
-      FederationQueryModels.SqlQueryResult response = new FederationQueryModels.SqlQueryResult(
-          prepared.catalogCode(),
-          prepared.policy().code(),
-          prepared.queryRequest().maxRows(),
-          prepared.policy().timeoutMs(),
-          prepared.policy().allowCrossSourceJoin(),
-          resultSources.size() > 1,
-          resultSources,
-          result.columns().stream()
-              .map(column -> new FederationQueryModels.SqlColumn(column.name(), column.typeName(), column.jdbcType()))
-              .toList(),
-          result.rows(),
-          result.truncated(),
-          result.returnedRows(),
-          result.executionTimeMs(),
-          result.analysis().planText(),
-          result.analysis().pushedSqls(),
-          pushdownSummary,
-          prepared.schemaCacheHit(),
-          prepared.schemaAssemblyTimeMs(),
-          prepared.mountedDataSourceCount(),
-          result.analysis().pushedDownOperators(),
-          result.analysis().platformJoin()
-      );
+      CalciteQueryResult result =
+          queryEngine.execute(
+              prepared.queryRequest(), prepared.assembly().schemaConfigurer(), prepared.analysis());
+      List<String> resultSources =
+          FederationSqlAnalysisUtils.resolveResponseDataSources(
+              result.analysis().planText(),
+              prepared.assembly().physicalDataSourceCodes(),
+              prepared.dataSources());
+      String pushdownSummary =
+          FederationSqlAnalysisUtils.buildPushdownSummary(result.analysis(), resultSources);
+      FederationQueryModels.SqlQueryResult response =
+          new FederationQueryModels.SqlQueryResult(
+              prepared.catalogCode(),
+              prepared.policy().code(),
+              prepared.queryRequest().maxRows(),
+              prepared.policy().timeoutMs(),
+              prepared.policy().allowCrossSourceJoin(),
+              resultSources.size() > 1,
+              resultSources,
+              result.columns().stream()
+                  .map(
+                      column ->
+                          new FederationQueryModels.SqlColumn(
+                              column.name(), column.typeName(), column.jdbcType()))
+                  .toList(),
+              result.rows(),
+              result.truncated(),
+              result.returnedRows(),
+              result.executionTimeMs(),
+              result.analysis().planText(),
+              result.analysis().pushedSqls(),
+              pushdownSummary,
+              prepared.schemaCacheHit(),
+              prepared.schemaAssemblyTimeMs(),
+              prepared.mountedDataSourceCount(),
+              result.analysis().pushedDownOperators(),
+              result.analysis().platformJoin());
       sqlAuditor.persist(
           prepared.catalogCode(),
           prepared.queryRequest().sql(),
@@ -183,8 +188,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           result.executionTimeMs(),
           result.returnedRows(),
           pushdownSummary,
-          null
-      );
+          null);
       return response;
     } catch (IllegalArgumentException ex) {
       throw auditFailureAndReturn(ex, request, prepared, startedAt, "REJECTED");
@@ -200,61 +204,65 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlUpdateResult executeUpdate(
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final FederationQueryModels.SqlConsoleRequest request) {
     return executeUpdate((String) null, request);
   }
 
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlUpdateResult executeUpdate(
-      final String dataSourceId,
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final String dataSourceId, final FederationQueryModels.SqlConsoleRequest request) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
     if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
+      throw new IllegalArgumentException(
+          "SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
-    String normalizedSql = FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql);
-    String executableSql = FederationSqlAnalysisUtils.stripLeadingComments(normalizedSql);
-    if (!SMART_DML_PATTERN.matcher(executableSql).lookingAt()) {
-      throw new IllegalArgumentException("仅支持 INSERT、UPDATE、DELETE、MERGE、UPSERT 语句");
+    long admissionStartedAt = System.nanoTime();
+    String normalizedSql;
+    FederationDmlPlan plan;
+    DmlTarget dmlTarget;
+    try {
+      // Analyze the original before normalization or comment removal can discard executable text.
+      plan = FederationDmlPlan.parse(sql);
+      // Native SQL retains the driver's identifier and alias casing; Calcite uses its own catalog.
+      normalizedSql =
+          plan.calcite() ? FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql) : sql;
+      JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
+      dmlTarget = dmlProcessor.resolve(resolvedDataSource, plan.references());
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, sql, admissionStartedAt, failure);
+      throw failure;
     }
-    JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
-    TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(executableSql);
-    DmlTarget dmlTarget = dmlProcessor.resolve(resolvedDataSource, references);
-    if (FederationDmlStatementProcessor.canExecuteWithCalcite(executableSql)) {
-      return executeCalciteUpdate(catalogCode, normalizedSql, executableSql, request, dmlTarget);
+    if (plan.calcite()) {
+      return executeCalciteUpdate(catalogCode, normalizedSql, request, dmlTarget, plan);
     }
-    SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
-        requireValue(dmlTarget.dataSource().getId(), "数据源ID不能为空")
-    );
-    String pushedSql = FederationDmlStatementProcessor.rewrite(executableSql, dmlTarget.dataSource().getCode());
-    LOGGER.debug("DML 下推到物理数据源 [{}]: {}", dmlTarget.dataSource().getCode(), pushedSql);
+    SimpleDataSource simpleDataSource =
+        dataSourceService.requireSimpleDataSource(
+            requireValue(dmlTarget.dataSource().getId(), "数据源ID不能为空"));
+    String defaultSchema = resolveDefaultSchema(request.defaultSchema(),
+        dmlTarget.dataSource().getCode(), List.of(dmlTarget.dataSource()));
+    FederationDmlPlan nativePlan = FederationDmlPlan.parse(plan.qualifiedSql(defaultSchema));
+    String pushedSql;
     long startedAt = System.nanoTime();
+    int affectedRows;
     try (Connection connection = simpleDataSource.getConnection();
-         PreparedStatement statement = connection.prepareStatement(pushedSql)) {
-      statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
-      bindParameters(statement, request == null ? null : request.parameters());
-      int affectedRows = statement.executeUpdate();
-      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
-      sqlAuditor.persist(
-          catalogCode,
-          normalizedSql,
-          "SUCCESS",
-          elapsed,
-          (long) affectedRows,
-          "DML 直接下推到物理数据源: " + dmlTarget.dataSource().getCode(),
-          null
-      );
-      return new FederationQueryModels.SqlUpdateResult(
-          catalogCode,
-          dmlTarget.dataSource().getCode(),
-          affectedRows,
-          elapsed,
-          pushedSql
-      );
+        var ownership =
+            Objects.requireNonNull(
+                writeOwnership.openNative(connection, nativePlan, dmlTarget.dataSource().getCode()))) {
+      pushedSql = nativePlan.nativeSql(dmlTarget.dataSource().getCode(),
+          connection.getMetaData().getIdentifierQuoteString());
+      LOGGER.debug("DML 下推到物理数据源 [{}]: {}", dmlTarget.dataSource().getCode(), pushedSql);
+      try (PreparedStatement statement = connection.prepareStatement(pushedSql)) {
+        statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
+        bindParameters(statement, request == null ? null : request.parameters());
+        ownership.beforeExecution();
+        affectedRows = statement.executeUpdate();
+        ownership.completed();
+      }
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, normalizedSql, startedAt, failure);
+      throw failure;
     } catch (SQLException ex) {
       long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
       sqlAuditor.persist(
@@ -264,114 +272,166 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           elapsed,
           null,
           "DML 执行失败 - 目标数据源: " + dmlTarget.dataSource().getCode(),
-          FederationSqlAuditor.resolveMessage(ex)
-      );
+          FederationSqlAuditor.resolveMessage(ex));
       throw new IllegalStateException("DML 执行失败: " + ex.getMessage(), ex);
+    }
+    long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+    sqlAuditor.persist(
+        catalogCode,
+        normalizedSql,
+        "SUCCESS",
+        elapsed,
+        (long) affectedRows,
+        "DML 直接下推到物理数据源: " + dmlTarget.dataSource().getCode(),
+        null);
+    return new FederationQueryModels.SqlUpdateResult(
+        catalogCode, dmlTarget.dataSource().getCode(), affectedRows, elapsed, pushedSql);
+  }
+
+  private void auditWriteRejection(
+      String catalogCode, String sql, long startedAt, FederationSqlWriteException failure) {
+    try {
+      sqlAuditor.persist(
+          catalogCode,
+          sql,
+          "FAILED",
+          FederationSqlAuditor.toElapsedMs(startedAt),
+          null,
+          "SQL write admission rejected",
+          failure.errorCode().name());
+    } catch (RuntimeException auditFailure) {
+      // Preserve the safe public rejection; internal audit diagnostics may contain SQL values.
+      failure.addSuppressed(auditFailure);
+      LOGGER.error("SQL write rejection audit could not be persisted", auditFailure);
     }
   }
 
   private FederationQueryModels.SqlUpdateResult executeCalciteUpdate(
       final String catalogCode,
       final String auditSql,
-      final String executableSql,
       final FederationQueryModels.SqlConsoleRequest request,
-      final DmlTarget target
-  ) {
+      final DmlTarget target,
+      final FederationDmlPlan original) {
     JdbcDataSourceDefinition dataSource = target.dataSource();
     String targetCode = requireValue(dataSource.getCode(), "数据源编码不能为空");
     long startedAt = System.nanoTime();
+    String defaultSchema =
+        resolveDefaultSchema(request.defaultSchema(), targetCode, List.of(dataSource));
+    String preparedSql;
+    try {
+      preparedSql =
+          FederationSqlAnalysisUtils.stripLeadingComments(original.calciteSql(defaultSchema));
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, auditSql, startedAt, failure);
+      throw failure;
+    }
     CalciteUpdateResult result;
-    Map<String, Set<String>> requestedCatalogs = FederationSqlAnalysisUtils.requestedCatalogs(
-        executableSql,
-        request == null ? null : request.defaultSchema(),
-        targetCode,
-        List.of(targetCode)
-    );
-    try (var assembly = catalogAssembler.assemble(
-        targetCode,
-        List.of(dataSource),
-        requestedCatalogs
-    )) {
-      result = queryEngine.executeUpdate(
-          new CalciteUpdateRequest(executableSql,
-              resolveDefaultSchema(request.defaultSchema(), targetCode, List.of(dataSource)),
-              DDL_DML_STATEMENT_TIMEOUT_SECONDS * 1_000,
-              request.parameters()),
-          assembly.schemaConfigurer()
-      );
+    Map<String, Set<String>> requestedCatalogs =
+        FederationSqlAnalysisUtils.requestedCatalogs(
+            preparedSql,
+            request == null ? null : request.defaultSchema(),
+            targetCode,
+            List.of(targetCode));
+    try (var assembly =
+            catalogAssembler.assembleForWrite(targetCode, List.of(dataSource), requestedCatalogs);
+        var ownership =
+            Objects.requireNonNull(writeOwnership.openCalcite(assembly, original, targetCode))) {
+      result =
+          queryEngine.executeUpdate(
+              new CalciteUpdateRequest(
+                  preparedSql,
+                  defaultSchema,
+                  DDL_DML_STATEMENT_TIMEOUT_SECONDS * 1_000,
+                  request.parameters()),
+              ownership);
+      ownership.requireVerified();
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, auditSql, startedAt, failure);
+      throw failure;
     } catch (IllegalArgumentException | IllegalStateException ex) {
-      sqlAuditor.persist(catalogCode, auditSql, "FAILED", FederationSqlAuditor.toElapsedMs(startedAt),
-          null, "Calcite DML 执行失败 - 目标数据源: " + targetCode,
+      sqlAuditor.persist(
+          catalogCode,
+          auditSql,
+          "FAILED",
+          FederationSqlAuditor.toElapsedMs(startedAt),
+          null,
+          "Calcite DML 执行失败 - 目标数据源: " + targetCode,
           FederationSqlAuditor.resolveMessage(ex));
       throw ex;
     }
-    String pushedSql = result.pushedSqls().isEmpty() ? executableSql : result.pushedSqls().get(0);
-    sqlAuditor.persist(catalogCode, auditSql, "SUCCESS", result.executionTimeMs(),
-        (long) result.affectedRows(), "DML 经 Calcite 下推到物理数据源: " + targetCode, null);
-    return new FederationQueryModels.SqlUpdateResult(catalogCode, targetCode,
-        result.affectedRows(), result.executionTimeMs(), pushedSql);
+    String pushedSql = result.pushedSqls().isEmpty() ? preparedSql : result.pushedSqls().get(0);
+    sqlAuditor.persist(
+        catalogCode,
+        auditSql,
+        "SUCCESS",
+        result.executionTimeMs(),
+        (long) result.affectedRows(),
+        "DML 经 Calcite 下推到物理数据源: " + targetCode,
+        null);
+    return new FederationQueryModels.SqlUpdateResult(
+        catalogCode, targetCode, result.affectedRows(), result.executionTimeMs(), pushedSql);
   }
 
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlUpdateResult executeDdl(
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final FederationQueryModels.SqlConsoleRequest request) {
     return executeDdl((String) null, request);
   }
 
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlUpdateResult executeDdl(
-      final String dataSourceId,
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final String dataSourceId, final FederationQueryModels.SqlConsoleRequest request) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
     if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
+      throw new IllegalArgumentException(
+          "SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
-    JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
-    DdlTarget ddlTarget = ddlProcessor.resolve(resolvedDataSource, sql);
-    SimpleDataSource simpleDataSource = dataSourceService.requireSimpleDataSource(
-        requireValue(ddlTarget.dataSource().getId(), "数据源ID不能为空")
-    );
-    String pushedSql = FederationDdlStatementProcessor.rewrite(sql, ddlTarget.dataSource().getCode());
+    long admissionStartedAt = System.nanoTime();
+    final FederationDdlPlan ddlPlan;
+    final DdlTarget ddlTarget;
+    final String pushedSql;
+    try {
+      ddlPlan = FederationDdlPlan.parse(sql);
+      JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
+      ddlTarget = ddlProcessor.resolve(resolvedDataSource, ddlPlan);
+      pushedSql = ddlPlan.nativeSql(ddlTarget.dataSource().getCode());
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, sql, admissionStartedAt, failure);
+      throw failure;
+    }
+    SimpleDataSource simpleDataSource =
+        dataSourceService.requireSimpleDataSource(
+            requireValue(ddlTarget.dataSource().getId(), "数据源ID不能为空"));
     LOGGER.debug("DDL 下推到物理数据源 [{}]: {}", ddlTarget.dataSource().getCode(), pushedSql);
     long startedAt = System.nanoTime();
     List<Object> params = request == null ? null : request.parameters();
     boolean hasParams = params != null && !params.isEmpty();
-    try (Connection connection = simpleDataSource.getConnection()) {
-      int result;
+    int result;
+    try (Connection connection = simpleDataSource.getConnection();
+        var ownership =
+            Objects.requireNonNull(
+                writeOwnership.openNative(connection, ddlPlan, ddlTarget.dataSource().getCode()))) {
       if (hasParams) {
         try (PreparedStatement ps = connection.prepareStatement(pushedSql)) {
           ps.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
           bindParameters(ps, params);
+          ownership.beforeExecution();
           result = ps.executeUpdate();
         }
       } else {
         try (Statement statement = connection.createStatement()) {
           statement.setQueryTimeout(DDL_DML_STATEMENT_TIMEOUT_SECONDS);
+          ownership.beforeExecution();
           result = statement.executeUpdate(pushedSql);
         }
       }
-      long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
-      sqlAuditor.persist(
-          catalogCode,
-          sql,
-          "SUCCESS",
-          elapsed,
-          (long) result,
-          "DDL 直接下推到物理数据源: " + ddlTarget.dataSource().getCode(),
-          null
-      );
-      return new FederationQueryModels.SqlUpdateResult(
-          catalogCode,
-          ddlTarget.dataSource().getCode(),
-          result,
-          elapsed,
-          pushedSql
-      );
+      ownership.completed();
+    } catch (FederationSqlWriteException failure) {
+      auditWriteRejection(catalogCode, sql, startedAt, failure);
+      throw failure;
     } catch (SQLException ex) {
       long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
       sqlAuditor.persist(
@@ -381,10 +441,20 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           elapsed,
           null,
           "DDL 执行失败 - 目标数据源: " + ddlTarget.dataSource().getCode(),
-          FederationSqlAuditor.resolveMessage(ex)
-      );
+          FederationSqlAuditor.resolveMessage(ex));
       throw new IllegalStateException("DDL 执行失败: " + ex.getMessage(), ex);
     }
+    long elapsed = FederationSqlAuditor.toElapsedMs(startedAt);
+    sqlAuditor.persist(
+        catalogCode,
+        sql,
+        "SUCCESS",
+        elapsed,
+        (long) result,
+        "DDL 直接下推到物理数据源: " + ddlTarget.dataSource().getCode(),
+        null);
+    return new FederationQueryModels.SqlUpdateResult(
+        catalogCode, ddlTarget.dataSource().getCode(), result, elapsed, pushedSql);
   }
 
   // ------------------------------------------------------------------
@@ -394,8 +464,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   /** {@inheritDoc} */
   @Override
   public FederationQueryModels.SqlExecuteResult smartExecute(
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final FederationQueryModels.SqlConsoleRequest request) {
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
     String trimmed = sql.strip();
     String classificationSql = FederationSqlAnalysisUtils.stripLeadingComments(trimmed);
@@ -404,8 +473,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       long metadataEntries = metadataCacheService.flushAll();
       long schemaEntries = catalogAssembler.flushSchemaCache();
       return FederationQueryModels.SqlExecuteResult.flushCache(
-          "缓存已刷新，元数据缓存清除 " + metadataEntries + " 条，Calcite Schema 缓存清除 " + schemaEntries + " 条"
-      );
+          "缓存已刷新，元数据缓存清除 " + metadataEntries + " 条，Calcite Schema 缓存清除 " + schemaEntries + " 条");
     }
     if (FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher(classificationSql).lookingAt()) {
       return FederationQueryModels.SqlExecuteResult.ddl(executeDdl(request));
@@ -421,44 +489,47 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   // ------------------------------------------------------------------
 
   private PreparedExecution prepare(
-      final String dataSourceId,
-      final FederationQueryModels.SqlConsoleRequest request
-  ) {
+      final String dataSourceId, final FederationQueryModels.SqlConsoleRequest request) {
     String catalogCode = requireValue(request == null ? null : request.catalogCode(), "数据源编码不能为空");
     String sql = requireValue(request == null ? null : request.sql(), "SQL 不能为空");
     if (sql.length() > FederationSqlAuditor.SQL_TEXT_MAX_LENGTH) {
-      throw new IllegalArgumentException("SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
+      throw new IllegalArgumentException(
+          "SQL 长度不能超过 " + FederationSqlAuditor.SQL_TEXT_MAX_LENGTH + " 个字符");
     }
     String normalizedSql = FederationSqlAnalysisUtils.normalizeQualifiedIdentifiers(sql);
     JdbcDataSourceDefinition resolvedDataSource = resolveDataSource(dataSourceId, catalogCode);
     ResolvedPolicy policy = resolvePolicy(resolvedDataSource);
-    List<JdbcDataSourceDefinition> queryDataSources = resolveQueryDataSources(resolvedDataSource, normalizedSql);
-    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly = catalogAssembler.assemble(
-        resolvedDataSource.getCode(),
-        queryDataSources,
-        FederationSqlAnalysisUtils.requestedCatalogs(
-            normalizedSql,
-            request.defaultSchema(),
+    List<JdbcDataSourceDefinition> queryDataSources =
+        resolveQueryDataSources(resolvedDataSource, normalizedSql);
+    FederationCalciteCatalogAssembler.FederationCalciteCatalogAssembly assembly =
+        catalogAssembler.assemble(
             resolvedDataSource.getCode(),
-            queryDataSources.stream().map(JdbcDataSourceDefinition::getCode).toList()
-        )
-    );
+            queryDataSources,
+            FederationSqlAnalysisUtils.requestedCatalogs(
+                normalizedSql,
+                request.defaultSchema(),
+                resolvedDataSource.getCode(),
+                queryDataSources.stream().map(JdbcDataSourceDefinition::getCode).toList()));
     try {
       int effectiveMaxRows = policy.maxRows();
       if (request != null && request.maxRows() != null && request.maxRows() > 0) {
         effectiveMaxRows = Math.min(effectiveMaxRows, request.maxRows());
       }
-      CalciteQueryRequest queryRequest = new CalciteQueryRequest(
-          normalizedSql,
-          resolveDefaultSchema(request == null ? null : request.defaultSchema(), resolvedDataSource.getCode(), queryDataSources),
-          effectiveMaxRows,
-          policy.timeoutMs(),
-          request == null ? null : request.parameters()
-      );
-      CalciteQueryAnalysis analysis = queryEngine.explain(queryRequest, assembly.schemaConfigurer());
-      List<String> dataSources = FederationSqlAnalysisUtils.extractUsedDataSources(
-          analysis.planText(), assembly.physicalDataSourceCodes()
-      );
+      CalciteQueryRequest queryRequest =
+          new CalciteQueryRequest(
+              normalizedSql,
+              resolveDefaultSchema(
+                  request == null ? null : request.defaultSchema(),
+                  resolvedDataSource.getCode(),
+                  queryDataSources),
+              effectiveMaxRows,
+              policy.timeoutMs(),
+              request == null ? null : request.parameters());
+      CalciteQueryAnalysis analysis =
+          queryEngine.explain(queryRequest, assembly.schemaConfigurer());
+      List<String> dataSources =
+          FederationSqlAnalysisUtils.extractUsedDataSources(
+              analysis.planText(), assembly.physicalDataSourceCodes());
       boolean crossSourceJoin = dataSources.size() > 1;
       if (crossSourceJoin && !policy.allowCrossSourceJoin()) {
         throw new PolicyViolationException("当前查询策略禁止跨数据源 Join");
@@ -474,8 +545,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
           FederationSqlAnalysisUtils.buildPushdownSummary(analysis, dataSources),
           assembly.schemaCacheHit(),
           assembly.schemaAssemblyTimeMs(),
-          assembly.mountedDataSourceCount()
-      );
+          assembly.mountedDataSourceCount());
     } catch (RuntimeException ex) {
       assembly.close();
       throw ex;
@@ -483,14 +553,14 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   private JdbcDataSourceDefinition resolveDataSource(
-      final String dataSourceId,
-      final String catalogCode
-  ) {
+      final String dataSourceId, final String catalogCode) {
     if (trimToNull(dataSourceId) == null) {
       return resolveDataSource(catalogCode);
     }
-    JdbcDataSourceDefinition dataSource = dataSourceService.findActiveById(dataSourceId)
-        .orElseThrow(() -> new PolicyViolationException("数据源不存在: " + dataSourceId));
+    JdbcDataSourceDefinition dataSource =
+        dataSourceService
+            .findActiveById(dataSourceId)
+            .orElseThrow(() -> new PolicyViolationException("数据源不存在: " + dataSourceId));
     if (!Objects.equals(trimToNull(dataSource.getCode()), catalogCode)) {
       throw new IllegalArgumentException("数据源编码与已解析数据源不一致: " + catalogCode);
     }
@@ -501,8 +571,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   private JdbcDataSourceDefinition resolveDataSource(final String catalogCode) {
-    JdbcDataSourceDefinition dataSource = dataSourceService.findActiveByCode(catalogCode)
-        .orElseThrow(() -> new PolicyViolationException("数据源不存在: " + catalogCode));
+    JdbcDataSourceDefinition dataSource =
+        dataSourceService
+            .findActiveByCode(catalogCode)
+            .orElseThrow(() -> new PolicyViolationException("数据源不存在: " + catalogCode));
     if (!Boolean.TRUE.equals(dataSource.getEnabled())) {
       throw new PolicyViolationException("数据源已禁用: " + catalogCode);
     }
@@ -510,20 +582,24 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   private ResolvedPolicy resolvePolicy(final JdbcDataSourceDefinition dataSource) {
-    FederationQueryPolicy policy = policyRepository.findAllActiveByCatalogId(requireValue(
-            dataSource == null ? null : dataSource.getId(),
-            "数据源ID不能为空"
-        )).stream()
-        .filter(candidate -> Boolean.TRUE.equals(candidate.getEnabled()))
-        .sorted(Comparator.comparing(
-            FederationQueryPolicy::getUpdatedAt,
-            Comparator.nullsLast(Comparator.reverseOrder())
-        ).thenComparing(
-            FederationQueryPolicy::getCreatedAt,
-            Comparator.nullsLast(Comparator.reverseOrder())
-        ).thenComparing(FederationQueryPolicy::getCode, Comparator.nullsLast(String::compareTo)))
-        .findFirst()
-        .orElseThrow(() -> new PolicyViolationException("数据源未配置已启用的查询策略: " + dataSource.getCode()));
+    FederationQueryPolicy policy =
+        policyRepository
+            .findAllActiveByCatalogId(
+                requireValue(dataSource == null ? null : dataSource.getId(), "数据源ID不能为空"))
+            .stream()
+            .filter(candidate -> Boolean.TRUE.equals(candidate.getEnabled()))
+            .sorted(
+                Comparator.comparing(
+                        FederationQueryPolicy::getUpdatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                        FederationQueryPolicy::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(
+                        FederationQueryPolicy::getCode, Comparator.nullsLast(String::compareTo)))
+            .findFirst()
+            .orElseThrow(
+                () -> new PolicyViolationException("数据源未配置已启用的查询策略: " + dataSource.getCode()));
     if (!Boolean.TRUE.equals(policy.getAllowSqlConsole())) {
       throw new PolicyViolationException("当前查询策略未开放 SQL 控制台: " + policy.getCode());
     }
@@ -539,26 +615,24 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         requireValue(policy.getCode(), "查询策略编码不能为空"),
         maxRows,
         timeoutMs,
-        Boolean.TRUE.equals(policy.getAllowCrossSourceJoin())
-    );
+        Boolean.TRUE.equals(policy.getAllowCrossSourceJoin()));
   }
 
   private List<JdbcDataSourceDefinition> resolveQueryDataSources(
-      final JdbcDataSourceDefinition selectedDataSource,
-      final String sql
-  ) {
+      final JdbcDataSourceDefinition selectedDataSource, final String sql) {
     TableReferenceSummary references = FederationSqlAnalysisUtils.collectTableReferences(sql);
     if (!references.hasTableReferences()) {
       return List.of();
     }
     List<JdbcDataSourceDefinition> enabledDataSources = dataSourceService.listEnabledDefinitions();
     LinkedHashMap<String, JdbcDataSourceDefinition> dataSourcesByCode = new LinkedHashMap<>();
-    enabledDataSources.forEach(definition -> {
-      String code = trimToNull(definition == null ? null : definition.getCode());
-      if (code != null) {
-        dataSourcesByCode.putIfAbsent(code.toLowerCase(Locale.ROOT), definition);
-      }
-    });
+    enabledDataSources.forEach(
+        definition -> {
+          String code = trimToNull(definition == null ? null : definition.getCode());
+          if (code != null) {
+            dataSourcesByCode.putIfAbsent(code.toLowerCase(Locale.ROOT), definition);
+          }
+        });
     LinkedHashMap<String, JdbcDataSourceDefinition> resolved = new LinkedHashMap<>();
     boolean includeSelectedDataSource = false;
     for (List<String> identifier : references.identifiers()) {
@@ -566,7 +640,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
         includeSelectedDataSource = true;
         continue;
       }
-      JdbcDataSourceDefinition explicitDataSource = dataSourcesByCode.get(identifier.get(0).toLowerCase(Locale.ROOT));
+      JdbcDataSourceDefinition explicitDataSource =
+          dataSourcesByCode.get(identifier.get(0).toLowerCase(Locale.ROOT));
       if (explicitDataSource != null) {
         resolved.putIfAbsent(explicitDataSource.getId(), explicitDataSource);
       } else {
@@ -585,8 +660,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   private static String resolveDefaultSchema(
       final String requestedDefaultSchema,
       final String selectedCatalogCode,
-      final List<JdbcDataSourceDefinition> mountedDataSources
-  ) {
+      final List<JdbcDataSourceDefinition> mountedDataSources) {
     String explicit = trimToNull(requestedDefaultSchema);
     if (explicit != null) {
       return explicit;
@@ -595,10 +669,10 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       return null;
     }
     return mountedDataSources.stream()
-        .map(JdbcDataSourceDefinition::getCode)
-        .map(code -> trimToNull(code))
-        .filter(Objects::nonNull)
-        .anyMatch(code -> code.equals(selectedCatalogCode))
+            .map(JdbcDataSourceDefinition::getCode)
+            .map(code -> trimToNull(code))
+            .filter(Objects::nonNull)
+            .anyMatch(code -> code.equals(selectedCatalogCode))
         ? selectedCatalogCode
         : null;
   }
@@ -608,16 +682,18 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       final FederationQueryModels.SqlConsoleRequest request,
       final PreparedExecution prepared,
       final long startedAt,
-      final String status
-  ) {
-    String catalogCode = prepared == null
-        ? trimToNull(request == null ? null : request.catalogCode())
-        : prepared.catalogCode();
-    String sql = prepared == null
-        ? trimToNull(request == null ? null : request.sql())
-        : prepared.queryRequest().sql();
+      final String status) {
+    String catalogCode =
+        prepared == null
+            ? trimToNull(request == null ? null : request.catalogCode())
+            : prepared.catalogCode();
+    String sql =
+        prepared == null
+            ? trimToNull(request == null ? null : request.sql())
+            : prepared.queryRequest().sql();
     String pushdownSummary = prepared == null ? null : prepared.pushdownSummary();
-    return sqlAuditor.recordFailure(exception, catalogCode, sql, startedAt, status, pushdownSummary);
+    return sqlAuditor.recordFailure(
+        exception, catalogCode, sql, startedAt, status, pushdownSummary);
   }
 
   private static void closePreparedExecution(final PreparedExecution prepared) {
@@ -635,12 +711,7 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   private record ResolvedPolicy(
-      String code,
-      int maxRows,
-      int timeoutMs,
-      boolean allowCrossSourceJoin
-  ) {
-  }
+      String code, int maxRows, int timeoutMs, boolean allowCrossSourceJoin) {}
 
   private record PreparedExecution(
       String catalogCode,
@@ -653,8 +724,8 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
       String pushdownSummary,
       boolean schemaCacheHit,
       long schemaAssemblyTimeMs,
-      int mountedDataSourceCount
-  ) implements AutoCloseable {
+      int mountedDataSourceCount)
+      implements AutoCloseable {
 
     @Override
     public void close() {
@@ -663,13 +734,11 @@ public class FederationSqlConsoleServiceImpl implements FederationSqlConsoleServ
   }
 
   /**
-   * Binds parameters to a prepared statement using {@code setObject}.
-   * If parameters is {@code null} or empty, this is a no-op.
+   * Binds parameters to a prepared statement using {@code setObject}. If parameters is {@code null}
+   * or empty, this is a no-op.
    */
   private static void bindParameters(
-      final PreparedStatement statement,
-      final List<Object> parameters
-  ) throws SQLException {
+      final PreparedStatement statement, final List<Object> parameters) throws SQLException {
     if (parameters == null || parameters.isEmpty()) {
       return;
     }

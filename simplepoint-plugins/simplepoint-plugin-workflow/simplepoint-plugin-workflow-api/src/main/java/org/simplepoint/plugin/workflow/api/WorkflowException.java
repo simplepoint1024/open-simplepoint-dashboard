@@ -31,6 +31,8 @@ public class WorkflowException extends org.simplepoint.remoting.RemoteBusinessEx
     VALIDATION,
     NOT_FOUND,
     CONFLICT,
+    DEFINITION_DELETE_BLOCKED,
+    HISTORY_REMOVAL_BLOCKED,
     FORBIDDEN,
     ENGINE_FAILURE,
     DIRECTORY_PREPARING,

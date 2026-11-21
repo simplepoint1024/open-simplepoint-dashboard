@@ -1,4 +1,12 @@
 {
+  "workflow.historyRemoval.action": "永久删除流程历史",
+  "workflow.historyRemoval.confirm": "永久清理选中的 {count} 条流程及其审批历史和流程通知？",
+  "workflow.historyRemoval.progress": "流程历史已清理 {completed}/{total} 条",
+  "workflow.error.HISTORY_REMOVAL_BLOCKED": "流程历史暂时无法清理。请确认流程已结束、当前版本一致，且关联的重新发起事项已处理。",
+  "workflow.personalArchive.active": "当前列表",
+  "workflow.personalArchive.archived": "已归档",
+  "workflow.personalArchive.archive": "移入归档",
+  "workflow.personalArchive.restore": "移回列表",
   "menu.workflow.center": "流程管理",
   "menu.workflow.definitions": "流程定义",
   "menu.workflow.instances": "流程实例",
@@ -386,5 +394,15 @@
   "workflow.version.copyFailed": "复制历史版本失败",
   "workflow.versions.title": "发布历史",
   "workflow.action.view": "查看",
-  "workflow.form.notReady": "业务表单尚未就绪，请加载完成后重试。"
+  "workflow.form.notReady": "业务表单尚未就绪，请加载完成后重试。",
+  "workflow.definition.delete": "删除流程定义",
+  "workflow.definition.deleteConfirmation": "永久删除流程「{name}」？",
+  "workflow.deleteFailed": "删除失败，请刷新后重试。",
+  "workflow.error.DEFINITION_DELETE_BLOCKED": "请先下线流程。已有流程实例或外部表单绑定时，需要完成关联数据清理。",
+  "workflow.definition.offline": "下线",
+  "workflow.definition.confirmOffline": "确认下线流程",
+  "workflow.definition.offlineSuccess": "流程已下线",
+  "workflow.definition.offlineConfirmation": "下线「{name}」后将停止发起新流程。",
+  "workflow.definition.offlineFailed": "流程下线失败",
+  "workflow.status.offline": "已下线"
 }

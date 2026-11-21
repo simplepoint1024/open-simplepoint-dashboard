@@ -48,7 +48,7 @@ public final class PhysicalModelTransitions {
     result.put(PhysicalModelStatus.DRAFT, EnumSet.of(PhysicalModelStatus.VALIDATING));
     result.put(
         PhysicalModelStatus.VALIDATING,
-        EnumSet.of(PhysicalModelStatus.READY, PhysicalModelStatus.FAILED)
+        EnumSet.of(PhysicalModelStatus.READY, PhysicalModelStatus.ACTIVE, PhysicalModelStatus.FAILED)
     );
     result.put(
         PhysicalModelStatus.READY,
@@ -68,7 +68,7 @@ public final class PhysicalModelTransitions {
     );
     result.put(
         PhysicalModelStatus.ACTIVE,
-        EnumSet.of(PhysicalModelStatus.DRAFT, PhysicalModelStatus.RETIRED)
+        EnumSet.of(PhysicalModelStatus.DRAFT, PhysicalModelStatus.VALIDATING, PhysicalModelStatus.RETIRED)
     );
     result.put(
         PhysicalModelStatus.FAILED,

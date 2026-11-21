@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.AuthorizationScopeType;
 import org.simplepoint.core.RequestContextHolder;
+import org.simplepoint.events.api.EventMessage;
 import org.simplepoint.plugin.personal.api.PersonalInboxGateway;
 import org.simplepoint.plugin.personal.api.PersonalModels.ActionInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ChecklistEntry;
@@ -22,9 +24,12 @@ import org.simplepoint.plugin.personal.api.PersonalModels.Delivery;
 import org.simplepoint.plugin.personal.api.PersonalModels.DeliveryTarget;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemView;
+import org.simplepoint.plugin.personal.api.PersonalModels.RecordRevision;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoInput;
 import org.simplepoint.plugin.personal.api.PersonalService;
 import org.simplepoint.plugin.personal.repository.PersonalRepository;
+import org.simplepoint.plugin.workflow.api.event.WorkflowHistoryRemovalEvents;
+import org.simplepoint.plugin.workflow.api.model.WorkflowLinks;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +49,8 @@ class PersonalServiceImplTest {
   private static LocalContainerEntityManagerFactoryBean factory;
   private static PersonalService service;
   private static PersonalInboxGateway gateway;
+  private static WorkflowMessageRemovalHandler workflowRemoval;
+  private static final List<EventMessage> workflowAcknowledgements = new ArrayList<>();
   private String user;
 
   @BeforeAll
@@ -84,6 +91,11 @@ class PersonalServiceImplTest {
     var bean = proxy.getProxy();
     service = (PersonalService) bean;
     gateway = (PersonalInboxGateway) bean;
+    var removalProxy = new ProxyFactory(new WorkflowMessageRemovalHandler(
+        (PersonalRepository) repositoryProxy.getProxy(), workflowAcknowledgements::add));
+    removalProxy.setProxyTargetClass(true);
+    removalProxy.addAdvice(interceptor);
+    workflowRemoval = (WorkflowMessageRemovalHandler) removalProxy.getProxy();
   }
 
   @BeforeEach
@@ -108,6 +120,36 @@ class PersonalServiceImplTest {
     context.setScopeType(AuthorizationScopeType.TENANT);
     context.setAttributes(Map.of("X-Tenant-Id", tenant));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
+  }
+
+  @Test
+  void workflowHistoryRemovalClearsTrashForAllRecipientsAndFencesLateMessages() {
+    String id = UUID.randomUUID().toString();
+    var local = new DeliveryTarget(user, "TENANT:tenant-a");
+    var foreign = new DeliveryTarget(user, "TENANT:tenant-b");
+    var original = new Delivery("workflow", id + "-first", "Review", "Business context", 1, null,
+        WorkflowLinks.task(id, "task"));
+    var trashed = gateway.deliverMessage(local, original);
+    gateway.deliverMessage(foreign, original);
+    var another = new DeliveryTarget(UUID.randomUUID().toString(), "TENANT:tenant-a");
+    gateway.deliverMessage(another, new Delivery("workflow", id + "-copy", "Copy", "", 1, null,
+        WorkflowLinks.copied(id)));
+    service.deleteMessages(List.of(new RecordRevision(trashed.id(), trashed.version())));
+    var event = WorkflowHistoryRemovalEvents.requested("tenant-a", id, 1, UUID.randomUUID(), UUID.randomUUID(), null);
+    workflowAcknowledgements.clear();
+    workflowRemoval.handle(event);
+    assertThat(workflowAcknowledgements).singleElement().satisfies(ack -> {
+      WorkflowHistoryRemovalEvents.requireAcknowledgement(ack);
+      assertThat(ack.producer()).isEqualTo("personal");
+    });
+    gateway.deliverMessage(local, new Delivery("workflow", id + "-retry", "Delayed", "", 1, null,
+        WorkflowLinks.matter(id)));
+    assertThat(service.messages(null, false, false, PageRequest.of(0, 50))).isEmpty();
+    assertThat(service.messages(null, false, false, true, PageRequest.of(0, 50), Map.of())).isEmpty();
+    context(another.userId(), "tenant-a");
+    assertThat(service.messages(null, false, false, PageRequest.of(0, 50))).isEmpty();
+    context(user, "tenant-b");
+    assertThat(service.messages(null, false, false, PageRequest.of(0, 50))).hasSize(1);
   }
 
   private ItemInput input(Long version, String title, List<ChecklistEntry> checklist) {
@@ -252,6 +294,66 @@ class PersonalServiceImplTest {
         .isEqualTo("DONE");
     assertThatThrownBy(() -> gateway.resolveTodo(target, "WORKFLOW", "task-1", "CANCELLED"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void messageDeletionValidatesTheWholeSelectionAndPhysicallyRemovesOnlyOwnedRows() {
+    var target = new DeliveryTarget(user, "TENANT:tenant-a");
+    var firstDelivery = new Delivery("TEST", "delete-1", "First", null, 1, null, null);
+    var first = gateway.deliverMessage(target, firstDelivery);
+    var second = gateway.deliverMessage(target, new Delivery("TEST", "delete-2", "Second", null, 1, null, null));
+    var foreign = gateway.deliverMessage(new DeliveryTarget(user, "TENANT:tenant-b"),
+        new Delivery("TEST", "delete-3", "Other", null, 1, null, null));
+    var firstRevision = new RecordRevision(first.id(), first.version());
+    assertThatThrownBy(() -> service.deleteMessages(List.of(firstRevision,
+        new RecordRevision(foreign.id(), foreign.version())))).isInstanceOf(java.util.NoSuchElementException.class);
+    assertThat(service.message(first.id()).id()).isEqualTo(first.id());
+    assertThatThrownBy(() -> service.deleteMessages(List.of(firstRevision,
+        new RecordRevision(second.id(), second.version() + 1)))).isInstanceOf(OptimisticLockingFailureException.class);
+    assertThatThrownBy(() -> service.purgeMessages(List.of(firstRevision)))
+        .isInstanceOf(java.util.NoSuchElementException.class);
+    service.deleteMessages(List.of(firstRevision, new RecordRevision(second.id(), second.version())));
+    assertThat(service.messages(null, false, false, PageRequest.of(0, 50))).isEmpty();
+    var trash = service.messages(null, false, false, true, PageRequest.of(0, 50), Map.of());
+    assertThat(trash).hasSize(2);
+    assertThat(gateway.deliverMessage(target, firstDelivery).deletedAt()).isNotNull();
+    var revisions = trash.stream().map(message -> new RecordRevision(message.id(), message.version())).toList();
+    org.simplepoint.core.AuthorizationContextHolder.getContext().setResources(List.of("personal.messages.RESTORE"));
+    service.changeMessages(new org.simplepoint.plugin.personal.api.PersonalModels.MessageSelection("RESTORE", revisions));
+    assertThat(service.messages(null, false, false, PageRequest.of(0, 50))).hasSize(2);
+    var current = service.messages(null, false, false, PageRequest.of(0, 50)).stream()
+        .map(message -> new RecordRevision(message.id(), message.version())).toList();
+    service.deleteMessages(current);
+    service.purgeMessages(service.messages(null, false, false, true, PageRequest.of(0, 50), Map.of()).stream()
+        .map(message -> new RecordRevision(message.id(), message.version())).toList());
+    try (var em = factory.getObject().createEntityManager()) {
+      assertThat(((Number) em.createNativeQuery("select count(*) from simpoint_personal_messages where id in (:one,:two)")
+          .setParameter("one", first.id()).setParameter("two", second.id()).getSingleResult()).longValue()).isZero();
+    }
+    context(user, "tenant-b");
+    assertThat(service.message(foreign.id()).id()).isEqualTo(foreign.id());
+  }
+
+  @Test
+  void retentionRemovesOnlyExpiredTrash() {
+    var target = new DeliveryTarget(user, "TENANT:tenant-a");
+    var expired = gateway.deliverMessage(target, new Delivery("TEST", "expire", "Old", null, 1, null, null));
+    var recent = gateway.deliverMessage(target, new Delivery("TEST", "recent", "Recent", null, 1, null, null));
+    var active = gateway.deliverMessage(target, new Delivery("TEST", "active", "Active", null, 1, null, null));
+    service.deleteMessages(List.of(new RecordRevision(expired.id(), expired.version()),
+        new RecordRevision(recent.id(), recent.version())));
+    var em = SharedEntityManagerCreator.createSharedEntityManager(factory.getObject());
+    var transaction = new org.springframework.transaction.support.TransactionTemplate(
+        new JpaTransactionManager(factory.getObject()));
+    transaction.executeWithoutResult(status -> {
+      em.createQuery("update PersonalMessage m set m.deletedAt = :when where m.id = :id")
+          .setParameter("when", java.time.Instant.now().minus(java.time.Duration.ofDays(31)))
+          .setParameter("id", expired.id()).executeUpdate();
+      new PersonalMessageRetention(new PersonalRepository(em)).expire();
+    });
+    assertThatThrownBy(() -> service.message(expired.id())).isInstanceOf(java.util.NoSuchElementException.class);
+    assertThat(service.message(recent.id()).deletedAt()).isNotNull();
+    assertThat(service.message(active.id()).deletedAt()).isNull();
   }
 
   @Test

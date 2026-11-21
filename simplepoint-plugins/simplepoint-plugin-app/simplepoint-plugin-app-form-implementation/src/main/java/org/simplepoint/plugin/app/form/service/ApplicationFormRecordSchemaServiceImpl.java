@@ -28,31 +28,44 @@ import org.springframework.stereotype.Service;
 
 /** Produces the dynamic platform table contract without exposing DNA storage identities. */
 @Service
-public class ApplicationFormRecordSchemaServiceImpl
-    implements ApplicationFormRecordSchemaService {
+public class ApplicationFormRecordSchemaServiceImpl implements ApplicationFormRecordSchemaService {
 
-  private static final Set<FormFieldType> TEXT_TYPES = Set.of(
-      FormFieldType.STRING,
-      FormFieldType.TEXT,
-      FormFieldType.JSON
-  );
-  private static final Set<String> RECORD_ENVELOPE_FIELDS = Set.of(
-      "id", "version", "recordState"
-  );
+  private static final Set<FormFieldType> TEXT_TYPES =
+      Set.of(FormFieldType.STRING, FormFieldType.TEXT, FormFieldType.JSON);
+  private static final Set<String> RECORD_ENVELOPE_FIELDS = Set.of("id", "version", "recordState");
   private static final List<String> NULL_OPERATORS = List.of("is:null", "is:not:null");
-  private static final List<String> EQUALITY_OPERATORS = List.of(
-      "equals", "not:equals", "in", "not:in", "is:null", "is:not:null"
-  );
-  private static final List<String> COMPARABLE_OPERATORS = List.of(
-      "equals", "not:equals", "in", "not:in", "between", "not:between",
-      "than:greater", "than:less", "than:equal:greater", "than:equal:less",
-      "is:null", "is:not:null"
-  );
-  private static final List<String> TEXT_OPERATORS = List.of(
-      "like", "not:like", "equals", "not:equals", "in", "not:in", "between",
-      "not:between", "than:greater", "than:less", "than:equal:greater",
-      "than:equal:less", "is:null", "is:not:null"
-  );
+  private static final List<String> EQUALITY_OPERATORS =
+      List.of("equals", "not:equals", "in", "not:in", "is:null", "is:not:null");
+  private static final List<String> COMPARABLE_OPERATORS =
+      List.of(
+          "equals",
+          "not:equals",
+          "in",
+          "not:in",
+          "between",
+          "not:between",
+          "than:greater",
+          "than:less",
+          "than:equal:greater",
+          "than:equal:less",
+          "is:null",
+          "is:not:null");
+  private static final List<String> TEXT_OPERATORS =
+      List.of(
+          "like",
+          "not:like",
+          "equals",
+          "not:equals",
+          "in",
+          "not:in",
+          "between",
+          "not:between",
+          "than:greater",
+          "than:less",
+          "than:equal:greater",
+          "than:equal:less",
+          "is:null",
+          "is:not:null");
 
   private final PublishedApplicationFormResolver resolver;
   private final FormRuntimeDocumentCompiler documents;
@@ -62,8 +75,7 @@ public class ApplicationFormRecordSchemaServiceImpl
   public ApplicationFormRecordSchemaServiceImpl(
       final PublishedApplicationFormResolver resolver,
       final FormRuntimeDocumentCompiler documents,
-      final DnaInvocationContextFactory contexts
-  ) {
+      final DnaInvocationContextFactory contexts) {
     this.resolver = resolver;
     this.documents = documents;
     this.contexts = contexts;
@@ -72,15 +84,34 @@ public class ApplicationFormRecordSchemaServiceImpl
   @Override
   public Map<String, Object> schema(final String applicationId, final String pageId) {
     PublishedApplicationForm form = resolver.resolve(applicationId, pageId);
+    return schema(form, resolver.capabilities(form), false,
+        org.simplepoint.plugin.dna.runtime.api.record.RecordTransactionCommand.MAX_MUTATIONS);
+  }
+
+  /** Projects the exact resolved entry with server-derived operation ceilings. */
+  Map<String, Object> schema(
+      PublishedApplicationForm form, ApplicationFormRuntimeCapabilities capabilities) {
+    return schema(form, capabilities, false);
+  }
+
+  /** Adds only the inverse entry's independently authorized unlink action. */
+  Map<String, Object> schema(
+      PublishedApplicationForm form,
+      ApplicationFormRuntimeCapabilities capabilities,
+      boolean canUnlink) {
+    return schema(form, capabilities, canUnlink, 1);
+  }
+
+  private Map<String, Object> schema(PublishedApplicationForm form, ApplicationFormRuntimeCapabilities capabilities,
+      boolean canUnlink, int deleteLimit) {
     final ApplicationFormRuntimeDocument document = documents.compile(form);
-    final ApplicationFormRuntimeCapabilities capabilities = resolver.capabilities(form);
     final DnaInvocationContext context = contexts.forForm(form);
-    final Map<String, FormFieldDefinition> storedFields = form.document().fields().stream()
-        .filter(FormFieldDefinition::persistent)
-        .collect(java.util.stream.Collectors.toUnmodifiableMap(
-            FormFieldDefinition::fieldId,
-            field -> field
-        ));
+    final Map<String, FormFieldDefinition> storedFields =
+        form.document().fields().stream()
+            .filter(FormFieldDefinition::persistent)
+            .collect(
+                java.util.stream.Collectors.toUnmodifiableMap(
+                    FormFieldDefinition::fieldId, field -> field));
     final String permissionPrefix = RecordPermissionModel.key(form.physicalModelId()) + "#";
     final Set<String> editableFields = editableFields(document);
     Map<String, Object> properties = new LinkedHashMap<>();
@@ -95,16 +126,26 @@ public class ApplicationFormRecordSchemaServiceImpl
       if ("HIDDEN".equals(permission)) {
         continue;
       }
-      Map<String, Object> property = new LinkedHashMap<>(systemProperty(
-          "i18n:app.runtime.record." + field.property(), "string", order++));
+      Map<String, Object> property =
+          new LinkedHashMap<>(
+              systemProperty("i18n:app.runtime.record." + field.property(), "string", order++));
       property.put("type", List.of("string", "null"));
       property.put("x-display-only", true);
-      boolean identity = Set.of("tenantId", "createdBy", "updatedBy", "createOrgDeptId").contains(field.property());
+      boolean identity =
+          Set.of("tenantId", "createdBy", "updatedBy", "createOrgDeptId")
+              .contains(field.property());
       if (identity && !"MASKED".equals(permission)) {
         property.put("x-reference-labels", "$displayLabels");
       }
-      boolean defaultVisible = field == RecordSystemField.CREATED_AT || field == RecordSystemField.UPDATED_AT;
-      property.put("x-ui", Map.of("x-list-visible", identity || defaultVisible, "x-list-default-visible", defaultVisible));
+      boolean defaultVisible =
+          field == RecordSystemField.CREATED_AT || field == RecordSystemField.UPDATED_AT;
+      property.put(
+          "x-ui",
+          Map.of(
+              "x-list-visible",
+              identity || defaultVisible,
+              "x-list-default-visible",
+              defaultVisible));
       if (field.type() == org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType.DATETIME
           && !"MASKED".equals(permission)) {
         property.put("format", "date-time");
@@ -114,34 +155,41 @@ public class ApplicationFormRecordSchemaServiceImpl
         queryFields.put(field.property(), queryField(FormFieldType.valueOf(field.type().name())));
       }
     }
-    var defaults = form.document().presentation() == null ? List.<String>of() : form.document().presentation().listFieldOrder();
+    var defaults =
+        form.document().presentation() == null
+            ? List.<String>of()
+            : form.document().presentation().listFieldOrder();
     var orderedFields = new ArrayList<>(document.fields());
-    orderedFields.sort(java.util.Comparator.comparingInt(field -> {
-      int index = defaults.indexOf(field.fieldId());
-      return index < 0 ? Integer.MAX_VALUE : index;
-    }));
+    orderedFields.sort(
+        java.util.Comparator.comparingInt(
+            field -> {
+              int index = defaults.indexOf(field.fieldId());
+              return index < 0 ? Integer.MAX_VALUE : index;
+            }));
     for (ApplicationFormRuntimeFieldDefinition field : orderedFields) {
       FormFieldDefinition storedField = storedFields.get(field.fieldId());
       if (storedField == null) {
         continue;
       }
-      if (RECORD_ENVELOPE_FIELDS.contains(field.fieldId()) || RecordSystemField.properties().contains(field.fieldId())) {
+      if (RECORD_ENVELOPE_FIELDS.contains(field.fieldId())
+          || RecordSystemField.properties().contains(field.fieldId())) {
         throw new ApplicationFormException(
             ApplicationFormErrorCode.DOCUMENT_INVALID,
-            "Published form contains a field identity reserved by the record runtime"
-        );
+            "Published form contains a field identity reserved by the record runtime");
       }
-      String permission = RecordPermissionModel.access(context.fieldPermissions(), form.physicalModelId(),
-          storedField.fieldId(), storedField.storageCode());
+      String permission =
+          RecordPermissionModel.access(
+              context.fieldPermissions(),
+              form.physicalModelId(),
+              storedField.fieldId(),
+              storedField.storageCode());
       properties.put(
           field.fieldId(),
           fieldProperty(
               field,
               order++,
               permission != null && !"EDITABLE".equals(permission)
-                  || !editableFields.contains(field.fieldId())
-          )
-      );
+                  || !editableFields.contains(field.fieldId())));
       if (!"MASKED".equals(permission)) {
         queryFields.put(field.fieldId(), queryField(field.type()));
       }
@@ -150,30 +198,29 @@ public class ApplicationFormRecordSchemaServiceImpl
     schema.put("type", "object");
     schema.put("additionalProperties", false);
     schema.put("properties", immutable(properties));
-    schema.put("x-query", Map.of(
-        "version", 1,
-        "fields", immutable(queryFields),
-        "relations", List.of(),
-        "maxNodes", 32,
-        "maxDepth", 4,
-        "maxSort", 3,
-        "maxPageSize", TablePagination.MAX_PAGE_SIZE
-    ));
+    schema.put(
+        "x-query",
+        Map.of(
+            "version", 1,
+            "fields", immutable(queryFields),
+            "relations", List.of(),
+            "maxNodes", 32,
+            "maxDepth", 4,
+            "maxSort", 3,
+            "maxPageSize", TablePagination.MAX_PAGE_SIZE));
     return Map.of(
         "schema", immutable(schema),
-        "buttons", buttons(capabilities)
-    );
+        "buttons", buttons(capabilities, canUnlink, deleteLimit));
   }
 
   private static Map<String, Object> fieldProperty(
-      final ApplicationFormRuntimeFieldDefinition field,
-      final int order,
-      final boolean readOnly
-  ) {
+      final ApplicationFormRuntimeFieldDefinition field, final int order, final boolean readOnly) {
     Map<String, Object> property = new LinkedHashMap<>();
     property.put("type", List.of(jsonType(field.type()), "null"));
     property.put("title", field.label());
-    if (field.labelLocalization() != null) property.put("x-title-localization", field.labelLocalization());
+    if (field.labelLocalization() != null) {
+      property.put("x-title-localization", field.labelLocalization());
+    }
     property.put("x-order", order);
     property.put("x-ui", Map.of("x-list-visible", true));
     if (readOnly) {
@@ -201,11 +248,15 @@ public class ApplicationFormRecordSchemaServiceImpl
       property.put("format", format);
     }
     if (!field.choices().isEmpty()) {
-      property.put("type", List.of(switch (field.type()) {
-        case BOOLEAN -> "boolean";
-        case INT32 -> "integer";
-        default -> "string";
-      }, "null"));
+      property.put(
+          "type",
+          List.of(
+              switch (field.type()) {
+                case BOOLEAN -> "boolean";
+                case INT32 -> "integer";
+                default -> "string";
+              },
+              "null"));
       property.put("x-ui", Map.of("x-list-visible", true));
       property.remove("x-decimal");
       property.remove("pattern");
@@ -217,9 +268,12 @@ public class ApplicationFormRecordSchemaServiceImpl
       options.add(immutable(empty));
       property.put("oneOf", List.copyOf(options));
     }
-    Object defaultValue = field.defaultValue() != null && field.defaultValue().kind() != FormValueKind.NULL
-        && (field.type() == FormFieldType.DECIMAL || field.type() == FormFieldType.INT64)
-        ? field.defaultValue().value() : defaultValue(field.defaultValue());
+    Object defaultValue =
+        field.defaultValue() != null
+                && field.defaultValue().kind() != FormValueKind.NULL
+                && (field.type() == FormFieldType.DECIMAL || field.type() == FormFieldType.INT64)
+            ? field.defaultValue().value()
+            : defaultValue(field.defaultValue());
     if (defaultValue != null) {
       if (!field.choices().isEmpty()) {
         defaultValue = FormChoiceValues.wireValue(field.type(), field.defaultValue().value());
@@ -229,61 +283,69 @@ public class ApplicationFormRecordSchemaServiceImpl
     return immutable(property);
   }
 
-  private static Map<String, Object> exactNumberConstraints(final ApplicationFormRuntimeFieldDefinition field) {
+  private static Map<String, Object> exactNumberConstraints(
+      final ApplicationFormRuntimeFieldDefinition field) {
     if (field.type() == FormFieldType.INT64) {
-      return Map.of("scale", 0, "minimum", "-9223372036854775808", "maximum", "9223372036854775807");
+      return Map.of(
+          "scale", 0, "minimum", "-9223372036854775808", "maximum", "9223372036854775807");
     }
-    BigDecimal limit = BigDecimal.ONE.scaleByPowerOfTen(field.precision() - field.scale())
-        .subtract(BigDecimal.ONE.movePointLeft(field.scale()));
-    return Map.of("precision", field.precision(), "scale", field.scale(),
-        "minimum", limit.negate().toPlainString(), "maximum", limit.toPlainString());
+    BigDecimal limit =
+        BigDecimal.ONE
+            .scaleByPowerOfTen(field.precision() - field.scale())
+            .subtract(BigDecimal.ONE.movePointLeft(field.scale()));
+    return Map.of(
+        "precision",
+        field.precision(),
+        "scale",
+        field.scale(),
+        "minimum",
+        limit.negate().toPlainString(),
+        "maximum",
+        limit.toPlainString());
   }
 
   private static Map<String, Object> systemProperty(
-      final String title,
-      final String type,
-      final int order
-  ) {
+      final String title, final String type, final int order) {
     return Map.of(
         "type", type,
         "title", title,
         "readOnly", true,
         "x-order", order,
-        "x-ui", Map.of("x-list-visible", false)
-    );
+        "x-ui", Map.of("x-list-visible", false));
   }
 
   private static Map<String, Object> stateProperty(final int order) {
     return Map.of(
-        "type", "string",
-        "title", "i18n:app.runtime.record.state",
-        "readOnly", true,
-        "x-order", order,
-        "x-ui", Map.of("x-list-visible", true),
-        "oneOf", List.of(
+        "type",
+        "string",
+        "title",
+        "i18n:app.runtime.record.state",
+        "readOnly",
+        true,
+        "x-order",
+        order,
+        "x-ui",
+        Map.of("x-list-visible", true),
+        "oneOf",
+        List.of(
             Map.of("const", "DRAFT", "title", "i18n:app.runtime.record.state.draft"),
-            Map.of("const", "SUBMITTED", "title", "i18n:app.runtime.record.state.submitted")
-        )
-    );
+            Map.of("const", "SUBMITTED", "title", "i18n:app.runtime.record.state.submitted")));
   }
 
   private static Map<String, Object> queryField(final FormFieldType type) {
-    List<String> operators = switch (type) {
-      case STRING, TEXT -> TEXT_OPERATORS;
-      case BOOLEAN, UUID -> EQUALITY_OPERATORS;
-      case JSON -> NULL_OPERATORS;
-      default -> COMPARABLE_OPERATORS;
-    };
+    List<String> operators =
+        switch (type) {
+          case STRING, TEXT -> TEXT_OPERATORS;
+          case BOOLEAN, UUID -> EQUALITY_OPERATORS;
+          case JSON -> NULL_OPERATORS;
+          default -> COMPARABLE_OPERATORS;
+        };
     return Map.of(
-        "operators", operators,
-        "sortable", type != FormFieldType.JSON,
-        "javaType", javaType(type)
-    );
+        "operators", operators, "sortable", type != FormFieldType.JSON, "javaType", javaType(type));
   }
 
   private static List<Map<String, Object>> buttons(
-      final ApplicationFormRuntimeCapabilities capabilities
-  ) {
+      final ApplicationFormRuntimeCapabilities capabilities, boolean canUnlink, int deleteLimit) {
     List<Map<String, Object>> buttons = new ArrayList<>();
     // Resolving the published page already enforces its read permission and data scope.
     buttons.add(button("view", "i18n:app.runtime.record.detail", "EyeOutlined", 1, 1, 25, false));
@@ -294,15 +356,20 @@ public class ApplicationFormRecordSchemaServiceImpl
       buttons.add(button("edit", "i18n:table.button.edit", "EditOutlined", 1, 1, 10, false));
     }
     if (capabilities.canDelete()) {
-      buttons.add(button(
-          "delete", "i18n:table.button.delete", "DeleteOutlined", 1, 1, 20, true
-      ));
+      buttons.add(button("delete", "i18n:table.button.delete", "DeleteOutlined", 1, deleteLimit, 20, true));
+    }
+    if (canUnlink) {
+      buttons.add(
+          button(
+              "unlink", "i18n:app.runtime.relation.unlink", "DisconnectOutlined", 1, 1, 22, false));
     }
     if (capabilities.canStartProcess() && capabilities.canEdit()) {
-      buttons.add(button("startProcess", "i18n:app.submission.start", "SendOutlined", 1, 1, 30, false));
+      buttons.add(
+          button("startProcess", "i18n:app.submission.start", "SendOutlined", 1, 1, 30, false));
     }
     // Viewing authorized record evidence does not grant permission to start or retry a process.
-    buttons.add(button("history", "i18n:app.runtime.approvalHistory", "HistoryOutlined", 1, 1, 40, false));
+    buttons.add(
+        button("history", "i18n:app.runtime.approvalHistory", "HistoryOutlined", 1, 1, 40, false));
     return List.copyOf(buttons);
   }
 
@@ -313,8 +380,7 @@ public class ApplicationFormRecordSchemaServiceImpl
       final int minimum,
       final int maximum,
       final int sort,
-      final boolean danger
-  ) {
+      final boolean danger) {
     Map<String, Object> button = new LinkedHashMap<>();
     button.put("key", key);
     button.put("title", title);
@@ -330,12 +396,13 @@ public class ApplicationFormRecordSchemaServiceImpl
   }
 
   private static Map<String, Object> choice(
-      final FormFieldType type, final FormChoiceOption option
-  ) {
+      final FormFieldType type, final FormChoiceOption option) {
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("const", FormChoiceValues.wireValue(type, option.value()));
     result.put("title", option.label());
-    if (option.labelLocalization() != null) result.put("x-title-localization", option.labelLocalization());
+    if (option.labelLocalization() != null) {
+      result.put("x-title-localization", option.labelLocalization());
+    }
     return Map.copyOf(result);
   }
 
@@ -390,9 +457,7 @@ public class ApplicationFormRecordSchemaServiceImpl
   }
 
   private static void collectEditableFields(
-      final FormComponentDefinition component,
-      final Set<String> fields
-  ) {
+      final FormComponentDefinition component, final Set<String> fields) {
     if (component.fieldId() != null && !component.readOnly()) {
       fields.add(component.fieldId());
     }

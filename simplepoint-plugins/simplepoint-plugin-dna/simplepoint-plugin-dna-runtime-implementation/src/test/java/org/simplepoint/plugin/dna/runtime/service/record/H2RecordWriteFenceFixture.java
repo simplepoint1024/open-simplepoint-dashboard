@@ -11,23 +11,32 @@ import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 /** H2-only fixture; shared-lock and publication correctness are verified on PostgreSQL/MySQL. */
 final class H2RecordWriteFenceFixture {
 
-  private H2RecordWriteFenceFixture() {
-  }
+  private H2RecordWriteFenceFixture() {}
 
-  static RuntimeSchemaDialect prepare(final DataSource source, final String tenant, final String model) throws Exception {
+  static RuntimeSchemaDialect prepare(
+      final DataSource source, final String tenant, final String model) throws Exception {
     String table = "simpoint_dna_record_write_fences_v1";
-    try (var connection = source.getConnection(); var statement = connection.createStatement()) {
-      statement.execute("CREATE TABLE simpoint_dna_record_publications_v1 (id VARCHAR(36) PRIMARY KEY, "
-          + "tenant_id VARCHAR(255), model_id VARCHAR(64), target_revision BIGINT, publication_fingerprint VARCHAR(64), "
-          + "record_version BIGINT, phase VARCHAR(32), intent_checksum VARCHAR(64), intent_json CLOB, "
-          + "checkpoint_checksum VARCHAR(64), checkpoint_json CLOB, deleted_at TIMESTAMP)");
-      statement.execute("CREATE TABLE simpoint_dna_record_calculations_v1 (id VARCHAR(36) PRIMARY KEY, "
-          + "tenant_id VARCHAR(255), model_id VARCHAR(64), policy_revision BIGINT, definition_checksum VARCHAR(64), "
-          + "definition_json CLOB, deleted_at TIMESTAMP)");
-      statement.execute("CREATE TABLE " + table + " (id VARCHAR(36) PRIMARY KEY, tenant_id VARCHAR(255), "
-          + "model_id VARCHAR(64), write_revision BIGINT, previous_revision BIGINT, "
-          + "publication_fingerprint VARCHAR(64), deleted_at TIMESTAMP)");
-      try (var insert = connection.prepareStatement("INSERT INTO " + table + " VALUES (?, ?, ?, 0, 0, ?, NULL)")) {
+    try (var connection = source.getConnection();
+        var statement = connection.createStatement()) {
+      statement.execute(
+          "CREATE TABLE simpoint_dna_record_publications_v1 (id VARCHAR(36) PRIMARY KEY, tenant_id"
+              + " VARCHAR(255), model_id VARCHAR(64), target_revision BIGINT,"
+              + " publication_fingerprint VARCHAR(64), record_version BIGINT, phase VARCHAR(32),"
+              + " intent_checksum VARCHAR(64), intent_json CLOB, checkpoint_checksum VARCHAR(64),"
+              + " checkpoint_json CLOB, deleted_at TIMESTAMP)");
+      statement.execute(
+          "CREATE TABLE simpoint_dna_record_calculations_v1 (id VARCHAR(36) PRIMARY KEY, tenant_id"
+              + " VARCHAR(255), model_id VARCHAR(64), policy_revision BIGINT, definition_checksum"
+              + " VARCHAR(64), definition_json CLOB, deleted_at TIMESTAMP)");
+      statement.execute(
+          "CREATE TABLE "
+              + table
+              + " (id VARCHAR(36) PRIMARY KEY, tenant_id VARCHAR(255), "
+              + "model_id VARCHAR(64), write_revision BIGINT, previous_revision BIGINT, "
+              + "publication_fingerprint VARCHAR(64), deleted_at TIMESTAMP)");
+      try (var insert =
+          connection.prepareStatement(
+              "INSERT INTO " + table + " VALUES (?, ?, ?, 0, 0, ?, NULL)")) {
         insert.setString(1, new RecordWriteFenceKey(tenant, model).id());
         insert.setString(2, tenant);
         insert.setString(3, model);
@@ -35,14 +44,38 @@ final class H2RecordWriteFenceFixture {
         insert.executeUpdate();
       }
     }
-    String lock = "SELECT write_revision, publication_fingerprint, previous_revision FROM " + table
-        + " WHERE id = ? AND tenant_id = ? AND model_id = ? AND deleted_at IS NULL FOR UPDATE";
+    String lock =
+        "SELECT write_revision, publication_fingerprint, previous_revision FROM "
+            + table
+            + " WHERE id = ? AND tenant_id = ? AND model_id = ? AND deleted_at IS NULL FOR UPDATE";
     RuntimeSchemaDialect dialect = mock(RuntimeSchemaDialect.class);
-    when(dialect.recordSqlDialectFactory()).thenReturn(org.apache.calcite.sql.SqlDialectFactoryImpl.INSTANCE);
+    when(dialect.recordSqlDialectFactory())
+        .thenReturn(org.apache.calcite.sql.SqlDialectFactoryImpl.INSTANCE);
     // H2 does not implement PostgreSQL/MySQL shared-row lock syntax. Only these isolated tests
     // use its stronger exclusive lock; management provisioning remains a real-database gate.
-    when(dialect.recordWriteFenceSql(any(), any(), any())).thenReturn(new RecordWriteFenceSql(
-        "unsupported_h2_management_initialization", lock, lock, "unsupported_h2_management_publication"));
+    when(dialect.recordWriteFenceSql(any(), any(), any()))
+        .thenReturn(
+            new RecordWriteFenceSql(
+                "unsupported_h2_management_initialization",
+                lock,
+                lock,
+                "unsupported_h2_management_publication"));
+    when(dialect.dialectId()).thenReturn("h2-test-only");
+    when(dialect.recordReferenceSql(any(), any(), any(), any()))
+        .thenAnswer(
+            call -> {
+              var target =
+                  (org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget)
+                      call.getArgument(2);
+              String column = call.getArgument(3);
+              String name = target.metadataTarget().tableName();
+              String identity = "tenant_id = ? AND id = ?";
+              String row = "SELECT deleted_at FROM " + name + " WHERE " + identity + " FOR UPDATE";
+              return new org.simplepoint.plugin.dna.runtime.service.schema.RecordReferenceSql(
+                  "SELECT " + column + " FROM " + name + " WHERE " + identity, row,
+                  "SELECT 1 FROM " + name + " WHERE tenant_id = ? AND " + column + " = ? LIMIT 1",
+                      row);
+            });
     return dialect;
   }
 }

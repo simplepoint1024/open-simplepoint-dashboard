@@ -20,7 +20,41 @@ public record SubmitApplicationFormCommand(
     String title,
     Map<String, Object> values,
     Map<String, Object> variables,
-    List<String> ccUserIds) {
+    List<String> ccUserIds,
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        org.simplepoint.plugin.app.form.api.model.relation.FormReferenceMappingIntent
+            referenceMappings) {
+  /**
+   * Keeps legacy request and immutable submission serialization unchanged when mappings are absent.
+   */
+  public SubmitApplicationFormCommand(
+      ApplicationFormRuntimeIdentity runtime,
+      String idempotencyKey,
+      String recordId,
+      Long expectedVersion,
+      String definitionId,
+      int definitionVersion,
+      String previousSubmissionId,
+      String title,
+      Map<String, Object> values,
+      Map<String, Object> variables,
+      List<String> ccUserIds) {
+    this(
+        runtime,
+        idempotencyKey,
+        recordId,
+        expectedVersion,
+        definitionId,
+        definitionVersion,
+        previousSubmissionId,
+        title,
+        values,
+        variables,
+        ccUserIds,
+        null);
+  }
+
   /** Validates and defensively copies the immutable request or snapshot boundary. */
   public SubmitApplicationFormCommand {
     if (runtime == null
@@ -32,8 +66,7 @@ public record SubmitApplicationFormCommand(
         || definitionVersion < 1
         || (recordId == null) != (expectedVersion == null)
         || recordId != null && (recordId.isBlank() || recordId.length() > 64 || expectedVersion < 0)
-        || previousSubmissionId != null
-            && !previousSubmissionId.matches("[a-f0-9]{64}")
+        || previousSubmissionId != null && !previousSubmissionId.matches("[a-f0-9]{64}")
         || title == null
         || title.isBlank()
         || title.length() > 240) {

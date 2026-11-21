@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.entity.FormWritePolicyPublicationStatus;
 import org.simplepoint.plugin.app.form.service.ApplicationFormPageBindingStateService.BindingWork;
@@ -21,6 +22,7 @@ import org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationStateSe
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
+import org.simplepoint.plugin.dna.runtime.api.record.RecordCollectionRebindMigration;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
@@ -32,13 +34,31 @@ class FormWritePolicyPublicationCoordinatorTest {
   private final FormWritePolicyPublicationStateService state = mock(FormWritePolicyPublicationStateService.class);
   private final DnaFormRuntimeService dna = mock(DnaFormRuntimeService.class);
   private final DnaInvocationContextFactory contexts = mock(DnaInvocationContextFactory.class);
-  private final FormWritePolicyPublicationCoordinator coordinator = new FormWritePolicyPublicationCoordinator(state, dna, contexts);
+  private final FormWritePolicyPublicationCoordinator coordinator = new FormWritePolicyPublicationCoordinator(
+      state, dna, contexts, mock(FormCollectionRebindAuthorization.class));
   private final BindingWork work = new BindingWork("binding", "attempt", "tenant", "app", "page", "form", 1,
       "model", "page:page", "Page", null, 0, 1);
   private final FormWritePolicyImpact impact = new FormWritePolicyImpact(0, 1, Set.of(), Map.of());
   private final RecordWritePolicyPublicationCommand command = new RecordWritePolicyPublicationCommand(
       "model", "app", "form", new RecordSchemaReference(1, "a".repeat(64)), 0, 1,
       "app-policy:binding", "b".repeat(64), Map.of(), 30_000);
+
+  @Test
+  void retainsTheImmutableReplacementForCancellationWhenTheDestinationBecomesIneligible() {
+    var context = mock(DnaInvocationContext.class);
+    var replacement = mock(RecordWritePolicyPublicationCommand.class);
+    when(replacement.collectionRebind()).thenReturn(
+        new RecordCollectionRebindMigration("former", "replacement", Map.of()));
+    when(contexts.current()).thenReturn(context);
+    when(state.current(work)).thenReturn(new PreparedPolicy("intent",
+        FormWritePolicyPublicationStatus.PREPARED, replacement, null, null));
+    when(dna.publishCollectionRebind(context, replacement)).thenThrow(
+        new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_REFERENCE_CONFLICT, "Ineligible endpoint"));
+    assertThatThrownBy(() -> coordinator.resumeTarget(work))
+        .isInstanceOfSatisfying(ApplicationFormException.class,
+            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT));
+    verify(state).recordDataFailure(work);
+  }
 
   @Test
   void persistsBeforeTheRemoteCallAndRecoversTheExactIntentAfterAcknowledgementLoss() {

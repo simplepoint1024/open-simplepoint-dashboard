@@ -1,3 +1,5 @@
+import {pageTabIdentity} from '../../../../libs/shared/page/viewIdentity.ts';
+
 export const AI_WORKBENCH_ROOT_PATH = '/ai/workbench';
 export const LEGACY_AI_WORKSPACE_PATH = '/ai/workbench/workspace';
 export const DASHBOARD_PATH = '/dashboard';
@@ -86,11 +88,7 @@ export function migrateLegacyAiWorkspaceTabs<T extends NavigationTabLocation>(
 
   for (const tab of tabs) {
     const currentKey = routePathOf(tab.key);
-    const key = migrateLegacyAiWorkspacePath(currentKey, target, routesReady);
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
+    const migratedPath = migrateLegacyAiWorkspacePath(currentKey, target, routesReady);
 
     const currentLocationPath = routePathOf(tab.location || tab.key);
     const locationPath = migrateLegacyAiWorkspacePath(
@@ -98,9 +96,12 @@ export function migrateLegacyAiWorkspaceTabs<T extends NavigationTabLocation>(
       target,
       routesReady,
     );
-    const location = key !== currentKey || locationPath !== currentLocationPath
-      ? key
-      : tab.location;
+    const location = migratedPath !== currentKey || locationPath !== currentLocationPath
+      ? migratedPath
+      : tab.location || tab.key;
+    const key = pageTabIdentity(location);
+    if (seen.has(key)) continue;
+    seen.add(key);
     migrated.push({...tab, key, location} as T);
   }
   return migrated;

@@ -2,7 +2,10 @@ package org.simplepoint.plugin.dna.runtime.service.schema;
 
 import org.springframework.stereotype.Component;
 
-/** Provisions target infrastructure during authorized schema publication, never during a record write. */
+/**
+ * Provisions target infrastructure during authorized schema publication, never during a record
+ * write.
+ */
 @Component
 public class RecordJournalProvisioner {
   private final JdbcPhysicalSchemaBackend backend;
@@ -12,11 +15,13 @@ public class RecordJournalProvisioner {
     this.backend = backend;
   }
 
-  /** Inspects, completes and verifies a deterministic plan, including interrupted or concurrent DDL. */
+  /**
+   * Inspects, completes and verifies a deterministic plan, including interrupted or concurrent DDL.
+   */
   public void prepare(final PhysicalSchemaTarget model) {
-    RuntimeInfrastructureSchema.prepare(backend, RecordJournalSchema.target(model), "DNA committed record operation receipts v1",
-        RecordJournalSchema.definition());
-    RuntimeInfrastructureSchema.prepare(backend, RecordSnapshotSchema.target(model),
-        "DNA immutable record snapshots v1", RecordSnapshotSchema.definition());
+    RuntimeInfrastructureSchema.prepare(backend, model, RuntimeInfrastructureTable.OPERATIONS);
+    RuntimeInfrastructureSchema.prepare(backend, model, RuntimeInfrastructureTable.SNAPSHOTS);
+    RuntimeInfrastructureSchema.prepare(
+        backend, model, RuntimeInfrastructureTable.REFERENCE_COPIES);
   }
 }

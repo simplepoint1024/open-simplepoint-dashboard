@@ -23,27 +23,66 @@ public class FormRecordInvariantValidator {
   private final DnaFormRuntimeService dna;
 
   /** Keeps metadata locks separate from row-scoped DNA reads and the optimistic mutation. */
-  public FormRecordInvariantValidator(final FormRecordInvariantService invariants,
-      final FormRecordPayloadCompiler payloads, final DnaFormRuntimeService dna) {
+  public FormRecordInvariantValidator(
+      final FormRecordInvariantService invariants,
+      final FormRecordPayloadCompiler payloads,
+      final DnaFormRuntimeService dna) {
     this.invariants = invariants;
     this.payloads = payloads;
     this.dna = dna;
   }
 
-  /** Applies every active historical page to the new record's persisted values and storage defaults. */
-  public void create(final PublishedApplicationForm form, final Map<String, Object> values, final FormRecordState target) {
-    var plan = invariants.resolve(form);
-    plan.validate(payloads, plan.createDefaults(), values, null, target);
+  /**
+   * Applies every active historical page to the new record's persisted values and storage defaults.
+   */
+  public void create(
+      final PublishedApplicationForm form,
+      final Map<String, Object> values,
+      final FormRecordState target) {
+    create(form, values, target, null);
   }
 
-  /** Every batch must describe the same optimistic revision; mutation still checks that revision and admission. */
-  public void update(final PublishedApplicationForm form, final DnaInvocationContext validationContext,
-      final String recordId, final long expectedVersion, final Map<String, Object> values, final FormRecordState target) {
+  void create(
+      PublishedApplicationForm form,
+      Map<String, Object> values,
+      FormRecordState target,
+      org.simplepoint.plugin.app.form.api.model.relation.FormReferenceMappingIntent mappings) {
+    var plan = invariants.resolve(form);
+    plan.validate(payloads, plan.createDefaults(), values, null, target, mappings);
+  }
+
+  /**
+   * Every batch must describe the same optimistic revision; mutation still checks that revision and
+   * admission.
+   */
+  public void update(
+      final PublishedApplicationForm form,
+      final DnaInvocationContext validationContext,
+      final String recordId,
+      final long expectedVersion,
+      final Map<String, Object> values,
+      final FormRecordState target) {
+    update(form, validationContext, recordId, expectedVersion, values, target, null);
+  }
+
+  void update(
+      PublishedApplicationForm form,
+      DnaInvocationContext validationContext,
+      String recordId,
+      long expectedVersion,
+      Map<String, Object> values,
+      FormRecordState target,
+      org.simplepoint.plugin.app.form.api.model.relation.FormReferenceMappingIntent mappings) {
     var plan = invariants.resolve(form);
     if (plan.documents().isEmpty()) {
       return;
     }
-    var fields = plan.governing().fields().stream().filter(field -> field.storageMode() == FormStorageMode.STORED).toList();
+    var providers = FormRecordValueProviders.forRow(plan.governing(), null, null, mappings);
+    var fields =
+        plan.governing().fields().stream()
+            .filter(field -> field.storageMode() == FormStorageMode.STORED)
+            .filter(field -> !providers.deferred().contains(field.fieldId()))
+            .toList();
     Map<String, Object> existing = new LinkedHashMap<>();
     FormRecordState current = null;
     // Reserve one projection slot for state, leaving the public DNA limit of 100 unchanged.
@@ -51,23 +90,42 @@ public class FormRecordInvariantValidator {
       var batch = fields.subList(start, Math.min(start + 99, fields.size()));
       var codes = new ArrayList<>(batch.stream().map(FormFieldDefinition::storageCode).toList());
       codes.add(FormStorageProjectionCompiler.RECORD_STATE_CODE);
-      var record = dna.getRecord(validationContext, new RecordLookupQuery(form.physicalModelId(),
-          new RecordSchemaReference(plan.physicalVersion(), plan.storageChecksum()), recordId, codes));
-      if (record.version() != expectedVersion || !record.id().equals(recordId) || !record.values().keySet().containsAll(codes)) {
-        throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_CONFLICT, "The validation record changed or its projection is incomplete");
+      var record =
+          dna.getRecord(
+              validationContext,
+              new RecordLookupQuery(
+                  form.physicalModelId(),
+                  new RecordSchemaReference(plan.physicalVersion(), plan.storageChecksum()),
+                  recordId,
+                  codes));
+      if (record.version() != expectedVersion
+          || !record.id().equals(recordId)
+          || !record.values().keySet().containsAll(codes)) {
+        throw new ApplicationFormException(
+            ApplicationFormErrorCode.RECORD_CONFLICT,
+            "The validation record changed or its projection is incomplete");
       }
       FormRecordState state;
       try {
-        state = FormRecordState.valueOf(String.valueOf(record.values().get(FormStorageProjectionCompiler.RECORD_STATE_CODE)));
+        state =
+            FormRecordState.valueOf(
+                String.valueOf(
+                    record.values().get(FormStorageProjectionCompiler.RECORD_STATE_CODE)));
       } catch (IllegalArgumentException failure) {
-        throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_INVALID, "The stored record state is invalid", failure);
+        throw new ApplicationFormException(
+            ApplicationFormErrorCode.RECORD_INVALID, "The stored record state is invalid", failure);
       }
       if (current != null && current != state) {
-        throw new ApplicationFormException(ApplicationFormErrorCode.RECORD_CONFLICT, "The validation record state changed");
+        throw new ApplicationFormException(
+            ApplicationFormErrorCode.RECORD_CONFLICT, "The validation record state changed");
       }
       current = state;
-      batch.forEach(field -> existing.put(field.fieldId(), FormChoiceValues.displayValue(field, record.values().get(field.storageCode()))));
+      batch.forEach(
+          field ->
+              existing.put(
+                  field.fieldId(),
+                  FormChoiceValues.displayValue(field, record.values().get(field.storageCode()))));
     }
-    plan.validate(payloads, existing, values, current, target);
+    plan.validate(payloads, existing, values, current, target, mappings);
   }
 }

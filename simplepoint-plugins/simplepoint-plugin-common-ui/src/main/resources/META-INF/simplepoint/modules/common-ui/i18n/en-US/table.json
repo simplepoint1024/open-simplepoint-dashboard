@@ -162,5 +162,6 @@
   "table.resizeConfigurationWidth": "Resize configuration panel width",
   "table.collapseConfiguration": "Collapse panel",
   "table.expandConfiguration": "Expand panel",
-  "table.actions": "Actions"
+  "table.actions": "Actions",
+  "table.confirmPermanentDeleteContent": "Permanently delete the {count} selected records?"
 }

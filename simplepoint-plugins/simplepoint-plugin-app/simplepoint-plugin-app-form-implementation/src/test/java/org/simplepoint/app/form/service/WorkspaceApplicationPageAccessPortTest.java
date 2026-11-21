@@ -2,14 +2,18 @@ package org.simplepoint.app.form.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.TypedQuery;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
@@ -82,5 +86,24 @@ class WorkspaceApplicationPageAccessPortTest {
             exception ->
                 assertThat(exception.errorCode())
                     .isEqualTo(ApplicationFormErrorCode.PAGE_NOT_FOUND));
+  }
+
+  @Test
+  void applicationFinishesOfflineOnlyWhenAllPublishedPagesHaveFinished() {
+    page.setStatus("PUBLISHED");
+    application.setStatus("PUBLISHED");
+    @SuppressWarnings("unchecked")
+    TypedQuery<String> siblings = mock(TypedQuery.class);
+    when(entityManager.createQuery(anyString(), eq(String.class))).thenReturn(siblings);
+    when(siblings.setParameter(anyString(), anyString())).thenReturn(siblings);
+    when(siblings.getResultList()).thenReturn(List.of("PUBLISHED"), List.of("OFFLINING"), List.of());
+
+    port.offlineBinding("tenant-a", "app-a", "page-a", false);
+    assertThat(application.getStatus()).isEqualTo("PUBLISHED");
+    port.offlineBinding("tenant-a", "app-a", "page-a", true);
+    assertThat(application.getStatus()).isEqualTo("OFFLINING");
+    port.offlineBinding("tenant-a", "app-a", "page-a", true);
+    assertThat(application.getStatus()).isEqualTo("OFFLINE");
+    assertThat(application.getUpdatedAt()).isEqualTo(NOW);
   }
 }

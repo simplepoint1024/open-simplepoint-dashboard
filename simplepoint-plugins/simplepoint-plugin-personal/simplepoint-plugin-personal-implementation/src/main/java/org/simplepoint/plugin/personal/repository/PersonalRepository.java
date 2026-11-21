@@ -1,15 +1,21 @@
 package org.simplepoint.plugin.personal.repository;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.simplepoint.plugin.personal.api.entity.OwnedRecord;
+import org.simplepoint.plugin.personal.api.entity.PersonalMessage;
+import org.simplepoint.plugin.personal.api.entity.WorkflowMessageFence;
+import org.simplepoint.plugin.workflow.api.model.WorkflowLinks;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -148,6 +154,57 @@ public class PersonalRepository {
   /** Flushes versions and constraints before returning response projections. */
   public void flush() {
     entityManager.flush();
+  }
+
+  /** Deletes a row previously resolved through the owner-scoped query. */
+  public void remove(OwnedRecord record) {
+    entityManager.remove(record);
+  }
+
+  /** Authorizes detail lookup regardless of the message's placement in the recipient's mailbox. */
+  public Optional<PersonalMessage> message(String owner, String workspace, String id) {
+    return entityManager.createQuery("from PersonalMessage m where m.ownerId = :owner"
+            + " and m.workspace = :workspace and m.id = :id", PersonalMessage.class)
+        .setParameter("owner", owner).setParameter("workspace", workspace)
+        .setParameter("id", id).setMaxResults(1).getResultList().stream().findFirst();
+  }
+
+  /** Keep delivery idempotent while a recipient may still restore the original message. */
+  public Optional<PersonalMessage> deliveredMessage(String owner, String workspace, String source, String key) {
+    return entityManager.createQuery("from PersonalMessage m where m.ownerId = :owner"
+            + " and m.workspace = :workspace and m.source = :source and m.sourceKey = :key", PersonalMessage.class)
+        .setParameter("owner", owner).setParameter("workspace", workspace)
+        .setParameter("source", source).setParameter("key", key).setMaxResults(1)
+        .getResultList().stream().findFirst();
+  }
+
+  public WorkflowMessageFence lockWorkflowDelivery(String workspace, String instance) {
+    var id = UUID.nameUUIDFromBytes((workspace + "\u0000" + instance)
+        .getBytes(StandardCharsets.UTF_8)).toString();
+    var fence = entityManager.find(WorkflowMessageFence.class, id, LockModeType.PESSIMISTIC_WRITE);
+    if (fence != null) return fence;
+    entityManager.createQuery("insert into WorkflowMessageFence (id, removed) values (:id, false) on conflict do nothing")
+        .setParameter("id", id).executeUpdate();
+    return entityManager.find(WorkflowMessageFence.class, id, LockModeType.PESSIMISTIC_WRITE);
+  }
+
+  public void removeWorkflowMessages(String workspace, String instance) {
+    lockWorkflowDelivery(workspace, instance).setRemoved(true);
+    entityManager.createQuery("delete from PersonalMessage m where m.workspace = :workspace"
+            + " and m.source = 'workflow' and (m.linkPath in :matterLinks or m.linkPath like :taskLink escape '!')")
+        .setParameter("workspace", workspace)
+        .setParameter("matterLinks", List.of(WorkflowLinks.matter(instance), WorkflowLinks.copied(instance)))
+        .setParameter("taskLink", WorkflowLinks.taskPattern(instance)).executeUpdate();
+  }
+
+  /** One bounded cleanup transaction; the second cutoff check fences concurrent restores. */
+  public int purgeExpiredMessages(Instant cutoff, int limit) {
+    List<String> ids = entityManager.createQuery("select m.id from PersonalMessage m"
+            + " where m.deletedAt <= :cutoff order by m.deletedAt, m.id", String.class)
+        .setParameter("cutoff", cutoff).setMaxResults(limit).getResultList();
+    return ids.isEmpty() ? 0 : entityManager.createQuery("delete from PersonalMessage m"
+            + " where m.id in :ids and m.deletedAt <= :cutoff")
+        .setParameter("ids", ids).setParameter("cutoff", cutoff).executeUpdate();
   }
 
   /** Single indexed bulk update, bounded to the current user and workspace. */

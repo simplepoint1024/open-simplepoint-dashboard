@@ -109,5 +109,6 @@
   "dna.runtime.definition.system.rowOrder": "Row order",
   "dna.runtime.action.publishReviewed": "Execute reviewed migration",
   "dna.runtime.publishFailed": "Migration did not complete. Inspect its status or review the current plan.",
+  "dna.runtime.error.RECORD_REFERENCE_CONFLICT": "This operation conflicts with existing references. Check whether the related record is available or still referenced.",
   "dna.runtime.error.RECORD_OPERATION_REJECTED": "This operation was rejected by a data constraint. Check duplicate identifiers and required values, then submit a new command."
 }

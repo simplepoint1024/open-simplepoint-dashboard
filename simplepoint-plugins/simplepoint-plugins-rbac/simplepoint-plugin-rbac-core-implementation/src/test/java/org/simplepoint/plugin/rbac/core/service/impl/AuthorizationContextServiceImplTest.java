@@ -349,6 +349,7 @@ class AuthorizationContextServiceImplTest {
         .thenReturn(Optional.of(fields));
 
     var owner = service.calculate("tenant1", "u1", null, Map.of("X-Role-Id", "role1"));
+    assertThat(owner.isResourcePolicyDefaultsResolved()).isTrue();
     assertThat(owner.getActorRole()).isEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(owner.getIsAdministrator()).isFalse();
     assertThat(owner.getDataScopeType()).isEqualTo("ALL");
@@ -359,6 +360,7 @@ class AuthorizationContextServiceImplTest {
 
     tenant.setOwnerId("new-owner");
     var member = service.calculate("tenant1", "u1", null, Map.of("X-Actor-Role", "TENANT_OWNER"));
+    assertThat(member.isResourcePolicyDefaultsResolved()).isTrue();
     assertThat(member.getActorRole()).isNotEqualTo(AuthorizationActorRole.TENANT_OWNER);
     assertThat(member.getResourceDataScopes().get("organizations.view").type()).isEqualTo("SELF");
     assertThat(member.getResourceFieldPermissions().get("organizations.view"))

@@ -24,35 +24,22 @@ import org.simplepoint.plugin.dna.runtime.api.model.PhysicalIsolationMode;
 @Getter
 @Setter
 @AttributeOverrides({
-    @AttributeOverride(name = "id", column = @Column(name = "id", length = 36)),
-    @AttributeOverride(
-        name = "createdBy",
-        column = @Column(name = "created_by", length = 64)
-    ),
-    @AttributeOverride(
-        name = "updatedBy",
-        column = @Column(name = "updated_by", length = 64)
-    )
+  @AttributeOverride(name = "id", column = @Column(name = "id", length = 36)),
+  @AttributeOverride(name = "createdBy", column = @Column(name = "created_by", length = 64)),
+  @AttributeOverride(name = "updatedBy", column = @Column(name = "updated_by", length = 64))
 })
 @Table(
     name = "simpoint_dna_physical_bindings",
     uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_dna_physical_binding_model",
-            columnNames = "physical_model_id"
-        ),
-        @UniqueConstraint(
-            name = "uk_dna_physical_binding_target",
-            columnNames = {
-              "data_source_id", "catalog_name", "schema_name", "table_name"
-            }
-        )
+      @UniqueConstraint(name = "uk_dna_physical_binding_model", columnNames = "physical_model_id"),
+      @UniqueConstraint(
+          name = "uk_dna_physical_binding_target",
+          columnNames = {"data_source_id", "catalog_name", "schema_name", "table_name"})
     },
-    indexes = @Index(
-        name = "idx_dna_physical_binding_tenant",
-        columnList = "tenant_id,physical_model_id"
-    )
-)
+    indexes =
+        @Index(
+            name = "idx_dna_physical_binding_tenant",
+            columnList = "tenant_id,physical_model_id"))
 public class PhysicalModelBindingEntity extends TenantBaseEntityImpl<String> {
 
   @Column(name = "physical_model_id", length = 36, nullable = false, updatable = false)
@@ -63,8 +50,7 @@ public class PhysicalModelBindingEntity extends TenantBaseEntityImpl<String> {
       name = "physical_model_id",
       insertable = false,
       updatable = false,
-      foreignKey = @ForeignKey(name = "fk_dna_physical_binding_model")
-  )
+      foreignKey = @ForeignKey(name = "fk_dna_physical_binding_model"))
   private PhysicalModelEntity physicalModel;
 
   @Column(name = "data_source_id", length = 64, nullable = false)
@@ -78,6 +64,10 @@ public class PhysicalModelBindingEntity extends TenantBaseEntityImpl<String> {
 
   @Column(name = "table_name", length = 128, nullable = false)
   private String tableName;
+
+  /** Null marks a legacy binding that still requires verified physical ownership adoption. */
+  @Column(name = "physical_namespace_id", length = 36)
+  private String physicalNamespaceId;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "isolation_mode", length = 32, nullable = false)

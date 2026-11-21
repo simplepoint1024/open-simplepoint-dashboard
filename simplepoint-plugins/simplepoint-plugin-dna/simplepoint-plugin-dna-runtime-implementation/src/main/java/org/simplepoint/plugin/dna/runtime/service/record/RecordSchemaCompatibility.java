@@ -20,6 +20,13 @@ final class RecordSchemaCompatibility {
     if (!java.util.Objects.equals(requested.owner(), active.owner())) {
       throw incompatible("Record ownership changed");
     }
+    if (!java.util.Objects.equals(requested.collection(), active.collection())) {
+      throw incompatible("Collection ownership changed");
+    }
+    if (requested.references().stream()
+        .anyMatch(reference -> active.references().stream().noneMatch(reference::sameStorageAs))) {
+      throw incompatible("Historical reference identities or target semantics changed");
+    }
     Map<String, LogicalFieldDefinition> activeById = byFieldId(active);
     Map<String, LogicalFieldDefinition> requestedById = byFieldId(requested);
     for (LogicalFieldDefinition historical : requested.fields()) {

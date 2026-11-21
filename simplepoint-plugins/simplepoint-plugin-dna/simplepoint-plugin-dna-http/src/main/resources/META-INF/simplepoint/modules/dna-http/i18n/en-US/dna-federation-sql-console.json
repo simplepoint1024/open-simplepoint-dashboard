@@ -134,5 +134,9 @@
   "dna.federation.sqlConsole.page.button.insertPath": "Insert Path",
   "dna.federation.sqlConsole.page.completion.shortcut": "Ctrl/⌘ + Space to complete · Ctrl/⌘ + Enter to run · Ctrl/⌘ + Shift + F to format",
   "dna.federation.sqlConsole.page.completion.reveal": "Reveal in metadata tree",
-  "dna.federation.sqlConsole.page.completion.syntaxError": "SQL syntax error"
+  "dna.federation.sqlConsole.page.completion.syntaxError": "SQL syntax error",
+  "dna.federation.sql-console.error.SQL_WRITE_UNSUPPORTED": "The write statement cannot be fully analyzed. Use supported SQL syntax and bind special characters as parameters.",
+  "dna.federation.sql-console.error.SQL_WRITE_SCOPE_INVALID": "A write must resolve unambiguously to one datasource. Cross-source writes are not supported.",
+  "dna.federation.sql-console.error.SQL_WRITE_PROTECTED": "This physical object is managed by a platform engine. Use its business function or a governed migration.",
+  "dna.federation.sql-console.error.SQL_WRITE_OWNERSHIP_UNAVAILABLE": "Write protection state could not be verified. Check namespace installation and execution records."
 }

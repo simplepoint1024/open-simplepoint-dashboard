@@ -5,7 +5,14 @@ import {gzipSync} from 'node:zlib';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const limit = 512 * 1024;
-const representativePages = {common: 'platform/Package', audit: 'monitoring/LoginLog', dna: 'platform/JdbcDataSource', ai: 'workbench/Models', app: 'Workbench', workflow: 'Definitions'};
+const representativePages = {
+  common: ['platform/Package'],
+  audit: ['monitoring/LoginLog'],
+  dna: ['platform/JdbcDataSource'],
+  ai: ['workbench/Models'],
+  app: ['Workbench', 'FormRuntime'],
+  workflow: ['Definitions', 'Tasks', 'Instances'],
+};
 const hostProvidedShared = new Set([
   'react',
   'react/jsx-runtime',
@@ -38,8 +45,7 @@ for (const name of ['common', 'ai', 'dna', 'audit', 'app', 'workflow']) {
     console.error(`${name}: private components leaked into MF exposes.`);
     failed = true;
   }
-  const pageNames = name === 'workflow' ? ['Definitions', 'Tasks', 'Instances'] : [representativePages[name]];
-  for (const page of pageNames) {
+  for (const page of representativePages[name]) {
     const representative = manifest.exposes.find(expose => expose.name === page);
     if (!representative) throw new Error(`${name}: representative page ${page} is missing`);
     const syncFiles = [...new Set(representative.assets.js.sync)];

@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-data:simplepoint-data-ownership"))
     runtimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
     runtimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation"))
 

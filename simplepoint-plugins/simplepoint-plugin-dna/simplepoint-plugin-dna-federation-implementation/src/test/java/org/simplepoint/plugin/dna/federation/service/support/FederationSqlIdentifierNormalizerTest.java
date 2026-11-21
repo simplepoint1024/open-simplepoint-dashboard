@@ -31,13 +31,26 @@ class FederationSqlIdentifierNormalizerTest {
   @Test
   void normalizeQuotesTwoPartIdentifier() {
     String result = FederationSqlIdentifierNormalizer.normalize("select * from ds.orders");
-    assertTrue(result.contains("\"ds\".\"orders\""), "Expected quoted 2-part identifier, got: " + result);
+    assertTrue(
+        result.contains("\"ds\".\"orders\""), "Expected quoted 2-part identifier, got: " + result);
   }
 
   @Test
   void normalizeQuotesThreePartIdentifier() {
     String result = FederationSqlIdentifierNormalizer.normalize("select * from ds.public.orders");
-    assertTrue(result.contains("\"ds\".\"public\".\"orders\""), "Expected quoted 3-part identifier, got: " + result);
+    assertTrue(
+        result.contains("\"ds\".\"public\".\"orders\""),
+        "Expected quoted 3-part identifier, got: " + result);
+  }
+
+  @Test
+  void normalizePreservesUnicodeIdentifiersThatExpandWhenUppercased() {
+    assertEquals(
+        "SELECT id FROM \"ds\".\"straße\"",
+        FederationSqlIdentifierNormalizer.normalize("SELECT id FROM ds.straße"));
+    assertEquals(
+        "SELECT id FROM \"ds\".\"ﬀoo\"",
+        FederationSqlIdentifierNormalizer.normalize("SELECT id FROM ds.\"ﬀoo\""));
   }
 
   @Test
@@ -48,10 +61,11 @@ class FederationSqlIdentifierNormalizerTest {
 
   @Test
   void normalizeDoesNotSplitDottedQuotedComponents() {
-    String result = FederationSqlIdentifierNormalizer.normalize(
-        "select * from ds.\"my.schema\".orders"
-    );
-    assertTrue(result.contains("\"my.schema\""), "Dotted quoted component should not be split, got: " + result);
+    String result =
+        FederationSqlIdentifierNormalizer.normalize("select * from ds.\"my.schema\".orders");
+    assertTrue(
+        result.contains("\"my.schema\""),
+        "Dotted quoted component should not be split, got: " + result);
   }
 
   @Test
@@ -62,8 +76,10 @@ class FederationSqlIdentifierNormalizerTest {
 
   @Test
   void normalizeHandlesStarInSelect() {
-    String result = FederationSqlIdentifierNormalizer.normalize("select ds.orders.* from ds.orders");
-    assertTrue(result.contains("\"ds\".\"orders\""), "Expected quoted table reference, got: " + result);
+    String result =
+        FederationSqlIdentifierNormalizer.normalize("select ds.orders.* from ds.orders");
+    assertTrue(
+        result.contains("\"ds\".\"orders\""), "Expected quoted table reference, got: " + result);
   }
 
   // ── unquoteIdentifier tests ──
@@ -75,7 +91,8 @@ class FederationSqlIdentifierNormalizerTest {
 
   @Test
   void unquoteDoubleQuotedWithEscapes() {
-    assertEquals("my\"table", FederationSqlIdentifierNormalizer.unquoteIdentifier("\"my\"\"table\""));
+    assertEquals(
+        "my\"table", FederationSqlIdentifierNormalizer.unquoteIdentifier("\"my\"\"table\""));
   }
 
   @Test

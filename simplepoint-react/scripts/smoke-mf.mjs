@@ -628,6 +628,56 @@ try {
     assert.ok(warnings.every(message => message.startsWith('[API]') && /\/(?:platform\/dictionar|ai\/workbench\/api-keys)/.test(message)));
     assert.deepEqual(network.filter(record => record.status >= 400 && !expectedUploadFailures.some(f => f.url === record.url && f.status === record.status)), []);
     console.log('PASS: targeted shared SForm/SimpleTable prevalidation lifecycle with actual production resource pages');
+  } else if (process.env.MF_SMOKE_PERSONAL_MESSAGE_BATCH_ONLY === '1') {
+    const messages = personalFixture.records.messages;
+    messages.push({...messages[0], id: 'message-batch', title: '第二条批量消息'});
+    await evaluate(`location.hash='#/my/messages'`);
+    const toolbar = '.nb-tab-panel-active .sp-table-button-group button';
+    const selectedRows = '.nb-tab-panel-active tr:is([data-row-key="message-home"], [data-row-key="message-batch"]) .ant-checkbox-input';
+    const selectBoth = async () => {
+      await poll(() => evaluate(`document.querySelectorAll(${JSON.stringify(selectedRows)}).length===2`),
+        'two selectable inbox rows');
+      for (const id of ['message-home', 'message-batch']) {
+        const checkbox = `.nb-tab-panel-active tr[data-row-key="${id}"] .ant-checkbox-input`;
+        await evaluate(`(() => { const box = document.querySelector(${JSON.stringify(checkbox)}); if (!box.checked) box.click(); })()`);
+      }
+    };
+    const confirmBatch = async (click, condition, description) => {
+      await selectBoth();
+      await click();
+      await clickReady('.ant-modal-confirm .ant-btn-primary');
+      await poll(() => messages.every(condition), description);
+      await poll(() => evaluate(`!document.querySelector('.ant-modal-confirm')`), 'batch confirmation closes');
+    };
+    await confirmBatch(() => clickText(toolbar, '标为已读'), row => row.readAt, 'both messages marked as read');
+    await confirmBatch(() => clickText(toolbar, '标为未读'), row => !row.readAt, 'both messages marked as unread');
+    await confirmBatch(() => clickReady(`${toolbar}:has(.anticon-inbox)`), row => row.archived, 'both messages archived');
+    await clickText('.nb-tab-panel-active .ant-tabs-tab-btn', '已归档');
+    await confirmBatch(() => clickText(toolbar, '移出归档'), row => !row.archived, 'both messages unarchived');
+    await clickText('.nb-tab-panel-active .ant-tabs-tab-btn', '收件箱');
+    const trashSelection = async () => {
+      await selectBoth();
+      await clickReady(`${toolbar}:has(.anticon-delete)`);
+      await clickReady('.sp-simple-table-delete .ant-btn-primary');
+      await poll(() => messages.every(row => row.deletedAt), 'both messages sent to the recycle bin');
+      await poll(() => evaluate(`!document.querySelector('.sp-simple-table-delete .ant-modal')`), 'delete confirmation closes');
+    };
+    await trashSelection();
+    await clickText('.nb-tab-panel-active .ant-tabs-tab-btn', '回收站');
+    await confirmBatch(() => clickReady(`${toolbar}:has(.anticon-rollback)`), row => !row.deletedAt, 'both messages restored');
+    await clickText('.nb-tab-panel-active .ant-tabs-tab-btn', '收件箱');
+    await trashSelection();
+    await clickText('.nb-tab-panel-active .ant-tabs-tab-btn', '回收站');
+    await selectBoth();
+    await clickReady('.nb-tab-panel-active .sp-table-button-group button:has(.anticon-delete)');
+    await clickReady('.sp-simple-table-delete .ant-btn-primary');
+    await poll(() => messages.length === 0, 'both inbox rows removed in one request');
+    assert.equal(apiRequests.filter(row => row.url === '/common/personal/messages/actions/batch').length, 5);
+    assert.equal(apiRequests.filter(row => row.method === 'DELETE' && row.url === '/common/personal/messages').length, 2);
+    assert.equal(apiRequests.filter(row => row.method === 'DELETE' && row.url === '/common/personal/messages/trash').length, 1);
+    assert.deepEqual(exceptions, []);
+    assert.deepEqual(network.filter(row => row.status >= 400), []);
+    console.log('PASS: bulk inbox read, unread, archive, unarchive, trash, restore and permanent delete');
   } else if (process.env.MF_SMOKE_NOTIFICATION_LIFECYCLE_ONLY === '1') {
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
     await clickMenu('首页');

@@ -28,6 +28,7 @@ public class FormSubmissionSnapshotService {
   private final DnaInvocationContextFactory contexts;
   private final FormRequestContext actors;
   private final FormRecordIdentityLabels identityLabels;
+  private final FormSubmissionHistory history;
   private final org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService records;
 
   /** Creates the coordinator with explicit persistence, policy and service dependencies. */
@@ -39,6 +40,7 @@ public class FormSubmissionSnapshotService {
       DnaInvocationContextFactory contexts,
       FormRequestContext actors,
       FormRecordIdentityLabels identityLabels,
+      FormSubmissionHistory history,
       org.simplepoint.plugin.app.form.api.service.ApplicationFormRecordService records) {
     this.workflow = workflow;
     this.journal = journal;
@@ -47,6 +49,7 @@ public class FormSubmissionSnapshotService {
     this.contexts = contexts;
     this.actors = actors;
     this.identityLabels = identityLabels;
+    this.history = history;
     this.records = records;
   }
 
@@ -105,7 +108,9 @@ public class FormSubmissionSnapshotService {
     var snapshot = journal.snapshot(id, actor.tenantId());
     if (!applicationId.equals(snapshot.view().applicationId())
         || !pageId.equals(snapshot.view().pageId())
-        || !recordId.equals(snapshot.record().id())) throw unavailable();
+        || !recordId.equals(snapshot.record().id())) {
+      throw unavailable();
+    }
     return project(snapshot, snapshot.accepted().workflow().binding().sceneId());
   }
 
@@ -131,12 +136,12 @@ public class FormSubmissionSnapshotService {
       FormSubmissionJournal.Snapshot snapshot, String sceneId) {
     var form = snapshot.accepted().form();
     resolver.requireRead(form);
+    var captured = history.read(snapshot);
     var authority = contexts.forForm(form);
     var current = resolver.currentCalculationScope(form);
     var policy = FormCalculationPermissions.restrict(current, authority.fieldPermissions());
     Map<String, Object> values =
-        projectFields(
-            form.document().fields(), snapshot.record().values(), form.physicalModelId(), policy);
+        projectFields(form.document().fields(), captured.values(), form.physicalModelId(), policy);
     for (var detail : form.document().details()) {
       var binding =
           form.detailBindings().stream()
@@ -145,7 +150,7 @@ public class FormSubmissionSnapshotService {
               .orElseThrow();
       var rows =
           FormDetailRecordCoordinator.parseRows(
-              snapshot.record().values().getOrDefault(detail.detailId(), List.of()));
+              captured.values().getOrDefault(detail.detailId(), List.of()));
       values.put(
           detail.detailId(),
           rows.stream()
@@ -183,16 +188,26 @@ public class FormSubmissionSnapshotService {
             new ApplicationFormRuntimeCapabilities(false, false, false, false),
             documents.compile(form, policy),
             form.writePolicyVersion());
-    return new ApplicationFormSubmissionSnapshot(
-        snapshot.view(),
-        descriptor,
-        identityLabels.decorate(form.tenantId(), new ApplicationFormRecordView(
-            snapshot.record().id(),
-            snapshot.record().version(),
-            snapshot.record().state(),
+    var projected =
+        new ApplicationFormRecordView(
+            captured.id(),
+            captured.version(),
+            captured.state(),
             values,
             FormRecordSystemFields.project(
-                snapshot.record().systemValues(), form.physicalModelId(), policy))));
+                captured.systemValues(), form.physicalModelId(), policy));
+    var labels = FormReferenceSnapshots.visible(form, projected, captured.referenceSnapshots());
+    var authorized =
+        new ApplicationFormRecordView(
+            projected.id(),
+            projected.version(),
+            projected.state(),
+            projected.values(),
+            projected.systemValues(),
+            projected.systemLabels(),
+            labels);
+    return new ApplicationFormSubmissionSnapshot(
+        snapshot.view(), descriptor, identityLabels.decorate(form.tenantId(), authorized));
   }
 
   private static Map<String, Object> projectFields(

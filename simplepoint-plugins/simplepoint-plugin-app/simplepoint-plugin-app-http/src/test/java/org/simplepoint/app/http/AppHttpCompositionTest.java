@@ -36,6 +36,7 @@ import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.security.oauth2.resourceserver.scope.ClasspathResourceScopeRegistry;
 import org.simplepoint.security.oauth2.resourceserver.scope.ResourceScopeHandlerInterceptor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.webmvc.autoconfigure.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -218,7 +219,11 @@ class AppHttpCompositionTest {
         try {
           Class<?> type = Class.forName(bean.getBeanClassName());
           for (var constructor : type.getConstructors()) {
-            dependencies.addAll(List.of(constructor.getParameterTypes()));
+            for (int index = 0; index < constructor.getParameterCount(); index++) {
+              var parameter = org.springframework.core.ResolvableType.forConstructorParameter(constructor, index);
+              dependencies.add(parameter.resolve() == ObjectProvider.class
+                  ? parameter.getGeneric(0).resolve() : parameter.resolve());
+            }
           }
         } catch (ClassNotFoundException exception) {
           throw new AssertionError(exception);

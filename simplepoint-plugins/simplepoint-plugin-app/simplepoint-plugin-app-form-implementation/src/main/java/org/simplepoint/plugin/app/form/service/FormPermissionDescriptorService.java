@@ -16,12 +16,28 @@ import org.simplepoint.plugin.dna.runtime.api.record.RecordSystemField;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Compiles permission discovery from the immutable published version, including owned detail models. */
+/**
+ * Compiles permission discovery from the immutable published version, including owned detail
+ * models.
+ */
 @Service
 public class FormPermissionDescriptorService {
-  private static final List<String> EQUALITY = List.of("equals", "not:equals", "in", "not:in", "is:null", "is:not:null");
-  private static final List<String> COMPARABLE = List.of("equals", "not:equals", "in", "not:in", "is:null", "is:not:null",
-      "between", "not:between", "than:greater", "than:less", "than:equal:greater", "than:equal:less");
+  private static final List<String> EQUALITY =
+      List.of("equals", "not:equals", "in", "not:in", "is:null", "is:not:null");
+  private static final List<String> COMPARABLE =
+      List.of(
+          "equals",
+          "not:equals",
+          "in",
+          "not:in",
+          "is:null",
+          "is:not:null",
+          "between",
+          "not:between",
+          "than:greater",
+          "than:less",
+          "than:equal:greater",
+          "than:equal:less");
   private final EntityManager entityManager;
   private final FormDocumentCodec codec;
 
@@ -34,74 +50,136 @@ public class FormPermissionDescriptorService {
   /** Describes exactly the main and detail models of one bound publication. */
   @Transactional(readOnly = true)
   public PermissionPageDescriptor describe(BindingWork work) {
-    var version = entityManager.createQuery("from ApplicationFormVersionEntity v where v.tenantId=:tenant "
-        + "and v.formId=:form and v.versionNumber=:version", ApplicationFormVersionEntity.class)
-        .setParameter("tenant", work.tenantId()).setParameter("form", work.formId())
-        .setParameter("version", work.formVersion()).getSingleResult();
+    var version =
+        entityManager
+            .createQuery(
+                "from ApplicationFormVersionEntity v where v.tenantId=:tenant "
+                    + "and v.formId=:form and v.versionNumber=:version",
+                ApplicationFormVersionEntity.class)
+            .setParameter("tenant", work.tenantId())
+            .setParameter("form", work.formId())
+            .setParameter("version", work.formVersion())
+            .getSingleResult();
     var document = codec.decode(version.getDocumentJson());
     var bindings = codec.decodeDetailBindings(version.getDetailBindingsJson());
     var models = new ArrayList<PermissionModelDescriptor>();
-    models.add(model(work.physicalModelId(), document.fields(), ""));
+    var root = model(work.physicalModelId(), document.fields(), "");
+    var properties = new LinkedHashMap<>(root.properties());
+    document.relations().stream().filter(relation -> relation.sourceField() == null).forEach(relation -> {
+      var label = relation.collectionLabel();
+      properties.put(RecordPermissionModel.collectionField(relation.relationId()),
+          new PermissionModelDescriptor.Field("java.lang.String",
+              label == null ? relation.relationId() : label.defaultValue(), List.of(), List.of(), false, label));
+    });
+    models.add(new PermissionModelDescriptor(root.model(), root.data(), root.fields(), root.owner(), root.department(), properties));
     for (var detail : document.details()) {
-      var binding = bindings.stream().filter(item -> item.detailId().equals(detail.detailId())).findFirst().orElseThrow();
-      models.add(model(binding.physicalModelId(), detail.fields(), detail.label() + " / ", detail.labelLocalization()));
+      var binding =
+          bindings.stream()
+              .filter(item -> item.detailId().equals(detail.detailId()))
+              .findFirst()
+              .orElseThrow();
+      models.add(
+          model(
+              binding.physicalModelId(),
+              detail.fields(),
+              detail.label() + " / ",
+              detail.labelLocalization()));
     }
     return new PermissionPageDescriptor(models);
   }
 
-  static PermissionModelDescriptor model(String model, List<FormFieldDefinition> fields, String prefix) {
+  static PermissionModelDescriptor model(
+      String model, List<FormFieldDefinition> fields, String prefix) {
     return model(model, fields, prefix, null);
   }
 
-  private static PermissionModelDescriptor model(String model, List<FormFieldDefinition> fields, String prefix,
+  private static PermissionModelDescriptor model(
+      String model,
+      List<FormFieldDefinition> fields,
+      String prefix,
       org.simplepoint.api.locale.LocalizedText prefixLocalization) {
     Map<String, PermissionModelDescriptor.Field> properties = new LinkedHashMap<>();
     for (var base : RecordSystemField.values()) {
-      boolean temporal = base.type() == org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType.DATETIME;
-      properties.put(base.storageCode(), new PermissionModelDescriptor.Field(
-          temporal ? "java.time.Instant" : "java.lang.String", prefix + base.title(),
-          temporal ? COMPARABLE : EQUALITY, List.of(), true));
+      boolean temporal =
+          base.type() == org.simplepoint.plugin.dna.runtime.api.schema.LogicalFieldType.DATETIME;
+      properties.put(
+          base.storageCode(),
+          new PermissionModelDescriptor.Field(
+              temporal ? "java.time.Instant" : "java.lang.String",
+              prefix + base.title(),
+              temporal ? COMPARABLE : EQUALITY,
+              List.of(),
+              true));
     }
     for (var field : fields) {
-      if (!field.persistent()) {
+      if (!field.persistent() && field.storageMode() != FormStorageMode.TRANSIENT) {
         continue;
       }
-      String type = switch (field.type()) {
-        case BOOLEAN -> "java.lang.Boolean";
-        case INT32 -> "java.lang.Integer";
-        case INT64 -> "java.lang.Long";
-        case DECIMAL -> "java.math.BigDecimal";
-        case DATE -> "java.time.LocalDate";
-        case TIME -> "java.time.LocalTime";
-        case DATETIME -> "java.time.Instant";
-        default -> "java.lang.String";
-      };
-      List<String> operators = switch (field.type()) {
-        case JSON -> List.of("is:null", "is:not:null");
-        case BOOLEAN, UUID -> EQUALITY;
-        case STRING, TEXT -> java.util.stream.Stream.concat(COMPARABLE.stream(), java.util.stream.Stream.of("like", "not:like")).toList();
-        default -> COMPARABLE;
-      };
-      properties.put(RecordPermissionModel.field(field.fieldId()),
-          new PermissionModelDescriptor.Field(type, prefix + field.label(), operators, List.of(), field.storageMode() == FormStorageMode.COMPUTED, localizedTitle(prefix, prefixLocalization, field)));
+      String type =
+          switch (field.type()) {
+            case BOOLEAN -> "java.lang.Boolean";
+            case INT32 -> "java.lang.Integer";
+            case INT64 -> "java.lang.Long";
+            case DECIMAL -> "java.math.BigDecimal";
+            case DATE -> "java.time.LocalDate";
+            case TIME -> "java.time.LocalTime";
+            case DATETIME -> "java.time.Instant";
+            default -> "java.lang.String";
+          };
+      List<String> operators =
+          switch (field.type()) {
+            case JSON -> List.of("is:null", "is:not:null");
+            case BOOLEAN, UUID -> EQUALITY;
+            case STRING, TEXT ->
+                java.util.stream.Stream.concat(
+                        COMPARABLE.stream(), java.util.stream.Stream.of("like", "not:like"))
+                    .toList();
+            default -> COMPARABLE;
+          };
+      properties.put(
+          RecordPermissionModel.field(field.fieldId()),
+          new PermissionModelDescriptor.Field(
+              type,
+              prefix + field.label(),
+              field.persistent() ? operators : List.of(),
+              List.of(),
+              field.storageMode() == FormStorageMode.COMPUTED || !field.persistent(),
+              localizedTitle(prefix, prefixLocalization, field)));
     }
-    return new PermissionModelDescriptor(RecordPermissionModel.key(model), true, true,
-        "created_by", "created_org_dept_id", properties);
+    return new PermissionModelDescriptor(
+        RecordPermissionModel.key(model),
+        true,
+        true,
+        "created_by",
+        "created_org_dept_id",
+        properties);
   }
-  private static org.simplepoint.api.locale.LocalizedText localizedTitle(String prefix,
-      org.simplepoint.api.locale.LocalizedText parent, FormFieldDefinition field) {
+
+  private static org.simplepoint.api.locale.LocalizedText localizedTitle(
+      String prefix, org.simplepoint.api.locale.LocalizedText parent, FormFieldDefinition field) {
     var value = field.labelLocalization();
-    if (value == null && parent == null) return null;
+    if (value == null && parent == null) {
+      return null;
+    }
     var languages = new java.util.TreeSet<String>();
-    if (value != null) languages.addAll(value.translations().keySet());
-    if (parent != null) languages.addAll(parent.translations().keySet());
+    if (value != null) {
+      languages.addAll(value.translations().keySet());
+    }
+    if (parent != null) {
+      languages.addAll(parent.translations().keySet());
+    }
     var translations = new LinkedHashMap<String, String>();
     for (var language : languages) {
       String parentLabel = org.simplepoint.api.locale.LocalizedTexts.override(parent, language);
       String fieldLabel = org.simplepoint.api.locale.LocalizedTexts.override(value, language);
-      translations.put(language, (parentLabel == null ? prefix : parentLabel + " / ") + (fieldLabel == null ? field.label() : fieldLabel));
+      translations.put(
+          language,
+          (parentLabel == null ? prefix : parentLabel + " / ")
+              + (fieldLabel == null ? field.label() : fieldLabel));
     }
-    return new org.simplepoint.api.locale.LocalizedText(prefix + field.label(), value == null ? parent.defaultLocale() : value.defaultLocale(), translations);
+    return new org.simplepoint.api.locale.LocalizedText(
+        prefix + field.label(),
+        value == null ? parent.defaultLocale() : value.defaultLocale(),
+        translations);
   }
-
 }

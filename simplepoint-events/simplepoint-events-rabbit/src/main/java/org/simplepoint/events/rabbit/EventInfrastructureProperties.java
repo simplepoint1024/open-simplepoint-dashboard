@@ -8,6 +8,7 @@
 package org.simplepoint.events.rabbit;
 
 import java.time.Duration;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -26,5 +27,11 @@ public class EventInfrastructureProperties {
   private Duration lease = Duration.ofSeconds(60);
   private Duration initialRetryDelay = Duration.ofSeconds(2);
   private Duration maxRetryDelay = Duration.ofMinutes(5);
+  private Map<String, Owner> extraOwners = Map.of();
 
+  @Getter
+  @Setter
+  public static class Owner {
+    private String password;
+  }
 }

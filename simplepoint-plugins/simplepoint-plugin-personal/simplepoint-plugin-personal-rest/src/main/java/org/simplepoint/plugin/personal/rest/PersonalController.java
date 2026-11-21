@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.simplepoint.core.http.Response;
 import org.simplepoint.plugin.personal.api.PersonalModels.ActionInput;
@@ -11,6 +12,8 @@ import org.simplepoint.plugin.personal.api.PersonalModels.EventView;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.ItemView;
 import org.simplepoint.plugin.personal.api.PersonalModels.MessageView;
+import org.simplepoint.plugin.personal.api.PersonalModels.MessageSelection;
+import org.simplepoint.plugin.personal.api.PersonalModels.RecordRevision;
 import org.simplepoint.plugin.personal.api.PersonalModels.Overview;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoInput;
 import org.simplepoint.plugin.personal.api.PersonalModels.TodoView;
@@ -18,6 +21,7 @@ import org.simplepoint.plugin.personal.api.PersonalService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -156,16 +160,33 @@ public class PersonalController {
     return Response.okay(service.todoAction(id, input));
   }
 
+  @DeleteMapping("/todos/{id}")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete'))")
+  @Operation(summary = "永久删除当前用户的待办记录")
+  public Response<Map<String, Boolean>> deleteTodo(@PathVariable("id") String id,
+      @RequestParam("expectedVersion") long expectedVersion) {
+    service.deleteTodo(id, expectedVersion);
+    return Response.okay(Map.of("success", true));
+  }
+
+  @DeleteMapping("/todos")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.todos.view') and hasAuthority('personal.todos.delete'))")
+  public Response<Map<String, Boolean>> deleteTodos(@RequestBody List<RecordRevision> records) {
+    service.deleteTodos(records);
+    return Response.okay(Map.of("success", true));
+  }
+
   /** Handles the authenticated read endpoint /messages. */
   @GetMapping("/messages")
   public Response<Page<MessageView>> messages(
       @RequestParam(name = "keyword", required = false) String keyword,
       @RequestParam(name = "unreadOnly", defaultValue = "false") boolean unreadOnly,
       @RequestParam(name = "archived", defaultValue = "false") boolean archived,
+      @RequestParam(name = "trash", defaultValue = "false") boolean trash,
       @RequestParam(name = "filters", required = false) String filters,
       Pageable page) {
     return Response.okay(
-        service.messages(keyword, unreadOnly, archived, page, parseFilters(filters)));
+        service.messages(keyword, unreadOnly, archived, trash, page, parseFilters(filters)));
   }
 
   /** Handles the authenticated read endpoint /messages/{id}. */
@@ -179,6 +200,36 @@ public class PersonalController {
   public Response<MessageView> messageAction(
       @PathVariable("id") String id, @RequestBody ActionInput input) {
     return Response.okay(service.messageAction(id, input));
+  }
+
+  @DeleteMapping("/messages/{id}")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  @Operation(summary = "将当前用户的消息移入回收站")
+  public Response<Map<String, Boolean>> deleteMessage(@PathVariable("id") String id,
+      @RequestParam("expectedVersion") long expectedVersion) {
+    service.deleteMessage(id, expectedVersion);
+    return Response.okay(Map.of("success", true));
+  }
+
+  @DeleteMapping("/messages")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  public Response<Map<String, Boolean>> deleteMessages(@RequestBody List<RecordRevision> records) {
+    service.deleteMessages(records);
+    return Response.okay(Map.of("success", true));
+  }
+
+  @DeleteMapping("/messages/trash")
+  @PreAuthorize("hasRole('Administrator') or (hasAuthority('personal.messages.view') and hasAuthority('personal.messages.delete'))")
+  public Response<Map<String, Boolean>> purgeMessages(@RequestBody List<RecordRevision> records) {
+    service.purgeMessages(records);
+    return Response.okay(Map.of("success", true));
+  }
+
+  @PostMapping("/messages/actions/batch")
+  @PreAuthorize("hasRole('Administrator') or hasAuthority('personal.messages.view')")
+  public Response<Map<String, Boolean>> changeMessages(@RequestBody MessageSelection selection) {
+    service.changeMessages(selection);
+    return Response.okay(Map.of("success", true));
   }
 
   /** Handles the authenticated write endpoint /messages/read-all. */

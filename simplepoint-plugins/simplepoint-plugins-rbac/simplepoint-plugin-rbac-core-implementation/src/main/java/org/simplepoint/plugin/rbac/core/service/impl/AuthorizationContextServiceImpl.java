@@ -327,6 +327,10 @@ public class AuthorizationContextServiceImpl implements AuthorizationContextServ
           administrator ? DataScopeType.ALL.name() : DataScopeType.SELF.name());
     }
 
+    // Only identity knows that these are complete role-wide defaults. Delegated APP/DNA
+    // contexts carry a selected page's scope instead and must never lend it to another page.
+    authorizationContext.setResourcePolicyDefaultsResolved(true);
+
     return authorizationContext;
   }
 

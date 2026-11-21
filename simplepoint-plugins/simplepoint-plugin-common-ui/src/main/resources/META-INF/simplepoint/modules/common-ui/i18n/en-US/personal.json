@@ -1,4 +1,6 @@
 {
+  "personal.confirmTrashMessage": "Move this message to the recycle bin?",
+  "personal.messageTrashRetention": "Messages stay in the recycle bin for 30 days. You can restore or permanently delete them earlier.",
   "personal.workflow": "Workflow",
   "personal.saved": "Saved",
   "personal.items": "My items",
@@ -76,5 +78,7 @@
   "personal.failed": "Operation failed. Please retry.",
   "personal.retry": "Retry",
   "personal.overviewError": "Unable to load personal work summary",
-  "personal.nothingPending": "Nothing pending"
+  "personal.nothingPending": "Nothing pending",
+  "personal.confirmPermanentDelete": "Permanently delete this record?",
+  "personal.confirmSelected": "Apply this action to the {count} selected records."
 }

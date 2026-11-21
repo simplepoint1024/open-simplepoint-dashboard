@@ -2,9 +2,6 @@ package org.simplepoint.plugin.dna.runtime.service.impl;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStepStatus;
@@ -20,7 +17,6 @@ import org.simplepoint.plugin.dna.runtime.service.impl.SchemaPublicationStateSer
 import org.simplepoint.plugin.dna.runtime.service.record.RecordWriteFencePreparation;
 import org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan;
 import org.simplepoint.plugin.dna.runtime.service.schema.JdbcPhysicalSchemaBackend;
-import org.simplepoint.plugin.dna.runtime.service.schema.PlannedSchemaStep;
 import org.simplepoint.plugin.dna.runtime.service.schema.RecordJournalProvisioner;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
@@ -46,8 +42,7 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
       final RuntimeMetadataCacheInvalidator cacheInvalidator,
       final DnaRuntimePublicationProperties publicationProperties,
       final RecordJournalProvisioner journal,
-      final RecordWriteFencePreparation writeFences
-  ) {
+      final RecordWriteFencePreparation writeFences) {
     this.requestContext = requestContext;
     this.stateService = stateService;
     this.backend = backend;
@@ -59,14 +54,10 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
 
   @Override
   public SchemaPublicationView publish(
-      final String physicalModelId,
-      final SchemaPublicationCommand command
-  ) {
+      final String physicalModelId, final SchemaPublicationCommand command) {
     if (command == null) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "Schema publication command is required"
-      );
+          DnaRuntimeErrorCode.INVALID_ARGUMENT, "Schema publication command is required");
     }
     RuntimeActor actor = requestContext.requireActor();
     PublicationClaim claim = stateService.claim(actor, physicalModelId, command);
@@ -74,7 +65,8 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
       return execute(actor, claim.work());
     }
     SchemaPublicationView existing = stateService.get(actor.tenantId(), claim.work().migrationId());
-    if (existing.status() == org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus.ACTIVE) {
+    if (existing.status()
+        == org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus.ACTIVE) {
       journal.prepare(claim.work().target());
       writeFences.prepare(actor, claim.work().target());
     }
@@ -89,175 +81,140 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
 
   @Override
   public SchemaPublicationView getByTargetVersion(
-      final String physicalModelId,
-      final int targetVersion
-  ) {
+      final String physicalModelId, final int targetVersion) {
     if (targetVersion < 1) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "targetVersion must be positive"
-      );
+          DnaRuntimeErrorCode.INVALID_ARGUMENT, "targetVersion must be positive");
     }
     RuntimeActor actor = requestContext.requireActor();
     return stateService.getByTargetVersion(
-        actor.tenantId(),
-        requireId(physicalModelId),
-        targetVersion
-    );
+        actor.tenantId(), requireId(physicalModelId), targetVersion);
   }
 
   @Override
-  public SchemaPublicationView retry(
-      final String migrationId,
-      final long expectedLockVersion
-  ) {
+  public SchemaPublicationView retry(final String migrationId, final long expectedLockVersion) {
     if (expectedLockVersion < 0) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "expectedLockVersion cannot be negative"
-      );
+          DnaRuntimeErrorCode.INVALID_ARGUMENT, "expectedLockVersion cannot be negative");
     }
     RuntimeActor actor = requestContext.requireActor();
-    PublicationClaim claim = stateService.claimRetry(
-        actor,
-        requireId(migrationId),
-        expectedLockVersion
-    );
+    PublicationClaim claim =
+        stateService.claimRetry(actor, requireId(migrationId), expectedLockVersion);
     return execute(actor, claim.work());
   }
 
   @Override
-  public SchemaPublicationView recover(
-      final String migrationId,
-      final long expectedLockVersion
-  ) {
+  public SchemaPublicationView recover(final String migrationId, final long expectedLockVersion) {
     if (expectedLockVersion < 0) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "expectedLockVersion cannot be negative"
-      );
+          DnaRuntimeErrorCode.INVALID_ARGUMENT, "expectedLockVersion cannot be negative");
     }
     RuntimeActor actor = requestContext.requireActor();
     return stateService.recoverStale(
         actor,
         requireId(migrationId),
         expectedLockVersion,
-        Instant.now().minusMillis(staleAfterMs)
-    );
+        Instant.now().minusMillis(staleAfterMs));
   }
 
-  private SchemaPublicationView execute(
-      final RuntimeActor actor,
-      final PublicationWork work
-  ) {
+  private SchemaPublicationView execute(final RuntimeActor actor, final PublicationWork work) {
     try {
-      InitialSchemaPlan plan = backend.plan(
+      return backend.withExclusivePublication(
           work.target(),
-          work.displayName(),
-          work.currentSchema(),
-          work.schema()
-      );
-      if (plan.risk() == org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationRisk.DESTRUCTIVE) {
-        throw new DnaRuntimeException(
-            DnaRuntimeErrorCode.SCHEMA_DESTRUCTIVE_CHANGE_REQUIRES_APPROVAL,
-            "Destructive schema changes require a separate controlled cleanup operation"
-        );
-      }
-      stateService.ready(actor, work.migrationId(), work.executionToken(), plan);
-      stateService.start(actor, work.migrationId(), work.executionToken());
-      journal.prepare(work.target());
-      writeFences.prepare(actor, work.target());
-      executeSteps(actor, work, plan);
-      stateService.verifying(actor, work.migrationId(), work.executionToken());
-      PhysicalTableSnapshot verified = backend.inspect(work.target(), plan.dialectId());
-      if (!verified.checksum().equals(plan.targetSnapshot().checksum())) {
-        throw new DnaRuntimeException(
-            DnaRuntimeErrorCode.SCHEMA_VERIFICATION_FAILED,
-            "Published table structure does not match the target snapshot"
-        );
-      }
-      invalidate(work);
-      return stateService.activate(
-          actor,
-          work.migrationId(),
-          work.executionToken(),
-          verified.checksum()
-      );
+          session -> {
+            InitialSchemaPlan plan = work.persistedPlan();
+            if (plan == null) {
+              // Old binaries did not persist the original physical baseline. Never infer it after
+              // DDL started.
+              if (stateService.steps(actor.tenantId(), work.migrationId()).stream()
+                  .anyMatch(
+                      step ->
+                          step.attempts() > 0
+                              || step.status() != SchemaMigrationStepStatus.PENDING)) {
+                throw drift("Legacy publication has executed steps but no durable recovery plan");
+              }
+              plan = session.plan(work.displayName(), work.currentSchema(), work.schema());
+            }
+            if (plan.risk()
+                == org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationRisk
+                    .DESTRUCTIVE) {
+              throw new DnaRuntimeException(
+                  DnaRuntimeErrorCode.SCHEMA_DESTRUCTIVE_CHANGE_REQUIRES_APPROVAL,
+                  "Destructive schema changes require a separate controlled cleanup operation");
+            }
+            stateService.ready(actor, work.migrationId(), work.executionToken(), plan);
+            stateService.start(actor, work.migrationId(), work.executionToken());
+            // Reuse the owning DDL connection; another connection would contend with our namespace
+            // lock.
+            session.prepareInfrastructure();
+            writeFences.initialize(actor, work.target());
+            executeSteps(actor, work, plan, session);
+            stateService.verifying(actor, work.migrationId(), work.executionToken());
+            PhysicalTableSnapshot verified = session.inspect(plan.dialectId());
+            if (!verified.checksum().equals(plan.targetSnapshot().checksum())) {
+              throw new DnaRuntimeException(
+                  DnaRuntimeErrorCode.SCHEMA_VERIFICATION_FAILED,
+                  "Published table structure does not match the target snapshot");
+            }
+            // Preflight can race a soft delete before the FK is installed. Recheck after all DDL;
+            // subsequent governed record transactions discover that FK under their table locks.
+            session.verifyReferences(work.schema(), verified);
+            invalidate(work);
+            return stateService.activate(
+                actor, work.migrationId(), work.executionToken(), verified.checksum());
+          });
     } catch (DnaRuntimeException exception) {
-      stateService.fail(
-          actor,
-          work.migrationId(),
-          work.executionToken(),
-          exception.errorCode()
-      );
+      stateService.fail(actor, work.migrationId(), work.executionToken(), exception.errorCode());
       throw exception;
     } catch (RuntimeException exception) {
       stateService.fail(
           actor,
           work.migrationId(),
           work.executionToken(),
-          DnaRuntimeErrorCode.SCHEMA_PUBLICATION_FAILED
-      );
+          DnaRuntimeErrorCode.SCHEMA_PUBLICATION_FAILED);
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.SCHEMA_PUBLICATION_FAILED,
-          "Schema publication failed",
-          exception
-      );
+          DnaRuntimeErrorCode.SCHEMA_PUBLICATION_FAILED, "Schema publication failed", exception);
     }
   }
 
   private void executeSteps(
       final RuntimeActor actor,
       final PublicationWork work,
-      final InitialSchemaPlan plan
-  ) {
-    Map<Integer, PersistedStep> persistedBySequence = stateService.steps(
-        actor.tenantId(),
-        work.migrationId()
-    ).stream().collect(Collectors.toUnmodifiableMap(
-        PersistedStep::sequence,
-        Function.identity()
-    ));
-    if (persistedBySequence.size() != plan.steps().size()) {
-      throw drift("Persisted migration step count does not match the validated plan");
-    }
-    for (PlannedSchemaStep planned : plan.steps()) {
-      PersistedStep persisted = persistedBySequence.get(planned.sequence());
-      validateStep(planned, persisted);
-      PhysicalTableSnapshot actual = backend.inspect(work.target(), plan.dialectId());
-      boolean satisfied = backend.isSatisfied(planned, plan.targetSnapshot(), actual);
-      boolean completed = persisted.status() == SchemaMigrationStepStatus.SUCCEEDED
-          || persisted.status() == SchemaMigrationStepStatus.SKIPPED;
-      if (completed) {
-        if (!satisfied) {
-          throw drift("A completed migration step is no longer reflected in the database");
-        }
+      final InitialSchemaPlan plan,
+      final JdbcPhysicalSchemaBackend.PublicationSession session) {
+    List<PersistedStep> persisted = stateService.steps(actor.tenantId(), work.migrationId());
+    String actual = session.inspect(plan.dialectId()).checksum();
+    int reflected = SchemaPublicationRecovery.reflectedSteps(plan, persisted, actual);
+    for (int index = 0; index < plan.steps().size(); index++) {
+      var planned = plan.steps().get(index);
+      var saved = persisted.get(index);
+      if (SchemaPublicationRecovery.completed(saved)) {
         continue;
       }
-      String stepId = stateService.beginStep(
+      String stepId =
+          stateService.beginStep(
+              actor, work.migrationId(), work.executionToken(), planned.sequence());
+      boolean skipped = index < reflected;
+      if (!skipped) {
+        actual = session.inspect(plan.dialectId()).checksum();
+        if (!actual.equals(plan.checkpointChecksums().get(index))) {
+          throw drift("Target schema no longer matches the next publication checkpoint");
+        }
+        skipped = actual.equals(plan.checkpointChecksums().get(index + 1));
+        if (!skipped) {
+          session.execute(plan.dialectId(), planned);
+        }
+        actual = session.inspect(plan.dialectId()).checksum();
+        if (!actual.equals(plan.checkpointChecksums().get(index + 1))) {
+          throw drift("A publication statement did not produce its planned structure checkpoint");
+        }
+      }
+      stateService.finishStep(
           actor,
           work.migrationId(),
           work.executionToken(),
-          planned.sequence()
-      );
-      if (satisfied) {
-        stateService.finishStep(
-            actor,
-            work.migrationId(),
-            work.executionToken(),
-            stepId,
-            SchemaMigrationStepStatus.SKIPPED
-        );
-      } else {
-        backend.execute(work.target(), plan.dialectId(), planned);
-        stateService.finishStep(
-            actor,
-            work.migrationId(),
-            work.executionToken(),
-            stepId,
-            SchemaMigrationStepStatus.SUCCEEDED
-        );
-      }
+          stepId,
+          skipped ? SchemaMigrationStepStatus.SKIPPED : SchemaMigrationStepStatus.SUCCEEDED);
     }
   }
 
@@ -268,28 +225,14 @@ public class SchemaPublicationServiceImpl implements SchemaPublicationService {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.METADATA_INVALIDATION_FAILED,
           "Published table metadata caches could not be invalidated",
-          exception
-      );
-    }
-  }
-
-  private static void validateStep(
-      final PlannedSchemaStep planned,
-      final PersistedStep persisted
-  ) {
-    if (persisted == null
-        || !planned.operation().name().equals(persisted.operation())
-        || !planned.statementChecksum().equals(persisted.statementChecksum())) {
-      throw drift("Persisted migration step does not match the validated plan");
+          exception);
     }
   }
 
   private static String requireId(final String value) {
     if (value == null || value.isBlank()) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.INVALID_ARGUMENT,
-          "migrationId is required"
-      );
+          DnaRuntimeErrorCode.INVALID_ARGUMENT, "migrationId is required");
     }
     return value.trim();
   }

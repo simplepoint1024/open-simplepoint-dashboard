@@ -14,6 +14,7 @@ export interface PersonalTodo {
 export interface PersonalMessage {
   id: string; version: number; title: string; content: string; priority: number;
   source: string; linkPath: string | null; readAt: string | null; archived: boolean; createdAt: string;
+  deletedAt?: string | null;
 }
 export interface PersonalEvent {id: string; action: string; detail: string | null; createdAt: string}
 export interface PersonalOverview {

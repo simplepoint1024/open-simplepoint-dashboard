@@ -17,10 +17,10 @@ import org.simplepoint.plugin.app.form.api.model.FormValidationConstraint;
 
 /** Pure aggregate checks shared by create, patch and workflow submission preflight. */
 final class FormAggregateValidation {
-  private static final Set<FormFieldType> NUMERIC = Set.of(
-      FormFieldType.DECIMAL, FormFieldType.INT32, FormFieldType.INT64);
-  private static final Set<FormFieldType> TEMPORAL = Set.of(
-      FormFieldType.DATE, FormFieldType.TIME, FormFieldType.DATETIME);
+  private static final Set<FormFieldType> NUMERIC =
+      Set.of(FormFieldType.DECIMAL, FormFieldType.INT32, FormFieldType.INT64);
+  private static final Set<FormFieldType> TEMPORAL =
+      Set.of(FormFieldType.DATE, FormFieldType.TIME, FormFieldType.DATETIME);
 
   private FormAggregateValidation() {}
 
@@ -30,10 +30,13 @@ final class FormAggregateValidation {
     }
     Set<String> ids = new HashSet<>();
     for (var rule : document.constraints()) {
-      if (rule.kind() == null || rule.constraintId() == null
+      if (rule.kind() == null
+          || rule.constraintId() == null
           || !rule.constraintId().matches("[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
-          || !ids.add(rule.constraintId()) || rule.message() == null
-          || rule.message().isBlank() || rule.message().length() > 200) {
+          || !ids.add(rule.constraintId())
+          || rule.message() == null
+          || rule.message().isBlank()
+          || rule.message().length() > 200) {
         invalidDefinition("Invalid aggregate constraint identity or message");
       }
       switch (rule.kind()) {
@@ -41,14 +44,18 @@ final class FormAggregateValidation {
         case AFTER -> {
           var left = field(document.fields(), rule.fieldId());
           var right = field(document.fields(), rule.otherFieldId());
-          if (!TEMPORAL.contains(left.type()) || left.type() != right.type()
+          if (!TEMPORAL.contains(left.type())
+              || left.type() != right.type()
               || left.fieldId().equals(right.fieldId())) {
             invalidDefinition("AFTER requires two different fields of the same temporal type");
           }
         }
         case DETAIL_COUNT, DETAIL_RANGE, DETAIL_SUM -> {
-          var detail = document.details().stream().filter(d -> d.detailId().equals(rule.detailId()))
-              .findFirst().orElseThrow(() -> definition("Constraint references an unknown detail"));
+          var detail =
+              document.details().stream()
+                  .filter(d -> d.detailId().equals(rule.detailId()))
+                  .findFirst()
+                  .orElseThrow(() -> definition("Constraint references an unknown detail"));
           if (rule.kind() != FormValidationConstraint.Kind.DETAIL_COUNT) {
             numeric(field(detail.fields(), rule.detailFieldId()));
           }
@@ -58,8 +65,11 @@ final class FormAggregateValidation {
         }
         default -> throw definition("Unsupported constraint");
       }
-      if (Set.of(FormValidationConstraint.Kind.RANGE, FormValidationConstraint.Kind.DETAIL_COUNT,
-          FormValidationConstraint.Kind.DETAIL_RANGE).contains(rule.kind())) {
+      if (Set.of(
+              FormValidationConstraint.Kind.RANGE,
+              FormValidationConstraint.Kind.DETAIL_COUNT,
+              FormValidationConstraint.Kind.DETAIL_RANGE)
+          .contains(rule.kind())) {
         if (rule.minimum() == null && rule.maximum() == null) {
           invalidDefinition("Range needs a bound");
         }
@@ -71,7 +81,7 @@ final class FormAggregateValidation {
           }
           if (rule.kind() == FormValidationConstraint.Kind.DETAIL_COUNT
               && (min != null && (min.intValueExact() < 0 || min.intValueExact() > 40)
-              || max != null && (max.intValueExact() < 0 || max.intValueExact() > 40))) {
+                  || max != null && (max.intValueExact() < 0 || max.intValueExact() > 40))) {
             throw new IllegalArgumentException();
           }
         } catch (RuntimeException failure) {
@@ -81,36 +91,69 @@ final class FormAggregateValidation {
     }
   }
 
-  /** Checks input-only rules; DNA validates every persistent rule after producing current outputs. */
-  static void validateInputs(ApplicationFormDocument document, Map<String, Object> values,
+  /**
+   * Checks input-only rules; DNA validates every persistent rule after producing current outputs.
+   */
+  static void validateInputs(
+      ApplicationFormDocument document,
+      Map<String, Object> values,
       Map<String, List<Map<String, Object>>> details) {
-    validate(document, values, details, true);
+    Map<String, Set<String>> deferredDetails = new java.util.LinkedHashMap<>();
+    document
+        .details()
+        .forEach(
+            detail ->
+                deferredDetails.put(
+                    detail.detailId(),
+                    FormRecordValueProviders.forRow(document, detail.detailId(), null, null)
+                        .deferred()));
+    validateInputs(
+        document,
+        values,
+        details,
+        FormRecordValueProviders.forRow(document, null, null, null).deferred(),
+        deferredDetails);
   }
 
-  static void validate(ApplicationFormDocument document, Map<String, Object> values,
-      Map<String, List<Map<String, Object>>> details) {
-    validate(document, values, details, false);
+  /** Defers exact producer-dependent rules; ordinary input and row-count rules still run here. */
+  static void validateInputs(
+      ApplicationFormDocument document,
+      Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details,
+      Set<String> deferred,
+      Map<String, Set<String>> deferredDetails) {
+    validate(document, values, details, deferred, deferredDetails);
   }
 
-  private static void validate(ApplicationFormDocument document, Map<String, Object> values,
-      Map<String, List<Map<String, Object>>> details, boolean inputsOnly) {
+  static void validate(
+      ApplicationFormDocument document,
+      Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details) {
+    validate(document, values, details, Set.of(), Map.of());
+  }
+
+  private static void validate(
+      ApplicationFormDocument document,
+      Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details,
+      Set<String> deferred,
+      Map<String, Set<String>> deferredDetails) {
     for (var rule : document.constraints()) {
-      if (inputsOnly && usesCalculatedValues(document, rule)) {
+      if (rule.fieldId() != null && deferred.contains(rule.fieldId())
+          || rule.otherFieldId() != null && deferred.contains(rule.otherFieldId())
+          || rule.detailId() != null
+              && rule.detailFieldId() != null
+              && deferredDetails
+                  .getOrDefault(rule.detailId(), Set.of())
+                  .contains(rule.detailFieldId())) {
         continue;
       }
       boolean valid;
       try {
-        valid = switch (rule.kind()) {
-          case RANGE -> inRange(decimal(values.get(rule.fieldId())), rule);
-          case AFTER -> after(field(document.fields(), rule.fieldId()).type(),
-              values.get(rule.fieldId()), values.get(rule.otherFieldId()));
-          case DETAIL_COUNT -> inRange(BigDecimal.valueOf(details.get(rule.detailId()).size()), rule);
-          case DETAIL_RANGE -> details.get(rule.detailId()).stream()
-              .allMatch(row -> inRange(decimal(row.get(rule.detailFieldId())), rule));
-          case DETAIL_SUM -> decimal(values.get(rule.fieldId())).compareTo(details.get(rule.detailId()).stream()
-              .map(row -> decimal(row.get(rule.detailFieldId()))).reduce(BigDecimal.ZERO, BigDecimal::add)) == 0;
-        };
-      } catch (IllegalArgumentException | ArithmeticException | java.time.DateTimeException failure) {
+        valid = matches(document, values, details, rule);
+      } catch (IllegalArgumentException
+          | ArithmeticException
+          | java.time.DateTimeException failure) {
         valid = false;
       }
       if (!valid) {
@@ -119,14 +162,30 @@ final class FormAggregateValidation {
     }
   }
 
-  private static boolean usesCalculatedValues(final ApplicationFormDocument document, final FormValidationConstraint rule) {
-    if (document.fields().stream().anyMatch(field -> field.calculation() != null
-        && (field.fieldId().equals(rule.fieldId()) || field.fieldId().equals(rule.otherFieldId())))) {
-      return true;
-    }
-    return document.details().stream().filter(detail -> detail.detailId().equals(rule.detailId()))
-        .flatMap(detail -> detail.fields().stream())
-        .anyMatch(field -> field.calculation() != null && field.fieldId().equals(rule.detailFieldId()));
+  private static boolean matches(
+      ApplicationFormDocument document,
+      Map<String, Object> values,
+      Map<String, List<Map<String, Object>>> details,
+      FormValidationConstraint rule) {
+    return switch (rule.kind()) {
+      case RANGE -> inRange(decimal(values.get(rule.fieldId())), rule);
+      case AFTER ->
+          after(
+              field(document.fields(), rule.fieldId()).type(),
+              values.get(rule.fieldId()),
+              values.get(rule.otherFieldId()));
+      case DETAIL_COUNT -> inRange(BigDecimal.valueOf(details.get(rule.detailId()).size()), rule);
+      case DETAIL_RANGE ->
+          details.get(rule.detailId()).stream()
+              .allMatch(row -> inRange(decimal(row.get(rule.detailFieldId())), rule));
+      case DETAIL_SUM ->
+          decimal(values.get(rule.fieldId()))
+                  .compareTo(
+                      details.get(rule.detailId()).stream()
+                          .map(row -> decimal(row.get(rule.detailFieldId())))
+                          .reduce(BigDecimal.ZERO, BigDecimal::add))
+              == 0;
+    };
   }
 
   private static BigDecimal bound(String value) {
@@ -164,7 +223,9 @@ final class FormAggregateValidation {
   }
 
   private static FormFieldDefinition field(List<FormFieldDefinition> fields, String id) {
-    return fields.stream().filter(f -> f.fieldId().equals(id)).findFirst()
+    return fields.stream()
+        .filter(f -> f.fieldId().equals(id))
+        .findFirst()
         .orElseThrow(() -> definition("Constraint references an unknown field"));
   }
 

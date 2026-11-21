@@ -13,6 +13,10 @@ import org.simplepoint.plugin.app.form.api.model.UpdateApplicationFormRecordComm
 /** Page-bound runtime record API backed by a server-selected DNA model. */
 public interface ApplicationFormRecordService {
 
+  /** Removes a bounded selection with one DNA transaction for a page with no owned detail rows. */
+  void deleteBatch(String applicationId, String pageId,
+      org.simplepoint.plugin.app.form.api.model.DeleteApplicationFormRecordsCommand command);
+
   /** Returns one authorized record page. */
   ApplicationFormRecordPageView page(String applicationId, String pageId,
       ApplicationFormRecordPageQuery query);

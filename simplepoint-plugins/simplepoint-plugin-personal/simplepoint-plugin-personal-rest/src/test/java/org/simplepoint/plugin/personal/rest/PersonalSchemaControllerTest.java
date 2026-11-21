@@ -152,7 +152,7 @@ class PersonalSchemaControllerTest {
   }
 
   @Test
-  void allActionAuthoritiesAreUniqueAndSingleRecordMutationsAreBounded() {
+  void actionAuthoritiesAreUniqueAndOnlyBatchOperationsAcceptMultipleRecords() {
     Set<String> authorities = new java.util.HashSet<>();
     for (var type :
         List.of(
@@ -162,7 +162,12 @@ class PersonalSchemaControllerTest {
       for (var button :
           type.getAnnotation(org.simplepoint.core.annotation.ButtonDeclarations.class).value()) {
         assertThat(authorities.add(button.authority())).isTrue();
-        assertThat(button.argumentMaxSize()).isLessThanOrEqualTo(1);
+        boolean batch = type == org.simplepoint.plugin.personal.api.PersonalTableModels.MessageTable.class
+            && Set.of("READ", "UNREAD", "ARCHIVE", "UNARCHIVE", "delete", "RESTORE").contains(button.key())
+            || type == org.simplepoint.plugin.personal.api.PersonalTableModels.TodoTable.class
+            && "delete".equals(button.key());
+        if (batch) assertThat(button.argumentMaxSize()).isEqualTo(org.simplepoint.core.query.TablePagination.MAX_PAGE_SIZE);
+        else assertThat(button.argumentMaxSize()).isLessThanOrEqualTo(1);
         if (!Set.of("add", "readAll").contains(button.key())) {
           assertThat(button.argumentMinSize()).isEqualTo(1);
         }

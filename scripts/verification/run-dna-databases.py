@@ -54,7 +54,7 @@ def run(arguments):
 
             deadline = time.monotonic() + 120
             for kind, container in containers:
-                command = ["pg_isready", "-U", "postgres", "-d", "dna_runtime"] if kind == "POSTGRES" else [
+                command = ["sh", "-c", 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h127.0.0.1 -Upostgres -d dna_runtime -Atqc "SELECT 1"'] if kind == "POSTGRES" else [
                     "sh", "-c", 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --protocol=tcp -h127.0.0.1 -uroot -e "SELECT 1" dna_runtime'
                 ]
                 while subprocess.run(["docker", "exec", container, *command], stdout=subprocess.DEVNULL,
@@ -64,9 +64,18 @@ def run(arguments):
                         raise RuntimeError(f"Disposable {kind} failed to become ready")
                     time.sleep(1)
                 print(f"Ready: isolated {kind}", flush=True)
+                if kind == "POSTGRES":
+                    docker("exec", container, "sh", "-c", 'PGPASSWORD="$POSTGRES_PASSWORD" createdb -h127.0.0.1 -Upostgres migration_test')
             for suffix in ("URL", "USER", "PASSWORD"):
                 environment["APP_FORM_TEST_POSTGRES_" + suffix] = environment["DNA_RUNTIME_TEST_POSTGRES_" + suffix]
                 environment["WORKFLOW_TEST_POSTGRES_" + suffix] = environment["DNA_RUNTIME_TEST_POSTGRES_" + suffix]
+                environment["SP_MIGRATIONS_POSTGRES_" + suffix] = (
+                    environment["DNA_RUNTIME_TEST_POSTGRES_URL"].rsplit("/", 1)[0] + "/migration_test"
+                    if suffix == "URL" else environment["DNA_RUNTIME_TEST_POSTGRES_" + suffix]
+                )
+                for kind in specs:
+                    environment["PHYSICAL_OWNERSHIP_TEST_" + kind + "_" + suffix] = environment[
+                        "DNA_RUNTIME_TEST_" + kind + "_" + suffix]
             environment["WORKFLOW_TEST_POSTGRES"] = "1"
             # Environment-dependent tests must rerun even when a prior no-database run was cached.
             init_script = Path(private) / "force-database-tests.gradle"

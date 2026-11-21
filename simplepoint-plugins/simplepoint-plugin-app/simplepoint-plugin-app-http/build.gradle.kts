@@ -1,4 +1,5 @@
 dependencies {
+    implementation(project(":simplepoint-events:simplepoint-events-api"))
     implementation(project(":simplepoint-security:simplepoint-security-oauth2-resource"))
     api(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation"))
     implementation(project(":simplepoint-platform:simplepoint-platform-http-servlet"))

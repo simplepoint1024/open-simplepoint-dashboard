@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {pageViewLocation} from '../../../../libs/shared/page/viewIdentity.ts';
 import {
   DASHBOARD_PATH,
   migrateLegacyAiWorkspacePath,
   migrateLegacyAiWorkspaceTabs,
   resolveLegacyAiWorkspaceTarget,
 } from './legacyAiWorkspace.ts';
+
+test('unrelated reference tabs survive AI migration beside their ordinary page', () => {
+  const route = '/app/runtime/sales/trades';
+  const detail = pageViewLocation(route, {version: 1, kind: 'form-reference', identity: ['trade', '3', 'customer', 'record']});
+  const tabs = [{key: route, location: `${route}?filter=active`}, {key: detail, location: detail}];
+  assert.deepEqual(migrateLegacyAiWorkspaceTabs(tabs, '/ai/workbench/models', true), tabs);
+});
 
 test('retired orchestration bookmarks and nested pages migrate after authorization', () => {
   for (const page of ['skills', 'skill-designer', 'agents', 'workflows', 'skills/example']) {

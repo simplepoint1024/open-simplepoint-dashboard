@@ -267,6 +267,14 @@ class ApplicationFormPostgresSchemaTest {
                 Path.of(System.getProperty("simplepoint.app-form.publication-recovery-migration")));
         executeMigration(statement, recovery);
         executeMigration(statement, recovery);
+        var relationMigration = new ClassPathResource("META-INF/simplepoint/modules/app-form/db/postgresql/V3__form_relation_bindings.sql");
+        try (var input = relationMigration.getInputStream()) {
+          executeMigration(statement, new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        var collectionMigration = new ClassPathResource("META-INF/simplepoint/modules/app-form/db/postgresql/V4__form_collection_bindings.sql");
+        try (var input = collectionMigration.getInputStream()) {
+          executeMigration(statement, new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        }
         try (var rows =
             statement.executeQuery(
                 "select count(*) from simpoint_app_form_policy_publications where recovery_actor_id"

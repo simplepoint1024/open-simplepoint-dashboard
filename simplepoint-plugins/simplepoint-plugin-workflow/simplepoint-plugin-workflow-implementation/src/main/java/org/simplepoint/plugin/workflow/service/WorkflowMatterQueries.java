@@ -1,6 +1,10 @@
 package org.simplepoint.plugin.workflow.service;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.criteria.CommonAbstractCriteria;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,7 +101,14 @@ public class WorkflowMatterQueries {
 
   /** Queries started, copied or administrative matters with independent visibility predicates. */
   public PageResult<WorkflowMatter> query(String view, Map<String, String> filters, Pageable page) {
+    return query(view, false, filters, page);
+  }
+
+  /** Applies the private archive to personal lists while preserving the manager view. */
+  public PageResult<WorkflowMatter> query(
+      String view, boolean archived, Map<String, String> filters, Pageable page) {
     requireView(view);
+    if (archived && "all".equals(view)) throw new InvalidQueryException("不支持的事项分组");
     String tenant = WorkflowAccess.tenantId();
     String user = WorkflowAccess.userId();
     return labels.read(
@@ -112,24 +123,39 @@ public class WorkflowMatterQueries {
                 "startedAt",
                 Set.of("title", "definitionName", "businessKey", "starterName"),
                 (cb, query, root) -> {
-                  var scope = cb.equal(root.get("tenantId"), tenant);
-                  if (view.equals("started")) {
-                    return cb.and(scope, cb.equal(root.get("starterId"), user));
-                  }
-                  if (view.equals("copied")) {
-                    var watcher = query.subquery(Integer.class);
-                    var link = watcher.from(WorkflowInstanceWatcherEntity.class);
-                    watcher
-                        .select(cb.literal(1))
-                        .where(
-                            cb.equal(link.get("processInstanceId"), root.get("id")),
-                            cb.equal(link.get("tenantId"), tenant),
-                            cb.equal(link.get("userId"), user));
-                    return cb.and(scope, cb.exists(watcher));
-                  }
-                  return scope;
+                  var scope = boundary(cb, query, root, tenant, user, view);
+                  return "all".equals(view) ? scope : cb.and(scope,
+                      WorkflowPersonalArchive.visible(cb, query, root.get("id"), tenant, user, view, archived));
                 },
                 row -> WorkflowMatterProjection.item(row, row.getStarterName())));
+  }
+
+  /** Moves the caller's own started/copied matter entries into or out of the archive. */
+  @Transactional
+  public void archive(String view, List<String> ids, boolean archived) {
+    if ("all".equals(view)) throw new InvalidQueryException("不支持的事项分组");
+    requireView(view);
+    String tenant = WorkflowAccess.tenantId();
+    String user = WorkflowAccess.userId();
+    WorkflowPersonalArchive.change(em, WorkflowMatterReadModel.class, "id", tenant, user,
+        view, ids, archived, (cb, query, root) -> boundary(cb, query, root, tenant, user, view));
+  }
+
+  private Predicate boundary(CriteriaBuilder cb, CommonAbstractCriteria query,
+      Root<WorkflowMatterReadModel> root, String tenant, String user, String view) {
+    var scope = cb.equal(root.get("tenantId"), tenant);
+    if ("started".equals(view)) {
+      return cb.and(scope, cb.equal(root.get("starterId"), user));
+    }
+    if ("copied".equals(view)) {
+      var watcher = query.subquery(Integer.class);
+      var link = watcher.from(WorkflowInstanceWatcherEntity.class);
+      watcher.select(cb.literal(1)).where(
+          cb.equal(link.get("processInstanceId"), root.get("id")),
+          cb.equal(link.get("tenantId"), tenant), cb.equal(link.get("userId"), user));
+      return cb.and(scope, cb.exists(watcher));
+    }
+    return scope;
   }
 
   /** Returns the selected view's authorized query fields. */

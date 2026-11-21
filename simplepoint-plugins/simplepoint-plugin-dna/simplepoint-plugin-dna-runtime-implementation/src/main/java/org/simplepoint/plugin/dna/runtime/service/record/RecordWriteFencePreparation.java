@@ -13,7 +13,8 @@ public class RecordWriteFencePreparation {
   private final RuntimeCalciteRecordBackend backend;
 
   /** Separates namespace DDL from the model's transactional initialization. */
-  public RecordWriteFencePreparation(final RecordWriteFenceProvisioner provisioner, final RuntimeCalciteRecordBackend backend) {
+  public RecordWriteFencePreparation(
+      final RecordWriteFenceProvisioner provisioner, final RuntimeCalciteRecordBackend backend) {
     this.provisioner = provisioner;
     this.backend = backend;
   }
@@ -21,6 +22,11 @@ public class RecordWriteFencePreparation {
   /** Also runs on replay of an active Schema publication to prepare existing installations. */
   public void prepare(final RuntimeActor actor, final PhysicalSchemaTarget target) {
     provisioner.prepare(target);
+    initialize(actor, target);
+  }
+
+  /** Initializes the model row after infrastructure was prepared by the owning DDL session. */
+  public void initialize(final RuntimeActor actor, final PhysicalSchemaTarget target) {
     backend.initializeWriteFence(actor, target);
   }
 }

@@ -348,3 +348,15 @@ CREATE INDEX IF NOT EXISTS idx_app_policy_recovery
 -- Immutable per-version owned-model identities. Existing forms retain NULL (no children).
 ALTER TABLE simpoint_app_form_versions
   ADD COLUMN IF NOT EXISTS detail_bindings_json TEXT;
+
+-- Match the additive V3 contract for original-host initialization.
+ALTER TABLE simpoint_app_form_versions
+  ADD COLUMN IF NOT EXISTS relation_bindings_json TEXT,
+  ADD COLUMN IF NOT EXISTS collection_bindings_json TEXT;
+
+-- Keep original-host initialization aligned with the already published V2 navigation contract.
+ALTER TABLE simpoint_app_definitions ADD COLUMN IF NOT EXISTS name_localization TEXT;
+ALTER TABLE simpoint_app_pages ADD COLUMN IF NOT EXISTS name_localization TEXT;
+ALTER TABLE simpoint_app_definitions ADD COLUMN IF NOT EXISTS navigation_definition TEXT;
+ALTER TABLE simpoint_app_definitions ADD COLUMN IF NOT EXISTS navigation_pending TEXT;
+ALTER TABLE simpoint_app_definitions ADD COLUMN IF NOT EXISTS navigation_revision BIGINT NOT NULL DEFAULT 0;

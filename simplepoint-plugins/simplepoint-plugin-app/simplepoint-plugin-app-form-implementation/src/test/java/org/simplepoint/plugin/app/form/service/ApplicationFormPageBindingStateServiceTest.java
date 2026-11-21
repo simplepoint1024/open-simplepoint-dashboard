@@ -27,18 +27,27 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.simplepoint.api.locale.LocalizedText;
 import org.simplepoint.core.AuthorizationContext;
 import org.simplepoint.core.RequestContextHolder;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
 import org.simplepoint.plugin.app.form.api.model.ActivateApplicationPageBinding;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPageBindingStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationStep;
 import org.simplepoint.plugin.app.form.api.model.ApplicationFormStatus;
 import org.simplepoint.plugin.app.form.api.model.ApplicationPageBindingTarget;
 import org.simplepoint.plugin.app.form.api.model.ApplicationPageTarget;
+import org.simplepoint.plugin.app.form.api.model.FormFieldDefinition;
+import org.simplepoint.plugin.app.form.api.model.FormFieldType;
+import org.simplepoint.plugin.app.form.api.model.FormStorageMode;
 import org.simplepoint.plugin.app.form.api.model.PublishApplicationFormCommand;
+import org.simplepoint.plugin.app.form.api.model.relation.FormRelationCardinality;
+import org.simplepoint.plugin.app.form.api.model.relation.FormRelationDefinition;
+import org.simplepoint.plugin.app.form.api.model.relation.FormRelationField;
+import org.simplepoint.plugin.app.form.api.model.relation.FormRelationTarget;
 import org.simplepoint.plugin.app.form.api.service.ApplicationPageAccessPort;
 import org.simplepoint.plugin.app.form.configuration.ApplicationFormPublicationProperties;
 import org.simplepoint.plugin.app.form.entity.ApplicationFormEntity;
@@ -133,35 +142,55 @@ class ApplicationFormPageBindingStateServiceTest {
     var state = stateAt(START);
     var claim = inTransaction(() -> state.claim("app-a", "form-a",
         new PublishApplicationFormCommand(1, "page-a", "publish-page-a")));
-    assertThatThrownBy(() -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
-        .isInstanceOfSatisfying(ApplicationFormException.class, failure -> assertThat(failure.errorCode())
-            .isEqualTo(ApplicationFormErrorCode.PAGE_BINDING_SUPERSEDED));
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.PAGE_BINDING_SUPERSEDED));
     session.clear();
     complete(state, claim, "page-a");
-    when(pageAccess.requireActiveBinding("tenant-a", "app-a", "page-a")).thenReturn(
-        new ApplicationPageBindingTarget("page-a", "Orders", "form-a", 1, "app.runtime.page.page-a"));
-    var projection = inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id()));
+    when(pageAccess.requireActiveBinding("tenant-a", "app-a", "page-a"))
+        .thenReturn(
+            new ApplicationPageBindingTarget(
+                "page-a", "Orders", "form-a", 1, "app.runtime.page.page-a"));
+    var projection =
+        inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id()));
     assertThat(projection.work().generation()).isEqualTo(claim.work().generation());
     assertThat(projection.work().physicalModelId()).isEqualTo("model-a");
     assertThat(projection.work().executionToken()).isNull();
     assertThat(projection.resource()).isEqualTo(resource("page-a", true));
-    assertThatThrownBy(() -> inTransaction(() -> state.activeProjection("wrong-app", "form-a", claim.view().id())))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () -> state.activeProjection("wrong-app", "form-a", claim.view().id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    assertThatThrownBy(() -> inTransaction(() -> state.activeProjection("app-a", "wrong-form", claim.view().id())))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () -> state.activeProjection("app-a", "wrong-form", claim.view().id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    when(pageAccess.requireActiveBinding("tenant-a", "app-a", "page-a")).thenReturn(
-        new ApplicationPageBindingTarget("page-a", "Orders", "other-form", 1, "app.runtime.page.page-a"));
-    assertThatThrownBy(() -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
-        .isInstanceOfSatisfying(ApplicationFormException.class, failure -> assertThat(failure.errorCode())
-            .isEqualTo(ApplicationFormErrorCode.PAGE_BINDING_CONFLICT));
+    when(pageAccess.requireActiveBinding("tenant-a", "app-a", "page-a"))
+        .thenReturn(
+            new ApplicationPageBindingTarget(
+                "page-a", "Orders", "other-form", 1, "app.runtime.page.page-a"));
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.PAGE_BINDING_CONFLICT));
     session.clear();
     AuthorizationContext foreign = new AuthorizationContext();
     foreign.setUserId("other-user");
     foreign.setAttributes(Map.of("X-Tenant-Id", "tenant-b"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, foreign);
-    assertThatThrownBy(() -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.activeProjection("app-a", "form-a", claim.view().id())))
         .isInstanceOf(ApplicationFormException.class);
   }
 
@@ -188,7 +217,9 @@ class ApplicationFormPageBindingStateServiceTest {
 
   @Test
   void recoversTheOriginalTargetAfterReopeningWithoutAnyDataPublication() {
-    inTransaction(() -> session.remove(session.find(ApplicationFormPublicationEntity.class, "publication-a")));
+    inTransaction(
+        () ->
+            session.remove(session.find(ApplicationFormPublicationEntity.class, "publication-a")));
     var command = new PublishApplicationFormCommand(1, "page-a", "original-intent");
     var intent = inTransaction(() -> stateAt(START).reserve("app-a", "form-a", command));
     assertThat(intent.status()).isEqualTo(ApplicationFormPageBindingStatus.DATA_PREPARING);
@@ -196,12 +227,19 @@ class ApplicationFormPageBindingStateServiceTest {
     session.close();
     session = sessionFactory.openSession();
 
-    var recovered = inTransaction(() -> stateAt(START).resumeCommand("app-a", "form-a", intent.id()));
+    var recovered =
+        inTransaction(() -> stateAt(START).resumeCommand("app-a", "form-a", intent.id()));
     assertThat(recovered).isEqualTo(command);
     var replay = inTransaction(() -> stateAt(START).reserve("app-a", "form-a", recovered));
     assertThat(replay.id()).isEqualTo(intent.id());
-    assertThat(inTransaction(() -> session.createQuery(
-        "select count(p) from ApplicationFormPublicationEntity p", Long.class).getSingleResult())).isZero();
+    assertThat(
+            inTransaction(
+                () ->
+                    session
+                        .createQuery(
+                            "select count(p) from ApplicationFormPublicationEntity p", Long.class)
+                        .getSingleResult()))
+        .isZero();
   }
 
   @Test
@@ -220,17 +258,20 @@ class ApplicationFormPageBindingStateServiceTest {
     var state = stateAt(START);
     var intent = inTransaction(() -> state.reserve("app-a", "form-a",
         new PublishApplicationFormCommand(1, "page-a", "original-intent")));
-    assertThatThrownBy(() -> inTransaction(() -> state.resumeCommand("other-app", "form-a", intent.id())))
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.resumeCommand("other-app", "form-a", intent.id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    assertThatThrownBy(() -> inTransaction(() -> state.resumeCommand("app-a", "other-form", intent.id())))
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.resumeCommand("app-a", "other-form", intent.id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
     AuthorizationContext foreign = new AuthorizationContext();
     foreign.setUserId("other-user");
     foreign.setAttributes(Map.of("X-Tenant-Id", "tenant-b"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, foreign);
-    assertThatThrownBy(() -> inTransaction(() -> state.resumeCommand("app-a", "form-a", intent.id())))
+    assertThatThrownBy(
+            () -> inTransaction(() -> state.resumeCommand("app-a", "form-a", intent.id())))
         .isInstanceOf(ApplicationFormException.class);
   }
 
@@ -258,34 +299,38 @@ class ApplicationFormPageBindingStateServiceTest {
     var oldState = stateAt(START);
     var original = new PublishApplicationFormCommand(1, "page-a", "original-intent");
     final var oldClaim = inTransaction(() -> oldState.claim("app-a", "form-a", original));
-    inTransaction(() -> {
-      var version = new ApplicationFormVersionEntity();
-      version.setId("version-b");
-      version.setTenantId("tenant-a");
-      version.setFormId("form-a");
-      version.setVersionNumber(2);
-      var encoded = new FormDocumentCodec(new ObjectMapper()).encode(
-          new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1", List.of(), List.of(), List.of(), List.of()));
-      version.setDocumentJson(encoded.json());
-      version.setChecksum(encoded.checksum());
-      version.setStorageSchemaJson("{}");
-      version.setStorageChecksum("b".repeat(64));
-      version.setPhysicalModelVersion(1);
-      version.setRendererVersion("1");
-      version.setCreatedAt(START);
-      session.persist(version);
-      var publication = new ApplicationFormPublicationEntity();
-      publication.setId("publication-b");
-      publication.setTenantId("tenant-a");
-      publication.setFormId("form-a");
-      publication.setFormVersion(2);
-      publication.setIdempotencyKey("publish-data-b");
-      publication.setStatus(ApplicationFormPublicationStatus.DATA_READY);
-      publication.setStep(ApplicationFormPublicationStep.PAGE_RESOURCE);
-      publication.setCreatedAt(START);
-      publication.setUpdatedAt(START);
-      session.persist(publication);
-    });
+    inTransaction(
+        () -> {
+          var version = new ApplicationFormVersionEntity();
+          version.setId("version-b");
+          version.setTenantId("tenant-a");
+          version.setFormId("form-a");
+          version.setVersionNumber(2);
+          var encoded =
+              new FormDocumentCodec(new ObjectMapper())
+                  .encode(
+                      new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+                          "1", List.of(), List.of(), List.of(), List.of()));
+          version.setDocumentJson(encoded.json());
+          version.setChecksum(encoded.checksum());
+          version.setStorageSchemaJson("{}");
+          version.setStorageChecksum("b".repeat(64));
+          version.setPhysicalModelVersion(1);
+          version.setRendererVersion("1");
+          version.setCreatedAt(START);
+          session.persist(version);
+          var publication = new ApplicationFormPublicationEntity();
+          publication.setId("publication-b");
+          publication.setTenantId("tenant-a");
+          publication.setFormId("form-a");
+          publication.setFormVersion(2);
+          publication.setIdempotencyKey("publish-data-b");
+          publication.setStatus(ApplicationFormPublicationStatus.DATA_READY);
+          publication.setStep(ApplicationFormPublicationStep.PAGE_RESOURCE);
+          publication.setCreatedAt(START);
+          publication.setUpdatedAt(START);
+          session.persist(publication);
+        });
     var newer = new PublishApplicationFormCommand(2, "page-a", "newer-intent");
     assertThatThrownBy(() -> inTransaction(() -> oldState.reserve("app-a", "form-a", newer)))
         .isInstanceOfSatisfying(ApplicationFormException.class, failure -> assertThat(failure.errorCode())
@@ -401,7 +446,9 @@ class ApplicationFormPageBindingStateServiceTest {
     var oldPage = inTransaction(() -> state.claim("app-a", "form-a",
         new PublishApplicationFormCommand(1, "page-a", "old-page-after-new-policy")));
     complete(state, oldPage, "page-a");
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getPublishedVersion()))
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getPublishedVersion()))
         .isEqualTo(2);
   }
 
@@ -410,22 +457,48 @@ class ApplicationFormPageBindingStateServiceTest {
     var state = stateAt(START);
     var command = new PublishApplicationFormCommand(1, "page-a", "policy-page");
     var original = inTransaction(() -> state.claim("app-a", "form-a", command));
-    inTransaction(() -> state.resourceReady(original.work().bindingId(), original.work().executionToken(), resource("page-a", false)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                original.work().bindingId(),
+                original.work().executionToken(),
+                resource("page-a", false)));
     var check = new RecordCompletenessQuery("model-a", "app-a", "form-a",
         new RecordSchemaReference(1, "b".repeat(64)), List.of("title"), null);
-    var prepared = inTransaction(() -> policies().prepare(original.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of("old-page", check))));
+    var prepared =
+        inTransaction(
+            () ->
+                policies()
+                    .prepare(
+                        original.work(),
+                        new FormWritePolicyImpact(0, 1, Set.of(), Map.of("old-page", check))));
     assertThat(prepared.command().expectedVersion()).isZero();
     assertThat(prepared.command().targetVersion()).isEqualTo(1);
     session.clear();
     var replay = inTransaction(() -> policies().prepare(original.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     assertThat(replay.command()).isEqualTo(prepared.command());
     inTransaction(() -> state.fail(original.work().bindingId(), original.work().executionToken(), ApplicationFormErrorCode.PUBLICATION_FAILED));
-    assertThatThrownBy(() -> inTransaction(() -> stateAt(START.plusSeconds(86_400)).reserve("app-a", "form-a",
-        new PublishApplicationFormCommand(1, "page-b", "other-page"))))
-        .isInstanceOfSatisfying(ApplicationFormException.class,
-            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        stateAt(START.plusSeconds(86_400))
+                            .reserve(
+                                "app-a",
+                                "form-a",
+                                new PublishApplicationFormCommand(1, "page-b", "other-page"))))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
     var retry = inTransaction(() -> state.claim("app-a", "form-a", command));
-    inTransaction(() -> state.resourceReady(retry.work().bindingId(), retry.work().executionToken(), resource("page-a", false)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                retry.work().bindingId(),
+                retry.work().executionToken(),
+                resource("page-a", false)));
     var confirmed = new RecordWritePolicyPublicationView(true, 1, "c".repeat(64), Map.of());
     assertThatThrownBy(() -> inTransaction(() -> policies().recordResult(original.work(), confirmed)))
         .isInstanceOf(ApplicationFormException.class);
@@ -436,13 +509,33 @@ class ApplicationFormPageBindingStateServiceTest {
     assertThat(inTransaction(() -> policies().recordResult(retry.work(), confirmed)).status())
         .isEqualTo(FormWritePolicyPublicationStatus.TARGET_READY);
     assertThat(inTransaction(() -> policies().recordResult(retry.work(), blocked)).inspection()).isNull();
-    inTransaction(() -> state.complete(retry.work().bindingId(), retry.work().executionToken(), resource("page-a", true)));
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isEqualTo(1);
+    inTransaction(
+        () ->
+            state.complete(
+                retry.work().bindingId(), retry.work().executionToken(), resource("page-a", true)));
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isEqualTo(1);
     assertThat(inTransaction(() -> policies().prepare(retry.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of()))).status())
         .isEqualTo(FormWritePolicyPublicationStatus.ACTIVE);
-    var next = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "next")));
-    inTransaction(() -> state.resourceReady(next.work().bindingId(), next.work().executionToken(), resource("page-b", false)));
-    assertThatThrownBy(() -> inTransaction(() -> state.complete(next.work().bindingId(), next.work().executionToken(), resource("page-b", true))))
+    var next =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "next")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                next.work().bindingId(), next.work().executionToken(), resource("page-b", false)));
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        state.complete(
+                            next.work().bindingId(),
+                            next.work().executionToken(),
+                            resource("page-b", true))))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
     assertThatThrownBy(() -> inTransaction(() -> policies().prepare(next.work(), new FormWritePolicyImpact(1, 1, Set.of(), Map.of()))))
@@ -454,33 +547,79 @@ class ApplicationFormPageBindingStateServiceTest {
   @Test
   void pageActivationAndPolicyActivationRollBackAsOneControlTransaction() {
     var state = stateAt(START);
-    var claim = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "atomic")));
-    inTransaction(() -> state.resourceReady(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", false)));
+    var claim =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "atomic")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                claim.work().bindingId(),
+                claim.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(claim.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
-    assertThatThrownBy(() -> inTransaction(() -> state.complete(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", true))))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        state.complete(
+                            claim.work().bindingId(),
+                            claim.work().executionToken(),
+                            resource("page-a", true))))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
     inTransaction(() -> policies().recordResult(claim.work(), new RecordWritePolicyPublicationView(true, 1, "d".repeat(64), Map.of())));
-    assertThatThrownBy(() -> inTransaction((Runnable) () -> {
-      state.complete(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", true));
-      throw new IllegalStateException("Activation transaction interrupted");
-    })).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    (Runnable)
+                        () -> {
+                          state.complete(
+                              claim.work().bindingId(),
+                              claim.work().executionToken(),
+                              resource("page-a", true));
+                          throw new IllegalStateException("Activation transaction interrupted");
+                        }))
+        .isInstanceOf(IllegalStateException.class);
     session.clear();
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     assertThat(inTransaction(() -> session.find(ApplicationFormPageBindingEntity.class, claim.work().bindingId()).getStatus()))
         .isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
-    inTransaction(() -> state.complete(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", true)));
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isEqualTo(1);
+    inTransaction(
+        () ->
+            state.complete(
+                claim.work().bindingId(), claim.work().executionToken(), resource("page-a", true)));
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isEqualTo(1);
   }
 
   @Test
   void rebindingAnotherPageCannotRemoveAnAffectedVersionWhilePolicyPublicationIsPending() {
     var state = stateAt(START);
-    var active = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "active")));
+    var active =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "active")));
     complete(state, active, "page-a");
     inTransaction(() -> seedReadyForm("b"));
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "pending")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-b", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "pending")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-b", false)));
     var impact = new FormWritePolicyImpact(0, 1, Set.of(active.work().bindingId()), Map.of());
     inTransaction(() -> policies().prepare(pending.work(), impact));
     assertThatThrownBy(() -> inTransaction(() -> state.reserve("app-a", "form-b",
@@ -492,10 +631,24 @@ class ApplicationFormPageBindingStateServiceTest {
   @Test
   void concurrentPagesCannotReserveDifferentPolicyIntentsForTheSameForm() throws Exception {
     var state = stateAt(START);
-    var one = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "one")));
-    var two = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "two")));
-    inTransaction(() -> state.resourceReady(one.work().bindingId(), one.work().executionToken(), resource("page-a", false)));
-    inTransaction(() -> state.resourceReady(two.work().bindingId(), two.work().executionToken(), resource("page-b", false)));
+    var one =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "one")));
+    var two =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "two")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                one.work().bindingId(), one.work().executionToken(), resource("page-a", false)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                two.work().bindingId(), two.work().executionToken(), resource("page-b", false)));
     var gate = new CountDownLatch(1);
     try (var pool = Executors.newFixedThreadPool(2)) {
       var first = pool.submit(() -> prepareConcurrently(one.work(), gate));
@@ -503,8 +656,15 @@ class ApplicationFormPageBindingStateServiceTest {
       gate.countDown();
       assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS))).containsExactlyInAnyOrder(true, false);
     }
-    assertThat(inTransaction(() -> session.createQuery("select count(p) from ApplicationFormWritePolicyPublicationEntity p", Long.class)
-        .getSingleResult())).isEqualTo(1);
+    assertThat(
+            inTransaction(
+                () ->
+                    session
+                        .createQuery(
+                            "select count(p) from ApplicationFormWritePolicyPublicationEntity p",
+                            Long.class)
+                        .getSingleResult()))
+        .isEqualTo(1);
   }
 
   @Test
@@ -512,50 +672,88 @@ class ApplicationFormPageBindingStateServiceTest {
     var state = stateAt(START);
     var command = new PublishApplicationFormCommand(1, "page-a", "cancel-before-data");
     var saved = inTransaction(() -> state.reserve("app-a", "form-a", command));
-    inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").setPhysicalModelId(null));
+    inTransaction(
+        () -> session.find(ApplicationFormEntity.class, "form-a").setPhysicalModelId(null));
     var cancelled = inTransaction(() -> state.claimCancellation("app-a", "form-a", saved.id()));
     assertThat(cancelled.execute()).isFalse();
     assertThat(cancelled.view().status()).isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
     assertThat(inTransaction(() -> state.claim("app-a", "form-a", command)).execute()).isFalse();
-    assertThat(inTransaction(() -> state.claimCancellation("app-a", "form-a", saved.id())).view()).isEqualTo(cancelled.view());
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(inTransaction(() -> state.claimCancellation("app-a", "form-a", saved.id())).view())
+        .isEqualTo(cancelled.view());
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
   }
 
   @Test
   void cancellationClaimFencesOldWorkersAndRecoversItsDecisionAfterFailure() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "cancel-claim")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "cancel-claim")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
-    var cancel = inTransaction(() -> state.claimCancellation("app-a", "form-a", pending.view().id()));
+    var cancel =
+        inTransaction(() -> state.claimCancellation("app-a", "form-a", pending.view().id()));
     assertThat(cancel.execute()).isTrue();
     assertThat(cancel.work().executionToken()).isNotEqualTo(pending.work().executionToken());
     assertThat(inTransaction(() -> policies().current(cancel.work())).status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLING);
-    assertThat(inTransaction(() -> state.claimCancellation("app-a", "form-a", pending.view().id())).execute()).isFalse();
+    assertThat(
+            inTransaction(() -> state.claimCancellation("app-a", "form-a", pending.view().id()))
+                .execute())
+        .isFalse();
     assertThatThrownBy(() -> inTransaction(() -> policies().recordResult(pending.work(),
         new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())))).isInstanceOf(ApplicationFormException.class);
     session.clear();
     inTransaction(() -> state.fail(cancel.view().id(), cancel.work().executionToken(), ApplicationFormErrorCode.PUBLICATION_FAILED));
     session.close();
     session = sessionFactory.openSession();
-    var retry = inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.view().id()));
+    var retry =
+        inTransaction(
+            () -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.view().id()));
     assertThat(retry.execute()).isTrue();
     assertThat(retry.work().executionToken()).isNotEqualTo(cancel.work().executionToken());
     assertThat(inTransaction(() -> policies().current(retry.work())).status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLING);
     inTransaction(() -> policies().recordCancellation(retry.work(),
         new RecordWritePolicyCancellationView(true, 1, "a".repeat(64), "b".repeat(64))));
-    assertThat(inTransaction(() -> stateAt(START).get("app-a", "form-a", pending.view().id())).status())
+    assertThat(
+            inTransaction(() -> stateAt(START).get("app-a", "form-a", pending.view().id()))
+                .status())
         .isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
   }
 
   @Test
   void cancellationClaimRollsBackWithItsDecisionAndRejectsLegacyOrForeignWork() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "cancel-rollback")));
-    assertThatThrownBy(() -> inTransaction(() -> state.claimCancellation("app-a", "form-a", pending.view().id())))
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "cancel-rollback")));
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () -> state.claimCancellation("app-a", "form-a", pending.view().id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     assertThatThrownBy(() -> inTransaction((Runnable) () -> {
       state.claimCancellation("app-a", "form-a", pending.view().id());
@@ -563,26 +761,45 @@ class ApplicationFormPageBindingStateServiceTest {
     })).isInstanceOf(IllegalStateException.class);
     session.clear();
     assertThat(inTransaction(() -> policies().current(pending.work())).status()).isEqualTo(FormWritePolicyPublicationStatus.PREPARED);
-    assertThatThrownBy(() -> inTransaction(() -> state.claimCancellation("app-other", "form-a", pending.view().id())))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () -> state.claimCancellation("app-other", "form-a", pending.view().id())))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    assertThatThrownBy(() -> inTransaction(() -> state.claimCancellation("app-a", "form-other", pending.view().id())))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () -> state.claimCancellation("app-a", "form-other", pending.view().id())))
         .isInstanceOf(ApplicationFormException.class);
   }
 
   @Test
   void cancelledReleasesRetainAllRequestKeysAndAllowTheSameVersionInNewAttempts() {
     var state = stateAt(START);
-    var active = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "old-page")));
+    var active =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-b", "old-page")));
     complete(state, active, "page-b");
     var original = new PublishApplicationFormCommand(1, "page-a", "original-cancel");
     var alias = new PublishApplicationFormCommand(1, "page-a", "deduplicated-cancel");
     var pending = inTransaction(() -> state.claim("app-a", "form-a", original));
-    assertThat(inTransaction(() -> state.reserve("app-a", "form-a", alias)).id()).isEqualTo(pending.view().id());
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    assertThat(inTransaction(() -> state.reserve("app-a", "form-a", alias)).id())
+        .isEqualTo(pending.view().id());
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(active.view().id()), Map.of())));
     inTransaction(() -> policies().requestCancellation(pending.work()));
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     var confirmed = new RecordWritePolicyCancellationView(true, 1, "a".repeat(64), "b".repeat(64));
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), confirmed)).status())
         .isEqualTo(FormWritePolicyPublicationStatus.CANCELLED);
@@ -591,24 +808,45 @@ class ApplicationFormPageBindingStateServiceTest {
     assertThat(inTransaction(() -> policies().requestCancellation(pending.work())).cancellation()).isEqualTo(confirmed);
     assertThat(inTransaction(() -> stateAt(START).reserve("app-a", "form-a", original)).status())
         .isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
-    assertThat(inTransaction(() -> stateAt(START).reserve("app-a", "form-a", alias)).id()).isEqualTo(pending.view().id());
-    inTransaction(() -> {
-      assertThat(session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()).isEqualTo(1);
-      assertThat(session.find(ApplicationFormEntity.class, "form-a").getPublishedVersion()).isEqualTo(1);
-      assertThat(session.find(ApplicationFormPageBindingEntity.class, active.view().id()).getStatus())
-          .isEqualTo(ApplicationFormPageBindingStatus.ACTIVE);
-    });
-    var next = inTransaction(() -> stateAt(START).claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "fresh-intent")));
+    assertThat(inTransaction(() -> stateAt(START).reserve("app-a", "form-a", alias)).id())
+        .isEqualTo(pending.view().id());
+    inTransaction(
+        () -> {
+          assertThat(session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())
+              .isEqualTo(1);
+          assertThat(session.find(ApplicationFormEntity.class, "form-a").getPublishedVersion())
+              .isEqualTo(1);
+          assertThat(
+                  session
+                      .find(ApplicationFormPageBindingEntity.class, active.view().id())
+                      .getStatus())
+              .isEqualTo(ApplicationFormPageBindingStatus.ACTIVE);
+        });
+    var next =
+        inTransaction(
+            () ->
+                stateAt(START)
+                    .claim(
+                        "app-a",
+                        "form-a",
+                        new PublishApplicationFormCommand(1, "page-a", "fresh-intent")));
     assertThat(next.execute()).isTrue();
     assertThat(next.view().id()).isNotEqualTo(pending.view().id());
     assertThat(next.work().generation()).isGreaterThan(pending.work().generation());
-    assertThat(inTransaction(() -> stateAt(START).reserve("app-a", "form-a", alias)).id()).isEqualTo(pending.view().id());
+    assertThat(inTransaction(() -> stateAt(START).reserve("app-a", "form-a", alias)).id())
+        .isEqualTo(pending.view().id());
     assertThat(inTransaction(() -> stateAt(START).fail(pending.view().id(), pending.work().executionToken(),
         ApplicationFormErrorCode.PUBLICATION_FAILED)).status()).isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
     var late = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64),
         Map.of("missing", new RecordCompletenessView(1, Map.of("title", 1L))));
     assertThat(inTransaction(() -> policies().recordResult(pending.work(), late)).status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLED);
-    inTransaction(() -> stateAt(START).resourceReady(next.work().bindingId(), next.work().executionToken(), resource("page-a", false)));
+    inTransaction(
+        () ->
+            stateAt(START)
+                .resourceReady(
+                    next.work().bindingId(),
+                    next.work().executionToken(),
+                    resource("page-a", false)));
     assertThat(inTransaction(() -> policies().prepare(next.work(),
         new FormWritePolicyImpact(1, 1, Set.of(active.view().id()), Map.of()))).command().targetVersion()).isEqualTo(2);
   }
@@ -616,12 +854,30 @@ class ApplicationFormPageBindingStateServiceTest {
   @Test
   void cancellationAdmissionAndTerminalStateRollBackTogetherAndKeepOtherPublishersBlocked() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "cancel-atomic")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "cancel-atomic")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     inTransaction(() -> policies().requestCancellation(pending.work()));
     inTransaction(() -> seedReadyForm("b"));
-    assertThatThrownBy(() -> inTransaction(() -> state.claim("app-a", "form-b", new PublishApplicationFormCommand(1, "page-a", "overtake"))))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        state.claim(
+                            "app-a",
+                            "form-b",
+                            new PublishApplicationFormCommand(1, "page-a", "overtake"))))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
     var confirmed = new RecordWritePolicyCancellationView(true, 1, "a".repeat(64), "b".repeat(64));
@@ -630,36 +886,78 @@ class ApplicationFormPageBindingStateServiceTest {
       throw new IllegalStateException("Control commit interrupted");
     })).isInstanceOf(IllegalStateException.class);
     session.clear();
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     assertThat(inTransaction(() -> session.find(ApplicationFormPageBindingEntity.class, pending.view().id()).getStatus()))
         .isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
     assertThat(inTransaction(() -> policies().prepare(pending.work(), null)).status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLING);
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), confirmed)).status())
         .isEqualTo(FormWritePolicyPublicationStatus.CANCELLED);
-    assertThat(inTransaction(() -> state.claim("app-a", "form-b", new PublishApplicationFormCommand(1, "page-a", "overtake"))).execute()).isTrue();
+    assertThat(
+            inTransaction(
+                    () ->
+                        state.claim(
+                            "app-a",
+                            "form-b",
+                            new PublishApplicationFormCommand(1, "page-a", "overtake")))
+                .execute())
+        .isTrue();
   }
 
   @Test
   void cancellationResolvesCommittedTargetByCompletingItsOriginalPublication() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "published-first")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "published-first")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     inTransaction(() -> policies().requestCancellation(pending.work()));
     var confirmed = new RecordWritePolicyCancellationView(false, 1, "a".repeat(64), "a".repeat(64));
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), confirmed)).status())
         .isEqualTo(FormWritePolicyPublicationStatus.TARGET_READY);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
-    inTransaction(() -> state.complete(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", true)));
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
+    inTransaction(
+        () ->
+            state.complete(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", true)));
     assertThat(inTransaction(() -> policies().requestCancellation(pending.work())).status()).isEqualTo(FormWritePolicyPublicationStatus.ACTIVE);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isEqualTo(1);
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isEqualTo(1);
   }
 
   @Test
   void publicationProgressSurvivesRestartAndCannotActivateOrRegress() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "progress")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "progress")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     var staging = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of(),
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.STAGING, 1, 5, 10, null));
@@ -676,42 +974,88 @@ class ApplicationFormPageBindingStateServiceTest {
     assertThatThrownBy(() -> inTransaction(() -> policies().recordResult(pending.work(), conflicting)))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    assertThatThrownBy(() -> inTransaction(() -> stateAt(START).complete(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", true))))
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        stateAt(START)
+                            .complete(
+                                pending.work().bindingId(),
+                                pending.work().executionToken(),
+                                resource("page-a", true))))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     var confirmed = inTransaction(() -> policies().recordResult(pending.work(),
         new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())));
     assertThat(confirmed.status()).isEqualTo(FormWritePolicyPublicationStatus.TARGET_READY);
     assertThat(confirmed.inspection()).isNull();
-    inTransaction(() -> stateAt(START).complete(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", true)));
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isEqualTo(1);
+    inTransaction(
+        () ->
+            stateAt(START)
+                .complete(
+                    pending.work().bindingId(),
+                    pending.work().executionToken(),
+                    resource("page-a", true)));
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isEqualTo(1);
   }
 
   @Test
   void durableFinalInspectionSurvivesProgressAndRejectsConflictingCountsAtTheSameSequence() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "failed-progress")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "failed-progress")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     var applying = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of(),
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10, null));
     inTransaction(() -> policies().recordResult(pending.work(), applying));
     var progress = new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 3, 10, 10,
         org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED);
-    var rejected = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of("rule", 2L), progress);
+    var rejected =
+        new RecordWritePolicyPublicationView(
+            false, 0, "a".repeat(64), Map.of(), Map.of("rule", 2L), progress);
     var saved = inTransaction(() -> policies().recordResult(pending.work(), rejected));
     assertThat(saved.targetInProgress()).isFalse();
     assertThat(saved.inspection()).isEqualTo(rejected);
     session.close(); session = sessionFactory.openSession();
     assertThat(inTransaction(() -> policies().current(pending.work())).inspection()).isEqualTo(rejected);
     assertThat(inTransaction(() -> policies().recordResult(pending.work(), applying)).inspection()).isEqualTo(rejected);
-    var conflicting = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of("rule", 3L), progress);
+    var conflicting =
+        new RecordWritePolicyPublicationView(
+            false, 0, "a".repeat(64), Map.of(), Map.of("rule", 3L), progress);
     assertThatThrownBy(() -> inTransaction(() -> policies().recordResult(pending.work(), conflicting))).isInstanceOf(ApplicationFormException.class);
     session.clear();
     assertThat(inTransaction(() -> policies().recordResult(pending.work(), rejected)).inspection()).isEqualTo(rejected);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
-    assertThatThrownBy(() -> inTransaction(() -> stateAt(START).complete(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", true))))
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
+    assertThatThrownBy(
+            () ->
+                inTransaction(
+                    () ->
+                        stateAt(START)
+                            .complete(
+                                pending.work().bindingId(),
+                                pending.work().executionToken(),
+                                resource("page-a", true))))
         .isInstanceOf(ApplicationFormException.class);
     session.clear();
     assertThat(inTransaction(() -> policies().requestCancellation(pending.work())).status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLING);
@@ -720,8 +1064,19 @@ class ApplicationFormPageBindingStateServiceTest {
   @Test
   void restorationProgressKeepsTheOldAdmissionAndBindsItsOriginalFingerprint() {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "restore-progress")));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(1, "page-a", "restore-progress")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     inTransaction(() -> policies().requestCancellation(pending.work()));
     var restoring = new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 3, 10, 10, null);
@@ -731,7 +1086,10 @@ class ApplicationFormPageBindingStateServiceTest {
     session.close();
     session = sessionFactory.openSession();
     assertThat(inTransaction(() -> policies().current(pending.work())).cancellation()).isEqualTo(result);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     var stale = new RecordWritePolicyCancellationView(false, 0, "a".repeat(64), null,
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 2, 1, 10, null));
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), stale)).cancellation()).isEqualTo(result);
@@ -743,7 +1101,10 @@ class ApplicationFormPageBindingStateServiceTest {
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), confirmed)).status())
         .isEqualTo(FormWritePolicyPublicationStatus.CANCELLED);
     assertThat(inTransaction(() -> policies().recordCancellation(pending.work(), stale)).cancellation()).isEqualTo(confirmed);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isEqualTo(1);
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isEqualTo(1);
   }
 
   @Test
@@ -754,11 +1115,18 @@ class ApplicationFormPageBindingStateServiceTest {
     var staging = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of(),
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.STAGING, 1, 5, 10, null));
     inTransaction(() -> policies().recordResult(pending.work(), staging));
-    assertThat(inTransaction(() -> state.claimPolicyRecovery("app-a", "form-a", pending.work().bindingId())).execute()).isFalse();
+    assertThat(
+            inTransaction(
+                    () -> state.claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()))
+                .execute())
+        .isFalse();
     inTransaction(() -> policies().releaseBatch(pending.work()));
     session.close();
     session = sessionFactory.openSession();
-    var next = inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
+    var next =
+        inTransaction(
+            () ->
+                stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
     assertThat(next.execute()).isTrue();
     assertThat(next.work().executionToken()).isNotEqualTo(pending.work().executionToken());
     assertThat(inTransaction(() -> policies().current(next.work())).command()).isEqualTo(command);
@@ -771,10 +1139,16 @@ class ApplicationFormPageBindingStateServiceTest {
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10, null));
     inTransaction(() -> policies().recordResult(next.work(), applied));
     inTransaction(() -> policies().releaseBatch(next.work()));
-    var finalAttempt = inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
+    var finalAttempt =
+        inTransaction(
+            () ->
+                stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
     assertThat(finalAttempt.execute()).isTrue();
     assertThat(inTransaction(() -> policies().current(finalAttempt.work())).inspection()).isEqualTo(applied);
-    assertThat(inTransaction(() -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion())).isZero();
+    assertThat(
+            inTransaction(
+                () -> session.find(ApplicationFormEntity.class, "form-a").getWritePolicyVersion()))
+        .isZero();
     assertThat(inTransaction(() -> session.find(ApplicationFormPageBindingEntity.class, pending.work().bindingId()).getStatus()))
         .isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
     verify(pageAccess, never()).activateBinding(any());
@@ -788,7 +1162,9 @@ class ApplicationFormPageBindingStateServiceTest {
         new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 2, 10, 10, null));
     inTransaction(() -> policies().recordCancellation(pending.work(), restoring));
     inTransaction(() -> policies().releaseBatch(pending.work()));
-    var next = inTransaction(() -> stateAt(START).claimCancellation("app-a", "form-a", pending.work().bindingId()));
+    var next =
+        inTransaction(
+            () -> stateAt(START).claimCancellation("app-a", "form-a", pending.work().bindingId()));
     assertThat(next.execute()).isTrue();
     var current = inTransaction(() -> policies().current(next.work()));
     assertThat(current.status()).isEqualTo(FormWritePolicyPublicationStatus.CANCELLING);
@@ -808,9 +1184,21 @@ class ApplicationFormPageBindingStateServiceTest {
     var pending = pendingPolicy("handoff-guard");
     assertThatThrownBy(() -> inTransaction(() -> policies().releaseBatch(pending.work()))).isInstanceOf(ApplicationFormException.class);
     session.clear();
-    var rejected = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of("required", 1L),
-        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10,
-            org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED));
+    var rejected =
+        new RecordWritePolicyPublicationView(
+            false,
+            0,
+            "a".repeat(64),
+            Map.of(),
+            Map.of("required", 1L),
+            new RecordWritePolicyProgress(
+                1,
+                RecordWritePolicyPhase.APPLYING,
+                2,
+                10,
+                10,
+                org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode
+                    .RECORD_WRITE_POLICY_PRECHECK_FAILED));
     inTransaction(() -> policies().recordResult(pending.work(), rejected));
     assertThatThrownBy(() -> inTransaction(() -> policies().releaseBatch(pending.work()))).isInstanceOf(ApplicationFormException.class);
     session.clear();
@@ -831,7 +1219,13 @@ class ApplicationFormPageBindingStateServiceTest {
       throw new IllegalStateException("Commit failed");
     })).isInstanceOf(IllegalStateException.class);
     session.clear();
-    assertThat(inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId())).execute()).isFalse();
+    assertThat(
+            inTransaction(
+                    () ->
+                        stateAt(START)
+                            .claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()))
+                .execute())
+        .isFalse();
     inTransaction(() -> policies().releaseBatch(pending.work()));
     var gate = new CountDownLatch(1);
     try (var pool = Executors.newFixedThreadPool(2)) {
@@ -845,8 +1239,17 @@ class ApplicationFormPageBindingStateServiceTest {
 
   private ApplicationFormPageBindingStateService.BindingClaim pendingPolicy(final String key) {
     var state = stateAt(START);
-    var pending = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", key)));
-    inTransaction(() -> state.resourceReady(pending.work().bindingId(), pending.work().executionToken(), resource("page-a", false)));
+    var pending =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", key)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                pending.work().bindingId(),
+                pending.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(pending.work(), new FormWritePolicyImpact(0, 1, Set.of(), Map.of())));
     return pending;
   }
@@ -873,59 +1276,138 @@ class ApplicationFormPageBindingStateServiceTest {
   void freezesOwnedCalculationsInTheIntentAcrossSessionReloadAndNewerImmutableVersions() {
     inTransaction(() -> seedCalculationVersion(2, FormCalculationPublicationProjectionTest.document()));
     var state = stateAt(START);
-    var claim = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(2, "page-a", "calculated")));
-    inTransaction(() -> state.resourceReady(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", false)));
+    var claim =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(2, "page-a", "calculated")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                claim.work().bindingId(),
+                claim.work().executionToken(),
+                resource("page-a", false)));
     assertThatThrownBy(() -> inTransaction(() -> policies().prepare(claim.work(), new FormWritePolicyImpact(0, 2, Set.of(), Map.of()))))
         .isInstanceOfSatisfying(ApplicationFormException.class,
             failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
     assertThat(inTransaction(() -> policies().current(claim.work()))).isNull();
     var prepared = inTransaction(() -> policies().prepare(claim.work(), new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
-    assertThat(prepared.command().calculation().formulas()).containsEntry("total", "SUM([lines.amount])");
-    assertThat(prepared.command().calculation().details().get("lines").physicalModelId()).isEqualTo("model-lines");
-    inTransaction(() -> seedCalculationVersion(3, new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1",
-        List.of(FormCalculationPublicationProjectionTest.number("total", "42")), List.of(), List.of(), List.of())));
+    assertThat(prepared.command().calculation().formulas())
+        .containsEntry("total", "SUM([lines.amount])");
+    assertThat(prepared.command().calculation().details().get("lines").physicalModelId())
+        .isEqualTo("model-lines");
+    inTransaction(
+        () ->
+            seedCalculationVersion(
+                3,
+                new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+                    "1",
+                    List.of(FormCalculationPublicationProjectionTest.number("total", "42")),
+                    List.of(),
+                    List.of(),
+                    List.of())));
     session.clear();
     var replay = inTransaction(() -> policies().prepare(claim.work(), new FormWritePolicyImpact(0, 3, Set.of(), Map.of())));
     assertThat(replay.command()).isEqualTo(prepared.command());
-    assertThat(replay.command().calculation().details().get("lines").schemaReference().version()).isEqualTo(7);
+    assertThat(replay.command().calculation().details().get("lines").schemaReference().version())
+        .isEqualTo(7);
     assertThat(inTransaction(() -> policies().current(claim.work())).command()).isEqualTo(prepared.command());
   }
 
   @Test
   void cancelledRemovalRetainsInstalledModeAndOlderPagesCannotRestoreRemovedFormulas() {
-    var calculated = new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1",
-        List.of(FormCalculationPublicationProjectionTest.number("total", "1+1")), List.of(), List.of(), List.of());
-    var ordinary = new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1",
-        List.of(FormCalculationPublicationProjectionTest.number("total", null)), List.of(), List.of(), List.of());
+    var calculated =
+        new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+            "1",
+            List.of(FormCalculationPublicationProjectionTest.number("total", "1+1")),
+            List.of(),
+            List.of(),
+            List.of());
+    var ordinary =
+        new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+            "1",
+            List.of(FormCalculationPublicationProjectionTest.number("total", null)),
+            List.of(),
+            List.of(),
+            List.of());
     inTransaction(() -> seedCalculationVersion(2, calculated));
     var state = stateAt(START);
-    var first = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(2, "page-a", "install")));
-    inTransaction(() -> state.resourceReady(first.work().bindingId(), first.work().executionToken(), resource("page-a", false)));
+    var first =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(2, "page-a", "install")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                first.work().bindingId(),
+                first.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(first.work(), new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
     inTransaction(() -> policies().recordResult(first.work(), new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())));
-    inTransaction(() -> state.complete(first.work().bindingId(), first.work().executionToken(), resource("page-a", true)));
+    inTransaction(
+        () ->
+            state.complete(
+                first.work().bindingId(), first.work().executionToken(), resource("page-a", true)));
     inTransaction(() -> seedCalculationVersion(3, ordinary));
-    var removal = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(3, "page-b", "remove")));
-    inTransaction(() -> state.resourceReady(removal.work().bindingId(), removal.work().executionToken(), resource("page-b", false)));
+    var removal =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(3, "page-b", "remove")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                removal.work().bindingId(),
+                removal.work().executionToken(),
+                resource("page-b", false)));
     var command = inTransaction(() -> policies().prepare(removal.work(),
         new FormWritePolicyImpact(1, 3, Set.of(first.work().bindingId()), Map.of(), Map.of(), List.of()))).command();
     assertThat(command.calculation().formulas()).isEmpty();
-    assertThat(command.calculation().stateTransitions().transitions()).containsEntry("SUBMITTED", List.of("SUBMITTED"));
+    assertThat(command.calculation().stateTransitions().transitions())
+        .containsEntry("SUBMITTED", List.of("SUBMITTED"));
     inTransaction(() -> policies().requestCancellation(removal.work()));
     inTransaction(() -> policies().recordCancellation(removal.work(), new RecordWritePolicyCancellationView(true, 2,
         "b".repeat(64), "c".repeat(64))));
     session.clear();
-    var retry = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(3, "page-b", "remove-again")));
-    inTransaction(() -> state.resourceReady(retry.work().bindingId(), retry.work().executionToken(), resource("page-b", false)));
+    var retry =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(3, "page-b", "remove-again")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                retry.work().bindingId(),
+                retry.work().executionToken(),
+                resource("page-b", false)));
     assertThat(inTransaction(() -> policies().prepare(retry.work(),
         new FormWritePolicyImpact(2, 3, Set.of(first.work().bindingId()), Map.of(), Map.of(), List.of()))).command().calculation())
         .isEqualTo(command.calculation());
     inTransaction(() -> policies().recordResult(retry.work(), new RecordWritePolicyPublicationView(true, 3, "d".repeat(64), Map.of())));
-    inTransaction(() -> state.complete(retry.work().bindingId(), retry.work().executionToken(), resource("page-b", true)));
+    inTransaction(
+        () ->
+            state.complete(
+                retry.work().bindingId(), retry.work().executionToken(), resource("page-b", true)));
     when(pageAccess.requirePageForUpdate("tenant-a", "app-a", "page-c"))
         .thenReturn(new ApplicationPageTarget("page-c", "Legacy page", null, 30));
-    var older = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(2, "page-c", "older-page")));
-    inTransaction(() -> state.resourceReady(older.work().bindingId(), older.work().executionToken(), resource("page-c", false)));
+    var older =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(2, "page-c", "older-page")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                older.work().bindingId(),
+                older.work().executionToken(),
+                resource("page-c", false)));
     var retained = inTransaction(() -> policies().prepare(older.work(),
         new FormWritePolicyImpact(3, 3, Set.of(first.work().bindingId(), retry.work().bindingId()), Map.of(), Map.of(), List.of())));
     assertThat(retained.command().calculation()).isEqualTo(command.calculation());
@@ -933,13 +1415,442 @@ class ApplicationFormPageBindingStateServiceTest {
   }
 
   @Test
+  void freezesRetirementFromTheInstalledPolicyAndKeepsTheIntentAcrossReload() {
+    var document = FormCalculationPublicationProjectionTest.document();
+    inTransaction(() -> seedCalculationVersion(2, document));
+    var former =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordCollectionRule(
+            "1",
+            "members",
+            "edge-model",
+            new org.simplepoint.plugin.dna.runtime.api.record.RecordSchemaReference(
+                1, "a".repeat(64)),
+            "target-model",
+            "target-app",
+            "target-form",
+            "target-page",
+            null,
+            null,
+            null);
+    var compiler = org.mockito.Mockito.mock(FormCalculationPublicationProjection.class);
+    var active = new org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinition(
+        "1", Map.of(), Map.of(), null, null, null, null, null, List.of(former));
+    var empty =
+        new org.simplepoint.plugin.dna.runtime.api.record.RecordCalculationDefinition(
+            "1", Map.of(), Map.of(), null, null, null, null, null, null);
+    when(compiler.compilePublication(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.isNull(),
+            org.mockito.ArgumentMatchers.eq(List.of())))
+        .thenReturn(
+            new FormCalculationPublicationProjection.CompiledPublication(active, null, null));
+    when(compiler.compilePublication(
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.eq(active),
+            org.mockito.ArgumentMatchers.eq(List.of())))
+        .thenReturn(
+            new FormCalculationPublicationProjection.CompiledPublication(empty, null, null));
+    var policies =
+        new FormWritePolicyPublicationStateService(
+            session,
+            pageAccess,
+            requestContext,
+            new ObjectMapper().findAndRegisterModules(),
+            Clock.fixed(START, ZoneOffset.UTC),
+            compiler);
+    var state = stateAt(START);
+    var first =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(2, "page-a", "collections")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                first.work().bindingId(),
+                first.work().executionToken(),
+                resource("page-a", false)));
+    inTransaction(() -> policies.prepare(first.work(),
+        new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
+    inTransaction(() -> policies.recordResult(first.work(), new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())));
+    inTransaction(
+        () ->
+            state.complete(
+                first.work().bindingId(), first.work().executionToken(), resource("page-a", true)));
+
+    inTransaction(() -> seedCalculationVersion(3, document));
+    var next = inTransaction(() ->
+        state.claim("app-a", "form-a", new PublishApplicationFormCommand(3, "page-b", "retire")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                next.work().bindingId(), next.work().executionToken(), resource("page-b", false)));
+    var prepared = inTransaction(() -> policies.prepare(next.work(),
+        new FormWritePolicyImpact(1, 3, Set.of(first.work().bindingId()), Map.of(), Map.of(), List.of())));
+    assertThat(prepared.command().calculation().collectionsOrEmpty()).isEmpty();
+    assertThat(prepared.command().retiringCollections()).containsExactly(former);
+    session.clear();
+    assertThat(inTransaction(() -> policies.current(next.work())).command()).isEqualTo(prepared.command());
+  }
+
+  @Test
+  void freezesTheReferenceConversionOnlyUntilItsFirstConfirmedPublication() {
+    var target = new FormRelationTarget("customer-app", "customers", "customer-entry");
+    var prior =
+        new FormRelationDefinition(
+            "1",
+            "customer",
+            FormRelationCardinality.MANY_TO_ONE,
+            new FormRelationField(null, "customer"),
+            target);
+    var label = new LocalizedText("Customers", "en-US", Map.of("zh-CN", "客户"));
+    var successor =
+        new FormRelationDefinition(
+            "1",
+            "customers",
+            FormRelationCardinality.MANY_TO_MANY,
+            null,
+            target,
+            null,
+            null,
+            List.of(),
+            label);
+    var field =
+        new FormFieldDefinition(
+            "customer",
+            "customer_id",
+            "Customer",
+            "Customer",
+            FormFieldType.UUID,
+            FormStorageMode.REFERENCE,
+            true,
+            true,
+            null,
+            null,
+            null,
+            null,
+            List.of());
+    var original =
+        new ApplicationFormDocument(
+            "1",
+            List.of(field),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            List.of(prior));
+    var converted =
+        new ApplicationFormDocument(
+            "1",
+            List.of(field),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            List.of(prior.retireBy("customers"), successor));
+    var binding =
+        new FormRelationBinding("customer", target, "customer-page", "customers", "model-customer");
+    var collection =
+        new FormRelationBinding(
+            "customers", target, "customer-page", "customers", "model-customer");
+    assertThat(FormRelationConversion.freezeRetired(converted, original, List.of(binding)))
+        .containsExactlyEntriesOf(Map.of("customer", binding));
+    assertThatThrownBy(
+            () ->
+                FormRelationConversion.freezeRetired(
+                    original, converted, List.of(binding, collection)))
+        .isInstanceOf(ApplicationFormException.class);
+    inTransaction(
+        () -> seedCalculationVersion(2, relationVersion(original, List.of(binding), null)));
+    var state = stateAt(START);
+    var first =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(2, "page-a", "reference")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                first.work().bindingId(),
+                first.work().executionToken(),
+                resource("page-a", false)));
+    inTransaction(
+        () ->
+            policies()
+                .prepare(
+                    first.work(),
+                    new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
+    inTransaction(
+        () ->
+            policies()
+                .recordResult(
+                    first.work(),
+                    new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())));
+    inTransaction(
+        () ->
+            state.complete(
+                first.work().bindingId(), first.work().executionToken(), resource("page-a", true)));
+    var version = relationVersion(converted, List.of(binding, collection), collection);
+    assertThat(
+            new FormDocumentCodec(new ObjectMapper()).decode(version.getDocumentJson()).relations())
+        .contains(successor);
+    inTransaction(() -> seedCalculationVersion(3, version));
+    var next =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(3, "page-b", "convert")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                next.work().bindingId(), next.work().executionToken(), resource("page-b", false)));
+    var prepared =
+        inTransaction(
+            () ->
+                policies()
+                    .prepare(
+                        next.work(),
+                        new FormWritePolicyImpact(
+                            1,
+                            3,
+                            Set.of(first.work().bindingId()),
+                            Map.of(),
+                            Map.of(),
+                            List.of())));
+    assertThat(prepared.command().referenceConversion().sourceRelationId()).isEqualTo("customer");
+    assertThat(prepared.command().referenceConversion().destinationRelationId())
+        .isEqualTo("customers");
+    assertThat(prepared.command().conversionSource().retired()).isTrue();
+    assertThat(
+            FormSubmissionRequirements.compileCalculated(
+                FormWritePolicyProjection.apply(original, converted)))
+        .isEmpty();
+    var codec = new FormStorageProjectionCompiler(new ObjectMapper());
+    assertThat(
+            codec.decode(version.getStorageSchemaJson()).fields().stream()
+                .filter(item -> item.fieldId().equals("customer"))
+                .findFirst()
+                .orElseThrow()
+                .nullable())
+        .isTrue();
+    session.clear();
+    assertThat(inTransaction(() -> policies().current(next.work())).command())
+        .isEqualTo(prepared.command());
+    inTransaction(
+        () ->
+            policies()
+                .recordResult(
+                    next.work(),
+                    new RecordWritePolicyPublicationView(true, 2, "b".repeat(64), Map.of())));
+    inTransaction(
+        () ->
+            state.complete(
+                next.work().bindingId(), next.work().executionToken(), resource("page-b", true)));
+    when(pageAccess.requirePageForUpdate("tenant-a", "app-a", "page-c"))
+        .thenReturn(new ApplicationPageTarget("page-c", "Legacy page", null, 30));
+    var older =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(2, "page-c", "legacy")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                older.work().bindingId(),
+                older.work().executionToken(),
+                resource("page-c", false)));
+    var effective =
+        inTransaction(
+            () ->
+                policies()
+                    .prepare(
+                        older.work(),
+                        new FormWritePolicyImpact(
+                            2,
+                            3,
+                            Set.of(first.work().bindingId(), next.work().bindingId()),
+                            Map.of(),
+                            Map.of(),
+                            List.of())));
+    assertThat(effective.command().referenceConversion()).isNull();
+    assertThat(effective.command().calculation()).isEqualTo(prepared.command().calculation());
+  }
+
+  @Test
+  void publishesOneImmutableCollectionReplacementUsingTheInstalledEntrances() {
+    var oldTarget = new FormRelationTarget("app-related", "old-target", "old-resource");
+    var newTarget = new FormRelationTarget("app-related", "new-target", "new-resource");
+    var source =
+        new FormRelationDefinition(
+            "1", "former", FormRelationCardinality.MANY_TO_MANY, null, oldTarget);
+    var mapping =
+        Map.of("a55c85c8-0274-4ffb-9440-e6b07e317ada", "f854c71c-a297-4048-80b6-ca3fb0a1174f");
+    var successor =
+        new FormRelationDefinition(
+            "3",
+            "replacement",
+            FormRelationCardinality.MANY_TO_MANY,
+            null,
+            newTarget,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            new org.simplepoint.plugin.app.form.api.model.relation.FormCollectionReplacement(
+                "former", mapping));
+    var before =
+        new ApplicationFormDocument(
+            "1",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            List.of(source));
+    var after =
+        new ApplicationFormDocument(
+            "1",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            List.of(successor));
+    var former =
+        new FormRelationBinding("former", oldTarget, "old-page", "old-page-code", "old-model");
+    var replacement =
+        new FormRelationBinding("replacement", newTarget, "new-page", "new-page-code", "new-model");
+    assertThat(FormCollectionRebinding.validateVersion(after, before)).isTrue();
+    assertThat(FormCollectionRebinding.validateVersion(after, after)).isFalse();
+    assertThatThrownBy(() -> FormCollectionRebinding.validateVersion(after, null))
+        .isInstanceOf(ApplicationFormException.class);
+    inTransaction(
+        () -> seedCalculationVersion(2, relationVersion(before, List.of(former), former)));
+    var state = stateAt(START);
+    var first =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(2, "page-a", "install-former")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                first.work().bindingId(),
+                first.work().executionToken(),
+                resource("page-a", false)));
+    var original =
+        inTransaction(
+            () ->
+                policies()
+                    .prepare(
+                        first.work(),
+                        new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
+    inTransaction(
+        () ->
+            policies()
+                .recordResult(
+                    first.work(),
+                    new RecordWritePolicyPublicationView(true, 1, "a".repeat(64), Map.of())));
+    inTransaction(
+        () ->
+            state.complete(
+                first.work().bindingId(), first.work().executionToken(), resource("page-a", true)));
+    inTransaction(
+        () -> seedCalculationVersion(3, relationVersion(after, List.of(replacement), replacement)));
+    var next =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a",
+                    "form-a",
+                    new PublishApplicationFormCommand(3, "page-b", "migrate-members")));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                next.work().bindingId(), next.work().executionToken(), resource("page-b", false)));
+    var mapper = new ObjectMapper();
+    var impacts =
+        new FormPublicationImpactService(
+            session, new FormDocumentCodec(mapper), requestContext, mapper);
+    var observation = inTransaction(() -> impacts.requirements(next.work()));
+    assertThat(observation.collectionRebind().source().resourceCode()).isEqualTo("old-page-code");
+    assertThat(observation.collectionRebind().destination().resourceCode())
+        .isEqualTo("new-page-code");
+    var prepared = inTransaction(() -> policies().prepare(next.work(), observation));
+    assertThat(prepared.command().collectionRebind().targetRecords()).isEqualTo(mapping);
+    assertThat(prepared.command().rebindSource())
+        .isEqualTo(original.command().calculation().collectionsOrEmpty().getFirst());
+    assertThat(prepared.command().rebindDestination().targetModelId()).isEqualTo("new-model");
+    session.clear();
+    assertThat(inTransaction(() -> policies().current(next.work())).command())
+        .isEqualTo(prepared.command());
+    assertThat(FormCollectionRebinding.command(after, prepared.command().calculation())).isNull();
+  }
+
+  private static ApplicationFormVersionEntity relationVersion(
+      ApplicationFormDocument document,
+      List<FormRelationBinding> bindings,
+      FormRelationBinding collection) {
+    var mapper = new ObjectMapper();
+    var codec = new FormDocumentCodec(mapper);
+    var storage = new FormStorageProjectionCompiler(mapper);
+    var encoded = codec.encode(document);
+    var schema = storage.compile(document, bindings, true);
+    var version = new ApplicationFormVersionEntity();
+    version.setDocumentJson(encoded.json());
+    version.setChecksum(encoded.checksum());
+    version.setRelationBindingsJson(codec.encodeRelationBindings(document, bindings));
+    version.setStorageSchemaJson(schema.json());
+    version.setStorageChecksum(schema.checksum());
+    version.setPhysicalModelVersion(collection == null ? 3 : 4);
+    if (collection != null) {
+      try {
+        version.setCollectionBindingsJson(
+            mapper.writeValueAsString(
+                List.of(
+                    new FormCollectionSchemaBinding(
+                        collection.relationId(),
+                        "model-edge",
+                        new RecordSchemaReference(
+                            1, storage.compileCollection("model-a", collection).checksum())))));
+      } catch (com.fasterxml.jackson.core.JsonProcessingException failure) {
+        throw new AssertionError(failure);
+      }
+    }
+    return version;
+  }
+
+  @Test
   void deterministicDataFailureStopsTheWorkerWithoutDiscardingTheCancellableIntent() {
     var pending = calculatedPending("invalid-existing-data");
     var original = inTransaction(() -> policies().current(pending.work()));
     inTransaction(() -> policies().recordDataFailure(pending.work()));
-    inTransaction(() -> stateAt(START).fail(pending.work().bindingId(), pending.work().executionToken(),
-        ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT));
-    inTransaction(() -> policies().deferRecoveryAttempt(pending.work(), pending.view().attempt(), false));
+    inTransaction(
+        () ->
+            stateAt(START)
+                .fail(
+                    pending.work().bindingId(),
+                    pending.work().executionToken(),
+                    ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT));
+    inTransaction(
+        () -> policies().deferRecoveryAttempt(pending.work(), pending.view().attempt(), false));
     session.clear();
     var intent = inTransaction(() -> session.find(ApplicationFormWritePolicyPublicationEntity.class, original.id()));
     assertThat(intent.getRecoveryNotBefore()).isNull();
@@ -947,7 +1858,9 @@ class ApplicationFormPageBindingStateServiceTest {
     assertThat(intent.getStatus()).isEqualTo(FormWritePolicyPublicationStatus.PREPARED);
     var recovery = new FormPublicationRecoveryState(session, Clock.fixed(START.plusSeconds(3600), ZoneOffset.UTC));
     assertThat(inTransaction(() -> recovery.due(5))).isEmpty();
-    var cancelling = inTransaction(() -> stateAt(START).claimCancellation("app-a", "form-a", pending.work().bindingId()));
+    var cancelling =
+        inTransaction(
+            () -> stateAt(START).claimCancellation("app-a", "form-a", pending.work().bindingId()));
     assertThat(cancelling.execute()).isTrue();
     var cancellation = inTransaction(() -> policies().requestCancellation(cancelling.work()));
     assertThat(cancellation.command()).isEqualTo(original.command());
@@ -967,14 +1880,25 @@ class ApplicationFormPageBindingStateServiceTest {
     var candidate = inTransaction(() -> recovery.due(5)).getFirst();
     assertThat(candidate.actorId()).isEqualTo("user-a");
     assertThat(candidate.roleId()).isNull();
-    var claim = inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId(), candidate));
+    var claim =
+        inTransaction(
+            () ->
+                stateAt(START)
+                    .claimPolicyRecovery("app-a", "form-a", pending.work().bindingId(), candidate));
     assertThat(claim.execute()).isTrue();
     inTransaction(() -> recovery.defer(candidate, true));
     session.clear();
     var intent = inTransaction(() -> session.find(ApplicationFormWritePolicyPublicationEntity.class, candidate.policyId()));
     assertThat(intent.getRecoveryError()).isNull();
     assertThat(intent.getRecoveryNotBefore()).isEqualTo(START.plusSeconds(30));
-    assertThat(inTransaction(() -> stateAt(START).claimPolicyRecovery("app-a", "form-a", pending.work().bindingId(), candidate)).execute()).isFalse();
+    assertThat(
+            inTransaction(
+                    () ->
+                        stateAt(START)
+                            .claimPolicyRecovery(
+                                "app-a", "form-a", pending.work().bindingId(), candidate))
+                .execute())
+        .isFalse();
     assertThat(inTransaction(() -> recovery.due(5))).isEmpty();
   }
 
@@ -1002,7 +1926,9 @@ class ApplicationFormPageBindingStateServiceTest {
     context.setAttributes(Map.of("X-Tenant-Id", "tenant-a", "X-Role-Id", "role-b"));
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     var state = stateAt(now);
-    var claim = inTransaction(() -> state.claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
+    var claim =
+        inTransaction(
+            () -> state.claimPolicyRecovery("app-a", "form-a", pending.work().bindingId()));
     assertThat(claim.execute()).isTrue();
     assertThat(inTransaction(() -> policies().current(claim.work())).command()).isEqualTo(original);
     String id = policyId;
@@ -1023,7 +1949,14 @@ class ApplicationFormPageBindingStateServiceTest {
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     var ready = inTransaction(() -> policies().requestCancellation(pending.work()));
     assertThat(ready.status()).isEqualTo(FormWritePolicyPublicationStatus.TARGET_READY);
-    var intent = inTransaction(() -> session.createQuery("from ApplicationFormWritePolicyPublicationEntity", ApplicationFormWritePolicyPublicationEntity.class).getSingleResult());
+    var intent =
+        inTransaction(
+            () ->
+                session
+                    .createQuery(
+                        "from ApplicationFormWritePolicyPublicationEntity",
+                        ApplicationFormWritePolicyPublicationEntity.class)
+                    .getSingleResult());
     assertThat(intent.getRecoveryActorId()).isEqualTo("replacement-operator");
     assertThat(intent.getCreatedBy()).isEqualTo("user-a");
   }
@@ -1031,14 +1964,26 @@ class ApplicationFormPageBindingStateServiceTest {
   private ApplicationFormPageBindingStateService.BindingClaim calculatedPending(String key) {
     inTransaction(() -> seedCalculationVersion(2, FormCalculationPublicationProjectionTest.document()));
     var state = stateAt(START);
-    var claim = inTransaction(() -> state.claim("app-a", "form-a", new PublishApplicationFormCommand(2, "page-a", key)));
-    inTransaction(() -> state.resourceReady(claim.work().bindingId(), claim.work().executionToken(), resource("page-a", false)));
+    var claim =
+        inTransaction(
+            () ->
+                state.claim(
+                    "app-a", "form-a", new PublishApplicationFormCommand(2, "page-a", key)));
+    inTransaction(
+        () ->
+            state.resourceReady(
+                claim.work().bindingId(),
+                claim.work().executionToken(),
+                resource("page-a", false)));
     inTransaction(() -> policies().prepare(claim.work(), new FormWritePolicyImpact(0, 2, Set.of(), Map.of(), Map.of(), List.of())));
     return claim;
   }
 
   private void seedCalculationVersion(final int number, final org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument document) {
-    var version = FormCalculationPublicationProjectionTest.version(document);
+    seedCalculationVersion(number, FormCalculationPublicationProjectionTest.version(document));
+  }
+
+  private void seedCalculationVersion(int number, ApplicationFormVersionEntity version) {
     version.setId("calculation-version-" + number);
     version.setTenantId("tenant-a");
     version.setFormId("form-a");
@@ -1140,8 +2085,11 @@ class ApplicationFormPageBindingStateServiceTest {
     version.setTenantId("tenant-a");
     version.setFormId(form.getId());
     version.setVersionNumber(1);
-    var encoded = new FormDocumentCodec(new ObjectMapper()).encode(
-          new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1", List.of(), List.of(), List.of(), List.of()));
+    var encoded =
+        new FormDocumentCodec(new ObjectMapper())
+            .encode(
+                new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+                    "1", List.of(), List.of(), List.of(), List.of()));
       version.setDocumentJson(encoded.json());
     version.setChecksum(encoded.checksum());
     version.setStorageSchemaJson("{}");

@@ -64,44 +64,122 @@ public class FormWritePolicyPublicationStateService {
       armRecovery(existing);
       return view(existing);
     }
-    if (work.policyProtocolVersion() != 1 || !entityManager.createQuery(
-        "select b.id from ApplicationFormPageBindingEntity b where b.tenantId = :tenant and b.formId = :form "
-            + "and b.policyProtocolVersion = 0 and b.attempt > 0 and b.status not in (:terminal)", String.class)
-        .setParameter("tenant", work.tenantId()).setParameter("form", work.formId())
-        .setParameter("terminal", java.util.List.of(ApplicationFormPageBindingStatus.ACTIVE,
-            ApplicationFormPageBindingStatus.RETIRED, ApplicationFormPageBindingStatus.CANCELLED))
-        .setMaxResults(1).getResultList().isEmpty()) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "Complete the legacy resource publication before preparing a new policy");
+    if (work.policyProtocolVersion() != 1
+        || !entityManager
+            .createQuery(
+                "select b.id from ApplicationFormPageBindingEntity b where b.tenantId = :tenant and"
+                    + " b.formId = :form and b.policyProtocolVersion = 0 and b.attempt > 0 and"
+                    + " b.status not in (:terminal)",
+                String.class)
+            .setParameter("tenant", work.tenantId())
+            .setParameter("form", work.formId())
+            .setParameter(
+                "terminal",
+                java.util.List.of(
+                    ApplicationFormPageBindingStatus.ACTIVE,
+                    ApplicationFormPageBindingStatus.RETIRED,
+                    ApplicationFormPageBindingStatus.CANCELLED))
+            .setMaxResults(1)
+            .getResultList()
+            .isEmpty()) {
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "Complete the legacy resource publication before preparing a new policy");
     }
     var form = locked.form();
     int governing = Math.max(work.formVersion(), form.getPublishedVersion() == null ? 0 : form.getPublishedVersion());
-    var activeBindings = entityManager.createQuery("select b.id from ApplicationFormPageBindingEntity b "
-            + "where b.tenantId = :tenant and b.formId = :form and b.status = :active", String.class)
-        .setParameter("tenant", work.tenantId()).setParameter("form", work.formId())
-        .setParameter("active", ApplicationFormPageBindingStatus.ACTIVE).getResultList();
+    var activeBindings =
+        entityManager
+            .createQuery(
+                "select b.id from ApplicationFormPageBindingEntity b "
+                    + "where b.tenantId = :tenant and b.formId = :form and b.status = :active",
+                String.class)
+            .setParameter("tenant", work.tenantId())
+            .setParameter("form", work.formId())
+            .setParameter("active", ApplicationFormPageBindingStatus.ACTIVE)
+            .getResultList();
     if (impact == null || impact.expectedVersion() != form.getWritePolicyVersion() || impact.governingVersion() != governing
         || !impact.activeBindingIds().equals(new HashSet<>(activeBindings))) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The active form policy or page set changed during impact analysis");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "The active form policy or page set changed during impact analysis");
     }
-    ApplicationFormVersionEntity version = entityManager.createQuery(
-            "from ApplicationFormVersionEntity v where v.tenantId = :tenant and v.formId = :form "
-                + "and v.versionNumber = :version", ApplicationFormVersionEntity.class)
-        .setParameter("tenant", work.tenantId()).setParameter("form", work.formId()).setParameter("version", governing)
-        .getResultStream().findFirst().orElseThrow(() -> failure(ApplicationFormErrorCode.VERSION_NOT_FOUND,
-            "The governing immutable form version is unavailable"));
+    ApplicationFormVersionEntity version =
+        entityManager
+            .createQuery(
+                "from ApplicationFormVersionEntity v where v.tenantId = :tenant and v.formId ="
+                    + " :form and v.versionNumber = :version",
+                ApplicationFormVersionEntity.class)
+            .setParameter("tenant", work.tenantId())
+            .setParameter("form", work.formId())
+            .setParameter("version", governing)
+            .getResultStream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    failure(
+                        ApplicationFormErrorCode.VERSION_NOT_FOUND,
+                        "The governing immutable form version is unavailable"));
     if (version.getPhysicalModelVersion() == null) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The governing schema is not ready");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The governing schema is not ready");
     }
-    boolean previouslyInstalled = FormInstalledCalculation.at(entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
-    var calculation = calculations.compile(version, work.physicalModelId(), previouslyInstalled, impact.validations());
+    var previous =
+        FormInstalledCalculation.definitionAt(
+            entityManager, mapper, work.tenantId(), work.formId(), form.getWritePolicyVersion());
+    var projection =
+        calculations.compilePublication(
+            version, work.physicalModelId(), previous, impact.validations());
+    var calculation = projection.definition();
+    var retiring =
+        previous == null || previous.collectionsOrEmpty().isEmpty()
+            ? java.util.List
+                .<org.simplepoint.plugin.dna.runtime.api.record.RecordCollectionRule>of()
+            : previous.collectionsOrEmpty().stream()
+                .filter(
+                    rule ->
+                        calculation.collectionsOrEmpty().stream()
+                            .noneMatch(next -> next.relationId().equals(rule.relationId())))
+                .toList();
     if (calculation != null && impact.validations() == null) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "Calculation publication requires the complete observed page requirements");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "Calculation publication requires the complete observed page requirements");
+    }
+    var conversion = projection.conversion();
+    var rebind = projection.rebind();
+    var access = impact.collectionRebind();
+    if (rebind != null && conversion != null) {
+      throw failure(
+          ApplicationFormErrorCode.DOCUMENT_INVALID, "Publish one relation migration at a time");
     }
     long target = Math.addExact(form.getWritePolicyVersion(), 1);
-    var command = new RecordWritePolicyPublicationCommand(work.physicalModelId(), work.applicationId(), work.formId(),
-        new RecordSchemaReference(version.getPhysicalModelVersion(), version.getStorageChecksum()),
-        form.getWritePolicyVersion(), target, "app-policy:" + work.bindingId(), version.getChecksum(),
-        impact.checks(), 30_000, impact.valueChecks(), calculation);
+    var command =
+        new RecordWritePolicyPublicationCommand(
+            work.physicalModelId(),
+            work.applicationId(),
+            work.formId(),
+            new RecordSchemaReference(
+                version.getPhysicalModelVersion(), version.getStorageChecksum()),
+            form.getWritePolicyVersion(),
+            target,
+            "app-policy:" + work.bindingId(),
+            version.getChecksum(),
+            impact.checks(),
+            30_000,
+            impact.valueChecks(),
+            calculation,
+            retiring,
+            conversion,
+            rebind);
+    if (rebind == null ? access != null
+        : access == null || !rebind.equals(access.migration())
+            || !FormCollectionRebinding.entrance(command.rebindSource()).equals(access.source())
+            || !FormCollectionRebinding.entrance(command.rebindDestination()).equals(access.destination())) {
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "The collection replacement changed during impact analysis");
+    }
     var intent = new ApplicationFormWritePolicyPublicationEntity();
     intent.setId(UUID.randomUUID().toString());
     intent.setTenantId(work.tenantId());
@@ -132,11 +210,15 @@ public class FormWritePolicyPublicationStateService {
       return view(intent); // A late inspection response cannot reopen a target-confirmed cancellation.
     }
     if (result == null || result.version() != (result.published() ? intent.getTargetVersion() : intent.getExpectedVersion())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_FAILED, "The target policy result does not match the persisted intent");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_FAILED,
+          "The target policy result does not match the persisted intent");
     }
     String knownFingerprint = publicationFingerprint(intent);
     if (knownFingerprint != null && !knownFingerprint.equals(result.publicationFingerprint())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target publication fingerprint changed");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT,
+          "The target publication fingerprint changed");
     }
     if (intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE) {
       return view(intent);
@@ -151,7 +233,9 @@ public class FormWritePolicyPublicationStateService {
       if (intent.getInspectionJson() != null && result.progress() != null) {
         var previous = decode(intent.getInspectionJson(), RecordWritePolicyPublicationView.class);
         if (previous.progress() != null && previous.progress().sequence() == result.progress().sequence() && !previous.equals(result)) {
-          throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target inspection changed at the same sequence");
+          throw failure(
+              ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT,
+              "The target inspection changed at the same sequence");
         }
       }
       if (staleProgress(intent, result.progress())) {
@@ -235,25 +319,35 @@ public class FormWritePolicyPublicationStateService {
     }
     boolean restoring = result != null && result.progress() != null;
     if (result == null || result.version() != (restoring ? intent.getExpectedVersion() : intent.getTargetVersion())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_FAILED, "The cancellation result does not match the target version");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_FAILED,
+          "The cancellation result does not match the target version");
     }
     String known = publicationFingerprint(intent);
     if (known != null && !known.equals(result.publicationFingerprint())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The cancelled publication identity changed");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT,
+          "The cancelled publication identity changed");
     }
     if (intent.getStatus() == FormWritePolicyPublicationStatus.ACTIVE
         || intent.getStatus() == FormWritePolicyPublicationStatus.TARGET_READY) {
       if (result.cancelled()) {
-        throw failure(ApplicationFormErrorCode.PUBLICATION_FAILED, "A confirmed publication cannot be replaced by cancellation");
+        throw failure(
+            ApplicationFormErrorCode.PUBLICATION_FAILED,
+            "A confirmed publication cannot be replaced by cancellation");
       }
       return view(intent);
     }
     requireAttempt(locked.binding(), work);
     if (intent.getStatus() != FormWritePolicyPublicationStatus.CANCELLING) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "Cancellation must be requested before recording its result");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "Cancellation must be requested before recording its result");
     }
     if (locked.form().getWritePolicyVersion() != intent.getExpectedVersion()) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The form admission version changed during cancellation");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "The form admission version changed during cancellation");
     }
     if (restoring) {
       if (staleProgress(intent, result.progress())) {
@@ -300,14 +394,18 @@ public class FormWritePolicyPublicationStateService {
   public void activate(final BindingWork work) {
     var actor = context.requireActor();
     if (work == null || !actor.tenantId().equals(work.tenantId())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_NOT_FOUND, "The publication was not found in the active tenant");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_NOT_FOUND,
+          "The publication was not found in the active tenant");
     }
     entityManager.flush(); // Preserve page/rule changes made earlier in the same activation transaction.
     // Baseline releases remain compatible while impact compilation is being integrated.
     // A governed form cannot return to that path or activate without a target acknowledgement.
     if (find(work.tenantId(), work.bindingId()) == null) {
       if (lock(work).form().getWritePolicyVersion() != 0) {
-        throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The form policy publication has not been prepared");
+        throw failure(
+            ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+            "The form policy publication has not been prepared");
       }
       return;
     }
@@ -341,7 +439,8 @@ public class FormWritePolicyPublicationStateService {
     var intent = requireIntent(work);
     requireAttempt(locked.binding(), work);
     if (intent.getStatus() != FormWritePolicyPublicationStatus.PREPARED) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The publication direction changed");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The publication direction changed");
     }
     intent.setRecoveryNotBefore(null);
     intent.setRecoveryError(ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT.name());
@@ -377,7 +476,9 @@ public class FormWritePolicyPublicationStateService {
     String role = authorization == null ? null : authorization.getAttribute("X-Role-Id");
     role = role == null || role.isBlank() ? null : role.trim();
     if (actor.actorId().length() > 64 || role != null && role.length() > 64) {
-      throw failure(ApplicationFormErrorCode.ACTOR_CONTEXT_REQUIRED, "Publication recovery identity is invalid");
+      throw failure(
+          ApplicationFormErrorCode.ACTOR_CONTEXT_REQUIRED,
+          "Publication recovery identity is invalid");
     }
     if (!actor.actorId().equals(intent.getRecoveryActorId()) || !java.util.Objects.equals(role, intent.getRecoveryRoleId())
         || intent.getRecoveryNotBefore() == null) {
@@ -392,39 +493,64 @@ public class FormWritePolicyPublicationStateService {
   private LockedPublication lock(final BindingWork work) {
     var actor = context.requireActor();
     if (work == null || !actor.tenantId().equals(work.tenantId())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_NOT_FOUND, "The publication was not found in the active tenant");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_NOT_FOUND,
+          "The publication was not found in the active tenant");
     }
     pages.requirePageForUpdate(work.tenantId(), work.applicationId(), work.pageId());
-    var form = entityManager.createQuery("from ApplicationFormEntity f where f.tenantId = :tenant "
-            + "and f.applicationId = :app and f.id = :form", ApplicationFormEntity.class)
-        .setParameter("tenant", work.tenantId()).setParameter("app", work.applicationId()).setParameter("form", work.formId())
-        .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultStream().findFirst()
-        .orElseThrow(() -> failure(ApplicationFormErrorCode.FORM_NOT_FOUND, "The owning form is unavailable"));
+    var form =
+        entityManager
+            .createQuery(
+                "from ApplicationFormEntity f where f.tenantId = :tenant "
+                    + "and f.applicationId = :app and f.id = :form",
+                ApplicationFormEntity.class)
+            .setParameter("tenant", work.tenantId())
+            .setParameter("app", work.applicationId())
+            .setParameter("form", work.formId())
+            .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+            .getResultStream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    failure(
+                        ApplicationFormErrorCode.FORM_NOT_FOUND, "The owning form is unavailable"));
     entityManager.refresh(form, LockModeType.PESSIMISTIC_WRITE);
     var binding = entityManager.find(ApplicationFormPageBindingEntity.class, work.bindingId(), LockModeType.PESSIMISTIC_WRITE);
     if (binding == null) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_NOT_FOUND, "The page publication is unavailable");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_NOT_FOUND, "The page publication is unavailable");
     }
     entityManager.refresh(binding, LockModeType.PESSIMISTIC_WRITE);
     if (!work.tenantId().equals(binding.getTenantId()) || !work.applicationId().equals(binding.getApplicationId())
         || !work.formId().equals(binding.getFormId()) || !work.pageId().equals(binding.getPageId())
         || work.formVersion() != binding.getFormVersion() || work.generation() != binding.getGeneration()
         || !work.physicalModelId().equals(form.getPhysicalModelId())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The publication identity has changed");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT,
+          "The publication identity has changed");
     }
     return new LockedPublication(form, binding);
   }
 
   private ApplicationFormWritePolicyPublicationEntity find(final String tenant, final String binding) {
-    return entityManager.createQuery("from ApplicationFormWritePolicyPublicationEntity p "
-            + "where p.tenantId = :tenant and p.bindingId = :binding", ApplicationFormWritePolicyPublicationEntity.class)
-        .setParameter("tenant", tenant).setParameter("binding", binding).getResultStream().findFirst().orElse(null);
+    return entityManager
+        .createQuery(
+            "from ApplicationFormWritePolicyPublicationEntity p "
+                + "where p.tenantId = :tenant and p.bindingId = :binding",
+            ApplicationFormWritePolicyPublicationEntity.class)
+        .setParameter("tenant", tenant)
+        .setParameter("binding", binding)
+        .getResultStream()
+        .findFirst()
+        .orElse(null);
   }
 
   private ApplicationFormWritePolicyPublicationEntity requireIntent(final BindingWork work) {
     var intent = find(work.tenantId(), work.bindingId());
     if (intent == null) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_NOT_FOUND, "The policy publication intent is unavailable");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_NOT_FOUND,
+          "The policy publication intent is unavailable");
     }
     return intent;
   }
@@ -432,7 +558,9 @@ public class FormWritePolicyPublicationStateService {
   private static void requireAttempt(final ApplicationFormPageBindingEntity binding, final BindingWork work) {
     if (binding.getStatus() != ApplicationFormPageBindingStatus.ACTIVATING || work.executionToken() == null
         || !work.executionToken().equals(binding.getExecutionToken())) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS, "The page publication attempt is no longer current");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS,
+          "The page publication attempt is no longer current");
     }
   }
 
@@ -447,11 +575,16 @@ public class FormWritePolicyPublicationStateService {
     try {
       String json = mapper.writeValueAsString(value);
       if (json.getBytes(StandardCharsets.UTF_8).length > 2 * 1024 * 1024) {
-        throw failure(ApplicationFormErrorCode.DOCUMENT_INVALID, "The policy inspection intent exceeds its storage budget");
+        throw failure(
+            ApplicationFormErrorCode.DOCUMENT_INVALID,
+            "The policy inspection intent exceeds its storage budget");
       }
       return json;
     } catch (JsonProcessingException exception) {
-      throw new ApplicationFormException(ApplicationFormErrorCode.PERSISTENCE_FAILED, "Policy intent serialization failed", exception);
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.PERSISTENCE_FAILED,
+          "Policy intent serialization failed",
+          exception);
     }
   }
 
@@ -459,7 +592,10 @@ public class FormWritePolicyPublicationStateService {
     try {
       return mapper.readValue(value, type);
     } catch (JsonProcessingException exception) {
-      throw new ApplicationFormException(ApplicationFormErrorCode.PERSISTENCE_FAILED, "Stored policy intent is invalid", exception);
+      throw new ApplicationFormException(
+          ApplicationFormErrorCode.PERSISTENCE_FAILED,
+          "Stored policy intent is invalid",
+          exception);
     }
   }
 
@@ -494,7 +630,9 @@ public class FormWritePolicyPublicationStateService {
       return true;
     }
     if (next.sequence() == previous.sequence() && !next.equals(previous)) {
-      throw failure(ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT, "The target publication progress sequence changed");
+      throw failure(
+          ApplicationFormErrorCode.PUBLICATION_IDEMPOTENCY_CONFLICT,
+          "The target publication progress sequence changed");
     }
     return next.sequence() == previous.sequence();
   }

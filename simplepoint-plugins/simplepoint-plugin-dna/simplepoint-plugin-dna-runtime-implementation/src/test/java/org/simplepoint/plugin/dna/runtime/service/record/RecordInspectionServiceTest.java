@@ -33,14 +33,20 @@ import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext;
 class RecordInspectionServiceTest {
 
   private static final RecordSchemaReference SCHEMA = new RecordSchemaReference(1, "a".repeat(64));
-  private static final RecordCompletenessQuery QUERY = new RecordCompletenessQuery(
-      "model", "app", "form", SCHEMA, List.of("title"), null);
+  private static final RecordCompletenessQuery QUERY =
+      new RecordCompletenessQuery("model", "app", "form", SCHEMA, List.of("title"), null);
   private final RuntimeRecordModelResolver resolver = mock(RuntimeRecordModelResolver.class);
   private final RuntimeCalciteRecordBackend backend = mock(RuntimeCalciteRecordBackend.class);
   private final RecordSqlCompiler compiler = mock(RecordSqlCompiler.class);
-  private final RecordInspectionServiceImpl service = new RecordInspectionServiceImpl(new RuntimeRequestContext(),
-      resolver, compiler, backend, new RecordAdmissionController(new DnaRuntimeExecutionProperties()),
-      mock(RecordAuditSupport.class), mock(RecordExecutionObserver.class));
+  private final RecordInspectionServiceImpl service =
+      new RecordInspectionServiceImpl(
+          new RuntimeRequestContext(),
+          resolver,
+          compiler,
+          backend,
+          new RecordAdmissionController(new DnaRuntimeExecutionProperties()),
+          mock(RecordAuditSupport.class),
+          mock(RecordExecutionObserver.class));
 
   @AfterEach
   void clearContext() {
@@ -58,60 +64,107 @@ class RecordInspectionServiceTest {
   @Test
   void preservesSchemaAndTenantResolutionFailuresWithoutInspectingData() {
     authorize(true);
-    when(resolver.resolve(any(), any(), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_SCHEMA_INCOMPATIBLE, "Requested version is unavailable"));
-    assertThatThrownBy(() -> service.inspectCompleteness(QUERY)).isInstanceOfSatisfying(DnaRuntimeException.class,
-        failure -> assertThat(failure.errorCode()).isEqualTo(DnaRuntimeErrorCode.RECORD_SCHEMA_INCOMPATIBLE));
+    when(resolver.resolve(any(), any(), any()))
+        .thenThrow(
+            new DnaRuntimeException(
+                DnaRuntimeErrorCode.RECORD_SCHEMA_INCOMPATIBLE,
+                "Requested version is unavailable"));
+    assertThatThrownBy(() -> service.inspectCompleteness(QUERY))
+        .isInstanceOfSatisfying(
+            DnaRuntimeException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(DnaRuntimeErrorCode.RECORD_SCHEMA_INCOMPATIBLE));
     verifyNoInteractions(compiler, backend);
   }
 
   @Test
   void rejectsIncompleteTruncatedOrImpossibleAggregatesRatherThanReportingNoImpact() {
     prepare();
-    List<List<List<Object>>> rows = List.of(List.of(), List.of(List.of(1L)),
-        List.of(List.of(1L, 2L)), List.of(List.of(-1L, 0L)), List.of(List.of(1L, -1L)),
-        List.of(Arrays.asList(1L, null)), List.of(List.of(1L, "0")),
-        List.of(List.of(1L, new BigDecimal("0.5"))),
-        List.of(List.of(new BigDecimal("9223372036854775808"), 0L)));
+    List<List<List<Object>>> rows =
+        List.of(
+            List.of(),
+            List.of(List.of(1L)),
+            List.of(List.of(1L, 2L)),
+            List.of(List.of(-1L, 0L)),
+            List.of(List.of(1L, -1L)),
+            List.of(Arrays.asList(1L, null)),
+            List.of(List.of(1L, "0")),
+            List.of(List.of(1L, new BigDecimal("0.5"))),
+            List.of(List.of(new BigDecimal("9223372036854775808"), 0L)));
     for (var invalid : rows) {
-      when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
-          List.of(), invalid, false, invalid.size(), 0, null));
+      when(backend.inspect(any(), any(), anyInt(), any()))
+          .thenReturn(new CalciteQueryResult(List.of(), invalid, false, invalid.size(), 0, null));
       assertExecutionFailure();
     }
-    when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenReturn(new CalciteQueryResult(
-        List.of(), List.of(List.of(1L, 0L)), true, 1, 0, null));
+    when(backend.inspect(any(), any(), anyInt(), any()))
+        .thenReturn(new CalciteQueryResult(List.of(), List.of(List.of(1L, 0L)), true, 1, 0, null));
     assertExecutionFailure();
   }
 
   @Test
   void propagatesExecutionFailureAndCanRetryTheReadWithoutReservedState() {
     prepare();
-    var timeout = new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, "Inspection timed out");
-    when(backend.aggregateQuery(any(), any(), any(), anyInt())).thenThrow(timeout).thenReturn(new CalciteQueryResult(
-        List.of(), List.of(List.of(3L, new BigDecimal("2"))), false, 1, 0, null));
+    var timeout =
+        new DnaRuntimeException(
+            DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED, "Inspection timed out");
+    when(backend.inspect(any(), any(), anyInt(), any()))
+        .thenThrow(timeout)
+        .thenReturn(
+            new CalciteQueryResult(
+                List.of(), List.of(List.of(3L, new BigDecimal("2"))), false, 1, 0, null));
     assertThatThrownBy(() -> service.inspectCompleteness(QUERY)).isSameAs(timeout);
-    assertThat(service.inspectCompleteness(QUERY).emptyCounts()).containsExactlyEntriesOf(Map.of("title", 2L));
+    assertThat(service.inspectCompleteness(QUERY).emptyCounts())
+        .containsExactlyEntriesOf(Map.of("title", 2L));
   }
 
   private void assertExecutionFailure() {
-    assertThatThrownBy(() -> service.inspectCompleteness(QUERY)).isInstanceOfSatisfying(DnaRuntimeException.class,
-        failure -> assertThat(failure.errorCode()).isEqualTo(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED));
+    assertThatThrownBy(() -> service.inspectCompleteness(QUERY))
+        .isInstanceOfSatisfying(
+            DnaRuntimeException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED));
   }
 
   private void prepare() {
     authorize(true);
-    var schema = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(new LogicalFieldDefinition(
-        "field-title", "title", "Title", LogicalFieldType.STRING, true, 100, null, null, null)), List.of());
-    var model = new RuntimeRecordModel("model", "app", "form", 1, schema,
-        new PhysicalSchemaTarget("model", new RuntimeMetadataTarget("source", null, null, "records")));
+    var schema =
+        new PhysicalSchemaDefinition(
+            DnaRuntimeApiVersion.CURRENT,
+            List.of(
+                new LogicalFieldDefinition(
+                    "field-title",
+                    "title",
+                    "Title",
+                    LogicalFieldType.STRING,
+                    true,
+                    100,
+                    null,
+                    null,
+                    null)),
+            List.of());
+    var model =
+        new RuntimeRecordModel(
+            "model",
+            "app",
+            "form",
+            1,
+            schema,
+            new PhysicalSchemaTarget(
+                "model", new RuntimeMetadataTarget("source", null, null, "records")));
     when(resolver.resolve(any(), any(), any())).thenReturn(model);
-    when(compiler.completeness(any(), any(), any())).thenReturn(new RecordSelectPlan("aggregate", List.of(),
-        List.of("title"), 1));
+    when(compiler.completeness(any(), any(), any()))
+        .thenReturn(new RecordSelectPlan("aggregate", List.of(), List.of("title"), 1));
   }
 
   private static void assertDenied(final Runnable action) {
-    assertThatThrownBy(action::run).isInstanceOfSatisfying(DnaRuntimeException.class,
-        failure -> assertThat(failure.errorCode()).isEqualTo(DnaRuntimeErrorCode.RECORD_ACCESS_DENIED));
+    assertThatThrownBy(action::run)
+        .isInstanceOfSatisfying(
+            DnaRuntimeException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(DnaRuntimeErrorCode.RECORD_ACCESS_DENIED));
   }
 
   private static void authorize(final boolean administrator) {

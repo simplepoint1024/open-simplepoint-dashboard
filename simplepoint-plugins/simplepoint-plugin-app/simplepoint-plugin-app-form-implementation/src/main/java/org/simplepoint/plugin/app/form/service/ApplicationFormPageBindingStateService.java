@@ -478,7 +478,8 @@ public class ApplicationFormPageBindingStateService {
             "select max(b.generation) from ApplicationFormPageBindingEntity b "
                 + "where b.tenantId = :tenant and b.pageId = :page", Long.class)
         .setParameter("tenant", actor.tenantId()).setParameter("page", page.pageId()).getSingleResult();
-    binding.setGeneration(Math.addExact(previousGeneration == null ? 0 : previousGeneration, 1));
+    binding.setGeneration(Math.addExact(Math.max(page.publicationGeneration(),
+        previousGeneration == null ? 0 : previousGeneration), 1));
     binding.setSceneId(MAIN_SCENE);
     binding.setIdempotencyKey(target.idempotencyKey());
     binding.setResourceManagedKey(managedKey(page.pageId()));

@@ -2,31 +2,45 @@ package org.simplepoint.plugin.dna.runtime.service.schema;
 
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
 import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
-import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalSchemaDefinition;
 
 /** Shared reconciliation for platform-owned target tables, including concurrent/interrupted DDL. */
 final class RuntimeInfrastructureSchema {
 
-  private RuntimeInfrastructureSchema() {
+  private RuntimeInfrastructureSchema() {}
+
+  static void prepare(
+      final JdbcPhysicalSchemaBackend backend,
+      final PhysicalSchemaTarget model,
+      final RuntimeInfrastructureTable table) {
+    backend.withExclusiveInfrastructure(
+        model,
+        table,
+        session -> {
+          reconcile(backend, session, table);
+          return null;
+        });
   }
 
-  static void prepare(final JdbcPhysicalSchemaBackend backend, final PhysicalSchemaTarget target,
-      final String description, final PhysicalSchemaDefinition definition) {
-    InitialSchemaPlan plan = backend.planInitial(target, description, definition);
+  static void reconcile(
+      JdbcPhysicalSchemaBackend backend,
+      JdbcPhysicalSchemaBackend.PublicationSession session,
+      RuntimeInfrastructureTable table) {
+    InitialSchemaPlan plan = session.plan(table.description(), null, table.definition());
     for (PlannedSchemaStep step : plan.steps()) {
-      if (backend.isSatisfied(step, plan.targetSnapshot(), backend.inspect(target, plan.dialectId()))) {
+      if (backend.isSatisfied(step, plan.targetSnapshot(), session.inspect(plan.dialectId()))) {
         continue;
       }
       try {
-        backend.execute(target, plan.dialectId(), step);
+        session.execute(plan.dialectId(), step);
       } catch (DnaRuntimeException failure) {
-        if (!backend.isSatisfied(step, plan.targetSnapshot(), backend.inspect(target, plan.dialectId()))) {
+        if (!backend.isSatisfied(step, plan.targetSnapshot(), session.inspect(plan.dialectId()))) {
           throw failure;
         }
       }
     }
-    if (!backend.inspect(target, plan.dialectId()).checksum().equals(plan.targetSnapshot().checksum())) {
-      throw new DnaRuntimeException(DnaRuntimeErrorCode.SCHEMA_VERIFICATION_FAILED,
+    if (!session.inspect(plan.dialectId()).checksum().equals(plan.targetSnapshot().checksum())) {
+      throw new DnaRuntimeException(
+          DnaRuntimeErrorCode.SCHEMA_VERIFICATION_FAILED,
           "Target infrastructure does not match its versioned schema");
     }
   }

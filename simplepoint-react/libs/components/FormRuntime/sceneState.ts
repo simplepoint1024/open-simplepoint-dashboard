@@ -1,8 +1,9 @@
+import type {MappingDraft} from './referenceMapping/model.ts';
 import type {ApplicationFormDocument} from './contracts.ts';
 import type {RuntimeFormModel, RuntimeFormAction} from './model.ts';
 
 export type FormValues = Record<string, unknown>;
-export type SceneDraft = {sceneId: string; initial: FormValues; values: FormValues};
+export type SceneDraft = {sceneId: string; initial: FormValues; values: FormValues; mappings: MappingDraft; initialMappings: MappingDraft};
 
 export function sceneValues(values: FormValues, fieldIds: readonly string[]): FormValues {
   return Object.fromEntries(fieldIds.filter(id => Object.prototype.hasOwnProperty.call(values, id)).map(id => [id, values[id]]));
@@ -23,8 +24,8 @@ export function canOpenScene(document: ApplicationFormDocument, action: RuntimeF
   return Boolean(scene && scene.type === type && !active.includes(scene.sceneId) && active.length < 8);
 }
 
-export function sceneDraft(sceneId: string, values: FormValues): SceneDraft {
-  return {sceneId, initial: structuredClone(values), values: structuredClone(values)};
+export function sceneDraft(sceneId: string, values: FormValues, mappings: MappingDraft = []): SceneDraft {
+  return {sceneId, initial: structuredClone(values), values: structuredClone(values), mappings: structuredClone(mappings), initialMappings: structuredClone(mappings)};
 }
 
 /** Structural comparison normalizes absent properties, as the JSON transport does. */

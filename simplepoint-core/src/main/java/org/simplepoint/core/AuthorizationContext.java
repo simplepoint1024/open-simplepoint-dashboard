@@ -69,6 +69,19 @@ public class AuthorizationContext implements Serializable {
   private Map<String, Map<String, String>> resourceFieldPermissions;
 
   /**
+   * Identity resolved the role-wide defaults for this complete authorization context. A delegated
+   * single-resource context must leave this false: its top-level scope belongs to that resource,
+   * not to every other resource named in its grant set.
+   */
+  @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT)
+  private boolean resourcePolicyDefaultsResolved;
+
+  /** Set only by the authorization owner after resolving the complete current actor policy. */
+  public void setResourcePolicyDefaultsResolved(boolean resolved) {
+    this.resourcePolicyDefaultsResolved = resolved;
+  }
+
+  /**
    * Sets the context ID if it has not been set before.
    *
    * @param contextId the context ID to set
@@ -332,16 +345,22 @@ public class AuthorizationContext implements Serializable {
 
   /** Resource-specific policy takes precedence over the legacy role-wide policy. */
   public ResourceDataScope activeDataScope() {
-    String code = ResourcePolicyContext.get();
-    return code == null || resourceDataScopes == null ? null : resourceDataScopes.get(code);
+    return dataScopeFor(ResourcePolicyContext.get());
   }
 
   /** Returns null when a page has no explicit field policy. */
   public Map<String, String> activeFieldPermissions() {
-    String code = ResourcePolicyContext.get();
-    return code == null || resourceFieldPermissions == null
-        ? null
-        : resourceFieldPermissions.get(code);
+    return fieldPermissionsFor(ResourcePolicyContext.get());
+  }
+
+  /** Explicit server-selected resource policy; does not change the ambient request resource. */
+  public ResourceDataScope dataScopeFor(String resourceCode) {
+    return resourceCode == null || resourceDataScopes == null ? null : resourceDataScopes.get(resourceCode);
+  }
+
+  /** Null means policy was not supplied; an explicitly empty map means no field restrictions. */
+  public Map<String, String> fieldPermissionsFor(String resourceCode) {
+    return resourceCode == null || resourceFieldPermissions == null ? null : resourceFieldPermissions.get(resourceCode);
   }
 
   /**

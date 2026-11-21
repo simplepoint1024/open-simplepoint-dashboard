@@ -52,8 +52,11 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         schemaCodec,
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec.class),
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver.class),
         auditPublisher,
-        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository),
+        mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class)
     );
     PhysicalModelEntity model = model();
     SchemaMigrationEntity migration = migration();
@@ -98,8 +101,11 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         schemaCodec,
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec.class),
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver.class),
         auditPublisher,
-        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository),
+        mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class)
     );
     PhysicalModelEntity model = model();
     model.setStatus(PhysicalModelStatus.MIGRATING);
@@ -149,8 +155,11 @@ class SchemaPublicationStateServiceTest {
         migrationRepository,
         stepRepository,
         mock(PhysicalSchemaCodec.class),
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec.class),
+        mock(org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver.class),
         mock(DnaRuntimeAuditPublisher.class),
-        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository)
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(modelRepository),
+        mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class)
     );
     PhysicalModelEntity model = model();
     model.setStatus(PhysicalModelStatus.VALIDATING);
@@ -173,6 +182,60 @@ class SchemaPublicationStateServiceTest {
 
     assertThat(migration.getStatus()).isEqualTo(SchemaMigrationStatus.VALIDATING);
     assertThat(migration.getExecutionToken()).isEqualTo("active-worker");
+  }
+
+  @Test
+  void persistsOriginalPlanAndRejectsRetryReplacementOrStorageRebinding() {
+    var models = mock(PhysicalModelRepository.class);
+    var bindings = mock(PhysicalModelBindingRepository.class);
+    var versions = mock(PhysicalModelVersionRepository.class);
+    var migrations = mock(SchemaMigrationRepository.class);
+    var steps = mock(SchemaMigrationStepRepository.class);
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var schema = new PhysicalSchemaCodec(mapper);
+    var snapshots = new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotCodec(mapper);
+    var plans = new org.simplepoint.plugin.dna.runtime.service.schema.SchemaPlanCodec(mapper, snapshots);
+    var service = new SchemaPublicationStateService(models, bindings, versions, migrations, steps, schema, plans,
+        new org.simplepoint.plugin.dna.runtime.service.schema.PhysicalReferenceResolver(models, bindings, versions, schema),
+        mock(DnaRuntimeAuditPublisher.class),
+        org.simplepoint.plugin.dna.runtime.service.record.RecordMaintenanceTestControl.available(models),
+        mock(org.simplepoint.plugin.dna.runtime.service.relation.PhysicalRelationCatalog.class));
+    var model = model();
+    model.setStatus(PhysicalModelStatus.VALIDATING);
+    var migration = migration();
+    migration.setStatus(SchemaMigrationStatus.VALIDATING);
+    migration.setExecutionToken("worker");
+    var binding = binding();
+    var version = version();
+    var encoded = schema.encode(new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(), List.of()));
+    version.setSchemaJson(encoded.json());
+    version.setSchemaChecksum(encoded.checksum());
+    migration.setTargetSchemaChecksum(encoded.checksum());
+    when(models.findActiveByIdForUpdate("tenant-a", "model-a")).thenReturn(Optional.of(model));
+    when(migrations.findActiveByIdForUpdate("tenant-a", "migration-a")).thenReturn(Optional.of(migration));
+    when(migrations.findByTargetVersion("tenant-a", "model-a", 1)).thenReturn(Optional.of(migration));
+    when(bindings.findActiveByModel("tenant-a", "model-a")).thenReturn(Optional.of(binding));
+    when(versions.findActiveVersion("tenant-a", "model-a", 1)).thenReturn(Optional.of(version));
+    var snapshot = snapshots.snapshot(true, List.of(), List.of(), null);
+    var plan = new org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan("postgresql",
+        new org.simplepoint.plugin.dna.runtime.api.dialect.DatabaseIdentity("PostgreSQL", "17.0", 17, 0),
+        snapshot, snapshot, org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationRisk.SAFE,
+        List.of(), List.of(snapshot.checksum()));
+    var actor = new RuntimeActor("tenant-a", "user-a");
+    service.ready(actor, "migration-a", "worker", plan);
+    assertThat(migration.getPlanJson()).isNotBlank();
+    assertThat(service.claim(actor, "model-a", new SchemaPublicationCommand(1, 0)).work().persistedPlan()).isEqualTo(plan);
+    var saved = migration.getPlanJson();
+    model.setStatus(PhysicalModelStatus.VALIDATING);
+    migration.setStatus(SchemaMigrationStatus.VALIDATING);
+    var other = snapshots.snapshot(true, List.of(), List.of(), "changed");
+    var changed = new org.simplepoint.plugin.dna.runtime.service.schema.InitialSchemaPlan("postgresql", plan.database(),
+        other, other, plan.risk(), List.of(), List.of(other.checksum()));
+    assertThatThrownBy(() -> service.ready(actor, "migration-a", "worker", changed)).isInstanceOf(DnaRuntimeException.class);
+    assertThat(migration.getPlanJson()).isEqualTo(saved);
+    binding.setTableName("another_table");
+    assertThatThrownBy(() -> service.claim(actor, "model-a", new SchemaPublicationCommand(1, 0)))
+        .isInstanceOf(DnaRuntimeException.class);
   }
 
   private static PhysicalModelEntity model() {

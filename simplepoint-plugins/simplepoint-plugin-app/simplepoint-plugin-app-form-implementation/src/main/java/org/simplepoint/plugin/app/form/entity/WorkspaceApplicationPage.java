@@ -50,6 +50,9 @@ public class WorkspaceApplicationPage {
   @Column(length = 20, nullable = false)
   private String status;
 
+  @Column(name = "publication_generation", nullable = false)
+  private long publicationGeneration;
+
   @Column(name = "resource_id", length = 64)
   private String resourceId;
 

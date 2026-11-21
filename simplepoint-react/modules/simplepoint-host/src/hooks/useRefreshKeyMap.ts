@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import {pageTabIdentity} from '@simplepoint/shared/page/viewIdentity';
 
 /**
  * 监听 sp-refresh-route 事件，返回一个路径到刷新次数的映射表
@@ -8,11 +9,11 @@ export function useRefreshKeyMap() {
 
     useEffect(() => {
         const handler = (e: any) => {
-            const path =
+            const path = pageTabIdentity(
                 e?.detail?.path ||
                 window.location.hash.replace(/^#/, '') ||
                 window.location.pathname ||
-                '/';
+                '/');
 
             setMap(prev => ({
                 ...prev,

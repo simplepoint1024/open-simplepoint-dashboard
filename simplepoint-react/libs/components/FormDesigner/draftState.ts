@@ -4,6 +4,8 @@ import {choiceValue} from '../FormRuntime/choiceValues.ts';
 /** Canonical comparison for lost-save reconciliation; scene order and rule precedence remain significant. */
 export function sameDesignDocument(left: DesignDocument, right: DesignDocument) {
   const normalized = (document: DesignDocument) => ({...document,
+    relations: document.relations?.length ? [...document.relations]
+      .sort((a, b) => a.relationId.localeCompare(b.relationId)) : undefined,
     details: document.details?.length ? [...document.details].sort((a, b) => a.detailId.localeCompare(b.detailId))
       .map(detail => ({...detail, fields: [...detail.fields].sort((a, b) => a.fieldId.localeCompare(b.fieldId)),
         indexes: [...detail.indexes].sort((a, b) => a.indexId.localeCompare(b.indexId))})) : undefined,

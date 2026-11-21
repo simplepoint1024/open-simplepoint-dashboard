@@ -74,6 +74,29 @@ class RecordSchemaCompatibilityTest {
     )).doesNotThrowAnyException();
   }
 
+  @Test
+  void currentAdmissionMayAddReferencesButCannotReinterpretHistoricalTargets() {
+    var field = new LogicalFieldDefinition("customer", "customer_id", "Customer", LogicalFieldType.UUID,
+        true, null, null, null, null);
+    var legacy = schema(field);
+    var reference = new org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition("trade-customer", "customer", "customers", false);
+    var current = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(field), List.of(), null, null, List.of(reference));
+    assertThatCode(() -> RecordSchemaCompatibility.requireCompatible(legacy, current)).doesNotThrowAnyException();
+    assertIncompatible(current, legacy);
+    var replaced = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(field), List.of(), null, null,
+        List.of(new org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition("trade-customer", "customer", "suppliers", false)));
+    assertIncompatible(current, replaced);
+    var renamed = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT,
+        List.of(new LogicalFieldDefinition("customer", "client_id", "Client", LogicalFieldType.UUID,
+            true, null, null, null, null)), List.of(), null, null, List.of(reference));
+    assertThatCode(() -> RecordSchemaCompatibility.requireCompatible(current, renamed)).doesNotThrowAnyException();
+    var evolvedDependencies = new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(field), List.of(), null, null,
+        List.of(new org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition("trade-customer", "customer", "customers", false,
+            List.of(new org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceField("name", LogicalFieldType.STRING)))));
+    assertThatCode(() -> RecordSchemaCompatibility.requireCompatible(current, evolvedDependencies)).doesNotThrowAnyException();
+    assertThatCode(() -> RecordSchemaCompatibility.requireCompatible(evolvedDependencies, current)).doesNotThrowAnyException();
+  }
+
   private static void assertIncompatible(
       final PhysicalSchemaDefinition requested,
       final PhysicalSchemaDefinition active

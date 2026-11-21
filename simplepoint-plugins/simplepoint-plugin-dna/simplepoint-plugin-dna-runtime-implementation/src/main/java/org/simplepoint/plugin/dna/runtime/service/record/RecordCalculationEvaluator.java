@@ -53,6 +53,10 @@ final class RecordCalculationEvaluator {
     return compiled.plan().dependencies();
   }
 
+  RecordReferenceRules references() {
+    return compiled.references();
+  }
+
   void validateTransition(final Map<String, ?> previous, final Map<String, ?> prospective) {
     compiled.transitions().validateTransition(previous, prospective);
   }

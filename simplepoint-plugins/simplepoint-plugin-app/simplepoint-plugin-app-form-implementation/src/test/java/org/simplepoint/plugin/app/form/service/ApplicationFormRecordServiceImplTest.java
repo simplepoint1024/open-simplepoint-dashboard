@@ -67,33 +67,55 @@ class ApplicationFormRecordServiceImplTest {
     context = mock(DnaInvocationContext.class);
     validationContext = mock(DnaInvocationContext.class);
     when(context.fieldPermissions()).thenReturn(Map.of());
+    when(context.actorId()).thenReturn("actor");
     when(validationContext.fieldPermissions()).thenReturn(Map.of());
     when(resolver.resolve("app-a", "page-a")).thenReturn(form());
     when(contexts.forForm(org.mockito.ArgumentMatchers.any())).thenReturn(context);
-    when(contexts.forResourceValidation("app.runtime.page.a"))
-        .thenReturn(validationContext);
-    service = new ApplicationFormRecordServiceImpl(
-        resolver,
-        new FormRecordPayloadCompiler(),
-        dna,
-        contexts,
-        mock(FormRecordInvariantValidator.class),
-        new FormDetailRecordCoordinator(owned, new FormRecordPayloadCompiler(), mock(FormAttachmentReferenceValidator.class)),
-        new FormRecordIdentityLabels(mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class))
-    );
+    when(contexts.forWrite(org.mockito.ArgumentMatchers.any())).thenReturn(context);
+    when(contexts.forRelations(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(context);
+    when(contexts.forResourceValidation("app.runtime.page.a")).thenReturn(validationContext);
+    service =
+        new ApplicationFormRecordServiceImpl(
+            resolver,
+            new FormRecordPayloadCompiler(),
+            dna,
+            contexts,
+            mock(FormRecordInvariantValidator.class),
+            new FormDetailRecordCoordinator(
+                owned,
+                new FormRecordPayloadCompiler(),
+                mock(FormAttachmentReferenceValidator.class)),
+            new FormRecordIdentityLabels(
+                mock(org.simplepoint.plugin.rbac.tenant.api.service.AuditIdentityDirectory.class)),
+            new FormRecordReadAuthority(owned, contexts, mock(FormRelationTargetResolver.class)),
+            mock(FormReferenceMappingAuthority.class));
   }
 
   @Test
-  void capturesCommittedValuesWithoutRereadingTheMutableRecordEvenForAFormWithoutDetails() {
-    when(owned.findResult(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
-    when(owned.snapshot(eq(context), any())).thenReturn(new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView(
-        new RecordView("record-a", 0, Map.of("customer_name", "提交时的名字", "record_state", "SUBMITTED")), Map.of()));
-    var captured = service.captureCreate(form(), new CreateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), "submission-a", FormRecordState.SUBMITTED,
-        Map.of("name-field", "请求值")));
+  void capturesCommittedValuesWithoutRereadingTheMutableRecordEvenForFormsWithoutDetails() {
+    when(owned.findResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
+    when(owned.snapshot(eq(context), any()))
+        .thenReturn(
+            new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView(
+                new RecordView(
+                    "record-a", 0, Map.of("customer_name", "提交时的名字", "record_state", "SUBMITTED")),
+                Map.of()));
+    var captured =
+        service.captureCreate(
+            form(),
+            new CreateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                "submission-a",
+                FormRecordState.SUBMITTED,
+                Map.of("name-field", "请求值")));
     assertThat(captured.values()).containsEntry("name-field", "提交时的名字");
-    var intent = ArgumentCaptor.forClass(org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand.class);
+    var intent =
+        ArgumentCaptor.forClass(
+            org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordCommand.class);
     verify(owned).snapshot(eq(context), intent.capture());
     assertThat(intent.getValue().snapshot()).isNotNull();
     assertThat(intent.getValue().snapshot().details()).isEmpty();
@@ -102,122 +124,186 @@ class ApplicationFormRecordServiceImplTest {
   }
 
   @Test
+  void relatedCaptureRecoversOnlyTheExactScopedSnapshotWithoutMutableRecordReads() {
+    var scope =
+        new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+            "1",
+            "customer",
+            "customer-model",
+            "aaaaaaaa-1111-2222-3333-000000000001",
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN,
+            null);
+    when(owned.findRelatedResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 4, 1, Instant.EPOCH));
+    when(owned.snapshotRelated(eq(context), any()))
+        .thenReturn(
+            new org.simplepoint.plugin.dna.runtime.api.record.OwnedRecordView(
+                new RecordView(
+                    "record-a", 4, Map.of("customer_name", "已提交的名字", "record_state", "SUBMITTED")),
+                Map.of()));
+    var result =
+        service.captureRelatedUpdate(
+            form(),
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                3,
+                "related-submission",
+                FormRecordState.SUBMITTED,
+                Map.of()),
+            null,
+            scope);
+    assertThat(result.values()).containsEntry("name-field", "已提交的名字");
+    var intent =
+        ArgumentCaptor.forClass(
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordCommand.class);
+    verify(owned).snapshotRelated(eq(context), intent.capture());
+    assertThat(intent.getValue().scope()).isEqualTo(scope);
+    assertThat(intent.getValue().command().snapshot()).isNotNull();
+    verifyNoInteractions(dna);
+    org.mockito.Mockito.verify(owned, org.mockito.Mockito.never()).snapshot(any(), any());
+    org.mockito.Mockito.verify(owned, org.mockito.Mockito.never()).executeRelated(any(), any());
+  }
+
+  @Test
   void neverSubstitutesMutableDataWhenTheCommittedSnapshotIsUnavailable() {
-    when(owned.findResult(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
-    assertThatThrownBy(() -> service.captureCreate(form(), new CreateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), "submission-a", FormRecordState.SUBMITTED,
-        Map.of("name-field", "Ada"))))
-        .isInstanceOfSatisfying(ApplicationFormException.class,
-            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.RECORD_OPERATION_FAILED));
+    when(owned.findResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
+    assertThatThrownBy(
+            () ->
+                service.captureCreate(
+                    form(),
+                    new CreateApplicationFormRecordCommand(
+                        new ApplicationFormRuntimeIdentity("form-a", 1),
+                        "submission-a",
+                        FormRecordState.SUBMITTED,
+                        Map.of("name-field", "Ada"))))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.RECORD_OPERATION_FAILED));
     verifyNoInteractions(dna);
   }
 
   @Test
   void reportsTargetPolicyConflictWithoutCreatingAnotherIntent() {
-    when(dna.createRecord(eq(context), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_WRITE_POLICY_CONFLICT, "The write policy changed"));
-    assertThatThrownBy(() -> service.create("app-a", "page-a", new CreateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), "create-a", FormRecordState.SUBMITTED,
-        Map.of("name-field", "Ada"))))
-        .isInstanceOfSatisfying(ApplicationFormException.class,
-            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.RECORD_CONFLICT));
+    when(dna.createRecord(eq(context), any()))
+        .thenThrow(
+            new DnaRuntimeException(
+                DnaRuntimeErrorCode.RECORD_WRITE_POLICY_CONFLICT, "The write policy changed"));
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    "app-a",
+                    "page-a",
+                    new CreateApplicationFormRecordCommand(
+                        new ApplicationFormRuntimeIdentity("form-a", 1),
+                        "create-a",
+                        FormRecordState.SUBMITTED,
+                        Map.of("name-field", "Ada"))))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.RECORD_CONFLICT));
     verify(dna).createRecord(eq(context), any());
   }
 
   @Test
   void reportsMaintenanceAsPendingPublicationWithoutRetryingTheWrite() {
-    when(dna.createRecord(eq(context), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_MAINTENANCE_IN_PROGRESS, "Calculation publication is pending"));
-    assertThatThrownBy(() -> service.create("app-a", "page-a", new CreateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), "create-a", FormRecordState.SUBMITTED,
-        Map.of("name-field", "Ada"))))
-        .isInstanceOfSatisfying(ApplicationFormException.class,
-            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
+    when(dna.createRecord(eq(context), any()))
+        .thenThrow(
+            new DnaRuntimeException(
+                DnaRuntimeErrorCode.RECORD_MAINTENANCE_IN_PROGRESS,
+                "Calculation publication is pending"));
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    "app-a",
+                    "page-a",
+                    new CreateApplicationFormRecordCommand(
+                        new ApplicationFormRuntimeIdentity("form-a", 1),
+                        "create-a",
+                        FormRecordState.SUBMITTED,
+                        Map.of("name-field", "Ada"))))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.PUBLICATION_IN_PROGRESS));
     verify(dna).createRecord(eq(context), any());
   }
 
   @Test
   void createsThroughTheServerSelectedModelAndMapsStableFieldIdentities() {
-    when(dna.createRecord(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.CREATE,
-        "record-a",
-        0,
-        1,
-        Instant.EPOCH
-    ));
-    when(dna.getRecord(eq(context), any())).thenReturn(new RecordView(
-        "record-a",
-        0,
-        Map.of("customer_name", "Ada", "record_state", "SUBMITTED")
-    ));
+    when(dna.createRecord(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 0, Map.of("customer_name", "Ada", "record_state", "SUBMITTED")));
 
-    var result = service.create(
-        "app-a",
-        "page-a",
-        new CreateApplicationFormRecordCommand(
-            new ApplicationFormRuntimeIdentity("form-a", 1),
-            "create-a",
-            FormRecordState.SUBMITTED,
-            Map.of("name-field", "Ada")
-        )
-    );
+    var result =
+        service.create(
+            "app-a",
+            "page-a",
+            new CreateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                "create-a",
+                FormRecordState.SUBMITTED,
+                Map.of("name-field", "Ada")));
 
-    assertThat(result.currentRecord().values()).containsExactlyEntriesOf(Map.of("name-field", "Ada"));
+    assertThat(result.currentRecord().values())
+        .containsExactlyEntriesOf(Map.of("name-field", "Ada"));
     assertThat(result.state()).isEqualTo(FormRecordState.SUBMITTED);
     verify(resolver).requireAction(form(), "records.create");
-    ArgumentCaptor<RecordCreateCommand> command = ArgumentCaptor.forClass(
-        RecordCreateCommand.class
-    );
+    ArgumentCaptor<RecordCreateCommand> command =
+        ArgumentCaptor.forClass(RecordCreateCommand.class);
     verify(dna).createRecord(eq(context), command.capture());
     assertThat(command.getValue().writePolicyVersion()).isEqualTo(7);
     assertThat(command.getValue().physicalModelId()).isEqualTo("model-a");
-    assertThat(command.getValue().values()).containsExactly(
-        Map.entry("customer_name", "Ada"),
-        Map.entry("record_state", "SUBMITTED")
-    );
+    assertThat(command.getValue().values())
+        .containsExactly(Map.entry("customer_name", "Ada"), Map.entry("record_state", "SUBMITTED"));
   }
 
   @Test
   void pagesThroughDnaWithoutClientPhysicalIdentity() {
-    when(dna.pageRecords(eq(context), any())).thenReturn(new RecordPageView(
-        0,
-        20,
-        1,
-        List.of(new RecordView(
-            "record-a",
-            2,
-            Map.of("customer_name", "Ada", "record_state", "DRAFT")
-        ))
-    ));
+    when(dna.pageRecords(eq(context), any()))
+        .thenReturn(
+            new RecordPageView(
+                0,
+                20,
+                1,
+                List.of(
+                    new RecordView(
+                        "record-a", 2, Map.of("customer_name", "Ada", "record_state", "DRAFT")))));
 
-    var page = service.page(
-        "app-a",
-        "page-a",
-        new ApplicationFormRecordPageQuery(0, 20, List.of(), null, List.of())
-    );
+    var page =
+        service.page(
+            "app-a",
+            "page-a",
+            new ApplicationFormRecordPageQuery(0, 20, List.of(), null, List.of()));
 
     assertThat(page.total()).isEqualTo(1);
-    assertThat(page.records()).singleElement().satisfies(record -> {
-      assertThat(record.id()).isEqualTo("record-a");
-      assertThat(record.values()).containsEntry("name-field", "Ada");
-    });
+    assertThat(page.records())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.id()).isEqualTo("record-a");
+              assertThat(record.values()).containsEntry("name-field", "Ada");
+            });
   }
 
   @Test
   void mapsFieldIdentityProjectionFilterAndSortBeforeQueryingDna() {
-    when(dna.pageRecords(eq(context), any())).thenReturn(new RecordPageView(
-        1,
-        10,
-        0,
-        List.of()
-    ));
-    var filter = new ApplicationFormRecordFilter(
-        ApplicationFormRecordFilterOperator.EQUALS,
-        "name-field",
-        List.of("Ada"),
-        List.of()
-    );
+    when(dna.pageRecords(eq(context), any())).thenReturn(new RecordPageView(1, 10, 0, List.of()));
+    var filter =
+        new ApplicationFormRecordFilter(
+            ApplicationFormRecordFilterOperator.EQUALS, "name-field", List.of("Ada"), List.of());
 
     service.page(
         "app-a",
@@ -227,115 +313,152 @@ class ApplicationFormRecordServiceImplTest {
             10,
             List.of("name-field"),
             filter,
-            List.of(new ApplicationFormRecordSort(
-                "name-field",
-                ApplicationFormRecordSort.Direction.DESC
-            ))
-        )
-    );
+            List.of(
+                new ApplicationFormRecordSort(
+                    "name-field", ApplicationFormRecordSort.Direction.DESC))));
 
     ArgumentCaptor<RecordPageQuery> query = ArgumentCaptor.forClass(RecordPageQuery.class);
     verify(dna).pageRecords(eq(context), query.capture());
-    assertThat(query.getValue().fields()).containsExactly("customer_name", "tenant_id", "created_org_dept_id", "created_by", "created_at", "updated_by", "updated_at", "deleted_at", "record_state");
+    assertThat(query.getValue().fields())
+        .containsExactly(
+            "customer_name",
+            "tenant_id",
+            "created_org_dept_id",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+            "deleted_at",
+            "record_state");
     assertThat(query.getValue().filter().field()).isEqualTo("customer_name");
-    assertThat(query.getValue().sorts()).singleElement().satisfies(sort -> {
-      assertThat(sort.field()).isEqualTo("customer_name");
-      assertThat(sort.direction().name()).isEqualTo("DESC");
-    });
+    assertThat(query.getValue().sorts())
+        .singleElement()
+        .satisfies(
+            sort -> {
+              assertThat(sort.field()).isEqualTo("customer_name");
+              assertThat(sort.direction().name()).isEqualTo("DESC");
+            });
   }
 
   @Test
   void defaultProjectionOmitsFieldsHiddenByTheActivePagePolicy() {
-    when(context.fieldPermissions()).thenReturn(Map.of(
-        "dna.runtime.record.model-a#customer_name",
-        "HIDDEN"
-    ));
-    when(dna.pageRecords(eq(context), any())).thenReturn(new RecordPageView(
-        0,
-        20,
-        1,
-        List.of(new RecordView("record-a", 0, Map.of("record_state", "DRAFT")))
-    ));
+    when(context.fieldPermissions())
+        .thenReturn(Map.of("dna.runtime.record.model-a#customer_name", "HIDDEN"));
+    when(dna.pageRecords(eq(context), any()))
+        .thenReturn(
+            new RecordPageView(
+                0, 20, 1, List.of(new RecordView("record-a", 0, Map.of("record_state", "DRAFT")))));
 
     service.page(
-        "app-a",
-        "page-a",
-        new ApplicationFormRecordPageQuery(0, 20, List.of(), null, List.of())
-    );
+        "app-a", "page-a", new ApplicationFormRecordPageQuery(0, 20, List.of(), null, List.of()));
 
     ArgumentCaptor<RecordPageQuery> query = ArgumentCaptor.forClass(RecordPageQuery.class);
     verify(dna).pageRecords(eq(context), query.capture());
-    assertThat(query.getValue().fields()).containsExactly("tenant_id", "created_org_dept_id", "created_by", "created_at", "updated_by", "updated_at", "deleted_at", "record_state");
+    assertThat(query.getValue().fields())
+        .containsExactly(
+            "tenant_id",
+            "created_org_dept_id",
+            "created_by",
+            "created_at",
+            "updated_by",
+            "updated_at",
+            "deleted_at",
+            "record_state");
   }
 
   @Test
   void validatesAnUpdateAgainstTheCompleteRowButMutatesWithUserFieldPolicy() {
-    when(dna.getRecord(eq(validationContext), any())).thenReturn(new RecordView(
-        "record-a",
-        2,
-        Map.of("customer_name", "Existing", "record_state", "DRAFT")
-    ));
-    when(dna.getRecord(eq(context), any())).thenReturn(new RecordView(
-        "record-a",
-        3,
-        Map.of("customer_name", "Existing", "record_state", "SUBMITTED")
-    ));
+    when(dna.getRecord(eq(validationContext), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 2, Map.of("customer_name", "Existing", "record_state", "DRAFT")));
+    when(dna.getRecord(eq(context), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 3, Map.of("customer_name", "Existing", "record_state", "SUBMITTED")));
 
-    when(dna.updateRecord(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
-    var result = service.update(
-        "app-a",
-        "page-a",
-        "record-a",
-        new UpdateApplicationFormRecordCommand(
-            new ApplicationFormRuntimeIdentity("form-a", 1), 2, "update-a", FormRecordState.SUBMITTED, Map.of()
-        )
-    );
+    when(dna.updateRecord(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    var result =
+        service.update(
+            "app-a",
+            "page-a",
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                2,
+                "update-a",
+                FormRecordState.SUBMITTED,
+                Map.of()));
 
     assertThat(result.state()).isEqualTo(FormRecordState.SUBMITTED);
     verify(resolver).requireAction(form(), "records.edit");
-    ArgumentCaptor<RecordUpdateCommand> command = ArgumentCaptor.forClass(
-        RecordUpdateCommand.class
-    );
+    ArgumentCaptor<RecordUpdateCommand> command =
+        ArgumentCaptor.forClass(RecordUpdateCommand.class);
     verify(dna).updateRecord(eq(context), command.capture());
     assertThat(command.getValue().writePolicyVersion()).isEqualTo(7);
     assertThat(command.getValue().expectedVersion()).isEqualTo(2);
     assertThat(command.getValue().idempotencyKey()).isEqualTo("update-a");
-    assertThat(command.getValue().values()).containsExactlyEntriesOf(
-        Map.of("record_state", "SUBMITTED")
-    );
+    assertThat(command.getValue().values())
+        .containsExactlyEntriesOf(Map.of("record_state", "SUBMITTED"));
   }
 
   @Test
   void lockedFieldsAreRejectedBeforeDnaMutationButCommittedReceiptsStillReplay() {
-    when(resolver.resolve("app-a", "page-a")).thenReturn(governedForm(FormFieldWritePolicy.UNTIL_SUBMITTED));
-    when(dna.getRecord(eq(validationContext), any())).thenReturn(new RecordView(
-        "record-a", 2, Map.of("customer_name", "Protected", "record_state", "SUBMITTED")));
-    var command = new UpdateApplicationFormRecordCommand(new ApplicationFormRuntimeIdentity("form-a", 1),
-        2, "update-protected", FormRecordState.SUBMITTED, Map.of("name-field", "New value"));
+    when(resolver.resolve("app-a", "page-a"))
+        .thenReturn(governedForm(FormFieldWritePolicy.UNTIL_SUBMITTED));
+    when(dna.getRecord(eq(validationContext), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 2, Map.of("customer_name", "Protected", "record_state", "SUBMITTED")));
+    var command =
+        new UpdateApplicationFormRecordCommand(
+            new ApplicationFormRuntimeIdentity("form-a", 1),
+            2,
+            "update-protected",
+            FormRecordState.SUBMITTED,
+            Map.of("name-field", "New value"));
 
     assertThatThrownBy(() -> service.update("app-a", "page-a", "record-a", command))
-        .isInstanceOfSatisfying(ApplicationFormException.class, failure -> assertThat(failure.errorCode())
-            .isEqualTo(ApplicationFormErrorCode.RECORD_INVALID));
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.RECORD_INVALID));
     verify(dna, org.mockito.Mockito.never()).updateRecord(any(), any());
 
-    when(dna.findRecordUpdateResult(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
-    when(dna.getRecord(eq(context), any())).thenReturn(new RecordView(
-        "record-a", 9, Map.of("customer_name", "Later", "record_state", "SUBMITTED")));
+    when(dna.findRecordUpdateResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 9, Map.of("customer_name", "Later", "record_state", "SUBMITTED")));
     assertThat(service.update("app-a", "page-a", "record-a", command).version()).isEqualTo(3);
     verify(dna, org.mockito.Mockito.never()).updateRecord(any(), any());
   }
 
   @Test
   void replaysCommittedUpdateBeforeReadingLaterBusinessState() {
-    when(dna.findRecordUpdateResult(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
-    when(dna.getRecord(eq(context), any())).thenReturn(new RecordView(
-        "record-a", 9, Map.of("customer_name", "Later edit", "record_state", "SUBMITTED")));
+    when(dna.findRecordUpdateResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 9, Map.of("customer_name", "Later edit", "record_state", "SUBMITTED")));
 
-    var result = service.update("app-a", "page-a", "record-a", new UpdateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), 2, "update-a", FormRecordState.DRAFT, Map.of()));
+    var result =
+        service.update(
+            "app-a",
+            "page-a",
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                2,
+                "update-a",
+                FormRecordState.DRAFT,
+                Map.of()));
 
     assertThat(result.version()).isEqualTo(3);
     assertThat(result.state()).isEqualTo(FormRecordState.DRAFT);
@@ -346,14 +469,23 @@ class ApplicationFormRecordServiceImplTest {
 
   @Test
   void committedUpdateRemainsAcknowledgedAfterLaterDeletionWithoutReturningRequestValues() {
-    when(dna.findRecordUpdateResult(eq(context), any())).thenReturn(new RecordCommandResult(
-        RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
-    when(dna.getRecord(eq(context), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_NOT_FOUND, "No current row"));
+    when(dna.findRecordUpdateResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenThrow(new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_NOT_FOUND, "No current row"));
 
-    var result = service.update("app-a", "page-a", "record-a", new UpdateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), 2, "update-a", FormRecordState.DRAFT,
-        Map.of("name-field", "Original")));
+    var result =
+        service.update(
+            "app-a",
+            "page-a",
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                2,
+                "update-a",
+                FormRecordState.DRAFT,
+                Map.of("name-field", "Original")));
 
     assertThat(result.version()).isEqualTo(3);
     assertThat(result.currentRecord()).isNull();
@@ -363,27 +495,57 @@ class ApplicationFormRecordServiceImplTest {
 
   @Test
   void conflictingUpdateKeyCannotFallThroughToAnotherMutation() {
-    when(dna.findRecordUpdateResult(eq(context), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_IDEMPOTENCY_CONFLICT, "Intent differs"));
-    assertThatThrownBy(() -> service.update("app-a", "page-a", "record-a", new UpdateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), 2, "update-a", FormRecordState.DRAFT, Map.of())))
-        .isInstanceOfSatisfying(ApplicationFormException.class,
-            failure -> assertThat(failure.errorCode()).isEqualTo(ApplicationFormErrorCode.RECORD_CONFLICT));
+    when(dna.findRecordUpdateResult(eq(context), any()))
+        .thenThrow(
+            new DnaRuntimeException(
+                DnaRuntimeErrorCode.RECORD_IDEMPOTENCY_CONFLICT, "Intent differs"));
+    assertThatThrownBy(
+            () ->
+                service.update(
+                    "app-a",
+                    "page-a",
+                    "record-a",
+                    new UpdateApplicationFormRecordCommand(
+                        new ApplicationFormRuntimeIdentity("form-a", 1),
+                        2,
+                        "update-a",
+                        FormRecordState.DRAFT,
+                        Map.of())))
+        .isInstanceOfSatisfying(
+            ApplicationFormException.class,
+            failure ->
+                assertThat(failure.errorCode())
+                    .isEqualTo(ApplicationFormErrorCode.RECORD_CONFLICT));
     verify(dna, org.mockito.Mockito.never()).getRecord(any(), any());
     verify(dna, org.mockito.Mockito.never()).updateRecord(any(), any());
   }
 
   @Test
   void recoversConcurrentCommitBetweenTheFirstProbeAndBusinessValidation() {
-    when(dna.findRecordUpdateResult(eq(context), any())).thenReturn(null, new RecordCommandResult(
-        RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
-    when(dna.getRecord(eq(validationContext), any())).thenReturn(new RecordView(
-        "record-a", 3, Map.of("customer_name", "Committed", "record_state", "SUBMITTED")));
-    when(dna.getRecord(eq(context), any())).thenReturn(new RecordView(
-        "record-a", 3, Map.of("customer_name", "Committed", "record_state", "SUBMITTED")));
+    when(dna.findRecordUpdateResult(eq(context), any()))
+        .thenReturn(
+            null,
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(validationContext), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 3, Map.of("customer_name", "Committed", "record_state", "SUBMITTED")));
+    when(dna.getRecord(eq(context), any()))
+        .thenReturn(
+            new RecordView(
+                "record-a", 3, Map.of("customer_name", "Committed", "record_state", "SUBMITTED")));
 
-    var result = service.update("app-a", "page-a", "record-a", new UpdateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), 2, "update-a", FormRecordState.SUBMITTED, Map.of()));
+    var result =
+        service.update(
+            "app-a",
+            "page-a",
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                2,
+                "update-a",
+                FormRecordState.SUBMITTED,
+                Map.of()));
 
     assertThat(result.version()).isEqualTo(3);
     verify(dna, org.mockito.Mockito.never()).updateRecord(any(), any());
@@ -391,13 +553,17 @@ class ApplicationFormRecordServiceImplTest {
 
   @Test
   void softDeletesThroughDnaWithTheExpectedVersion() {
-    service.delete("app-a", "page-a", "record-a", 4,
-        new ApplicationFormRuntimeIdentity("form-a", 1), "delete-a");
+    service.delete(
+        "app-a",
+        "page-a",
+        "record-a",
+        4,
+        new ApplicationFormRuntimeIdentity("form-a", 1),
+        "delete-a");
 
     verify(resolver).requireAction(form(), "records.delete");
-    ArgumentCaptor<RecordDeleteCommand> command = ArgumentCaptor.forClass(
-        RecordDeleteCommand.class
-    );
+    ArgumentCaptor<RecordDeleteCommand> command =
+        ArgumentCaptor.forClass(RecordDeleteCommand.class);
     verify(dna).deleteRecord(eq(context), command.capture());
     assertThat(command.getValue().writePolicyVersion()).isEqualTo(7);
     assertThat(command.getValue().recordId()).isEqualTo("record-a");
@@ -408,29 +574,43 @@ class ApplicationFormRecordServiceImplTest {
   @Test
   void rejectsMissingStaleAndReboundFormsBeforeAccessingDna() {
     ApplicationFormRuntimeIdentity[] identities = {
-        null,
-        new ApplicationFormRuntimeIdentity("form-a", 2),
-        new ApplicationFormRuntimeIdentity("other-form", 1)
+      null,
+      new ApplicationFormRuntimeIdentity("form-a", 2),
+      new ApplicationFormRuntimeIdentity("other-form", 1)
     };
     for (ApplicationFormRuntimeIdentity identity : identities) {
-      assertThatThrownBy(() -> service.create("app-a", "page-a",
-          new CreateApplicationFormRecordCommand(
-              identity, "create-a", FormRecordState.DRAFT, Map.of()
-          )))
-          .isInstanceOfSatisfying(ApplicationFormException.class,
-              failure -> assertThat(failure.errorCode())
-                  .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
-      assertThatThrownBy(() -> service.update("app-a", "page-a", "record-a",
-          new UpdateApplicationFormRecordCommand(
-              identity, 0, "update-a", FormRecordState.SUBMITTED, Map.of()
-          )))
-          .isInstanceOfSatisfying(ApplicationFormException.class,
-              failure -> assertThat(failure.errorCode())
-                  .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
-      assertThatThrownBy(() -> service.delete("app-a", "page-a", "record-a", 0, identity, "delete-a"))
-          .isInstanceOfSatisfying(ApplicationFormException.class,
-              failure -> assertThat(failure.errorCode())
-                  .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
+      assertThatThrownBy(
+              () ->
+                  service.create(
+                      "app-a",
+                      "page-a",
+                      new CreateApplicationFormRecordCommand(
+                          identity, "create-a", FormRecordState.DRAFT, Map.of())))
+          .isInstanceOfSatisfying(
+              ApplicationFormException.class,
+              failure ->
+                  assertThat(failure.errorCode())
+                      .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
+      assertThatThrownBy(
+              () ->
+                  service.update(
+                      "app-a",
+                      "page-a",
+                      "record-a",
+                      new UpdateApplicationFormRecordCommand(
+                          identity, 0, "update-a", FormRecordState.SUBMITTED, Map.of())))
+          .isInstanceOfSatisfying(
+              ApplicationFormException.class,
+              failure ->
+                  assertThat(failure.errorCode())
+                      .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
+      assertThatThrownBy(
+              () -> service.delete("app-a", "page-a", "record-a", 0, identity, "delete-a"))
+          .isInstanceOfSatisfying(
+              ApplicationFormException.class,
+              failure ->
+                  assertThat(failure.errorCode())
+                      .isEqualTo(ApplicationFormErrorCode.RUNTIME_VERSION_CONFLICT));
     }
     verifyNoInteractions(dna);
   }
@@ -445,18 +625,115 @@ class ApplicationFormRecordServiceImplTest {
     assertCreateReplay(true);
   }
 
+  @Test
+  void inverseCreateUsesScopedAggregateReceiptEvenWithoutDetailModels() {
+    var scope = relatedScope();
+    when(owned.findRelatedResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenThrow(new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_NOT_FOUND, "Later deletion"));
+    var result =
+        service.createRelated(
+            form(),
+            new CreateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                "inverse-create",
+                FormRecordState.DRAFT,
+                Map.of("name-field", "Ada")),
+            scope);
+    assertThat(result.recordId()).isEqualTo("record-a");
+    assertThat(result.currentRecord()).isNull();
+    var intent =
+        ArgumentCaptor.forClass(
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordCommand.class);
+    verify(owned).findRelatedResult(eq(context), intent.capture());
+    assertThat(intent.getValue().scope()).isEqualTo(scope);
+    assertThat(intent.getValue().command().details()).isEmpty();
+    verify(resolver).requireAction(form(), "records.create");
+    verify(owned, org.mockito.Mockito.never()).executeRelated(any(), any());
+    verify(dna, org.mockito.Mockito.never()).findRecordCreateResult(any(), any());
+  }
+
+  @Test
+  void inverseEditRecoversScopedReceiptBeforeReadingDeletedSource() {
+    var scope = relatedScope();
+    when(owned.findRelatedResult(eq(context), any()))
+        .thenReturn(
+            new RecordCommandResult(RecordMutationType.UPDATE, "record-a", 3, 1, Instant.EPOCH));
+    when(dna.getRecord(eq(context), any()))
+        .thenThrow(new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_NOT_FOUND, "Later deletion"));
+    var result =
+        service.updateRelated(
+            form(),
+            "record-a",
+            new UpdateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                2,
+                "inverse-edit",
+                FormRecordState.DRAFT,
+                Map.of("name-field", "Ada")),
+            scope);
+    assertThat(result.version()).isEqualTo(3);
+    assertThat(result.currentRecord()).isNull();
+    verify(resolver).requireAction(form(), "records.edit");
+    verify(owned, org.mockito.Mockito.never()).executeRelated(any(), any());
+    verify(dna, org.mockito.Mockito.never()).findRecordUpdateResult(any(), any());
+    verify(dna, org.mockito.Mockito.never()).getRecord(eq(validationContext), any());
+  }
+
+  @Test
+  void inverseDeleteUsesExactScopedCommandWithoutPreReadingTheSource() {
+    var relatedAuthority = mock(DnaInvocationContext.class);
+    when(contexts.forWrite(form())).thenReturn(relatedAuthority);
+    service.deleteRelated(
+        form(),
+        "record-a",
+        2,
+        new ApplicationFormRuntimeIdentity("form-a", 1),
+        "inverse-delete",
+        relatedScope());
+    var intent =
+        ArgumentCaptor.forClass(
+            org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordCommand.class);
+    verify(owned).executeRelated(eq(relatedAuthority), intent.capture());
+    assertThat(intent.getValue().scope()).isEqualTo(relatedScope());
+    assertThat(intent.getValue().command().parent().mutations()).hasSize(1);
+    verify(resolver).requireAction(form(), "records.delete");
+    verifyNoInteractions(dna);
+  }
+
+  private static org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope relatedScope() {
+    return new org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope(
+        "1",
+        "customer",
+        "customers",
+        "aaaaaaaa-1111-2222-3333-000000000001",
+        org.simplepoint.plugin.dna.runtime.api.record.RelatedRecordScope.Mode.MAINTAIN,
+        null);
+  }
+
   private void assertCreateReplay(final boolean concurrent) {
-    when(resolver.resolve("app-a", "page-a")).thenReturn(governedForm(FormFieldWritePolicy.CREATE_ONLY));
-    var result = new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH);
+    when(resolver.resolve("app-a", "page-a"))
+        .thenReturn(governedForm(FormFieldWritePolicy.CREATE_ONLY));
+    var result =
+        new RecordCommandResult(RecordMutationType.CREATE, "record-a", 0, 1, Instant.EPOCH);
     if (concurrent) {
       when(dna.findRecordCreateResult(eq(context), any())).thenReturn(null, result);
     } else {
       when(dna.findRecordCreateResult(eq(context), any())).thenReturn(result);
     }
-    when(dna.getRecord(eq(context), any())).thenThrow(new DnaRuntimeException(
-        DnaRuntimeErrorCode.RECORD_NOT_FOUND, "Later deletion"));
-    var acknowledged = service.create("app-a", "page-a", new CreateApplicationFormRecordCommand(
-        new ApplicationFormRuntimeIdentity("form-a", 1), "original-create", FormRecordState.DRAFT, Map.of()));
+    when(dna.getRecord(eq(context), any()))
+        .thenThrow(new DnaRuntimeException(DnaRuntimeErrorCode.RECORD_NOT_FOUND, "Later deletion"));
+    var acknowledged =
+        service.create(
+            "app-a",
+            "page-a",
+            new CreateApplicationFormRecordCommand(
+                new ApplicationFormRuntimeIdentity("form-a", 1),
+                "original-create",
+                FormRecordState.DRAFT,
+                Map.of()));
     assertThat(acknowledged.recordId()).isEqualTo("record-a");
     assertThat(acknowledged.version()).isZero();
     assertThat(acknowledged.currentRecord()).isNull();
@@ -465,10 +742,20 @@ class ApplicationFormRecordServiceImplTest {
 
   private static PublishedApplicationForm governedForm(final FormFieldWritePolicy policy) {
     var page = form();
-    return new PublishedApplicationForm(page.tenantId(), page.applicationId(), page.pageId(), page.pageName(),
-        page.formId(), page.formName(), page.formVersion(), page.resourceCode(), page.physicalModelId(),
-        page.physicalModelVersion(), page.storageChecksum(),
-        FormWritePolicyProjection.apply(page.document(), document(policy)), 2);
+    return new PublishedApplicationForm(
+        page.tenantId(),
+        page.applicationId(),
+        page.pageId(),
+        page.pageName(),
+        page.formId(),
+        page.formName(),
+        page.formVersion(),
+        page.resourceCode(),
+        page.physicalModelId(),
+        page.physicalModelVersion(),
+        page.storageChecksum(),
+        FormWritePolicyProjection.apply(page.document(), document(policy)),
+        2);
   }
 
   private static PublishedApplicationForm form(final FormFieldWritePolicy policy) {
@@ -486,8 +773,7 @@ class ApplicationFormRecordServiceImplTest {
         "a".repeat(64),
         document(policy),
         1,
-        7
-    );
+        7);
   }
 
   private static PublishedApplicationForm form() {
@@ -495,58 +781,55 @@ class ApplicationFormRecordServiceImplTest {
   }
 
   private static ApplicationFormDocument document(final FormFieldWritePolicy policy) {
-    FormFieldDefinition name = new FormFieldDefinition(
-        "name-field",
-        "customer_name",
-        "Name",
-        "Name",
-        FormFieldType.STRING,
-        FormStorageMode.STORED,
-        true,
-        false,
-        120,
-        null,
-        null,
-        null,
-        List.of(),
-        policy
-    );
-    FormComponentDefinition input = new FormComponentDefinition(
-        "name-control",
-        "field.text",
-        ApplicationFormApiVersion.RENDERER_V1,
-        name.fieldId(),
-        24,
-        null,
-        null,
-        null,
-        null,
-        false,
-        Map.of(),
-        List.of()
-    );
-    FormComponentDefinition root = new FormComponentDefinition(
-        "root",
-        "layout.form",
-        ApplicationFormApiVersion.RENDERER_V1,
-        null,
-        24,
-        null,
-        null,
-        null,
-        null,
-        false,
-        Map.of(),
-        List.of(input)
-    );
+    FormFieldDefinition name =
+        new FormFieldDefinition(
+            "name-field",
+            "customer_name",
+            "Name",
+            "Name",
+            FormFieldType.STRING,
+            FormStorageMode.STORED,
+            true,
+            false,
+            120,
+            null,
+            null,
+            null,
+            List.of(),
+            policy);
+    FormComponentDefinition input =
+        new FormComponentDefinition(
+            "name-control",
+            "field.text",
+            ApplicationFormApiVersion.RENDERER_V1,
+            name.fieldId(),
+            24,
+            null,
+            null,
+            null,
+            null,
+            false,
+            Map.of(),
+            List.of());
+    FormComponentDefinition root =
+        new FormComponentDefinition(
+            "root",
+            "layout.form",
+            ApplicationFormApiVersion.RENDERER_V1,
+            null,
+            24,
+            null,
+            null,
+            null,
+            null,
+            false,
+            Map.of(),
+            List.of(input));
     return new ApplicationFormDocument(
         ApplicationFormApiVersion.DOCUMENT_V1,
         List.of(name),
         List.of(),
-        List.of(new FormSceneDefinition(
-            "main", "main", "Main", FormSceneType.MAIN, null, root
-        )),
-        List.of()
-    );
+        List.of(new FormSceneDefinition("main", "main", "Main", FormSceneType.MAIN, null, root)),
+        List.of());
   }
 }

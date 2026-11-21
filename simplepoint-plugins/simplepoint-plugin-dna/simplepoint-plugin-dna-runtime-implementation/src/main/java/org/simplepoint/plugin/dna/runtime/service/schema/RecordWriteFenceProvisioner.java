@@ -13,16 +13,17 @@ public class RecordWriteFenceProvisioner {
     this.backend = backend;
   }
 
-  /** Reconciles the namespace table; model rows are initialized separately in a physical transaction. */
+  /**
+   * Reconciles the namespace table; model rows are initialized separately in a physical
+   * transaction.
+   */
   public void prepare(final PhysicalSchemaTarget model) {
-    RuntimeInfrastructureSchema.prepare(backend, RecordWriteFenceSchema.target(model),
-        "DNA transactional record write admission v1", RecordWriteFenceSchema.definition());
+    RuntimeInfrastructureSchema.prepare(backend, model, RuntimeInfrastructureTable.WRITE_FENCES);
     new RecordCalculationProvisioner(backend).prepare(model);
-    RuntimeInfrastructureSchema.prepare(backend, RecordPublicationSchema.target(model),
-        "DNA durable record publication journal v1", RecordPublicationSchema.definition());
-    RuntimeInfrastructureSchema.prepare(backend, RecordPublicationStageSchema.target(model, false),
-        "DNA publication aggregate stages v1", RecordPublicationStageSchema.definition());
-    RuntimeInfrastructureSchema.prepare(backend, RecordPublicationStageSchema.target(model, true),
-        "DNA publication aggregate chunks v1", RecordPublicationStageSchema.chunksDefinition());
+    RuntimeInfrastructureSchema.prepare(backend, model, RuntimeInfrastructureTable.PUBLICATIONS);
+    RuntimeInfrastructureSchema.prepare(
+        backend, model, RuntimeInfrastructureTable.PUBLICATION_STAGES);
+    RuntimeInfrastructureSchema.prepare(
+        backend, model, RuntimeInfrastructureTable.PUBLICATION_CHUNKS);
   }
 }

@@ -56,5 +56,6 @@ export const platformFormComponents = new FormComponentRegistry([
   field('field.user', 'UserSelect'), field('field.role', 'RoleSelect'),
   field('field.organization', 'OrganizationSelect'), field('field.tenant', 'TenantSelect'),
   field('field.attachment', 'FormAttachments'),
+  field('field.reference', 'FormReference'),
   ...(['save', 'submit', 'reset', 'open-dialog', 'open-drawer', 'close', 'apply'] as const).map(action),
 ]);

@@ -1,5 +1,7 @@
 package org.simplepoint.plugin.workflow.service;
 
+import org.simplepoint.plugin.workflow.api.model.WorkflowLinks;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyCollection;

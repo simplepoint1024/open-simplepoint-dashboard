@@ -44,17 +44,20 @@ final class FormSubmissionAuthorization implements AutoCloseable {
     context.setDataScopeType(data.dataScopeType());
     context.setDeptIds(data.departmentIds());
     context.setDataScopeIncludeSelf(data.dataScopeIncludeSelf());
-    context.setResourceFieldPermissions(Map.of(data.resourceCode(), data.fieldPermissions()));
+    Map<String, Map<String, String>> fields = new HashMap<>();
+    Map<String, ResourceDataScope> scopes = new HashMap<>();
+    data.additionalResourcePolicies().forEach((resource, policy) -> {
+      fields.put(resource, policy.fieldPermissions());
+      scopes.put(resource, new ResourceDataScope(policy.dataScopeType(), policy.departmentIds(),
+          policy.dataScopeIncludeSelf(), policy.dataScopeExpressions()));
+    });
+    fields.put(data.resourceCode(), data.fieldPermissions());
     if (data.dataScopeType() != null) {
-      context.setResourceDataScopes(
-          Map.of(
-              data.resourceCode(),
-              new ResourceDataScope(
-                  data.dataScopeType(),
-                  data.departmentIds(),
-                  data.dataScopeIncludeSelf(),
-                  data.dataScopeExpressions())));
+      scopes.put(data.resourceCode(), new ResourceDataScope(data.dataScopeType(), data.departmentIds(),
+          data.dataScopeIncludeSelf(), data.dataScopeExpressions()));
     }
+    context.setResourceFieldPermissions(fields);
+    context.setResourceDataScopes(scopes);
     RequestContextHolder.setContext(RequestContextHolder.AUTHORIZATION_CONTEXT_KEY, context);
     ResourcePolicyContext.set(data.resourceCode());
   }

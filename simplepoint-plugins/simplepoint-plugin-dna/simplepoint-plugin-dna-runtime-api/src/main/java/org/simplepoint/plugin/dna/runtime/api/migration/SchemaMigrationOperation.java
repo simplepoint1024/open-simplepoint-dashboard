@@ -9,6 +9,8 @@ public enum SchemaMigrationOperation {
   DROP_COLUMN,
   CREATE_INDEX,
   DROP_INDEX,
+  ADD_FOREIGN_KEY,
+  DROP_FOREIGN_KEY,
   COMMENT_TABLE,
   COMMENT_COLUMN
 }

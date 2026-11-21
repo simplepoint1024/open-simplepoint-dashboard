@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {calculationInputs, hasCalculatedFields, mergeCalculationPreview} from './calculationPreview.ts';
+import {calculationInputs, hasCalculatedFields, hasPreviewFields, mergeCalculationPreview} from './calculationPreview.ts';
 import {fieldWriteAllowed} from './writePolicy.ts';
 import {detailPayload} from '../FormComponents/Detail/payload.ts';
 
@@ -38,4 +38,18 @@ test('pending or revoked results clear stale computed values without creating ro
   assert.equal(mergeCalculationPreview(document, {}).lines, undefined);
   assert.throws(() => mergeCalculationPreview(document, source, {values: {}, details: {lines: []}}), /mismatch/);
   assert.equal(mergeCalculationPreview(document, source, {values: {}, details: {lines: [{}]}}).total, null);
+});
+
+test('snapshot-only forms use authorized preview outputs without trusting submitted copy values', () => {
+  const mapped = {fields: [{fieldId: 'copy', referenceValueMode: 'SERVER_SNAPSHOT'}], details: [
+    {detailId: 'lines', fields: [{fieldId: 'copy', referenceValueMode: 'SERVER_SNAPSHOT'}]},
+  ]};
+  const value = {copy: 'old', lines: [{clientId: 'stable', values: {copy: 'old'}}]};
+  assert.equal(hasPreviewFields(mapped), true);
+  const input = calculationInputs(mapped, value);
+  assert.deepEqual(input, {lines: [{clientId: 'stable', values: {}}]});
+  const merged = mergeCalculationPreview(mapped, input, {values: {copy: 'server'}, details: {lines: [{copy: 'authorized'}]}});
+  assert.equal(merged.copy, 'server');
+  assert.deepEqual(merged.lines, [{clientId: 'stable', values: {copy: 'authorized'}}]);
+  assert.equal(mergeCalculationPreview(mapped, value).lines[0].values.copy, null);
 });

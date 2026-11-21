@@ -33,6 +33,10 @@ public class WorkspaceApplicationPageAccessPort implements ApplicationPageAccess
   public ApplicationPageTarget requirePageForUpdate(
       final String tenantId, final String applicationId, final String pageId) {
     WorkspaceApplication application = requireApplication(tenantId, applicationId);
+    if ("DELETING".equals(application.getStatus())) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_DELETE_BLOCKED,
+          "Application removal is in progress");
+    }
     WorkspaceApplicationPage page = requirePage(tenantId, applicationId, pageId);
     if ("OFFLINING".equals(page.getStatus())) {
       throw new ApplicationFormException(
@@ -58,7 +62,8 @@ public class WorkspaceApplicationPageAccessPort implements ApplicationPageAccess
         page.getDescription(),
         page.getSortOrder(),
         application.isNavigationGroup() ? application.getName() : null,
-        new org.simplepoint.plugin.app.form.api.model.PageResourcePresentation(page.getNameLocalization(), application.getNameLocalization(), root, revision, parent));
+        new org.simplepoint.plugin.app.form.api.model.PageResourcePresentation(page.getNameLocalization(), application.getNameLocalization(), root, revision, parent),
+        page.getPublicationGeneration());
   }
 
   @Override
@@ -89,7 +94,7 @@ public class WorkspaceApplicationPageAccessPort implements ApplicationPageAccess
   @Override
   public void offlineBinding(
       String tenantId, String applicationId, String pageId, boolean completed) {
-    requireApplication(tenantId, applicationId);
+    WorkspaceApplication application = requireApplication(tenantId, applicationId);
     WorkspaceApplicationPage page = requirePage(tenantId, applicationId, pageId);
     if (!"PUBLISHED".equals(page.getStatus())
         && !"OFFLINING".equals(page.getStatus())
@@ -98,8 +103,21 @@ public class WorkspaceApplicationPageAccessPort implements ApplicationPageAccess
           ApplicationFormErrorCode.PAGE_BINDING_CONFLICT,
           "Only a published resource can go offline");
     }
+    Instant changedAt = clock.instant();
     page.setStatus(completed ? "OFFLINE" : "OFFLINING");
-    page.setUpdatedAt(clock.instant());
+    page.setUpdatedAt(changedAt);
+    var siblingStates = entityManager.createQuery(
+            "select distinct p.status from WorkspaceApplicationPage p where p.tenantId = :tenant"
+                + " and p.applicationId = :app and p.id <> :page and p.status in ('PUBLISHED', 'OFFLINING')",
+            String.class)
+        .setParameter("tenant", tenantId).setParameter("app", applicationId)
+        .setParameter("page", pageId).getResultList();
+    if (siblingStates.contains("PUBLISHED")) {
+      application.setStatus("PUBLISHED");
+    } else {
+      application.setStatus(completed && siblingStates.isEmpty() ? "OFFLINE" : "OFFLINING");
+    }
+    application.setUpdatedAt(changedAt);
   }
 
   @Override

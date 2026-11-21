@@ -8,7 +8,7 @@ import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from 
 import {HashRouter, Routes} from 'react-router';
 import {App as AntApp, ConfigProvider, Modal, Result, theme} from 'antd';
 import TableActions from '@simplepoint/components/Table/Actions';
-import AntTable from '@simplepoint/components/DataTable';
+import {asyncComponent} from '@simplepoint/components/AsyncComponent';
 import {QuestionCircleOutlined} from '@simplepoint/shared/types/icon';
 
 import NavigateBar from '@/layouts/navigation-bar';
@@ -48,6 +48,7 @@ export type RuntimeScopeContext = {
 };
 
 const RUNTIME_SCOPE_EVENT = 'sp-runtime-scope';
+const ShortcutsTable = asyncComponent(() => import('@simplepoint/components/DataTable'));
 
 const FeedbackBridgeRegistrar: React.FC = () => {
     const {message, modal} = AntApp.useApp();
@@ -317,7 +318,7 @@ const App: React.FC = () => {
                         footer={null}
                         width={400}
                     >
-                        <AntTable
+                        <ShortcutsTable
                             storageKey="host.shortcuts"
                             query={{mode: 'local', scope: 'complete', fields: {key: {type: 'string'}, desc: {type: 'string'}}}}
                             dataSource={shortcuts}

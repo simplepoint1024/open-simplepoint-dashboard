@@ -48,6 +48,7 @@ import org.springframework.context.annotation.Configuration;
       WorkflowBusinessRuntimeService.class
     })
 @Configuration
+@org.springframework.scheduling.annotation.EnableScheduling
 @EnableConfigurationProperties(ApplicationFormPublicationProperties.class)
 public class ApplicationFormConfiguration {
 
@@ -115,7 +116,8 @@ public class ApplicationFormConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public DnaInvocationContextFactory dnaInvocationContextFactory(
-      final FormRequestContext requestContext) {
-    return new DnaInvocationContextFactory(requestContext);
+      final FormRequestContext requestContext,
+      final org.simplepoint.plugin.app.form.service.FormRelationTargetResolver relations) {
+    return new DnaInvocationContextFactory(requestContext, relations);
   }
 }

@@ -1,3 +1,4 @@
+import type {FormReferenceSnapshot} from '../FormComponents/Reference/snapshots.ts';
 import {detailPayload} from '../FormComponents/Detail/payload.ts';
 import {detailSchema} from '../FormComponents/Detail/schema.ts';
 import {filterNode, readDocument, type QueryNode} from '../Table/query.ts';
@@ -15,6 +16,7 @@ export type FormRecord = {
   values: Record<string, unknown>;
   systemValues?: Record<string, unknown>;
   systemLabels?: Record<string, unknown>;
+  referenceSnapshots?: FormReferenceSnapshot[];
 };
 export type FormRecordMutation = {
   recordId: string;

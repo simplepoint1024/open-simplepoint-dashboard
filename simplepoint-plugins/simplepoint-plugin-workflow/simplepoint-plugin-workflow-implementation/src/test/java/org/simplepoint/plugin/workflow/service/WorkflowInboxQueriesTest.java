@@ -46,6 +46,32 @@ class WorkflowInboxQueriesTest extends WorkflowDirectoryFixture {
   }
 
   @Test
+  void bulkArchiveChangesOnlyTheCurrentUsersListAndKeepsTasksAvailable() {
+    String definition = publish("${initiator}", null);
+    var first = start(definition, "First");
+    start(definition, "Second");
+    var ids = rows("pending").content().stream().map(WorkflowInboxItem::id).toList();
+    assertThat(ids).hasSize(2);
+    assertThatThrownBy(() -> transaction.executeWithoutResult(status ->
+        inbox.archive("pending", List.of(ids.getFirst(), "missing"), true)))
+        .isInstanceOf(WorkflowException.class);
+    assertThat(rows("pending").totalElements()).isEqualTo(2);
+    for (int attempt = 0; attempt < 2; attempt++) {
+      transaction.executeWithoutResult(status -> inbox.archive("pending", ids, true));
+    }
+    assertThat(rows("pending").totalElements()).isZero();
+    assertThat(transaction.execute(status ->
+        inbox.query("pending", true, Map.of(), PageRequest.of(0, 50))).totalElements()).isEqualTo(2);
+    assertThat(transaction.execute(status -> inbox.task(task(first))).actionable()).isTrue();
+    authorize("reviewer", "tenant", false, List.of("workflow.tasks.view"));
+    assertThatThrownBy(() -> transaction.executeWithoutResult(status -> inbox.archive("pending", ids, false)))
+        .isInstanceOf(WorkflowException.class);
+    authorize("actor", "tenant", true, List.of());
+    transaction.executeWithoutResult(status -> inbox.archive("pending", ids, false));
+    assertThat(rows("pending").totalElements()).isEqualTo(2);
+  }
+
+  @Test
   void pendingUsesRealNamesAndIsRemovedAfterApprovalWithActualDecisionAndComment() {
     final var instance = start(publish("${initiator}", null), "Purchase");
     var pending = rows("pending");

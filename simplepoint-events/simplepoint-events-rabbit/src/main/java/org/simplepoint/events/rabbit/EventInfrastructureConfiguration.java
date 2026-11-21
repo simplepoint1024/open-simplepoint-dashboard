@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.simplepoint.events.api.EventHandler;
+import org.simplepoint.events.api.EventPublisher;
 import org.simplepoint.events.jdbc.EventCodec;
 import org.simplepoint.events.jdbc.EventDispatcher;
 import org.simplepoint.events.jdbc.EventRetryPolicy;
@@ -29,11 +30,18 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.boot.amqp.autoconfigure.RabbitAutoConfiguration;
+import org.springframework.boot.amqp.autoconfigure.RabbitConnectionDetails;
+import org.springframework.boot.amqp.autoconfigure.RabbitProperties;
+import org.springframework.beans.factory.InjectionPoint;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /** Optional infrastructure adapter; business modules only import the event API. */
@@ -92,9 +100,30 @@ public class EventInfrastructureConfiguration {
   }
 
   @Bean
+  LegacyEventChannels legacyEventChannels(DataSource dataSource, PlatformTransactionManager manager, EventCodec codec,
+      ConnectionFactory factory, ObjectProvider<RabbitProperties> rabbit, ObjectProvider<RabbitConnectionDetails> details,
+      EventInfrastructureProperties properties) {
+    return new LegacyEventChannels(dataSource, manager, codec,
+        (owner, secret) -> RabbitEventConnections.isolated(factory, rabbit.getObject(), details.getObject(), owner, secret),
+        properties);
+  }
+
+  @Bean
+  @Primary
+  @Scope("prototype")
+  EventPublisher legacyEventPublisher(InjectionPoint point, JdbcEventStore defaults, LegacyEventChannels channels) {
+    return channels.publisher(point.getMember().getDeclaringClass(), defaults)::publish;
+  }
+
+  @Bean
+  SmartLifecycle additionalEventWorkers(LegacyEventChannels channels, List<EventHandler> handlers) {
+    return channels.runtime(handlers);
+  }
+
+  @Bean
   EventDispatcher platformEventDispatcher(
       JdbcEventStore store, RabbitEventTransport transport, List<EventHandler> handlers) {
-    return new EventDispatcher(store, transport, handlers);
+    return new EventDispatcher(store, transport, handlers.stream().filter(LegacyEventChannels::usesDefaultOwner).toList());
   }
 
   @Bean
@@ -108,6 +137,7 @@ public class EventInfrastructureConfiguration {
       List<EventHandler> handlers, EventInfrastructureProperties properties) {
     List<org.springframework.amqp.core.Declarable> declarations = new ArrayList<>();
     for (EventHandler handler : handlers) {
+      if (!LegacyEventChannels.usesDefaultOwner(handler)) continue;
       var subscription = handler.subscription();
       DirectExchange exchange =
           new DirectExchange(RabbitEventTransport.exchange(subscription.producer()), true, false);
@@ -138,7 +168,8 @@ public class EventInfrastructureConfiguration {
       List<EventHandler> handlers,
       EventInfrastructureProperties properties) {
     return listeners(
-        factory, store, codec, handlers, properties.getService(), properties.isDeclareTopology());
+        factory, store, codec, handlers.stream().filter(LegacyEventChannels::usesDefaultOwner).toList(),
+        properties.getService(), properties.isDeclareTopology());
   }
 
   /**

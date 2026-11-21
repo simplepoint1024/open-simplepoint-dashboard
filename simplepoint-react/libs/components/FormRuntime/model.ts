@@ -103,7 +103,8 @@ export function runtimeFormModel(
       properties[field.fieldId] = fieldNullability(properties[field.fieldId], !fieldRequired);
       if (fieldRequired) required.push(field.fieldId);
       uiSchema['ui:order'].push(field.fieldId);
-      const widget = (typeof renderer.widget === 'function' ? renderer.widget(field) : renderer.widget) ?? (field.choices.length ? 'select' : undefined);
+      const widget = field.reference ? 'FormReference'
+        : (typeof renderer.widget === 'function' ? renderer.widget(field) : renderer.widget) ?? (field.choices.length ? 'select' : undefined);
       uiSchema[field.fieldId] = {...fieldUi(component, state, widget), 'ui:options': {componentProperties: component.properties}};
       if (!state.disabled) editableFieldIds.push(field.fieldId);
       return {...base, kind: 'field', fieldId: field.fieldId};

@@ -23,7 +23,8 @@ import org.springframework.security.access.AccessDeniedException;
 
 class WorkspaceApplicationCatalogTest {
   private final EntityManager em = mock(EntityManager.class);
-  private final WorkspaceApplicationCatalog catalog = new WorkspaceApplicationCatalog(em);
+  private final WorkspaceApplicationCatalog catalog = new WorkspaceApplicationCatalog(em,
+      mock(org.simplepoint.plugin.app.form.api.service.ApplicationFormService.class));
 
   @AfterEach
   void clearContext() {

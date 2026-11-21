@@ -4,6 +4,7 @@ import {useRemoteList} from '@simplepoint/components/DataTable/useRemoteList';
 import SForm from '@simplepoint/components/SForm/Lazy';
 import type {SFormHandle} from '@simplepoint/components/SForm';
 import TableActions from '@simplepoint/components/Table/Actions';
+import DeleteConfirmation from '@simplepoint/components/Table/DeleteConfirmation';
 import type {
   WorkflowDesignerHandle,
   WorkflowDesignerValidation,
@@ -15,6 +16,7 @@ import {Alert, App, Drawer, Modal, Space, Spin, Tag, Typography} from 'antd';
 import type {ColumnsType} from 'antd/es/table';
 import {type ComponentProps, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQueryScope} from '@simplepoint/shared/hooks/useQueryScope';
+import {useOperationScope} from '@simplepoint/shared/hooks/useOperationScope';
 import {useData} from '@simplepoint/shared/api/methods';
 import {useQueryClient} from '@tanstack/react-query';
 import {scopedQueryOptions} from '@simplepoint/shared/api/queryScope';
@@ -41,6 +43,8 @@ type FormSchema = ComponentProps<typeof SForm>['schema'];
 
 const WorkflowDesigner = lazy(() => import('@simplepoint/components/WorkflowDesigner'));
 const ContractEditor = lazy(() => import('@simplepoint/components/WorkflowForms/ContractEditor'));
+const canRemoveDefinition = (row: DefinitionSummary) => row.status === 'OFFLINE'
+  || row.status === 'DRAFT' && row.latestVersion === 0;
 
 export default function Definitions() {
   const scope = useQueryScope();
@@ -66,6 +70,10 @@ function DefinitionsSession() {
         : t('workflow.editor.priorityInteger', '优先级文本必须能被引擎解析为 32 位整数，不能使用小数或指数文本') : undefined};
   }, [queryClient, queryScope, t]);
   const {message} = App.useApp(), mutation = useMutationScope();
+  const deleteOperation = useOperationScope();
+  const [selectedDefinitions, setSelectedDefinitions] = useState<DefinitionSummary[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{rows: DefinitionSummary[]; action: 'offline' | 'delete'}>();
+  const [deleteError, setDeleteError] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [createData, setCreateData] = useState<CreateValues>({});
   const [createDirty, setCreateDirty] = useState(false);
@@ -106,8 +114,8 @@ function DefinitionsSession() {
   const [variablesOpen, setVariablesOpen] = useState(false);
   const [variablesBlocked, setVariablesBlocked] = useState(false);
 
-  const overlay = !!editor || !!history || createOpen || publishOpen || !!startTarget || variablesOpen || !!copyTarget || discardOpen;
-  const locked = overlay || saving || copyPending;
+  const overlay = !!editor || !!history || createOpen || publishOpen || !!startTarget || variablesOpen || !!copyTarget || discardOpen || !!deleteTarget;
+  const locked = overlay || saving || copyPending || deleteOperation.busy;
   usePageRetention(!locked && !dirty, locked || dirty);
   useEffect(() => { void ensure(['workflow']); }, [ensure, locale]);
 
@@ -116,6 +124,36 @@ function DefinitionsSession() {
     ({signal}) => workflowApi.permissions(signal));
   const permissions = permissionsQuery.data;
   const load = definitions.refresh;
+  const chooseDelete = useCallback((rows: DefinitionSummary[], action: 'offline' | 'delete') => {
+    if (!deleteOperation.isSelected() || savingRef.current || copyPendingRef.current) return;
+    editorRequest.current?.abort();
+    historyRequest.current?.abort();
+    versionRequest.current?.abort();
+    setDeleteError('');
+    setDeleteTarget({rows, action});
+  }, [deleteOperation.isSelected]);
+  const confirmDelete = async () => {
+    if (!deleteTarget || permissionsQuery.error
+      || !(deleteTarget.action === 'delete' ? permissions?.canDelete : permissions?.canOffline)) return;
+    const {rows, action} = deleteTarget;
+    const request = deleteOperation.begin();
+    if (!request) return;
+    setDeleteError('');
+    try {
+      if (action === 'delete') await workflowApi.deleteDefinitions(
+        rows.map(row => ({id: row.id, expectedRevision: row.draftRevision})), request.signal);
+      else await workflowApi.offlineDefinition(rows[0].id, rows[0].latestVersion, request.signal);
+      if (!deleteOperation.current(request.signal)) return;
+      setDeleteTarget(undefined);
+      setSelectedDefinitions([]);
+      await load();
+      if (deleteOperation.current(request.signal)) message.success(action === 'delete' ? t('table.deleteSuccess', '删除成功')
+        : t('workflow.definition.offlineSuccess', '流程已下线'));
+    } catch (cause) {
+      if (deleteOperation.current(request.signal)) setDeleteError(resolveApiErrorMessage(cause,
+        action === 'delete' ? t('workflow.deleteFailed', '删除失败') : t('workflow.definition.offlineFailed', '流程下线失败')));
+    } finally {deleteOperation.finish(request);}
+  };
   const declarations = useMemo(() => expressionVariables(draft?.formContract ?? emptyFormContract()), [draft?.formContract]);
   const metadataData = useMemo(() => ({name: draft?.name, category: draft?.category, description: draft?.description}),
     [draft?.name, draft?.category, draft?.description]);
@@ -307,6 +345,7 @@ function DefinitionsSession() {
   const status = (record: DefinitionSummary) => <Space size={4}>
     <Tag color={record.status === 'PUBLISHED' ? 'green' : 'default'}>
       {record.status === 'PUBLISHED' ? t('workflow.status.published', '已发布')
+        : record.status === 'OFFLINE' ? t('workflow.status.offline', '已下线')
         : t('workflow.status.draft', '草稿')}
     </Tag>
     {record.unpublishedChanges && <Tag color="gold">
@@ -326,20 +365,31 @@ function DefinitionsSession() {
     {title: t('workflow.updatedAt', '更新时间'), dataIndex: 'updatedAt', key: 'updatedAt', width: 190,
       render: (value: string) => formatDateTime(value, locale)},
     {title: t('workflow.actions', '操作'), key: 'actions', width: 260, fixed: 'right', render: (_, row) =>
-      <TableActions selectedKeys={[row.id]} selectedRows={[row]} buttons={[
+      <TableActions appearance="row" selectedKeys={[row.id]} selectedRows={[row]} buttons={[
         {key: 'edit', sort: 10, text: t('workflow.action.editMetadata', '基础信息'), type: 'link',
           argumentMinSize: 1, argumentMaxSize: 1},
         {key: 'design', sort: 15, text: t('workflow.action.design', '流程设计'), type: 'link',
           argumentMinSize: 1, argumentMaxSize: 1},
-        ...(permissions?.canStart && row.latestVersion > 0 ? [{key: 'start', sort: 20,
+        ...(permissions?.canStart && row.status === 'PUBLISHED' && row.latestVersion > 0 ? [{key: 'start', sort: 20,
           text: t('workflow.action.start', '发起'), type: 'link' as const,
           argumentMinSize: 1, argumentMaxSize: 1}] : []),
+        ...(permissions?.canDelete && !permissionsQuery.error ? [{
+          key: 'delete', sort: 30, danger: true, argumentMinSize: 1, argumentMaxSize: 1,
+          disabled: !canRemoveDefinition(row),
+        }] : []),
+        ...(permissions?.canOffline && !permissionsQuery.error && row.status === 'PUBLISHED' ? [{
+          key: 'offline', sort: 25, icon: 'StopOutlined', argumentMinSize: 1, argumentMaxSize: 1,
+          text: t('workflow.definition.offline', '下线'),
+        }] : []),
       ]} isButtonDisabled={() => locked || !mutation.selected} onButtonEvents={{
         edit: () => { void openEditor(row.id); },
         design: () => {void openEditor(row.id, 'design');},
         start: () => {if (locked || savingRef.current) return; setWriteError(''); setStartTarget(row); setStartVersion(row.latestVersion); },
+        delete: () => chooseDelete([row], 'delete'),
+        offline: () => chooseDelete([row], 'offline'),
       }}/>} as const,
-  ], [locale, openEditor, openHistory, permissions?.canStart, t, locked, mutation.selected]);
+  ], [locale, openEditor, openHistory, chooseDelete, permissions?.canStart, permissions?.canDelete, permissions?.canOffline,
+    permissionsQuery.error, t, locked, mutation.selected]);
 
   const versionColumns: ColumnsType<VersionSummary> = useMemo(() => [
     {title: t('workflow.definition.version', '版本'), dataIndex: 'version', key: 'version', width: 90,
@@ -408,13 +458,30 @@ function DefinitionsSession() {
           buttons={[{key: 'retry', sort: 10, text: t('workflow.retry', '重试'), argumentMinSize: 0, argumentMaxSize: 0}]}
           onButtonEvents={{retry: definitions.retry}}/>}/>}
       <DataTable {...definitions.tableProps} storageKey="workflow.definitions" columns={definitions.columns(columns)}
+        rowSelection={{selectedRowKeys: selectedDefinitions.map(row => row.id), onChange: (_, rows) => setSelectedDefinitions(rows),
+          getCheckboxProps: row => ({disabled: locked || !canRemoveDefinition(row)})}}
+        selectable={permissions?.canDelete === true && !permissionsQuery.error}
         toolbarExtra={<Space wrap><TableActions selectedKeys={[]} selectedRows={[]}
           buttons={permissions?.canCreate ? [{key: 'add', sort: 10, text: t('workflow.action.create', '新建流程'), icon: 'PlusOutlined',
             type: 'primary', disabled: locked, argumentMinSize: 0, argumentMaxSize: 0}] : []}
           onButtonEvents={{add: () => {if (!locked) {setWriteError(''); setCreateOpen(true);}}}}/>
+          {permissions?.canDelete && !permissionsQuery.error && <TableActions
+            selectedKeys={selectedDefinitions.map(row => row.id)} selectedRows={selectedDefinitions}
+            buttons={[{key: 'delete', sort: 20, icon: 'DeleteOutlined', danger: true, argumentMinSize: 1, argumentMaxSize: 500,
+              disabled: locked || !mutation.selected || selectedDefinitions.some(row => !canRemoveDefinition(row))}]}
+            onButtonEvents={{delete: (_, rows) => chooseDelete(rows, 'delete')}}/>}
         </Space>}
         scroll={{x: 'max-content'}} pagination={definitions.tableProps.pagination && {...definitions.tableProps.pagination, disabled: locked}}/>
 
+    <DeleteConfirmation open={!!deleteTarget} pending={deleteOperation.busy} error={deleteError}
+      title={deleteTarget?.action === 'offline' ? t('workflow.definition.confirmOffline', '确认下线流程') : undefined}
+      onConfirm={() => void confirmDelete()} onCancel={() => {if (!deleteOperation.isBusy()) setDeleteTarget(undefined);}}>
+      {deleteTarget && (deleteTarget.action === 'offline'
+        ? t('workflow.definition.offlineConfirmation', '下线「{name}」后将停止发起新流程。', {name: deleteTarget.rows[0].name})
+        : deleteTarget.rows.length === 1
+        ? t('workflow.definition.deleteConfirmation', '永久删除流程「{name}」？', {name: deleteTarget.rows[0].name})
+        : t('table.confirmPermanentDeleteContent', '永久删除选中的 {count} 条记录？', {count: deleteTarget.rows.length}))}
+    </DeleteConfirmation>
     <Modal title={t('workflow.action.create', '新建流程')} open={createOpen && mutation.selected} footer={null}
       destroyOnHidden={!createOpen} closable={!saving} maskClosable={!saving} keyboard={!saving}
       onCancel={() => closeDraft('create')}>
@@ -436,7 +503,7 @@ function DefinitionsSession() {
           argumentMinSize: 0, argumentMaxSize: 0}] : []),
         ...(editor.permissions.canEdit ? [{key: 'save', sort: 10, text: t('workflow.action.save', '保存草稿'),
           type: 'primary' as const, loading: saving, disabled: saving || copyPending, argumentMinSize: 0, argumentMaxSize: 0}] : []),
-        ...(editorMode === 'design' && editor.permissions.canPublish ? [{key: 'publish', sort: 20, text: t('workflow.action.publish', '发布'),
+        ...(editorMode === 'design' && editor.permissions.canPublish && editor.definition.status !== 'OFFLINE' ? [{key: 'publish', sort: 20, text: t('workflow.action.publish', '发布'),
           disabled: dirty || saving || copyPending || importState !== 'ready', loading: saving, argumentMinSize: 0, argumentMaxSize: 0}] : []),
       ]} onButtonEvents={{variables: () => setVariablesOpen(true),
         save: () => {if (editorMode === 'metadata') metadataFormRef.current?.submit(); else void saveDraft();},

@@ -95,7 +95,7 @@ public class ApplicationNavigationState {
     requireEditor();
     String tenant = tenant();
     var app = application(tenant, applicationId, true);
-    if (update == null) throw conflict();
+    if (update == null || "DELETING".equals(app.getStatus())) throw conflict();
     var config = validate(update.configuration(), pages(app));
     String json = encode(config);
     if (app.getNavigationPending() == null && update.expectedRevision() + 1 == app.getNavigationRevision()

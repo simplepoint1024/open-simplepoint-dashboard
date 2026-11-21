@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -45,11 +46,13 @@ import org.simplepoint.plugin.workflow.api.constants.WorkflowVariableNames;
 import org.simplepoint.plugin.workflow.api.model.WorkflowAuditTrail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContext;
 import org.simplepoint.plugin.workflow.api.model.WorkflowFormContract;
+import org.simplepoint.plugin.workflow.api.model.WorkflowLinks;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.ActivityState;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CompleteTaskCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.CreateDefinitionCommand;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionDetail;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionPermissions;
+import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionRevision;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.DefinitionSummary;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.InstanceDiagram;
 import org.simplepoint.plugin.workflow.api.model.WorkflowModels.PageResult;
@@ -71,6 +74,7 @@ import org.simplepoint.plugin.workflow.entity.WorkflowActionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowBusinessLinkEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowDefinitionVersionEntity;
+import org.simplepoint.plugin.workflow.entity.WorkflowHistoryRemovalEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowInstanceWatcherEntity;
 import org.simplepoint.plugin.workflow.entity.WorkflowNotificationOutboxEntity;
@@ -200,7 +204,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     return WorkflowReadPages.schema(
         DefinitionSummary.class,
         "workflow.definition",
-        Map.of("status", List.of("DRAFT", "PUBLISHED")));
+        Map.of("status", List.of("DRAFT", "PUBLISHED", "OFFLINE")));
   }
 
   @Override
@@ -211,7 +215,9 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
         allowed(WorkflowResourceCodes.DEFINITIONS_EDIT),
         allowed(WorkflowResourceCodes.DEFINITIONS_PUBLISH),
         allowed(WorkflowResourceCodes.DEFINITIONS_COPY_VERSION),
-        allowed(WorkflowResourceCodes.INSTANCES_START));
+        allowed(WorkflowResourceCodes.INSTANCES_START),
+        allowed(WorkflowResourceCodes.DEFINITIONS_DELETE),
+        allowed(WorkflowResourceCodes.DEFINITIONS_OFFLINE));
   }
 
   @Override
@@ -305,6 +311,99 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
 
   @Override
   @Transactional
+  public void deleteDefinition(final String definitionId, final long expectedRevision) {
+    requireAuthority(WorkflowResourceCodes.DEFINITIONS_VIEW);
+    requireAuthority(WorkflowResourceCodes.DEFINITIONS_DELETE);
+    WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
+    if (!"OFFLINE".equals(definition.getStatus())
+        && !("DRAFT".equals(definition.getStatus()) && definition.getLatestVersion() == 0)) {
+      throw new WorkflowException(Code.DEFINITION_DELETE_BLOCKED,
+          "A published definition must be taken offline before deletion");
+    }
+    requireRevision(definition, expectedRevision);
+    if (definition.getLatestVersion() > 0) {
+      var instances = entityManager.createQuery(
+          "select i.processInstanceId from WorkflowInstanceEntity i where i.tenantId = :tenant and i.definitionId = :id",
+          String.class).setParameter("tenant", definition.getTenantId()).setParameter("id", definitionId)
+          .setMaxResults(1).getResultList();
+      var externalForms = entityManager.createQuery(
+          "select b.id from WorkflowFormBindingEntity b where b.tenantId = :tenant and b.definitionId = :id",
+          String.class).setParameter("tenant", definition.getTenantId()).setParameter("id", definitionId)
+          .setMaxResults(1).getResultList();
+      if (!instances.isEmpty() || !externalForms.isEmpty()) {
+        throw new WorkflowException(Code.DEFINITION_DELETE_BLOCKED,
+            "A definition with process instances or external form bindings needs coordinated deletion");
+      }
+      for (var version : ownedDefinitionVersions(definition)) {
+        ProcessDefinition process = requireOwnedProcessDefinition(definition, version);
+        if (!process.isSuspended()) {
+          throw conflict("流程引擎版本尚未下线");
+        }
+        repositoryService.deleteDeployment(process.getDeploymentId(), false);
+        entityManager.remove(version);
+      }
+    }
+    entityManager.remove(definition);
+  }
+
+  @Override
+  @Transactional
+  public void deleteDefinitions(List<DefinitionRevision> selection) {
+    if (selection == null || selection.isEmpty() || selection.size() > TablePagination.MAX_PAGE_SIZE) {
+      throw invalid("无效的流程删除范围");
+    }
+    var revisions = new TreeMap<String, Long>();
+    for (var item : selection) {
+      if (item == null || item.id() == null || item.expectedRevision() == null
+          || revisions.putIfAbsent(item.id(), item.expectedRevision()) != null) {
+        throw invalid("所选流程必须有不同的标识和修订号");
+      }
+    }
+    revisions.forEach(this::deleteDefinition);
+  }
+
+  @Override
+  @Transactional
+  public void offlineDefinition(String definitionId, int expectedVersion) {
+    requireAuthority(WorkflowResourceCodes.DEFINITIONS_VIEW);
+    requireAuthority(WorkflowResourceCodes.DEFINITIONS_OFFLINE);
+    var definition = requireDefinition(definitionId, true);
+    if (expectedVersion < 1 || definition.getLatestVersion() != expectedVersion) {
+      throw conflict("流程发布版本已变更，请刷新后重试");
+    }
+    if ("OFFLINE".equals(definition.getStatus())) return;
+    if (!"PUBLISHED".equals(definition.getStatus())) throw conflict("只有已发布流程可以下线");
+    for (var version : ownedDefinitionVersions(definition)) {
+      ProcessDefinition process = requireOwnedProcessDefinition(definition, version);
+      if (!process.isSuspended()) repositoryService.suspendProcessDefinitionById(process.getId(), false, null);
+    }
+    definition.setStatus("OFFLINE");
+    definition.setDraftRevision(definition.getDraftRevision() + 1);
+    definition.setUpdatedAt(Instant.now());
+  }
+
+  private ProcessDefinition requireOwnedProcessDefinition(WorkflowDefinitionEntity definition,
+      WorkflowDefinitionVersionEntity version) {
+    var definitions = repositoryService.createProcessDefinitionQuery()
+        .deploymentId(version.getFlowableDeploymentId()).listPage(0, 2);
+    if (definitions.size() != 1) throw conflict("流程引擎版本不可用");
+    ProcessDefinition process = definitions.getFirst();
+    if (!definition.getTenantId().equals(process.getTenantId())
+        || !version.getFlowableProcessDefinitionId().equals(process.getId())) {
+      throw conflict("流程引擎版本不可用");
+    }
+    return process;
+  }
+
+  private List<WorkflowDefinitionVersionEntity> ownedDefinitionVersions(WorkflowDefinitionEntity definition) {
+    return entityManager.createQuery(
+        "from WorkflowDefinitionVersionEntity v where v.tenantId = :tenant and v.definitionId = :id order by v.version",
+        WorkflowDefinitionVersionEntity.class)
+        .setParameter("tenant", definition.getTenantId()).setParameter("id", definition.getId()).getResultList();
+  }
+
+  @Override
+  @Transactional
   public VersionSummary publish(final String definitionId, final PublishDefinitionCommand command) {
     requireAuthority(WorkflowResourceCodes.DEFINITIONS_PUBLISH);
     if (command == null) {
@@ -312,6 +411,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     }
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
     requireRevision(definition, command.expectedRevision());
+    if ("OFFLINE".equals(definition.getStatus())) throw conflict("流程已下线");
     var validated =
         bpmnValidator.validate(
             definition.getDraftXml(),
@@ -453,7 +553,7 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
   private ProcessInstanceSummary startInternal(
       String definitionId, StartProcessCommand command, String previousId) {
     WorkflowDefinitionEntity definition = requireDefinition(definitionId, true);
-    if (definition.getLatestVersion() < 1) {
+    if (!"PUBLISHED".equals(definition.getStatus()) || definition.getLatestVersion() < 1) {
       throw conflict("流程尚未发布");
     }
     int requestedVersion =
@@ -624,6 +724,9 @@ public class WorkflowCenterServiceImpl implements WorkflowCenterService {
     requireAuthority(WorkflowResourceCodes.INSTANCES_START);
     if (!WorkflowAccess.canViewPersonalMatters() || !userId().equals(source.getStarterId())) {
       throw forbidden("只有原发起人可以修改并重新发起事项");
+    }
+    if (entityManager.find(WorkflowHistoryRemovalEntity.class, source.getProcessInstanceId()) != null) {
+      throw new WorkflowException(Code.HISTORY_REMOVAL_BLOCKED, "History removal is in progress");
     }
     String state = effectiveInstanceSummary(source).status();
     if (!Set.of("REJECTED", "WITHDRAWN", "CANCELED").contains(state)) {

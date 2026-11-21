@@ -36,6 +36,8 @@ import org.simplepoint.plugin.app.form.service.FormPageResourceCoordinator.Prepa
 import org.simplepoint.plugin.app.form.service.FormWritePolicyPublicationStateService.PreparedPolicy;
 import org.simplepoint.plugin.dna.runtime.api.DnaRuntimeApiVersion;
 import org.simplepoint.plugin.dna.runtime.api.context.DnaInvocationContext;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode;
+import org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeException;
 import org.simplepoint.plugin.dna.runtime.api.migration.SchemaMigrationStatus;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPhase;
@@ -65,9 +67,12 @@ class ApplicationFormPublicationServiceImplTest {
     policies = mock(FormWritePolicyPublicationCoordinator.class);
     impacts = mock(FormPublicationImpactService.class);
     inspections = mock(FormPublicationInspectionService.class);
-    when(impacts.requirements(any())).thenReturn(new FormWritePolicyImpact(0, 1, Set.of(), Map.of()));
-    when(policies.prepareTarget(any(), any())).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.TARGET_READY,
-        null, null, null));
+    when(impacts.requirements(any()))
+        .thenReturn(new FormWritePolicyImpact(0, 1, Set.of(), Map.of()));
+    when(policies.prepareTarget(any(), any()))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.TARGET_READY, null, null, null));
     dna = mock(FormDnaSchemaPublicationCoordinator.class);
     contexts = mock(DnaInvocationContextFactory.class);
     pageBindings = mock(ApplicationFormPageBindingStateService.class);
@@ -75,42 +80,64 @@ class ApplicationFormPublicationServiceImplTest {
     dnaResources = mock(FormDnaResourceBindingCoordinator.class);
     applicationAccess = mock(ApplicationAccessPort.class);
     requestContext = mock(FormRequestContext.class);
-    when(requestContext.requireActor()).thenReturn(
-        new FormRequestContext.FormActor("tenant-a", "user-a")
-    );
+    when(requestContext.requireActor())
+        .thenReturn(new FormRequestContext.FormActor("tenant-a", "user-a"));
     when(pageBindings.reserve(any(), any(), any()))
         .thenReturn(bindingView(ApplicationFormPageBindingStatus.DATA_PREPARING));
-    service = new ApplicationFormPublicationServiceImpl(
-        state,
-        dna,
-        contexts,
-        pageBindings,
-        pageResources,
-        dnaResources,
-        applicationAccess,
-        requestContext,
-        policies,
-        impacts,
-        inspections,
-        details
-    );
+    service =
+        new ApplicationFormPublicationServiceImpl(
+            state,
+            dna,
+            contexts,
+            pageBindings,
+            pageResources,
+            dnaResources,
+            applicationAccess,
+            requestContext,
+            policies,
+            impacts,
+            inspections,
+            details);
   }
 
   @Test
-  void unfinishedBackfillDoesNotBecomeADataConflictOrActivateThePage() {
+  void unfinishedBackfillDoesNotBecomeDataConflictOrActivateThePage() {
     var work = bindingWork();
-    when(state.claim(any(), any(), any())).thenReturn(new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
-    when(pageBindings.claim(any(), any(), any())).thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(
-        true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
-    var progress = new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of(),
-        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10, null));
-    when(policies.prepareTarget(any(), any())).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.PREPARED,
-        null, null, progress));
-    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
-    var result = service.publish("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
-    assertThat(result.pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
-    assertThat(result.progress()).isEqualTo(new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
-        1, org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase.APPLYING, "2", "10", "10"));
+    when(state.claim(any(), any(), any()))
+        .thenReturn(
+            new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
+    when(pageBindings.claim(any(), any(), any()))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
+    var progress =
+        new RecordWritePolicyPublicationView(
+            false,
+            0,
+            "a".repeat(64),
+            Map.of(),
+            Map.of(),
+            new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 2, 10, 10, null));
+    when(policies.prepareTarget(any(), any()))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.PREPARED, null, null, progress));
+    when(pageBindings.get("app-a", "form-a", "binding-a"))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
+    var result =
+        service.publish(
+            "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
+    assertThat(result.pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
+    assertThat(result.progress())
+        .isEqualTo(
+            new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
+                1,
+                org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase
+                    .APPLYING,
+                "2",
+                "10",
+                "10"));
     verify(policies).releaseBatch(work);
     verify(pageBindings, never()).fail(any(), any(), any());
     verify(pageBindings, never()).complete(any(), any(), any());
@@ -121,17 +148,35 @@ class ApplicationFormPublicationServiceImplTest {
   @Test
   void unfinishedRestorationPreservesThePendingCancellationWithoutProjectingResources() {
     var work = bindingWork();
-    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a")).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
-    var progress = new RecordWritePolicyCancellationView(false, 0, "a".repeat(64), null,
-        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 3, 10, 10, null));
-    when(policies.cancelTarget(work)).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.CANCELLING,
-        null, null, null, progress));
-    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
+    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a"))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
+    var progress =
+        new RecordWritePolicyCancellationView(
+            false,
+            0,
+            "a".repeat(64),
+            null,
+            new RecordWritePolicyProgress(1, RecordWritePolicyPhase.RESTORING, 3, 10, 10, null));
+    when(policies.cancelTarget(work))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.CANCELLING, null, null, null, progress));
+    when(pageBindings.get("app-a", "form-a", "binding-a"))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVATING));
     var result = service.cancel("app-a", "form-a", "binding-a");
-    assertThat(result.pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
-    assertThat(result.progress()).isEqualTo(new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
-        1, org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase.RESTORING, "3", "10", "10"));
+    assertThat(result.pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.ACTIVATING);
+    assertThat(result.progress())
+        .isEqualTo(
+            new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress(
+                1,
+                org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationProgress.Phase
+                    .RESTORING,
+                "3",
+                "10",
+                "10"));
     verify(policies).releaseBatch(work);
     verify(pageBindings, never()).fail(any(), any(), any());
     verify(pageBindings, never()).complete(any(), any(), any());
@@ -145,27 +190,58 @@ class ApplicationFormPublicationServiceImplTest {
 
   @Test
   void finalRejectionWithProgressStopsPendingDispatchAndReturnsItsInspection() {
-    blockedPublication(new RecordWritePolicyPublicationView(false, 0, "a".repeat(64), Map.of(), Map.of("required", 3L),
-        new RecordWritePolicyProgress(1, RecordWritePolicyPhase.APPLYING, 3, 10, 10,
-            org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode.RECORD_WRITE_POLICY_PRECHECK_FAILED)));
+    blockedPublication(
+        new RecordWritePolicyPublicationView(
+            false,
+            0,
+            "a".repeat(64),
+            Map.of(),
+            Map.of("required", 3L),
+            new RecordWritePolicyProgress(
+                1,
+                RecordWritePolicyPhase.APPLYING,
+                3,
+                10,
+                10,
+                org.simplepoint.plugin.dna.runtime.api.error.DnaRuntimeErrorCode
+                    .RECORD_WRITE_POLICY_PRECHECK_FAILED)));
   }
 
   private void blockedPublication(RecordWritePolicyPublicationView inspection) {
     var work = bindingWork();
-    when(state.claim(any(), any(), any())).thenReturn(new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
-    when(pageBindings.claim(any(), any(), any())).thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(
-        true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
-    when(policies.prepareTarget(any(), any())).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.PREPARED,
-        null, null, inspection));
-    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.FAILED));
-    var report = new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection(Instant.now(), List.of(
-        new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection.Issue("required",
-            org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection.Kind.REQUIRED, List.of("Name"), "3")), "page-old");
+    when(state.claim(any(), any(), any()))
+        .thenReturn(
+            new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
+    when(pageBindings.claim(any(), any(), any()))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
+    when(policies.prepareTarget(any(), any()))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.PREPARED, null, null, inspection));
+    when(pageBindings.get("app-a", "form-a", "binding-a"))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.FAILED));
+    var report =
+        new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection(
+            Instant.now(),
+            List.of(
+                new org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection
+                    .Issue(
+                    "required",
+                    org.simplepoint.plugin.app.form.api.model.ApplicationFormPublicationInspection
+                        .Kind.REQUIRED,
+                    List.of("Name"),
+                    "3")),
+            "page-old");
     when(inspections.get("app-a", "form-a", "binding-a")).thenReturn(report);
-    var result = service.publish("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
+    var result =
+        service.publish(
+            "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
     assertThat(result.inspection()).isSameAs(report);
     verify(policies, never()).releaseBatch(any());
-    verify(pageBindings).fail("binding-a", "binding-token", ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
+    verify(pageBindings)
+        .fail("binding-a", "binding-token", ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
     verifyNoInteractions(dnaResources);
     verify(pageResources, never()).activate(any());
     verify(pageBindings, never()).complete(any(), any(), any());
@@ -173,12 +249,31 @@ class ApplicationFormPublicationServiceImplTest {
 
   @Test
   void legacyResourceAttemptDoesNotAcquireNewCancellationSemantics() {
-    var work = new ApplicationFormPageBindingStateService.BindingWork("binding-a", "binding-token", "tenant-a", "app-a", "page-a", "form-a", 1,
-        "model-a", "page:page-a", "Orders", null, 0, 1, 0);
-    when(state.claim(any(), any(), any())).thenReturn(new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
-    when(pageBindings.claim(any(), any(), any())).thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(
-        true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
-    when(pageBindings.complete(any(), any(), any())).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVE));
+    var work =
+        new ApplicationFormPageBindingStateService.BindingWork(
+            "binding-a",
+            "binding-token",
+            "tenant-a",
+            "app-a",
+            "page-a",
+            "form-a",
+            1,
+            "model-a",
+            "page:page-a",
+            "Orders",
+            null,
+            0,
+            1,
+            0);
+    when(state.claim(any(), any(), any()))
+        .thenReturn(
+            new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
+    when(pageBindings.claim(any(), any(), any()))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
+    when(pageBindings.complete(any(), any(), any()))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVE));
     service.publish("app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
     verifyNoInteractions(impacts, policies);
     verify(dnaResources).bind(work, null);
@@ -188,14 +283,22 @@ class ApplicationFormPublicationServiceImplTest {
   void resumesCancellationBeforeProjectingResourcesOrActivatingThePage() {
     var command = new PublishApplicationFormCommand(1, "page-a", "publish-a");
     var work = bindingWork();
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
-    when(pageBindings.claimPolicyRecovery("app-a", "form-a", "binding-a")).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
-    when(policies.resumeTarget(work)).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.CANCELLED, null, null, null));
-    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.CANCELLED));
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(
+            new PublicationClaim(false, null, view(ApplicationFormPublicationStatus.DATA_READY)));
+    when(pageBindings.claimPolicyRecovery("app-a", "form-a", "binding-a"))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
+    when(policies.resumeTarget(work))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.CANCELLED, null, null, null));
+    when(pageBindings.get("app-a", "form-a", "binding-a"))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.CANCELLED));
 
-    assertThat(service.publish("app-a", "form-a", command).pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
+    assertThat(service.publish("app-a", "form-a", command).pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
     verifyNoInteractions(dna, dnaResources, pageResources);
     verify(state, never()).claim(any(), any(), any());
     verify(pageBindings, never()).complete(any(), any(), any());
@@ -204,32 +307,52 @@ class ApplicationFormPublicationServiceImplTest {
   @Test
   void cancelsUsingSavedIdentityAndDoesNotCreateResourcesAfterConfirmation() {
     var work = bindingWork();
-    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a")).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
-    when(policies.cancelTarget(work)).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.CANCELLED, null, null, null));
-    when(pageBindings.get("app-a", "form-a", "binding-a")).thenReturn(bindingView(ApplicationFormPageBindingStatus.CANCELLED));
-    assertThat(service.cancel("app-a", "form-a", "binding-a").pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
+    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a"))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
+    when(policies.cancelTarget(work))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.CANCELLED, null, null, null));
+    when(pageBindings.get("app-a", "form-a", "binding-a"))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.CANCELLED));
+    assertThat(service.cancel("app-a", "form-a", "binding-a").pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.CANCELLED);
     verifyNoInteractions(dna, dnaResources, pageResources);
     verify(state, never()).claim(any(), any(), any());
-    var failure = new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_FAILED, "Response lost");
+    var failure =
+        new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_FAILED, "Response lost");
     when(policies.cancelTarget(work)).thenThrow(failure);
     assertThatThrownBy(() -> service.cancel("app-a", "form-a", "binding-a")).isSameAs(failure);
-    verify(pageBindings).fail("binding-a", "binding-token", ApplicationFormErrorCode.PUBLICATION_FAILED);
+    verify(pageBindings)
+        .fail("binding-a", "binding-token", ApplicationFormErrorCode.PUBLICATION_FAILED);
   }
 
   @Test
   void cancellationCompletesTheOriginalReleaseWhenTargetPublicationWon() {
     var work = bindingWork();
-    var resource = new PreparedPageResource("tenant-a", "page:page-a", "resource-a", "code-a", "/runtime", true);
-    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a")).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
-    when(state.getForVersion("app-a", "form-a", 1)).thenReturn(view(ApplicationFormPublicationStatus.DATA_READY));
-    when(policies.cancelTarget(work)).thenReturn(new PreparedPolicy("policy", FormWritePolicyPublicationStatus.TARGET_READY, null, null, null));
+    var resource =
+        new PreparedPageResource(
+            "tenant-a", "page:page-a", "resource-a", "code-a", "/runtime", true);
+    when(pageBindings.claimCancellation("app-a", "form-a", "binding-a"))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.ACTIVATING)));
+    when(state.getForVersion("app-a", "form-a", 1))
+        .thenReturn(view(ApplicationFormPublicationStatus.DATA_READY));
+    when(policies.cancelTarget(work))
+        .thenReturn(
+            new PreparedPolicy(
+                "policy", FormWritePolicyPublicationStatus.TARGET_READY, null, null, null));
     when(pageResources.prepare(work)).thenReturn(resource);
     when(pageResources.activate(work)).thenReturn(resource);
-    when(pageBindings.complete("binding-a", "binding-token", resource)).thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVE));
-    when(state.get("app-a", "form-a", "publication-a")).thenReturn(view(ApplicationFormPublicationStatus.ACTIVE));
-    assertThat(service.cancel("app-a", "form-a", "binding-a").pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.ACTIVE);
+    when(pageBindings.complete("binding-a", "binding-token", resource))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVE));
+    when(state.get("app-a", "form-a", "publication-a"))
+        .thenReturn(view(ApplicationFormPublicationStatus.ACTIVE));
+    assertThat(service.cancel("app-a", "form-a", "binding-a").pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.ACTIVE);
     var order = inOrder(policies, pageResources, dnaResources, pageBindings);
     order.verify(policies).cancelTarget(work);
     order.verify(pageResources).prepare(work);
@@ -240,22 +363,48 @@ class ApplicationFormPublicationServiceImplTest {
   }
 
   private static ApplicationFormPageBindingStateService.BindingWork bindingWork() {
-    return new ApplicationFormPageBindingStateService.BindingWork("binding-a", "binding-token", "tenant-a", "app-a", "page-a", "form-a", 1,
-        "model-a", "page:page-a", "Orders", null, 0, 1);
+    return new ApplicationFormPageBindingStateService.BindingWork(
+        "binding-a",
+        "binding-token",
+        "tenant-a",
+        "app-a",
+        "page-a",
+        "form-a",
+        1,
+        "model-a",
+        "page:page-a",
+        "Orders",
+        null,
+        0,
+        1);
   }
 
   @Test
   void activeReplayRepairsOnlyTheDurableResourceProjection() {
     var command = new PublishApplicationFormCommand(1, "page-a", "publish-a");
     var active = bindingView(ApplicationFormPageBindingStatus.ACTIVE);
-    var work = new ApplicationFormPageBindingStateService.BindingWork(
-        "binding-a", null, "tenant-a", "app-a", "page-a", "form-a", 1,
-        "model-a", "page:page-a", "Orders", null, 0, 4);
-    var resource = new PreparedPageResource(
-        "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", true);
+    var work =
+        new ApplicationFormPageBindingStateService.BindingWork(
+            "binding-a",
+            null,
+            "tenant-a",
+            "app-a",
+            "page-a",
+            "form-a",
+            1,
+            "model-a",
+            "page:page-a",
+            "Orders",
+            null,
+            0,
+            4);
+    var resource =
+        new PreparedPageResource(
+            "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", true);
     when(pageBindings.reserve("app-a", "form-a", command)).thenReturn(active);
     when(pageBindings.activeProjection("app-a", "form-a", "binding-a"))
-        .thenReturn(new ApplicationFormPageBindingStateService.ActiveResourceProjection(work, resource));
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.ActiveResourceProjection(work, resource));
 
     assertThat(service.publish("app-a", "form-a", command).pageBinding()).isSameAs(active);
 
@@ -267,7 +416,9 @@ class ApplicationFormPublicationServiceImplTest {
     verify(pageResources, never()).activate(any());
     verify(pageResources, never()).prepare(any());
     // A later projection must not be overwritten or the current APP publication reopened.
-    var superseded = new ApplicationFormException(ApplicationFormErrorCode.PAGE_BINDING_SUPERSEDED, "superseded");
+    var superseded =
+        new ApplicationFormException(
+            ApplicationFormErrorCode.PAGE_BINDING_SUPERSEDED, "superseded");
     when(dnaResources.bind(work, resource)).thenThrow(superseded);
     assertThatThrownBy(() -> service.publish("app-a", "form-a", command)).isSameAs(superseded);
     verify(pageBindings, never()).fail(any(), any(), any());
@@ -291,24 +442,23 @@ class ApplicationFormPublicationServiceImplTest {
   void resumesOnlyTheDurableCommandAndRecordsPreparationFailure() {
     var stored = new PublishApplicationFormCommand(1, "page-a", "publish-a");
     when(pageBindings.resumeCommand("app-a", "form-a", "binding-a")).thenReturn(stored);
-    var failure = new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_FAILED, "unavailable");
+    var failure =
+        new ApplicationFormException(ApplicationFormErrorCode.PUBLICATION_FAILED, "unavailable");
     when(state.claim("app-a", "form-a", command())).thenThrow(failure);
 
     assertThatThrownBy(() -> service.resume("app-a", "form-a", "binding-a")).isSameAs(failure);
 
     verify(pageBindings).reserve("app-a", "form-a", stored);
-    verify(pageBindings).preparationFailed("binding-a", ApplicationFormErrorCode.PUBLICATION_FAILED);
+    verify(pageBindings)
+        .preparationFailed("binding-a", ApplicationFormErrorCode.PUBLICATION_FAILED);
     verifyNoInteractions(dna, pageResources, dnaResources);
   }
 
   @Test
   void returnsCurrentStateWhenAnotherAttemptOwnsTheLease() {
-    ApplicationFormPublicationView current = view(
-        ApplicationFormPublicationStatus.DATA_PREPARING
-    );
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(false, null, current)
-    );
+    ApplicationFormPublicationView current = view(ApplicationFormPublicationStatus.DATA_PREPARING);
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(false, null, current));
 
     assertThat(service.prepareData("app-a", "form-a", command())).isSameAs(current);
 
@@ -320,12 +470,11 @@ class ApplicationFormPublicationServiceImplTest {
     PublicationWork work = work();
     DnaInvocationContext context = context();
     PreparedDnaSchema active = prepared(SchemaMigrationStatus.ACTIVE);
-    ApplicationFormPublicationView complete = view(
-        ApplicationFormPublicationStatus.DATA_READY
-    );
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(true, work, view(ApplicationFormPublicationStatus.DATA_PREPARING))
-    );
+    ApplicationFormPublicationView complete = view(ApplicationFormPublicationStatus.DATA_READY);
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(
+            new PublicationClaim(
+                true, work, view(ApplicationFormPublicationStatus.DATA_PREPARING)));
     when(contexts.current()).thenReturn(context);
     when(dna.prepare(any(), any())).thenReturn(active);
     when(state.completeData("publication-a", "token-a", active)).thenReturn(complete);
@@ -341,37 +490,60 @@ class ApplicationFormPublicationServiceImplTest {
   @Test
   void waitsForEveryChildBeforeCompletingDataAndPersistsBindings() {
     var base = work();
-    var document = new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument("1", List.of(), List.of(), List.of(), List.of(),
-        List.of(new org.simplepoint.plugin.app.form.api.model.FormDetailDefinition("lines", "lines", "Lines", List.of(), List.of())));
-    var work = new PublicationWork(base.publicationId(), base.executionToken(), base.applicationId(), base.formId(), base.displayName(),
-        base.physicalModelId(), base.formVersion(), base.recoverStaleDna(), base.schema(), base.storageChecksum(), document);
+    var document =
+        new org.simplepoint.plugin.app.form.api.model.ApplicationFormDocument(
+            "1",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(
+                new org.simplepoint.plugin.app.form.api.model.FormDetailDefinition(
+                    "lines", "lines", "Lines", List.of(), List.of())));
+    var work =
+        new PublicationWork(
+            base.publicationId(),
+            base.executionToken(),
+            base.applicationId(),
+            base.formId(),
+            base.displayName(),
+            base.physicalModelId(),
+            base.formVersion(),
+            base.recoverStaleDna(),
+            base.schema(),
+            base.storageChecksum(),
+            document);
     var current = view(ApplicationFormPublicationStatus.DATA_PREPARING);
     var active = prepared(SchemaMigrationStatus.ACTIVE);
-    when(state.claim("app-a", "form-a", command())).thenReturn(new PublicationClaim(true, work, current));
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(true, work, current));
     when(contexts.current()).thenReturn(context());
     when(dna.prepare(any(), any())).thenReturn(active);
     when(state.recordDataProgress("publication-a", "token-a", active)).thenReturn(current);
     assertThat(service.prepareData("app-a", "form-a", command())).isSameAs(current);
     verify(state, never()).completeData(any(), any(), any());
-    when(details.prepare(any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean())).thenReturn("bindings");
+    when(details.prepare(
+            any(), any(), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
+        .thenReturn("bindings");
     service.prepareData("app-a", "form-a", command());
-    verify(state).completeData("publication-a", "token-a", new PreparedDnaSchema("model-a", 1, "migration-a", SchemaMigrationStatus.ACTIVE, "bindings"));
+    verify(state)
+        .completeData(
+            "publication-a",
+            "token-a",
+            new PreparedDnaSchema(
+                "model-a", 1, "migration-a", SchemaMigrationStatus.ACTIVE, "bindings"));
   }
 
   @Test
   void persistsNonterminalDnaProgressForLaterRecovery() {
     PublicationWork work = work();
     PreparedDnaSchema migrating = prepared(SchemaMigrationStatus.MIGRATING);
-    ApplicationFormPublicationView current = view(
-        ApplicationFormPublicationStatus.DATA_PREPARING
-    );
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(true, work, current)
-    );
+    ApplicationFormPublicationView current = view(ApplicationFormPublicationStatus.DATA_PREPARING);
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(true, work, current));
     when(contexts.current()).thenReturn(context());
     when(dna.prepare(any(), any())).thenReturn(migrating);
-    when(state.recordDataProgress("publication-a", "token-a", migrating))
-        .thenReturn(current);
+    when(state.recordDataProgress("publication-a", "token-a", migrating)).thenReturn(current);
 
     assertThat(service.prepareData("app-a", "form-a", command())).isSameAs(current);
 
@@ -382,69 +554,77 @@ class ApplicationFormPublicationServiceImplTest {
   @Test
   void recordsStableFailureBeforeReturningIt() {
     PublicationWork work = work();
-    ApplicationFormException review = new ApplicationFormException(
-        ApplicationFormErrorCode.PUBLICATION_REVIEW_REQUIRED,
-        "review required"
-    );
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(
-            true,
-            work,
-            view(ApplicationFormPublicationStatus.DATA_PREPARING)
-        )
-    );
+    ApplicationFormException review =
+        new ApplicationFormException(
+            ApplicationFormErrorCode.PUBLICATION_REVIEW_REQUIRED, "review required");
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(
+            new PublicationClaim(
+                true, work, view(ApplicationFormPublicationStatus.DATA_PREPARING)));
     when(contexts.current()).thenReturn(context());
     when(dna.prepare(any(), any())).thenThrow(review);
 
-    assertThatThrownBy(() -> service.prepareData("app-a", "form-a", command()))
-        .isSameAs(review);
+    assertThatThrownBy(() -> service.prepareData("app-a", "form-a", command())).isSameAs(review);
 
-    verify(state).fail(
-        "publication-a",
-        "token-a",
-        ApplicationFormErrorCode.PUBLICATION_REVIEW_REQUIRED
-    );
+    verify(state)
+        .fail("publication-a", "token-a", ApplicationFormErrorCode.PUBLICATION_REVIEW_REQUIRED);
+  }
+
+  @Test
+  void reportsSchemaPrecheckFailureAsADataConflict() {
+    var failure = new DnaRuntimeException(
+        DnaRuntimeErrorCode.SCHEMA_PRECHECK_FAILED, "Existing references violate uniqueness");
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(
+            true, work(), view(ApplicationFormPublicationStatus.DATA_PREPARING)));
+    when(contexts.current()).thenReturn(context());
+    when(dna.prepare(any(), any())).thenThrow(failure);
+
+    assertThatThrownBy(() -> service.prepareData("app-a", "form-a", command()))
+        .isInstanceOfSatisfying(ApplicationFormException.class, conflict -> {
+          assertThat(conflict.errorCode()).isEqualTo(ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
+          assertThat(conflict).hasCause(failure);
+        });
+
+    verify(state).fail("publication-a", "token-a", ApplicationFormErrorCode.PUBLICATION_DATA_CONFLICT);
+    verify(state, never()).completeData(any(), any(), any());
   }
 
   @Test
   void publishesDataThenPreparesAndActivatesThePageResource() {
     ApplicationFormPublicationView dataReady = view(ApplicationFormPublicationStatus.DATA_READY);
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(false, null, dataReady)
-    );
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(false, null, dataReady));
     var command = new PublishApplicationFormCommand(1, "page-a", "publish-a");
-    var work = new ApplicationFormPageBindingStateService.BindingWork(
-        "binding-a",
-        "binding-token",
-        "tenant-a",
-        "app-a",
-        "page-a",
-        "form-a",
-        1,
-        "model-a",
-        "page:page-a",
-        "Orders",
-        null,
-        0, 1
-    );
-    when(pageBindings.claim("app-a", "form-a", command)).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(
-            true,
-            work,
-            bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)
-        )
-    );
-    PreparedPageResource prepared = new PreparedPageResource(
-        "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", false
-    );
-    PreparedPageResource active = new PreparedPageResource(
-        "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", true
-    );
+    var work =
+        new ApplicationFormPageBindingStateService.BindingWork(
+            "binding-a",
+            "binding-token",
+            "tenant-a",
+            "app-a",
+            "page-a",
+            "form-a",
+            1,
+            "model-a",
+            "page:page-a",
+            "Orders",
+            null,
+            0,
+            1);
+    when(pageBindings.claim("app-a", "form-a", command))
+        .thenReturn(
+            new ApplicationFormPageBindingStateService.BindingClaim(
+                true, work, bindingView(ApplicationFormPageBindingStatus.RESOURCE_PREPARING)));
+    PreparedPageResource prepared =
+        new PreparedPageResource(
+            "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", false);
+    PreparedPageResource active =
+        new PreparedPageResource(
+            "tenant-a", "page:page-a", "resource-a", "app.runtime.page.a", "/runtime", true);
     when(pageResources.prepare(work)).thenReturn(prepared);
     when(pageResources.activate(work)).thenReturn(active);
-    when(pageBindings.complete("binding-a", "binding-token", active)).thenReturn(
-        bindingView(ApplicationFormPageBindingStatus.ACTIVE)
-    );
+    when(pageBindings.complete("binding-a", "binding-token", active))
+        .thenReturn(bindingView(ApplicationFormPageBindingStatus.ACTIVE));
     ApplicationFormPublicationView activated = view(ApplicationFormPublicationStatus.ACTIVE);
     when(state.get("app-a", "form-a", "publication-a")).thenReturn(activated);
 
@@ -466,21 +646,18 @@ class ApplicationFormPublicationServiceImplTest {
 
   @Test
   void leavesPageUntouchedWhileDnaMigrationIsStillRunning() {
-    ApplicationFormPublicationView migrating = view(
-        ApplicationFormPublicationStatus.DATA_PREPARING
-    );
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(false, null, migrating)
-    );
+    ApplicationFormPublicationView migrating =
+        view(ApplicationFormPublicationStatus.DATA_PREPARING);
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(false, null, migrating));
 
-    var result = service.publish(
-        "app-a",
-        "form-a",
-        new PublishApplicationFormCommand(1, "page-a", "publish-a")
-    );
+    var result =
+        service.publish(
+            "app-a", "form-a", new PublishApplicationFormCommand(1, "page-a", "publish-a"));
 
     assertThat(result.dataPublication()).isSameAs(migrating);
-    assertThat(result.pageBinding().status()).isEqualTo(ApplicationFormPageBindingStatus.DATA_PREPARING);
+    assertThat(result.pageBinding().status())
+        .isEqualTo(ApplicationFormPageBindingStatus.DATA_PREPARING);
     verify(pageBindings, never()).claim(any(), any(), any());
     verify(pageResources, never()).prepare(any());
     verify(dnaResources, never()).bind(any(), any());
@@ -490,14 +667,12 @@ class ApplicationFormPublicationServiceImplTest {
   @Test
   void activePublicationReplayReturnsTheRefreshedAggregateWithoutRemoteWrites() {
     ApplicationFormPublicationView active = view(ApplicationFormPublicationStatus.ACTIVE);
-    when(state.claim("app-a", "form-a", command())).thenReturn(
-        new PublicationClaim(false, null, active)
-    );
+    when(state.claim("app-a", "form-a", command()))
+        .thenReturn(new PublicationClaim(false, null, active));
     var publish = new PublishApplicationFormCommand(1, "page-a", "publish-a");
     var binding = bindingView(ApplicationFormPageBindingStatus.ACTIVE);
-    when(pageBindings.claim("app-a", "form-a", publish)).thenReturn(
-        new ApplicationFormPageBindingStateService.BindingClaim(false, null, binding)
-    );
+    when(pageBindings.claim("app-a", "form-a", publish))
+        .thenReturn(new ApplicationFormPageBindingStateService.BindingClaim(false, null, binding));
     when(state.get("app-a", "form-a", "publication-a")).thenReturn(active);
 
     var result = service.publish("app-a", "form-a", publish);
@@ -525,8 +700,7 @@ class ApplicationFormPublicationServiceImplTest {
         1,
         false,
         new PhysicalSchemaDefinition(DnaRuntimeApiVersion.CURRENT, List.of(), List.of()),
-        "a".repeat(64)
-    );
+        "a".repeat(64));
   }
 
   private static PreparedDnaSchema prepared(final SchemaMigrationStatus status) {
@@ -534,8 +708,7 @@ class ApplicationFormPublicationServiceImplTest {
   }
 
   private static ApplicationFormPublicationView view(
-      final ApplicationFormPublicationStatus status
-  ) {
+      final ApplicationFormPublicationStatus status) {
     return new ApplicationFormPublicationView(
         "publication-a",
         "form-a",
@@ -546,13 +719,11 @@ class ApplicationFormPublicationServiceImplTest {
         null,
         1,
         Instant.EPOCH,
-        Instant.EPOCH
-    );
+        Instant.EPOCH);
   }
 
   private static ApplicationFormPageBindingView bindingView(
-      final ApplicationFormPageBindingStatus status
-  ) {
+      final ApplicationFormPageBindingStatus status) {
     return new ApplicationFormPageBindingView(
         "binding-a",
         "app-a",
@@ -568,8 +739,7 @@ class ApplicationFormPublicationServiceImplTest {
         1,
         null,
         Instant.EPOCH,
-        Instant.EPOCH
-    );
+        Instant.EPOCH);
   }
 
   private static DnaInvocationContext context() {
@@ -584,7 +754,6 @@ class ApplicationFormPublicationServiceImplTest {
         Set.of(),
         false,
         List.of(),
-        Map.of()
-    );
+        Map.of());
   }
 }

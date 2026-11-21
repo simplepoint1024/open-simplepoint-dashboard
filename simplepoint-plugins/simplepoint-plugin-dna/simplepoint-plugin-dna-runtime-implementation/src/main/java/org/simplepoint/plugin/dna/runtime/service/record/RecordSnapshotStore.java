@@ -17,12 +17,13 @@ import org.simplepoint.plugin.dna.runtime.service.schema.RecordSnapshotSchema;
 /** Immutable, bounded value capture, atomically inserted alongside the metadata-only receipt. */
 final class RecordSnapshotStore {
   private static final ObjectMapper JSON =
-      new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+      new ObjectMapper()
+          .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
           .disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT)
           .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
           .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
           .enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
-  private static final int MAX_BYTES = 2 * 1024 * 1024;
+  static final int MAX_BYTES = 2 * 1024 * 1024;
   private static final String TABLE = "\"runtime\".\"" + RecordSnapshotSchema.TABLE + "\"";
 
   RecordSelectPlan lookup(RecordOperationIdentity operation) {
@@ -42,13 +43,20 @@ final class RecordSnapshotStore {
     try {
       // Keep ordinary legacy snapshots readable during a rolling upgrade or rollback.
       // Any installed definition, including an explicit removal, retains its versioned provenance.
-      json = JSON.writeValueAsString(snapshot.calculationRevision() == 0 ? snapshot.values() : snapshot);
+      json =
+          JSON.writeValueAsString(
+              snapshot.contractVersion() == 2 && snapshot.calculationRevision() == 0
+                  ? snapshot.values()
+                  : snapshot);
     } catch (JsonProcessingException failure) {
       throw invalid(failure);
     }
     if (json.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) {
       throw new DnaRuntimeException(
-          DnaRuntimeErrorCode.RECORD_COMMAND_INVALID, "Business snapshot exceeds 2 MiB");
+          snapshot.values().referenceSnapshots().isEmpty()
+              ? DnaRuntimeErrorCode.RECORD_COMMAND_INVALID
+              : DnaRuntimeErrorCode.RECORD_REFERENCE_CONFLICT,
+          "Business snapshot exceeds 2 MiB");
     }
     var parameters = new RecordSqlParameters();
     String placeholders =
@@ -83,7 +91,7 @@ final class RecordSnapshotStore {
   }
 
   RecordStoredSnapshot read(RecordOperationIdentity operation, CalciteQueryResult result) {
-    if (result.rows().size() > 1) {
+    if (result.truncated() || result.rows().size() > 1) {
       throw invalid(null);
     }
     if (result.rows().isEmpty()) {
@@ -115,7 +123,9 @@ final class RecordSnapshotStore {
         // Legacy publications could not install formulas. Preserve their original values.
         return RecordStoredSnapshot.capture(JSON.treeToValue(tree, OwnedRecordView.class), null);
       }
-      if (!tree.has("calculationRevision") || !tree.has("calculationChecksum") || !tree.has("values")) {
+      if (!tree.has("calculationRevision")
+          || !tree.has("calculationChecksum")
+          || !tree.has("values")) {
         throw invalid(null);
       }
       return JSON.treeToValue(tree, RecordStoredSnapshot.class);

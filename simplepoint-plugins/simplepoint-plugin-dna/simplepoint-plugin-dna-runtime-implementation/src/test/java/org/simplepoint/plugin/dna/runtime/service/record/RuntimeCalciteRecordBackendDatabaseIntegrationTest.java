@@ -49,6 +49,7 @@ import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaSnapshotC
 import org.simplepoint.plugin.dna.runtime.service.schema.PhysicalSchemaTarget;
 import org.simplepoint.plugin.dna.runtime.service.schema.PostgresqlRuntimeSchemaDialect;
 import org.simplepoint.plugin.dna.runtime.service.schema.RecordWriteFenceProvisioner;
+import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeOwnershipTestFixture;
 import org.simplepoint.plugin.dna.runtime.service.schema.RuntimeSchemaDialect;
 import org.simplepoint.plugin.dna.runtime.service.support.RuntimeRequestContext.RuntimeActor;
 import org.simplepoint.plugin.dna.runtime.service.support.StandardLogicalValueConverter;
@@ -65,8 +66,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         environmentOr("DNA_RUNTIME_TEST_POSTGRES_USER", "postgres"),
         environmentOr("DNA_RUNTIME_TEST_POSTGRES_PASSWORD", "postgres"),
         null,
-        "public"
-    );
+        "public");
   }
 
   @Test
@@ -78,8 +78,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         environmentOr("DNA_RUNTIME_TEST_MYSQL_USER", "root"),
         environmentOr("DNA_RUNTIME_TEST_MYSQL_PASSWORD", "root"),
         "dna_runtime",
-        null
-    );
+        null);
   }
 
   private static void verify(
@@ -87,131 +86,165 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
       final String username,
       final String password,
       final String catalog,
-      final String schema
-  ) throws Exception {
+      final String schema)
+      throws Exception {
+    try (var namespace =
+        RuntimeOwnershipTestFixture.namespace(
+            new DriverManagerDataSource(url, username, password), schema != null)) {
+      verifyScoped(namespace.source(), namespace.catalog(), namespace.schema());
+    }
+  }
+
+  private static void verifyScoped(javax.sql.DataSource source, String catalog, String schema)
+      throws Exception {
     String table = "spf_dml_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     boolean postgresql = schema != null;
     String idType = "VARCHAR(36)";
     String timestampType = postgresql ? "TIMESTAMP(6) WITH TIME ZONE" : "DATETIME(6)";
-    SimpleDataSource dataSource = new SimpleDataSource(
-        new DriverManagerDataSource(url, username, password)
-    );
+    SimpleDataSource dataSource = new SimpleDataSource(source);
+    final var infrastructureTarget =
+        RuntimeOwnershipTestFixture.reserveNewModel(
+            source, model(table, catalog, schema).target(), "tenant-a");
     try (Connection connection = dataSource.getConnection();
-         Statement statement = connection.createStatement()) {
-      statement.execute("CREATE TABLE " + table + " ("
-          + "id " + idType + " PRIMARY KEY, tenant_id VARCHAR(64) NOT NULL, "
-          + "record_version BIGINT NOT NULL, created_by VARCHAR(64), "
-          + "created_org_dept_id VARCHAR(64), created_at " + timestampType + ", "
-          + "updated_by VARCHAR(64), updated_at " + timestampType + ", "
-          + "deleted_at " + timestampType + ", title VARCHAR(128) NOT NULL)"
-      );
+        Statement statement = connection.createStatement()) {
+      statement.execute(
+          "CREATE TABLE "
+              + table
+              + " ("
+              + "id "
+              + idType
+              + " PRIMARY KEY, tenant_id VARCHAR(64) NOT NULL, "
+              + "record_version BIGINT NOT NULL, created_by VARCHAR(64), "
+              + "created_org_dept_id VARCHAR(64), created_at "
+              + timestampType
+              + ", "
+              + "updated_by VARCHAR(64), updated_at "
+              + timestampType
+              + ", "
+              + "deleted_at "
+              + timestampType
+              + ", title VARCHAR(128) NOT NULL)");
     }
     RuntimeRecordModel model = model(table, catalog, schema);
-    PhysicalSchemaSnapshotCodec snapshotCodec = new PhysicalSchemaSnapshotCodec(
-        new ObjectMapper().findAndRegisterModules()
-    );
-    RuntimeSchemaDialect runtimeDialect = postgresql
-        ? new PostgresqlRuntimeSchemaDialect(snapshotCodec)
-        : new MysqlRuntimeSchemaDialect(snapshotCodec);
-    JdbcDatabaseDialect core = postgresql ? new PostgresqlJdbcDatabaseDialect() : new MysqlJdbcDatabaseDialect();
+    PhysicalSchemaSnapshotCodec snapshotCodec =
+        new PhysicalSchemaSnapshotCodec(new ObjectMapper().findAndRegisterModules());
+    RuntimeSchemaDialect runtimeDialect =
+        postgresql
+            ? new PostgresqlRuntimeSchemaDialect(snapshotCodec)
+            : new MysqlRuntimeSchemaDialect(snapshotCodec);
+    JdbcDatabaseDialect core =
+        postgresql ? new PostgresqlJdbcDatabaseDialect() : new MysqlJdbcDatabaseDialect();
     JdbcDatabaseDialect.SupportContext context;
     DatabaseIdentity database;
     try (Connection connection = dataSource.getConnection()) {
       var metadata = connection.getMetaData();
-      context = new JdbcDatabaseDialect.SupportContext(core.code(), metadata.getDriverName(), metadata.getDatabaseProductName(),
-          metadata.getDatabaseProductVersion(), catalog, schema, metadata.getIdentifierQuoteString(), Map.of());
-      database = new DatabaseIdentity(metadata.getDatabaseProductName(), metadata.getDatabaseProductVersion(),
-          metadata.getDatabaseMajorVersion(), metadata.getDatabaseMinorVersion());
+      context =
+          new JdbcDatabaseDialect.SupportContext(
+              core.code(),
+              metadata.getDriverName(),
+              metadata.getDatabaseProductName(),
+              metadata.getDatabaseProductVersion(),
+              catalog,
+              schema,
+              metadata.getIdentifierQuoteString(),
+              Map.of());
+      database =
+          new DatabaseIdentity(
+              metadata.getDatabaseProductName(),
+              metadata.getDatabaseProductVersion(),
+              metadata.getDatabaseMajorVersion(),
+              metadata.getDatabaseMinorVersion());
     }
     ManagedRuntimeDataSourceProvider provider = mock(ManagedRuntimeDataSourceProvider.class);
-    when(provider.open(any())).thenReturn(new ManagedRuntimeDataSource(
-        dataSource,
-        false,
-        context,
-        core,
-        runtimeDialect,
-        database,
-        catalog,
-        schema
-    ));
-    RuntimeCalciteRecordBackend backend = new RuntimeCalciteRecordBackend(
-        provider,
-        new DefaultCalciteQueryEngine()
-    );
-    new RecordWriteFencePreparation(new RecordWriteFenceProvisioner(new JdbcPhysicalSchemaBackend(provider, snapshotCodec)),
-        backend).prepare(new RuntimeActor("tenant-a", "publisher"), model.target());
+    when(provider.open(any()))
+        .thenReturn(
+            new ManagedRuntimeDataSource(
+                dataSource, false, context, core, runtimeDialect, database, catalog, schema));
+    RuntimeCalciteRecordBackend backend =
+        new RuntimeCalciteRecordBackend(provider, new DefaultCalciteQueryEngine());
+    new RecordWriteFencePreparation(
+            new RecordWriteFenceProvisioner(new JdbcPhysicalSchemaBackend(provider, snapshotCodec)),
+            backend)
+        .prepare(new RuntimeActor("tenant-a", "publisher"), infrastructureTarget);
     try {
       String committedId = UUID.randomUUID().toString();
-      RecordBatchExecutionResult committed = backend.execute(
-          model, new RecordWriteAdmission("tenant-a", 0),
-          List.of(insert(table, committedId)),
-          15_000
-      );
+      RecordBatchExecutionResult committed =
+          backend.execute(
+              model,
+              new RecordWriteAdmission("tenant-a", 0),
+              List.of(insert(table, committedId)),
+              15_000);
       assertThat(committed.affectedRows()).containsExactly(1);
       assertThat(committed.pushedStatementCount()).isGreaterThan(0);
 
-      assertThatThrownBy(() -> backend.execute(
-          model, new RecordWriteAdmission("tenant-a", 0),
-          List.of(
-              insert(table, UUID.randomUUID().toString()),
-              updateMissing(table, UUID.randomUUID().toString())
-          ),
-          15_000
-      )).isInstanceOf(RecordMutationMissException.class);
+      assertThatThrownBy(
+              () ->
+                  backend.execute(
+                      model,
+                      new RecordWriteAdmission("tenant-a", 0),
+                      List.of(
+                          insert(table, UUID.randomUUID().toString()),
+                          updateMissing(table, UUID.randomUUID().toString())),
+                      15_000))
+          .isInstanceOf(RecordMutationMissException.class);
       try (Connection connection = dataSource.getConnection();
-           Statement statement = connection.createStatement();
-           ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM " + table)) {
+          Statement statement = connection.createStatement();
+          ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM " + table)) {
         result.next();
         assertThat(result.getLong(1)).isEqualTo(1L);
       }
 
-      RecordSqlCompiler compiler = new RecordSqlCompiler(
-          new StandardLogicalValueConverter()
-      );
+      RecordSqlCompiler compiler = new RecordSqlCompiler(new StandardLogicalValueConverter());
       RecordAccessContext access = access();
-      RecordSqlStatement created = compiler.mutation(
-          model,
-          access,
-          new RecordCreateMutation("create", Map.of("title", "service-create")),
-          Instant.parse("2026-09-30T01:02:03.456Z")
-      );
+      RecordSqlStatement created =
+          compiler.mutation(
+              model,
+              access,
+              new RecordCreateMutation("create", Map.of("title", "service-create")),
+              Instant.parse("2026-09-30T01:02:03.456Z"));
       backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(created), 15_000);
-      backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(compiler.mutation(
+      backend.execute(
           model,
-          access,
-          new RecordUpdateMutation(
-              "update",
-              created.recordId(),
-              0,
-              Map.of("title", "service-update")
-          ),
-          Instant.parse("2026-09-30T02:03:04.567Z")
-      )), 15_000);
-      backend.execute(model, new RecordWriteAdmission("tenant-a", 0), List.of(compiler.mutation(
+          new RecordWriteAdmission("tenant-a", 0),
+          List.of(
+              compiler.mutation(
+                  model,
+                  access,
+                  new RecordUpdateMutation(
+                      "update", created.recordId(), 0, Map.of("title", "service-update")),
+                  Instant.parse("2026-09-30T02:03:04.567Z"))),
+          15_000);
+      backend.execute(
           model,
-          access,
-          new RecordDeleteMutation("delete", created.recordId(), 1),
-          Instant.parse("2026-09-30T03:04:05.678Z")
-      )), 15_000);
-      var timestampQuery = backend.query(
-          model,
-          new RecordSelectPlan(
-              "SELECT \"id\" FROM \"runtime\".\"" + table
-                  + "\" WHERE \"created_at\" = CAST(? AS TIMESTAMP(6))",
-              List.of("2026-09-30T01:02:03.456"),
-              List.of(),
-              10
-          ),
-          15_000
-      );
+          new RecordWriteAdmission("tenant-a", 0),
+          List.of(
+              compiler.mutation(
+                  model,
+                  access,
+                  new RecordDeleteMutation("delete", created.recordId(), 1),
+                  Instant.parse("2026-09-30T03:04:05.678Z"))),
+          15_000);
+      var timestampQuery =
+          backend.query(
+              model,
+              new RecordSelectPlan(
+                  "SELECT \"id\" FROM \"runtime\".\""
+                      + table
+                      + "\" WHERE \"created_at\" = CAST(? AS TIMESTAMP(6))",
+                  List.of("2026-09-30T01:02:03.456"),
+                  List.of(),
+                  10),
+              15_000);
       assertThat(timestampQuery.rows()).hasSize(1);
-      var creation = backend.query(model, compiler.creation(model, access, created.recordId()), 15_000);
+      var creation =
+          backend.query(model, compiler.creation(model, access, created.recordId()), 15_000);
       assertThat(creation.rows().getFirst()).containsExactly(created.recordId());
       try (Connection connection = dataSource.getConnection();
-           var prepared = connection.prepareStatement(
-               "SELECT record_version, deleted_at, title, created_at, updated_at FROM "
-                   + table + " WHERE id = ?"
-           )) {
+          var prepared =
+              connection.prepareStatement(
+                  "SELECT record_version, deleted_at, title, created_at, updated_at FROM "
+                      + table
+                      + " WHERE id = ?")) {
         prepared.setString(1, created.recordId());
         try (ResultSet result = prepared.executeQuery()) {
           assertThat(result.next()).isTrue();
@@ -228,17 +261,14 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
       }
     } finally {
       try (Connection connection = dataSource.getConnection();
-           Statement statement = connection.createStatement()) {
+          Statement statement = connection.createStatement()) {
         statement.execute("DROP TABLE " + table);
       }
     }
   }
 
   private static RuntimeRecordModel model(
-      final String table,
-      final String catalog,
-      final String schema
-  ) {
+      final String table, final String catalog, final String schema) {
     return new RuntimeRecordModel(
         "model-1",
         "app-1",
@@ -246,24 +276,20 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         1,
         new PhysicalSchemaDefinition(
             DnaRuntimeApiVersion.CURRENT,
-            List.of(new LogicalFieldDefinition(
-                "field-title",
-                "title",
-                "Title",
-                LogicalFieldType.STRING,
-                false,
-                128,
-                null,
-                null,
-                null
-            )),
-            List.of()
-        ),
+            List.of(
+                new LogicalFieldDefinition(
+                    "field-title",
+                    "title",
+                    "Title",
+                    LogicalFieldType.STRING,
+                    false,
+                    128,
+                    null,
+                    null,
+                    null)),
+            List.of()),
         new PhysicalSchemaTarget(
-            "model-1",
-            new RuntimeMetadataTarget("source-1", catalog, schema, table)
-        )
-    );
+            "model-1", new RuntimeMetadataTarget("source-1", catalog, schema, table)));
   }
 
   private static RecordAccessContext access() {
@@ -273,27 +299,21 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         Set.of("id", "record_version", "title"),
         Set.of("title"),
         Set.of(),
-        new DataScopeCondition(
-            "ALL",
-            "created_org_dept_id",
-            "created_by",
-            "user-a",
-            Set.of()
-        ),
-        "dept-a"
-    );
+        new DataScopeCondition("ALL", "created_org_dept_id", "created_by", "user-a", Set.of()),
+        "dept-a");
   }
 
   private static RecordSqlStatement insert(final String table, final String id) {
     return new RecordSqlStatement(
-        "INSERT INTO \"runtime\".\"" + table + "\" "
+        "INSERT INTO \"runtime\".\""
+            + table
+            + "\" "
             + "(\"id\", \"tenant_id\", \"record_version\", \"title\") VALUES (?, ?, ?, ?)",
         List.of(id, "tenant-a", 0L, "title-" + id),
         RecordMutationType.CREATE,
         id,
         0,
-        Instant.now()
-    );
+        Instant.now());
   }
 
   private static RecordSqlStatement updateMissing(final String table, final String recordId) {
@@ -303,8 +323,7 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
         RecordMutationType.UPDATE,
         recordId,
         1,
-        Instant.now()
-    );
+        Instant.now());
   }
 
   private static String environment(final String name) {
@@ -336,12 +355,10 @@ class RuntimeCalciteRecordBackendDatabaseIntegrationTest {
     }
 
     @Override
-    public void setLogWriter(final PrintWriter out) {
-    }
+    public void setLogWriter(final PrintWriter out) {}
 
     @Override
-    public void setLoginTimeout(final int seconds) {
-    }
+    public void setLoginTimeout(final int seconds) {}
 
     @Override
     public int getLoginTimeout() {

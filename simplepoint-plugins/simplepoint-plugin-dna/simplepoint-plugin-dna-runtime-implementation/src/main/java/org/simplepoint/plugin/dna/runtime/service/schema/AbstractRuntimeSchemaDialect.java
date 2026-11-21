@@ -45,6 +45,9 @@ import org.simplepoint.plugin.dna.runtime.api.schema.PhysicalTableSnapshot;
 /** Shared strict planner and JDBC metadata normalizer for supported Runtime dialects. */
 abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
 
+  // A reserved logical key outside the public business-index naming grammar.
+  private static final String TENANT_IDENTITY_INDEX = "__tenant_record_identity__";
+
   private static final List<ColumnSpec> SYSTEM_COLUMNS = List.of(
       system("id", PhysicalStorageType.UUID, false, null, "平台记录标识"),
       system("tenant_id", PhysicalStorageType.STRING, false, null, "平台租户标识", 255),
@@ -108,10 +111,13 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         true,
         columns.stream().map(ColumnSpec::snapshot).toList(),
         expectedIndexes,
-        normalize(tableComment)
+        normalize(tableComment),
+        SchemaReferenceSupport.expected(this, target, schema, coreDialect, context)
     );
+    SchemaReferenceSupport.validateTargets(this, connection, coreDialect, context, target, schema, expected);
     PhysicalTableSnapshot actual = inspect(connection, coreDialect, context, target);
     validateExistingBase(actual, expected);
+    SchemaReferenceSupport.validateExistingRows(this, connection, coreDialect, context, target, null, schema, actual);
 
     List<PlannedSchemaStep> steps = new ArrayList<>();
     addStep(
@@ -133,6 +139,21 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
           expectedIndex.name(),
           buildCreateIndexSql(coreDialect, context, qualifiedTable, expectedIndex)
       );
+    }
+    if (Boolean.TRUE.equals(schema.tenantRecordIdentity())) {
+      var identity = tenantIdentityIndex(target);
+      addStep(steps, SchemaMigrationOperation.CREATE_INDEX, TENANT_IDENTITY_INDEX, identity.name(),
+          buildCreateIndexSql(coreDialect, context, qualifiedTable, identity));
+    }
+    for (var reference : schema.references()) {
+      var index = referenceIndex(target, schema, reference);
+      addStep(steps, SchemaMigrationOperation.CREATE_INDEX, reference.relationId(), index.name(),
+          buildCreateIndexSql(coreDialect, context, qualifiedTable, index));
+    }
+    for (var foreignKey : expected.foreignKeys()) {
+      descriptor.requireSupported(DialectOperation.ADD_FOREIGN_KEY);
+      addStep(steps, SchemaMigrationOperation.ADD_FOREIGN_KEY, foreignKey.name(), foreignKey.name(),
+          SchemaReferenceSupport.addSql(this, coreDialect, context, qualifiedTable, foreignKey));
     }
     if (normalize(tableComment) != null) {
       addStep(
@@ -159,14 +180,14 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         );
       }
     }
-    return new InitialSchemaPlan(
+    return SchemaPlanCheckpoints.attach(new InitialSchemaPlan(
         dialectId(),
         database,
         actual,
         expected,
         SchemaMigrationRisk.SAFE,
         steps
-    );
+    ), null, alterIncludesColumnComment(), snapshotCodec);
   }
 
   @Override
@@ -181,20 +202,57 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
       final PhysicalSchemaDefinition targetSchema
   ) throws SQLException {
     validateVersion(database);
+    if (Boolean.TRUE.equals(currentSchema.tenantRecordIdentity())
+        && !Boolean.TRUE.equals(targetSchema.tenantRecordIdentity())) {
+      throw new DnaRuntimeException(DnaRuntimeErrorCode.SCHEMA_INVALID,
+          "Tenant-qualified record identity cannot be removed by ordinary schema evolution");
+    }
+    SchemaReferenceSupport.validateEvolution(currentSchema, targetSchema);
     validateSchema(targetSchema);
     validateIdentifierLimits(connection.getMetaData(), target, targetSchema);
     String qualifiedTable = qualifiedTable(coreDialect, context, target);
     PhysicalTableSnapshot actual = inspect(connection, coreDialect, context, target);
-    PhysicalTableSnapshot current = expectedSnapshot(target, tableComment, currentSchema);
+    PhysicalTableSnapshot current = expectedSnapshot(target, tableComment, currentSchema, coreDialect, context);
     if (!actual.checksum().equals(current.checksum())) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.SCHEMA_DRIFT_DETECTED,
           "The live table no longer matches the active model version"
       );
     }
-    PhysicalTableSnapshot expected = expectedSnapshot(target, tableComment, targetSchema);
+    PhysicalTableSnapshot expected = expectedSnapshot(target, tableComment, targetSchema, coreDialect, context);
     List<PlannedSchemaStep> steps = new ArrayList<>();
     List<DialectOperation> requiredCapabilities = new ArrayList<>();
+    SchemaReferenceSupport.validateTargets(this, connection, coreDialect, context, target, targetSchema, expected);
+    SchemaReferenceSupport.validateExistingRows(this, connection, coreDialect, context, target, currentSchema, targetSchema, actual);
+    // A foreign key can depend on its generated index. Recreate the key around that index change.
+    var replacedReferenceIndexes = currentSchema.references().stream()
+        .map(reference -> referenceIndex(target, currentSchema, reference))
+        .filter(index -> !expected.indexes().contains(index))
+        .map(PhysicalIndexSnapshot::columns)
+        .collect(java.util.stream.Collectors.toSet());
+    var removedKeys = new java.util.HashSet<String>();
+    for (var key : current.foreignKeys()) {
+      boolean columnAltered =
+          currentSchema.fields().stream()
+              .anyMatch(
+                  field ->
+                      key.columns().contains(field.code())
+                          && targetSchema.fields().stream()
+                              .anyMatch(
+                                  next ->
+                                      next.fieldId().equals(field.fieldId())
+                                          && (!next.code().equals(field.code())
+                                              || requiresStructuralAlter(field, next)
+                                                  && !onlyRelaxesNullability(field, next))));
+      if (!expected.foreignKeys().contains(key)
+          || columnAltered
+          || replacedReferenceIndexes.contains(key.columns())) {
+        removedKeys.add(key.name());
+        addEvolutionStep(steps, requiredCapabilities, SchemaMigrationOperation.DROP_FOREIGN_KEY,
+            DialectOperation.DROP_FOREIGN_KEY, key.name(), key.name(), SchemaMigrationRisk.CONDITIONAL,
+            buildDropForeignKeySql(coreDialect, context, qualifiedTable, key.name()));
+      }
+    }
     planIndexDrops(
         coreDialect,
         context,
@@ -226,6 +284,13 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         steps,
         requiredCapabilities
     );
+    for (var key : expected.foreignKeys()) {
+      if (removedKeys.contains(key.name()) || !current.foreignKeys().contains(key)) {
+        addEvolutionStep(steps, requiredCapabilities, SchemaMigrationOperation.ADD_FOREIGN_KEY,
+            DialectOperation.ADD_FOREIGN_KEY, key.name(), key.name(), SchemaMigrationRisk.CONDITIONAL,
+            SchemaReferenceSupport.addSql(this, coreDialect, context, qualifiedTable, key));
+      }
+    }
     if (!Objects.equals(actual.tableComment(), expected.tableComment())) {
       addEvolutionStep(
           steps,
@@ -242,14 +307,14 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         .max(java.util.Comparator.naturalOrder()).orElse(SchemaMigrationRisk.SAFE);
     DialectCapabilityDescriptor descriptor = describe(database);
     requiredCapabilities.forEach(descriptor::requireSupported);
-    return new InitialSchemaPlan(
+    return SchemaPlanCheckpoints.attach(new InitialSchemaPlan(
         dialectId(),
         database,
         actual,
         expected,
         risk,
         steps
-    );
+    ), currentSchema, alterIncludesColumnComment(), snapshotCodec);
   }
 
   @Override
@@ -279,7 +344,38 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         table.schema(),
         table.name()
     );
-    return snapshotCodec.snapshot(true, columns, indexes, table.comment());
+    return snapshotCodec.snapshot(true, columns, indexes, table.comment(),
+        JdbcForeignKeyInspector.inspect(metadata, table.catalog(), table.schema(), table.name()));
+  }
+
+  @Override
+  public final void verifyReferenceData(Connection connection, JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget target,
+      PhysicalSchemaDefinition schema, PhysicalTableSnapshot actual) throws SQLException {
+    SchemaReferenceSupport.validateExistingRows(this, connection, core, context, target, schema, schema, actual);
+  }
+
+  @Override
+  public final RecordReferenceSql recordReferenceSql(JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget target, String column) {
+    return RecordReferenceSql.compile(qualifiedTable(core, context, target), column,
+        identifier -> core.quoteIdentifier(identifier, context));
+  }
+
+  @Override
+  public final String retireCollectionEdgesSql(JdbcDatabaseDialect core,
+      JdbcDatabaseDialect.SupportContext context, PhysicalSchemaTarget edge,
+      String sourceColumn, String targetColumn) {
+    String source = core.quoteIdentifier(sourceColumn, context);
+    String target = core.quoteIdentifier(targetColumn, context);
+    String version = core.quoteIdentifier("record_version", context);
+    return "UPDATE " + qualifiedTable(core, context, edge)
+        + " SET " + source + " = NULL, " + target + " = NULL, " + version + " = " + version + " + 1, "
+        + core.quoteIdentifier("updated_by", context) + " = ?, "
+        + core.quoteIdentifier("updated_at", context) + " = ? WHERE "
+        + core.quoteIdentifier("tenant_id", context) + " = ? AND "
+        + source + " IS NOT NULL AND " + target + " IS NOT NULL AND "
+        + core.quoteIdentifier("deleted_at", context) + " IS NULL";
   }
 
   @Override
@@ -337,7 +433,17 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
     // Initial publication intentionally declares only evidence-backed capabilities.
   }
 
+  String buildDropForeignKeySql(JdbcDatabaseDialect core, JdbcDatabaseDialect.SupportContext context,
+      String table, String name) {
+    return "ALTER TABLE " + table + " DROP CONSTRAINT " + core.quoteIdentifier(name, context);
+  }
+
   abstract int minimumMajorVersion();
+
+  /** Whether structural ALTER also applies the target column comment in that statement. */
+  boolean alterIncludesColumnComment() {
+    return false;
+  }
 
   abstract int maxIdentifierLength();
 
@@ -519,13 +625,16 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
   private PhysicalTableSnapshot expectedSnapshot(
       final PhysicalSchemaTarget target,
       final String tableComment,
-      final PhysicalSchemaDefinition schema
+      final PhysicalSchemaDefinition schema,
+      final JdbcDatabaseDialect coreDialect,
+      final JdbcDatabaseDialect.SupportContext context
   ) {
     return snapshotCodec.snapshot(
         true,
         compileColumns(schema).stream().map(ColumnSpec::snapshot).toList(),
         expectedIndexes(target, schema),
-        normalize(tableComment)
+        normalize(tableComment),
+        SchemaReferenceSupport.expected(this, target, schema, coreDialect, context)
     );
   }
 
@@ -570,7 +679,6 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         );
         continue;
       }
-      String liveName = current.code();
       if (!current.code().equals(targetField.code())) {
         addEvolutionStep(
             steps,
@@ -588,13 +696,12 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
                 targetField.code()
             )
         );
-        liveName = targetField.code();
       }
       ColumnSpec targetColumn = targetColumns.get(targetField.code());
       if (requiresStructuralAlter(current, targetField)) {
         SchemaMigrationRisk risk = alterationRisk(current, targetField);
         if (current.nullable() && !targetField.nullable()
-            && containsNull(connection, qualifiedTable, coreDialect, context, liveName)) {
+            && containsNull(connection, qualifiedTable, coreDialect, context, current.code())) {
           throw new DnaRuntimeException(
               DnaRuntimeErrorCode.SCHEMA_PRECHECK_FAILED,
               "A required-field migration found existing NULL values: " + targetField.code()
@@ -759,10 +866,20 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         || !Objects.equals(current.defaultValue(), target.defaultValue());
   }
 
+  /** Allowing NULL changes no existing key or target and preserves the installed foreign key. */
+  private static boolean onlyRelaxesNullability(
+      LogicalFieldDefinition current, LogicalFieldDefinition target) {
+    return !current.nullable()
+        && target.nullable()
+        && current.type() == target.type()
+        && Objects.equals(current.length(), target.length())
+        && Objects.equals(current.precision(), target.precision())
+        && Objects.equals(current.scale(), target.scale())
+        && Objects.equals(current.defaultValue(), target.defaultValue());
+  }
+
   private static SchemaMigrationRisk alterationRisk(
-      final LogicalFieldDefinition current,
-      final LogicalFieldDefinition target
-  ) {
+      final LogicalFieldDefinition current, final LogicalFieldDefinition target) {
     if (current.type() == target.type()) {
       if (current.type() == LogicalFieldType.STRING
           && target.length() != null && current.length() != null
@@ -808,7 +925,7 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
       final String qualifiedTable
   ) throws SQLException {
     try (Statement statement = connection.createStatement();
-         ResultSet result = statement.executeQuery("SELECT 1 FROM " + qualifiedTable + " LIMIT 1")) {
+        ResultSet result = statement.executeQuery("SELECT 1 FROM " + qualifiedTable + " LIMIT 1")) {
       return result.next();
     }
   }
@@ -863,7 +980,23 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
         index.unique(),
         false
     )));
+    if (Boolean.TRUE.equals(schema.tenantRecordIdentity())) {
+      indexes.add(tenantIdentityIndex(target));
+    }
+    schema.references().forEach(reference -> indexes.add(referenceIndex(target, schema, reference)));
     return List.copyOf(indexes);
+  }
+
+  private PhysicalIndexSnapshot referenceIndex(PhysicalSchemaTarget target, PhysicalSchemaDefinition schema,
+      org.simplepoint.plugin.dna.runtime.api.schema.LogicalReferenceDefinition reference) {
+    var column = schema.fields().stream().filter(field -> field.fieldId().equals(reference.fieldId())).findFirst().orElseThrow();
+    return new PhysicalIndexSnapshot(indexName(target, "__reference_" + reference.relationId()),
+        List.of("tenant_id", column.code()), reference.unique(), false);
+  }
+
+  private PhysicalIndexSnapshot tenantIdentityIndex(final PhysicalSchemaTarget target) {
+    return new PhysicalIndexSnapshot(indexName(target, TENANT_IDENTITY_INDEX),
+        List.of("tenant_id", "id"), true, false);
   }
 
   private String indexName(final PhysicalSchemaTarget target, final String code) {
@@ -900,7 +1033,8 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
       return;
     }
     if (!baseColumns(actual.columns()).equals(baseColumns(expected.columns()))
-        || !primary(actual.indexes()).equals(primary(expected.indexes()))) {
+        || !primary(actual.indexes()).equals(primary(expected.indexes()))
+        || !expected.foreignKeys().containsAll(actual.foreignKeys())) {
       throw new DnaRuntimeException(
           DnaRuntimeErrorCode.SCHEMA_DRIFT_DETECTED,
           "The bound physical table exists with a different base structure"
@@ -969,12 +1103,14 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
     List<PhysicalColumnSnapshot> columns = new ArrayList<>();
     try (ResultSet resultSet = metadata.getColumns(
         catalog,
-        schema,
+        schema == null ? null : escapePattern(metadata, schema),
         escapePattern(metadata, table),
         null
     )) {
       while (resultSet.next()) {
-        if (!table.equalsIgnoreCase(resultSet.getString("TABLE_NAME"))) {
+        if (!table.equals(resultSet.getString("TABLE_NAME"))
+            || schema != null && !schema.equals(resultSet.getString("TABLE_SCHEM"))
+            || catalog != null && !catalog.equals(resultSet.getString("TABLE_CAT"))) {
           continue;
         }
         String typeName = resultSet.getString("TYPE_NAME");
@@ -1048,12 +1184,14 @@ abstract class AbstractRuntimeSchemaDialect implements RuntimeSchemaDialect {
   ) throws SQLException {
     try (ResultSet resultSet = metadata.getTables(
         catalog,
-        schema,
+        schema == null ? null : escapePattern(metadata, schema),
         escapePattern(metadata, table),
         new String[]{"TABLE", "BASE TABLE"}
     )) {
       while (resultSet.next()) {
-        if (table.equalsIgnoreCase(resultSet.getString("TABLE_NAME"))) {
+        if (table.equals(resultSet.getString("TABLE_NAME"))
+            && (schema == null || schema.equals(resultSet.getString("TABLE_SCHEM")))
+            && (catalog == null || catalog.equals(resultSet.getString("TABLE_CAT")))) {
           return new TableIdentity(
               resultSet.getString("TABLE_CAT"),
               resultSet.getString("TABLE_SCHEM"),

@@ -34,6 +34,21 @@ export async function smokeWorkflowBusinessForm({fixture, evaluate, poll, clickT
   const {default: assert} = await import('node:assert/strict');
   fixture.personal.businessForm(workflowBusinessSnapshot());
   const task = '.workflow-task-editor.ant-drawer-open', progress = '.workflow-progress-detail.ant-drawer-open';
+  // Older workflow snapshots omit referenceSnapshots. Opening them must survive retained-page registration.
+  await evaluate(`location.hash='#/my/items'`);
+  await clickText('.nb-tab-panel-active tr[data-row-key="instance1"] button', '进度');
+  await poll(() => evaluate(`document.querySelector('${progress}')?.textContent.includes('华东客户现场交付差旅')`),
+    'started matter opens the frozen business snapshot');
+  await clickText(`${progress} .ant-segmented-item`, '审批节点');
+  await poll(() => evaluate(`document.querySelector('${progress} .workflow-node-history')?.textContent.includes('部门审批人')`),
+    'started matter shows current approval');
+  await clickText(`${progress} .ant-segmented-item`, '流程操作记录');
+  await poll(() => evaluate(`document.querySelector('${progress} [aria-label="流程操作记录"]')?.textContent.includes('张三')`),
+    'started matter shows the operation log');
+  await clickText(`${progress} .ant-segmented-item`, '业务快照');
+  await poll(() => evaluate(`document.querySelector('${progress}')?.textContent.includes('差旅费用 8')`),
+    'started matter returns to the frozen snapshot');
+  await clickReady(`${progress} .ant-drawer-close`);
   await evaluate(`location.hash='#/my/todos?task=task1'`);
   await poll(() => evaluate(`document.querySelector('${task}')?.textContent.includes('华东客户现场交付差旅')`), 'designed submission form in pending approval')
     .catch(async error => {console.log(await evaluate(`({hash:location.hash,body:document.body.innerText})`), fixture.requests.slice(-12)); throw error;});

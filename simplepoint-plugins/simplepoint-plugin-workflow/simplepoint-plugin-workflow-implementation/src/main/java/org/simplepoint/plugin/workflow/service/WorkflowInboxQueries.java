@@ -18,6 +18,7 @@ import org.simplepoint.plugin.workflow.entity.WorkflowCandidateReadModel;
 import org.simplepoint.plugin.workflow.entity.WorkflowInboxReadModel;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Personal inbox SQL queries. Authorization predicates are separate from all caller filters. */
 @Service
@@ -66,16 +67,17 @@ public class WorkflowInboxQueries {
   /** Uses one SQL predicate contract for data and count; no current-page filtering/merging. */
   public PageResult<WorkflowInboxItem> query(
       String tab, Map<String, String> filters, Pageable requested) {
+    return query(tab, false, filters, requested);
+  }
+
+  /** Applies the participant archive before pagination and counts. */
+  public PageResult<WorkflowInboxItem> query(
+      String tab, boolean archived, Map<String, String> filters, Pageable requested) {
     WorkflowAccess.requireAuthority(WorkflowResourceCodes.TASKS_VIEW);
     String tenant = WorkflowAccess.tenantId();
     String user = WorkflowAccess.userId();
     List<String> roles = WorkflowAccess.roles();
-    boolean pending =
-        switch (tab) {
-          case "pending" -> true;
-          case "completed" -> false;
-          default -> throw new InvalidQueryException("不支持的待办分组");
-        };
+    boolean pending = pending(tab);
     return labels.read(
         tenant,
         () ->
@@ -87,8 +89,30 @@ public class WorkflowInboxQueries {
                 requested,
                 pending ? "createdAt" : "handledAt",
                 TEXT_FIELDS,
-                (cb, query, root) -> boundary(cb, query, root, tenant, user, roles, pending),
+                (cb, query, root) -> cb.and(boundary(cb, query, root, tenant, user, roles, pending),
+                    WorkflowPersonalArchive.visible(cb, query, root.get("id"), tenant, user, tab, archived)),
                 row -> item(row, user, pending)));
+  }
+
+  /** Archives/restores the caller's entries using the same visibility as the list. */
+  @Transactional
+  public void archive(String tab, List<String> ids, boolean archived) {
+    WorkflowAccess.requireAuthority(WorkflowResourceCodes.TASKS_VIEW);
+    String tenant = WorkflowAccess.tenantId();
+    String user = WorkflowAccess.userId();
+    List<String> roles = WorkflowAccess.roles();
+    boolean pending = pending(tab);
+    WorkflowPersonalArchive.change(em, WorkflowInboxReadModel.class, "processInstanceId", tenant,
+        user, tab, ids, archived,
+        (cb, query, root) -> boundary(cb, query, root, tenant, user, roles, pending));
+  }
+
+  private static boolean pending(String tab) {
+    return switch (tab) {
+      case "pending" -> true;
+      case "completed" -> false;
+      default -> throw new InvalidQueryException("不支持的待办分组");
+    };
   }
 
   private Predicate boundary(

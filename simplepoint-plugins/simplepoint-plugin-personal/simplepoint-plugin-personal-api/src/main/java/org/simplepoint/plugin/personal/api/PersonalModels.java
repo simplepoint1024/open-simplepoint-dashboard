@@ -25,6 +25,10 @@ public final class PersonalModels {
   /** Version-checked action; comments are used only for item notes. */
   public record ActionInput(Long version, String action, String comment) {}
 
+  public record RecordRevision(String id, Long version) {}
+
+  public record MessageSelection(String action, List<RecordRevision> records) {}
+
   /** Manual todo fields; source and delivery identity are server-assigned. */
   public record TodoInput(String title, String content, int priority, Instant dueAt) {}
 
@@ -72,7 +76,13 @@ public final class PersonalModels {
       String linkPath,
       Instant readAt,
       boolean archived,
-      Instant createdAt) {}
+      Instant deletedAt,
+      Instant createdAt) {
+    public MessageView(String id, Long version, String title, String content, int priority, String source,
+        String linkPath, Instant readAt, boolean archived, Instant createdAt) {
+      this(id, version, title, content, priority, source, linkPath, readAt, archived, null, createdAt);
+    }
+  }
 
   /** Immutable item activity projection. */
   public record EventView(String id, String action, String detail, Instant createdAt) {}

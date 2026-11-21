@@ -1,5 +1,14 @@
 // Architecture tests use real domain artifacts without importing runnable service applications.
 dependencies {
+    testImplementation(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-form-implementation"))
+    testImplementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-implementation"))
+    testImplementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-runtime-api"))
+    testImplementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
+    testImplementation(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-api"))
+    testImplementation(project(":simplepoint-data:simplepoint-data-ownership"))
+    testImplementation(project(":simplepoint-data:simplepoint-data-cp"))
+    testImplementation(project(":simplepoint-data:simplepoint-data-calcite:simplepoint-data-calcite-core"))
+    testRuntimeOnly("com.mysql:mysql-connector-j")
     testImplementation(project(":simplepoint-plugins:simplepoint-plugins-auditing:simplepoint-plugin-auditing-logging-api"))
     testRuntimeOnly(project(":simplepoint-security:simplepoint-security-oauth2-server"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-common-ui"))
@@ -34,7 +43,6 @@ dependencies {
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-mcp-implementation"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-ai:simplepoint-plugin-ai-runtime-implementation"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-app:simplepoint-plugin-app-http"))
-    testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-core-implementation"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-federation-implementation"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-dna:simplepoint-plugin-dna-http"))
     testRuntimeOnly(project(":simplepoint-plugins:simplepoint-plugin-notification:simplepoint-plugin-notification-rest"))
@@ -56,6 +64,10 @@ tasks.withType<Test>().configureEach {
     inputs.property("moduleMigrationPostgres", postgres)
     outputs.upToDateWhen { !postgres }
     outputs.doNotCacheIf("Uses a disposable PostgreSQL migration database") { postgres }
+    val relations = providers.environmentVariable("DNA_RUNTIME_TEST_POSTGRES_URL").isPresent
+    inputs.property("formRelationDatabase", relations)
+    outputs.upToDateWhen { !relations }
+    outputs.doNotCacheIf("Uses disposable form relation databases") { relations }
 }
 
 tasks.test {

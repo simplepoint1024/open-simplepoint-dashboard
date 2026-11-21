@@ -35,6 +35,18 @@ class DefaultFormComponentRegistryTest {
         .hasMessageContaining("field.text@1");
   }
 
+  @Test
+  void authoringCatalogDoesNotAdvertiseTheUnreleasedReferenceRuntime() {
+    var context = org.mockito.Mockito.mock(FormRequestContext.class);
+    org.mockito.Mockito.when(context.requireActor()).thenReturn(new FormRequestContext.FormActor("tenant", "user"));
+    var access = org.mockito.Mockito.mock(org.simplepoint.plugin.app.form.api.service.ApplicationAccessPort.class);
+    var registry = new DefaultFormComponentRegistry();
+    var catalog = new ApplicationFormCatalogServiceImpl(null, context, access, registry);
+    assertThat(registry.find("field.reference", "1")).isPresent();
+    assertThat(catalog.designer("app").components()).noneMatch(component -> "field.reference".equals(component.type()));
+    org.mockito.Mockito.verify(access).requireApplication("tenant", "app");
+  }
+
   private static FormComponentDescriptor descriptor(final String type) {
     return new FormComponentDescriptor(
         type,

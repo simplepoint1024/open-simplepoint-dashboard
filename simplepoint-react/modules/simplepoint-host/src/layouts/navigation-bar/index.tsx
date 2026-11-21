@@ -43,6 +43,8 @@ import {isWorkflowEntryLocation, migrateWorkflowLocation, migrateWorkflowTabs, r
 const {Header, Content, Footer, Sider} = Layout;
 const MAX_VISIBLE_TABS = 10;
 
+import {pageRoutePath as normalizeRoutePath, pageTabIdentity, pageViewSelection} from '@simplepoint/shared/page/viewIdentity';
+
 interface DraggableTabNodeProps extends React.HTMLAttributes<HTMLDivElement> {
   'data-node-key': string;
 }
@@ -53,16 +55,6 @@ interface NavigationTab {
   label: React.ReactNode;
   closable?: boolean;
 }
-
-const normalizeRoutePath = (value?: string) => {
-  const normalized = (value || '').trim().replace(/^#/, '');
-  if (!normalized) return '/';
-  const queryIndex = normalized.indexOf('?');
-  const fragmentIndex = normalized.indexOf('#');
-  const indexes = [queryIndex, fragmentIndex].filter(index => index >= 0);
-  const end = indexes.length > 0 ? Math.min(...indexes) : normalized.length;
-  return normalized.slice(0, end) || '/';
-};
 
 const DraggableTabNode: React.FC<DraggableTabNodeProps> = ({className, ...props}) => {
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({
@@ -298,15 +290,17 @@ const NavigateBar: React.FC<{
 
   // 生成包含图标的标签
   const getTabLabel = useCallback((path: string): React.ReactNode => {
-    const icon = pathIconMap.get(path) ?? (storedIconMap.get(path) ? createIcon(storedIconMap.get(path)!) : undefined);
-    const text = pathLabelMap.get(path) ?? storedLabelMap.get(path) ?? path;
+    const route = normalizeRoutePath(path);
+    const icon = pathIconMap.get(route) ?? (storedIconMap.get(path) ? createIcon(storedIconMap.get(path)!) : undefined);
+    const text = pathLabelMap.get(route) ?? storedLabelMap.get(route) ?? storedLabelMap.get(path) ?? route;
+    const detail = pageViewSelection(path).state !== 'none';
     return (
       <span className="nb-tab-label">
         {icon ? <span className="anticon nb-tab-label-icon">{icon}</span> : null}
-        <span>{text}</span>
+        <span>{text}{detail ? ` · ${t('nav.detailView', '详情')}` : ''}</span>
       </span>
     );
-  }, [pathIconMap, pathLabelMap, storedLabelMap, storedIconMap]);
+  }, [pathIconMap, pathLabelMap, storedLabelMap, storedIconMap, t]);
 
   const getDashboardTab = useCallback(() => ({
     key: DASHBOARD_PATH,
@@ -323,12 +317,12 @@ const NavigateBar: React.FC<{
       try {
         const simple = arr.map(t => {
           const labelText = (
-            pathLabelMap.get(t.key) ??
+            pathLabelMap.get(normalizeRoutePath(t.key)) ??
             storedLabelMap.get(t.key) ??
             (typeof t.label === 'string' ? t.label : undefined) ??
             t.key
           );
-          const iconName = pathIconNameMap.get(t.key) ?? storedIconMap.get(t.key);
+          const iconName = pathIconNameMap.get(normalizeRoutePath(t.key)) ?? storedIconMap.get(t.key);
           return {
             key: t.key,
             location: t.location,
@@ -346,16 +340,16 @@ const NavigateBar: React.FC<{
   // 规范化 tabs：去重、dashboard 固定在首位且不可关闭
   const normalizeTabs = useCallback((input: NavigationTab[]) => {
     const normalized = input.map(t => {
-      const normalizedKey = normalizeRoutePath(t.key || t.location);
+      const route = normalizeRoutePath(t.key || t.location);
+      const preserved = normalizeRoutePath(t.location) === route ? t.location : t.key;
+      const normalizedKey = pageTabIdentity(preserved);
       // 根路由只负责重定向到 Dashboard，不应成为一个独立页签。
       // 同时迁移旧版本已持久化的根页签和 AI Workspace 页签。
-      const rootNormalizedKey = normalizedKey === '/' ? DASHBOARD_PATH : normalizedKey;
+      const rootNormalizedKey = route === '/' ? DASHBOARD_PATH : normalizedKey;
       return {
         ...t,
         key: rootNormalizedKey,
-        location: normalizeRoutePath(t.location) === rootNormalizedKey
-          ? t.location
-          : rootNormalizedKey,
+        location: route === '/' ? DASHBOARD_PATH : preserved,
       };
     });
     const out = migrateWorkflowTabs(migrateLegacyAiWorkspaceTabs(
@@ -368,14 +362,13 @@ const NavigateBar: React.FC<{
     return [dashboardTab, ...filtered];
   }, [getDashboardTab, getTabLabel, legacyAiWorkspaceTarget, workflowTargets, routesReady]);
 
-  // HashRouter 已将 hash 中的路径解析到 useLocation，Tab key 只使用 pathname，
-  // query/hash 记录在 location 中，避免 /tenant 与 /tenant?edit=1 被拆成两个 Tab。
+  // 普通查询仍复用资源页签；显式版本化视图身份独立保留，不能替换来源编辑器。
   const getCurrentLocation = useCallback(
     () => migrateWorkflowLocation(`${migrateLegacyAiWorkspacePath(normalizeRoutePath(location.pathname || '/'),
       legacyAiWorkspaceTarget, routesReady)}${location.search || ''}${location.hash || ''}`, workflowTargets, routesReady),
     [legacyAiWorkspaceTarget, workflowTargets, routesReady, location.pathname, location.hash, location.search],
   );
-  const getCurrentPath = useCallback(() => normalizeRoutePath(getCurrentLocation()), [getCurrentLocation]);
+  const getCurrentPath = useCallback(() => pageTabIdentity(getCurrentLocation()), [getCurrentLocation]);
 
   // 页签状态：key 使用路由 path
   const [tabs, setTabs] = useState<NavigationTab[]>(() => {
@@ -385,9 +378,9 @@ const NavigateBar: React.FC<{
         const parsed = JSON.parse(raw) as Array<{ key: string; location?: string; label: string; closable?: boolean }>;
         if (Array.isArray(parsed)) {
           const base = parsed.map(t => ({
-            key: normalizeRoutePath(t.key),
+            key: pageTabIdentity(t.key),
             location: t.location || t.key,
-            label: getTabLabel(normalizeRoutePath(t.key)),
+            label: getTabLabel(t.key),
             closable: t.closable ?? true,
           }));
           return normalizeTabs(base);
@@ -429,13 +422,13 @@ const NavigateBar: React.FC<{
     if (initialSynced.current || !routesReady) return;
     const requested = normalizeRoutePath(location.pathname || '/');
     const current = getCurrentPath();
-    if (requested !== current) {
+    if (requested !== normalizeRoutePath(current)) {
       navigate(getCurrentLocation(), {replace: true});
       initialSynced.current = true;
       return;
     }
     const exists = tabs.some(t => t.key === current);
-    const menuEntry = leafNodes.some(route => route.path === current && !route.disabled);
+    const menuEntry = leafNodes.some(route => route.path === normalizeRoutePath(current) && !route.disabled);
     if (!exists && !menuEntry && !isWorkflowEntryLocation(getCurrentLocation(), workflowTargets)) {
       const target = tabs[0]?.key || DASHBOARD_PATH;
       if (target && target !== current) navigate(target, {replace: true});
@@ -481,7 +474,7 @@ const NavigateBar: React.FC<{
 
   const activeKey = getCurrentPath();
   const activeMenuChain = useMemo(
-    () => findRouteChainByPath(routeData, activeKey),
+    () => findRouteChainByPath(routeData, normalizeRoutePath(activeKey)),
     [activeKey, routeData],
   );
 
@@ -603,7 +596,7 @@ const NavigateBar: React.FC<{
     persistTabs(normalized);
     if (fallbackKey) {
       // 延后到提交后再跳转，避免在渲染其他组件时更新 HashRouter
-      window.setTimeout(() => navigate(fallbackKey), 0);
+      window.setTimeout(() => navigate(nextTabs.find(tab => tab.key === fallbackKey)?.location || fallbackKey), 0);
     }
   }, [tabs, activeKey, navigate, normalizeTabs, persistTabs, confirmDiscard]);
 
@@ -724,12 +717,13 @@ const NavigateBar: React.FC<{
 
   const searchableTabs = useMemo(() => tabs.map(tab => ({
     path: tab.key,
-    label: pathLabelMap.get(tab.key) ?? storedLabelMap.get(tab.key) ?? tab.key,
-    icon: pathIconNameMap.get(tab.key) ?? storedIconMap.get(tab.key),
-  })), [pathIconNameMap, pathLabelMap, storedIconMap, storedLabelMap, tabs]);
+    label: (pathLabelMap.get(normalizeRoutePath(tab.key)) ?? storedLabelMap.get(tab.key) ?? normalizeRoutePath(tab.key))
+      + (pageViewSelection(tab.key).state !== 'none' ? ` · ${t('nav.detailView', '详情')}` : ''),
+    icon: pathIconNameMap.get(normalizeRoutePath(tab.key)) ?? storedIconMap.get(tab.key),
+  })), [pathIconNameMap, pathLabelMap, storedIconMap, storedLabelMap, tabs, t]);
 
   const onSearchNavigate = useCallback((path: string) => {
-    const openedTab = tabs.find(tab => tab.key === normalizeRoutePath(path));
+    const openedTab = tabs.find(tab => tab.key === pageTabIdentity(path));
     navigate(openedTab?.location || path);
   }, [navigate, tabs]);
 

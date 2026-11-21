@@ -82,7 +82,7 @@ public class FormWorkflowGateway {
           switch (failure.getCode()) {
             case FORBIDDEN -> ApplicationFormErrorCode.RESOURCE_ACCESS_DENIED;
             case NOT_FOUND -> ApplicationFormErrorCode.RECORD_NOT_FOUND;
-            case CONFLICT -> ApplicationFormErrorCode.RECORD_CONFLICT;
+            case CONFLICT, DEFINITION_DELETE_BLOCKED, HISTORY_REMOVAL_BLOCKED -> ApplicationFormErrorCode.RECORD_CONFLICT;
             case VALIDATION -> ApplicationFormErrorCode.RECORD_INVALID;
             case ENGINE_FAILURE, DIRECTORY_PREPARING, DIRECTORY_UNAVAILABLE ->
                 ApplicationFormErrorCode.RECORD_OPERATION_FAILED;

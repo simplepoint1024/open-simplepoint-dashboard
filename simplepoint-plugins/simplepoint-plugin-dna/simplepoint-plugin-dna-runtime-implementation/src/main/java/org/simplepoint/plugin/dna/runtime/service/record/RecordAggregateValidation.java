@@ -35,6 +35,14 @@ final class RecordAggregateValidation {
     checks = rules.stream().map(this::compile).toList();
   }
 
+  /** Reuses the typed condition semantics for an installed rule; inputs use stable field IDs. */
+  java.util.function.BiPredicate<Map<String, Object>, Map<String, Object>> conditionFor(
+      final RecordValidationCondition condition, final String scope) {
+    requireScope(scope);
+    var predicate = condition(condition, scope);
+    return (parent, row) -> predicate.test(new Values(parent, row, Map.of()));
+  }
+
   void validate(final Map<String, Object> parent, final Map<String, List<Map<String, Object>>> details) {
     for (var check : checks) {
       var rows = "parent".equals(check.scope()) ? List.of(parent) : details.get(check.scope());

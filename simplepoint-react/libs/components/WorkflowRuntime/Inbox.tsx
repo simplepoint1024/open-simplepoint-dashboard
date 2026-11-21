@@ -16,6 +16,7 @@ import {usePageRetention} from '@simplepoint/shared/page/hooks';
 import {isHttpError, resolveApiErrorMessage} from '@simplepoint/shared/api/client';
 import {useMutationScope} from './useMutationScope';
 import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowArchive} from './useWorkflowArchive';
 import {WorkflowStatus} from './Status';
 import ProgressDrawer from './ProgressDrawer';
 import type {WorkflowVariablesEditorHandle} from '../WorkflowForms/VariablesEditor';
@@ -39,6 +40,7 @@ function TasksSession() {
   const refreshWorkflow = useWorkflowRefresh();
   const [params, setParams] = useSearchParams();
   const [view, setView] = useState<TaskView>(() => params.get('view') === 'completed' ? 'completed' : 'pending');
+  const [archived, setArchived] = useState(false);
   const handledLink = useRef<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -55,7 +57,14 @@ function TasksSession() {
   const [formSession, setFormSession] = useState(0);
   const [dirty, setDirty] = useState(false), [discardOpen, setDiscardOpen] = useState(false), [error, setError] = useState('');
   const targetRef = useRef<WorkflowInboxItem | undefined>(undefined);
-  const locked = submitting || !!completeTarget || !!diagramId || discardOpen;
+  const interactionOpen = submitting || !!completeTarget || !!diagramId || discardOpen;
+  const suffix = archived ? '/archived' : '';
+  const pending = useRemoteList<WorkflowInboxItem>('/workflow/inbox/pending' + suffix, view === 'pending');
+  const completed = useRemoteList<WorkflowInboxItem>('/workflow/inbox/completed' + suffix, view === 'completed');
+  const tasks = view === 'pending' ? pending : completed;
+  const archive = useWorkflowArchive<WorkflowInboxItem>('/workflow/inbox/' + view, archived,
+    !!tasks.schema && !tasks.error && !tasks.tableProps.loading && !interactionOpen);
+  const locked = interactionOpen || archive.busy;
   usePageRetention(!locked, locked);
   const requestedView = params.get('view') === 'completed' ? 'completed' : 'pending';
   useEffect(() => {
@@ -63,10 +72,6 @@ function TasksSession() {
   }, [requestedView, mutation.selected, locked]);
 
   useEffect(() => { void ensure(['workflow']); }, [ensure, locale]);
-  // Preserve each tab's query/page state, but never across authorization scopes.
-  const pending = useRemoteList<WorkflowInboxItem>('/workflow/inbox/pending', view === 'pending');
-  const completed = useRemoteList<WorkflowInboxItem>('/workflow/inbox/completed', view === 'completed');
-  const tasks = view === 'pending' ? pending : completed;
   const linkedTask = params.get('task'), linkedInstance = params.get('instance');
   useEffect(() => {if (!linkedTask && !linkedInstance) handledLink.current = undefined;}, [linkedTask, linkedInstance]);
   const linkedItem = useOwnedData(['workflow', 'inbox-entry', linkedTask], ({signal}) => workflowApi.inboxItem(linkedTask!, signal),
@@ -209,9 +214,11 @@ function TasksSession() {
           ...(view === 'pending' && row.actionable ? [{key: 'complete', sort: 30, icon: 'AuditOutlined',
             text: t('workflow.action.complete', '办理'), type: 'link' as const,
             argumentMinSize: 1, argumentMaxSize: 1}] : []),
+          ...archive.actions,
         ]} isButtonDisabled={() => locked || !mutation.selected} onButtonEvents={{
           diagram: () => setDiagramId(row.processInstanceId),
           claim: () => { void claim(row); },
+          personalArchive: () => void archive.change([row]),
           complete: () => {if (submittingRef.current || targetRef.current) return; targetRef.current = {...row};
             setFormSession(value => value + 1); setCompleteTarget(targetRef.current); setCompleteData({}); setDirty(false); setError(''); setDiscardOpen(false); setRejectOpen(false); setRejectData({});},
         }}/>} as const,
@@ -229,11 +236,22 @@ function TasksSession() {
           buttons={[{key: 'retry', sort: 10, text: t('workflow.retry', '重试'), argumentMinSize: 0, argumentMaxSize: 0}]}
           onButtonEvents={{retry: tasks.retry}}/>}/>}
       <DataTable {...tasks.tableProps} fitContainer rowKey="id" storageKey={`personal.workflow.${view}`} columns={tasks.columns(columns)} scroll={{x: 1550}}
+        rowSelection={archive.rowSelection}
         toolbarExtra={<Space wrap>
           <Segmented value={view} disabled={locked} options={[
             {label: t('workflow.tasks.pending', '待办'), value: 'pending'},
             {label: t('workflow.tasks.completed', '已办'), value: 'completed'},
           ]} onChange={value => {setView(value as TaskView); const next = new URLSearchParams(params); next.set('view', String(value)); setParams(next, {replace: true});}}/>
+          <Segmented value={archived ? 'archived' : 'active'} disabled={locked} options={[
+            {label: t('workflow.personalArchive.active', '当前列表'), value: 'active'},
+            {label: t('workflow.personalArchive.archived', '已归档'), value: 'archived'},
+          ]} onChange={value => {
+            if (value !== (archived ? 'archived' : 'active')) {
+              tasks.reset(); setArchived(value === 'archived');
+            }
+          }}/>
+          <TableActions buttons={archive.actions} selectedKeys={archive.selectedKeys} selectedRows={archive.selectedRows}
+            isButtonDisabled={() => locked} onButtonEvents={{personalArchive: (_keys, rows) => void archive.change(rows)}}/>
         </Space>}/>
 
     <Drawer rootClassName="workflow-task-editor" title={completeTarget?.title} open={Boolean(completeTarget) && mutation.selected}

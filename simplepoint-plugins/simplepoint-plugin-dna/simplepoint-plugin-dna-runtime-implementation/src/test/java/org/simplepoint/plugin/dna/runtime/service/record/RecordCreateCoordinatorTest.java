@@ -75,9 +75,17 @@ class RecordCreateCoordinatorTest {
     when(fingerprints.of(command)).thenReturn("fingerprint-a");
     when(receipts.claim(actor, command, "fingerprint-a"))
         .thenReturn(new RecordCreateReceiptClaim(recordId, operationAt, null));
+    String operationId = RecordRequestFingerprint.deterministicCreateOperationId(
+        actor.tenantId(), command.physicalModelId(), command.idempotencyKey());
+    assertThat(operationId).isNotEqualTo(recordId).isNotEqualTo(
+        RecordRequestFingerprint.deterministicOperationId(
+            actor.tenantId(), command.physicalModelId(), command.idempotencyKey()));
+    var operation = new RecordOperationIdentity(operationId, actor.tenantId(), actor.actorId(),
+        command.physicalModelId(), command.idempotencyKey(), "fingerprint-a");
+    when(transactions.createOperation(prepared, command, "fingerprint-a")).thenReturn(operation);
     when(transactions.hasCommittedCreate(prepared, recordId))
         .thenReturn(false, true);
-    when(transactions.executePreparedCreate(prepared, recordId, operationAt))
+    when(transactions.executePreparedCreate(prepared, recordId, operationAt, operation))
         .thenThrow(new DnaRuntimeException(
             DnaRuntimeErrorCode.RECORD_EXECUTION_FAILED,
             "Response was lost"
@@ -93,6 +101,7 @@ class RecordCreateCoordinatorTest {
 
     assertThat(result.recordId()).isEqualTo(recordId);
     assertThat(result.updatedAt()).isEqualTo(operationAt);
+    verify(transactions).findPreparedCreateResult(prepared, operation);
     verify(receipts).complete(eq(actor), eq(command), eq("fingerprint-a"), eq(result));
   }
 
@@ -149,7 +158,7 @@ class RecordCreateCoordinatorTest {
     assertThat(coordinator.findResult(command)).isEqualTo(result);
     assertThat(coordinator.findResult(command)).isEqualTo(result);
     verify(transactions, org.mockito.Mockito.times(4)).validatePreparedCreate(prepared);
-    verify(transactions, org.mockito.Mockito.never()).executePreparedCreate(any(), any(), any());
+    verify(transactions, org.mockito.Mockito.never()).executePreparedCreate(any(), any(), any(), any());
     verify(receipts, org.mockito.Mockito.never()).claim(any(), any(), any());
   }
 }

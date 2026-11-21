@@ -64,6 +64,7 @@ final class WorkflowOperationJournal {
     receipt.setTenantId(tenant);
     receipt.setActorId(actor);
     receipt.setRequestFingerprint(fingerprint);
+    receipt.setProcessInstanceId(result.id());
     receipt.setResultJson(encode(result));
     receipt.setCreatedAt(Instant.now());
     entities.persist(receipt);
@@ -80,6 +81,9 @@ final class WorkflowOperationJournal {
         || !actor.equals(receipt.getActorId())
         || !fingerprint.equals(receipt.getRequestFingerprint())) {
       throw new WorkflowException(Code.CONFLICT, "该幂等键已用于其他流程操作内容或操作者");
+    }
+    if (receipt.isPurged()) {
+      throw new WorkflowException(Code.NOT_FOUND, "流程历史已清理");
     }
     try {
       return json.readValue(receipt.getResultJson(), ProcessInstanceSummary.class);

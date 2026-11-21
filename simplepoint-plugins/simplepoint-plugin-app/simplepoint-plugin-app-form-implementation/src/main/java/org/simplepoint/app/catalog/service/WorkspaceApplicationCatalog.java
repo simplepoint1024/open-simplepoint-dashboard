@@ -1,6 +1,7 @@
 package org.simplepoint.app.catalog.service;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -20,6 +21,8 @@ import org.simplepoint.core.schema.ProjectionTableSchema;
 import org.simplepoint.data.jpa.ProjectionPages;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormErrorCode;
 import org.simplepoint.plugin.app.form.api.error.ApplicationFormException;
+import org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision;
+import org.simplepoint.plugin.app.form.api.service.ApplicationFormService;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplication;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationPage;
 import org.simplepoint.plugin.app.form.entity.WorkspaceApplicationReadModel;
@@ -35,10 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceApplicationCatalog {
   private final EntityManager em;
+  private final ApplicationFormService forms;
 
   /** Creates the transaction-scoped application catalog. */
-  public WorkspaceApplicationCatalog(EntityManager em) {
+  public WorkspaceApplicationCatalog(EntityManager em, ApplicationFormService forms) {
     this.em = em;
+    this.forms = forms;
   }
 
   /** Input for an application and its required main page. */
@@ -58,6 +63,8 @@ public class WorkspaceApplicationCatalog {
   public record CreatePage(String name, String description, org.simplepoint.api.locale.LocalizedText nameLocalization) {
     public CreatePage(String name, String description) {this(name, description, null);}
   }
+
+  public record CatalogRevision(String id, Instant expectedUpdatedAt) {}
 
   /** Scalar list contract including projected page metadata. */
   @TableQuery(
@@ -94,7 +101,7 @@ public class WorkspaceApplicationCatalog {
       int sortOrder,
       boolean resourceRegistered,
       String runtimePath,
-      String formId, org.simplepoint.api.locale.LocalizedText nameLocalization) {}
+      String formId, org.simplepoint.api.locale.LocalizedText nameLocalization, Instant updatedAt) {}
 
   /** Application metadata and its page directory. */
   public record ApplicationDetail(ApplicationSummary application, List<PageSummary> pages) {}
@@ -150,7 +157,8 @@ public class WorkspaceApplicationCatalog {
 
   /** Current actor's creation capabilities. */
   public record Permissions(
-      boolean canCreateApplication, boolean canAddPage, boolean canDesignForm) {}
+      boolean canCreateApplication, boolean canAddPage, boolean canDesignForm,
+      boolean canDeleteApplication, boolean canDeletePage, boolean canManageForms) {}
 
   /** Resolves workspace-bound application and page creation rights. */
   public Permissions permissions() {
@@ -162,7 +170,11 @@ public class WorkspaceApplicationCatalog {
     return new Permissions(
         administrator || resources.contains("app.workbench.apps.create"),
         administrator || resources.contains("app.workbench.pages.create"),
-        administrator || resources.contains("app.workbench.forms.edit"));
+        administrator || resources.contains("app.workbench.forms.edit"),
+        administrator || resources.contains("app.workbench.apps.delete"),
+        administrator || resources.contains("app.workbench.pages.delete"),
+        administrator || List.of("create", "edit", "publish", "delete").stream()
+            .anyMatch(action -> resources.contains("app.workbench.forms." + action)));
   }
 
   /** Returns readable scalar fields and allowed query operators. */
@@ -175,7 +187,10 @@ public class WorkspaceApplicationCatalog {
             "status",
             List.of(
                 new ProjectionTableSchema.Choice("DRAFT", "i18n:app.status.draft"),
-                new ProjectionTableSchema.Choice("PUBLISHED", "i18n:app.status.published"))));
+                new ProjectionTableSchema.Choice("PUBLISHED", "i18n:app.status.published"),
+                new ProjectionTableSchema.Choice("OFFLINING", "i18n:app.resource.offlining"),
+                new ProjectionTableSchema.Choice("OFFLINE", "i18n:app.resource.offline"),
+                new ProjectionTableSchema.Choice("DELETING", "i18n:app.application.deleting"))));
   }
 
   /** Adapts the legacy literal keyword query to bounded pagination. */
@@ -294,8 +309,10 @@ public class WorkspaceApplicationCatalog {
   @Transactional
   public PageSummary addPage(String applicationId, CreatePage command) {
     String tenantId = tenantId();
-    final WorkspaceApplication app = em.find(WorkspaceApplication.class, applicationId, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
-    if (app == null || !tenantId.equals(app.getTenantId())) throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_NOT_FOUND, "Application not found");
+    final WorkspaceApplication app = findApplication(tenantId, applicationId, LockModeType.PESSIMISTIC_WRITE);
+    if ("DELETING".equals(app.getStatus())) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_DELETE_BLOCKED, "Application removal is in progress");
+    }
     if (app.getNavigationPending() != null) throw new ApplicationFormException(ApplicationFormErrorCode.DRAFT_REVISION_CONFLICT, "Navigation update is pending");
     if (command == null) {
       throw badRequest("请填写页面信息");
@@ -329,6 +346,94 @@ public class WorkspaceApplicationCatalog {
     return pageSummary(page);
   }
 
+  /** Removes an unpublished application, its draft forms and its draft pages in one transaction. */
+  @Transactional
+  public void deleteApplication(String applicationId, Instant expectedUpdatedAt) {
+    String tenant = tenantId();
+    WorkspaceApplication app = findApplication(tenant, applicationId, LockModeType.PESSIMISTIC_WRITE);
+    requireUnchanged(app.getUpdatedAt(), expectedUpdatedAt);
+    if (!"DRAFT".equals(app.getStatus()) || app.getNavigationPending() != null
+        || app.getNavigationRevision() != 0 || app.getNavigationDefinition() != null) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_DELETE_BLOCKED,
+          "The application has publication history or managed navigation");
+    }
+    List<WorkspaceApplicationPage> pages = pages(tenant, applicationId);
+    if (pages.stream().anyMatch(page -> !unpublished(page))) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_DELETE_BLOCKED,
+          "The application has pages with publication history");
+    }
+    var drafts = em.createQuery(
+            "select new org.simplepoint.plugin.app.form.api.model.ApplicationFormDraftRevision(f.id, f.draftRevision)"
+                + " from ApplicationFormEntity f where f.tenantId = :tenant and f.applicationId = :app",
+            ApplicationFormDraftRevision.class)
+        .setParameter("tenant", tenant).setParameter("app", applicationId).getResultList();
+    if (!drafts.isEmpty()) {
+      forms.deleteDrafts(applicationId, drafts);
+    }
+    pages.forEach(em::remove);
+    em.remove(app);
+  }
+
+  @Transactional
+  public void deleteApplications(List<CatalogRevision> selection) {
+    orderedSelection(selection).forEach(entry -> deleteApplication(entry.id(), entry.expectedUpdatedAt()));
+  }
+
+  /** The application lock serializes page removal with publication and navigation changes. */
+  @Transactional
+  public void deletePage(String applicationId, String pageId, Instant expectedUpdatedAt) {
+    String tenant = tenantId();
+    WorkspaceApplication app = findApplication(tenant, applicationId, LockModeType.PESSIMISTIC_WRITE);
+    WorkspaceApplicationPage page = em.find(WorkspaceApplicationPage.class, pageId, LockModeType.PESSIMISTIC_WRITE);
+    if (page == null || !tenant.equals(page.getTenantId()) || !applicationId.equals(page.getApplicationId())) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.PAGE_NOT_FOUND, "Page not found");
+    }
+    requireUnchanged(page.getUpdatedAt(), expectedUpdatedAt);
+    if (!"ATTACHED".equals(page.getKind()) || !unpublished(page) || app.getNavigationPending() != null
+        || "DELETING".equals(app.getStatus())
+        || !em.createQuery(
+                "select b.id from ApplicationFormPageBindingEntity b where b.tenantId = :tenant and b.pageId = :page",
+                String.class)
+            .setParameter("tenant", tenant).setParameter("page", pageId)
+            .setMaxResults(1).getResultList().isEmpty()) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.PAGE_DELETE_BLOCKED,
+          "Only an unpublished attached page without a pending operation can be removed");
+    }
+    em.remove(page);
+    app.setUpdatedAt(Instant.now());
+  }
+
+  @Transactional
+  public void deletePages(String applicationId, List<CatalogRevision> selection) {
+    orderedSelection(selection).forEach(entry -> deletePage(applicationId, entry.id(), entry.expectedUpdatedAt()));
+  }
+
+  private static List<CatalogRevision> orderedSelection(List<CatalogRevision> selection) {
+    if (selection == null || selection.isEmpty() || selection.size() > TablePagination.MAX_PAGE_SIZE) {
+      throw badRequest("Invalid catalog selection");
+    }
+    var byId = new java.util.TreeMap<String, CatalogRevision>();
+    for (var entry : selection) {
+      if (entry == null || entry.id() == null || entry.expectedUpdatedAt() == null
+          || byId.putIfAbsent(entry.id(), entry) != null) {
+        throw badRequest("Each selected item requires a distinct identity and update time");
+      }
+    }
+    return List.copyOf(byId.values());
+  }
+
+  private static boolean unpublished(WorkspaceApplicationPage page) {
+    return "DRAFT".equals(page.getStatus()) && page.getResourceId() == null
+        && page.getResourceCode() == null && page.getFormId() == null;
+  }
+
+  private static void requireUnchanged(Instant updatedAt, Instant expected) {
+    if (!updatedAt.equals(expected)) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.DRAFT_REVISION_CONFLICT,
+          "The catalog item changed after it was read");
+    }
+  }
+
   private List<WorkspaceApplicationPage> pages(String tenantId, String applicationId) {
     return em.createQuery(
             "select p from WorkspaceApplicationPage p"
@@ -341,7 +446,13 @@ public class WorkspaceApplicationCatalog {
   }
 
   private WorkspaceApplication findApplication(String tenantId, String id) {
-    WorkspaceApplication app = em.find(WorkspaceApplication.class, id);
+    return findApplication(tenantId, id, LockModeType.NONE);
+  }
+
+  private WorkspaceApplication findApplication(String tenantId, String id, LockModeType lock) {
+    WorkspaceApplication app = lock == LockModeType.NONE
+        ? em.find(WorkspaceApplication.class, id)
+        : em.find(WorkspaceApplication.class, id, lock);
     if (app == null || !tenantId.equals(app.getTenantId())) {
       throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_NOT_FOUND, "应用不存在");
     }
@@ -376,7 +487,7 @@ public class WorkspaceApplicationCatalog {
         page.getSortOrder(),
         registered,
         registered ? "/app/runtime/" + page.getApplicationId() + "/" + page.getId() : null,
-        page.getFormId(), page.getNameLocalization());
+        page.getFormId(), page.getNameLocalization(), page.getUpdatedAt());
   }
 
   private static String tenantId() {

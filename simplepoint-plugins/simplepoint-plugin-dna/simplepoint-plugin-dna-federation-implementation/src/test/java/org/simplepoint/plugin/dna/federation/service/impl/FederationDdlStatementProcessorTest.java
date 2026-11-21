@@ -2,6 +2,7 @@ package org.simplepoint.plugin.dna.federation.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -18,18 +19,16 @@ import org.simplepoint.plugin.dna.federation.service.impl.FederationDdlStatement
 @ExtendWith(MockitoExtension.class)
 class FederationDdlStatementProcessorTest {
 
-  @Mock
-  private JdbcDataSourceDefinitionService dataSourceService;
+  @Mock private JdbcDataSourceDefinitionService dataSourceService;
 
-  @InjectMocks
-  private FederationDdlStatementProcessor processor;
+  @InjectMocks private FederationDdlStatementProcessor processor;
 
   // ----- resolve() -----
 
   @Test
   void resolveShouldReturnSelectedDataSourceWhenNoTableNameInSql() {
     JdbcDataSourceDefinition selected = dataSource("ds-1", "myds");
-    DdlTarget target = processor.resolve(selected, "CREATE INDEX idx_users ON something");
+    DdlTarget target = processor.resolve(selected, "CREATE INDEX idx_users ON something (id)");
     assertEquals("ds-1", target.dataSource().getId());
   }
 
@@ -67,7 +66,8 @@ class FederationDdlStatementProcessorTest {
     JdbcDataSourceDefinition other = dataSource("ds-2", "pg");
     when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
 
-    DdlTarget target = processor.resolve(selected, "ALTER TABLE pg.orders ADD COLUMN note VARCHAR(255)");
+    DdlTarget target =
+        processor.resolve(selected, "ALTER TABLE pg.orders ADD COLUMN note VARCHAR(255)");
 
     assertEquals("ds-2", target.dataSource().getId());
   }
@@ -81,6 +81,56 @@ class FederationDdlStatementProcessorTest {
     DdlTarget target = processor.resolve(selected, "DROP TABLE IF EXISTS pg.tmp_table");
 
     assertEquals("ds-2", target.dataSource().getId());
+  }
+
+  @Test
+  void localIndexAndRenameNamesUseTheExplicitExecutionSource() {
+    var selected = dataSource("ds-1", "myds");
+    var other = dataSource("ds-2", "otherdb");
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
+    assertEquals(
+        "ds-2",
+        processor.resolve(selected, "CREATE INDEX ix ON otherdb.orders (id)").dataSource().getId());
+    assertEquals(
+        "ds-2",
+        processor
+            .resolve(selected, "ALTER TABLE otherdb.orders RENAME TO orders_new")
+            .dataSource()
+            .getId());
+    assertEquals(
+        "ds-2",
+        processor
+            .resolve(selected, "CREATE TABLE otherdb.orders (id INT REFERENCES customers(id))")
+            .dataSource()
+            .getId());
+  }
+
+  @Test
+  void dependencyAndRenamePrefixesCannotRelocateAnImplicitWriteTarget() {
+    var selected = dataSource("ds-1", "myds");
+    var other = dataSource("ds-2", "otherdb");
+    when(dataSourceService.listEnabledDefinitions()).thenReturn(List.of(selected, other));
+    for (var sql :
+        List.of(
+            "CREATE TABLE orders (id INT REFERENCES otherdb.customers(id))",
+            "CREATE VIEW v AS SELECT * FROM otherdb.orders",
+            "ALTER TABLE orders RENAME TO otherdb.orders",
+            "RENAME TABLE orders TO otherdb.orders",
+            "DROP TABLE otherdb.orders, customers")) {
+      assertThrows(
+          org.simplepoint.plugin.dna.federation.api.error.FederationSqlWriteException.class,
+          () -> processor.resolve(selected, sql));
+    }
+  }
+
+  @Test
+  void ambiguousDatasourceCodesAreRejected() {
+    var selected = dataSource("ds-1", "myds");
+    when(dataSourceService.listEnabledDefinitions())
+        .thenReturn(List.of(selected, dataSource("ds-2", "MYDS")));
+    assertThrows(
+        org.simplepoint.plugin.dna.federation.api.error.FederationSqlWriteException.class,
+        () -> processor.resolve(selected, "DROP TABLE myds.orders"));
   }
 
   // ----- rewrite() -----
@@ -128,53 +178,35 @@ class FederationDdlStatementProcessorTest {
     assertTrue(result.contains("public.orders"), result);
   }
 
-  // ----- stripQuotes() -----
-
-  @Test
-  void stripQuotesShouldRemoveDoubleQuotes() {
-    assertEquals("myTable", FederationDdlStatementProcessor.stripQuotes("\"myTable\""));
-  }
-
-  @Test
-  void stripQuotesShouldRemoveBackticks() {
-    assertEquals("myTable", FederationDdlStatementProcessor.stripQuotes("`myTable`"));
-  }
-
-  @Test
-  void stripQuotesShouldRemoveSquareBrackets() {
-    assertEquals("myTable", FederationDdlStatementProcessor.stripQuotes("[myTable]"));
-  }
-
-  @Test
-  void stripQuotesShouldReturnUnquotedIdentifierUnchanged() {
-    assertEquals("myTable", FederationDdlStatementProcessor.stripQuotes("myTable"));
-  }
-
-  @Test
-  void stripQuotesShouldReturnNullForNull() {
-    assertEquals(null, FederationDdlStatementProcessor.stripQuotes(null));
-  }
-
-  @Test
-  void stripQuotesShouldReturnShortStringUnchanged() {
-    assertEquals("x", FederationDdlStatementProcessor.stripQuotes("x"));
-  }
-
   // ----- DDL_PREFIX_PATTERN -----
 
   @Test
   void ddlPrefixPatternShouldMatchCreateAlterDropTruncate() {
-    assertTrue(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("CREATE TABLE t (id INT)").lookingAt());
-    assertTrue(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("ALTER TABLE t ADD COLUMN x INT").lookingAt());
-    assertTrue(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("DROP TABLE t").lookingAt());
-    assertTrue(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("TRUNCATE TABLE t").lookingAt());
+    assertTrue(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN
+            .matcher("CREATE TABLE t (id INT)")
+            .lookingAt());
+    assertTrue(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN
+            .matcher("ALTER TABLE t ADD COLUMN x INT")
+            .lookingAt());
+    assertTrue(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("DROP TABLE t").lookingAt());
+    assertTrue(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("TRUNCATE TABLE t").lookingAt());
   }
 
   @Test
   void ddlPrefixPatternShouldNotMatchDmlKeywords() {
     assertFalse(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("SELECT 1").lookingAt());
-    assertFalse(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("INSERT INTO t VALUES (1)").lookingAt());
-    assertFalse(FederationDdlStatementProcessor.DDL_PREFIX_PATTERN.matcher("UPDATE t SET x = 1").lookingAt());
+    assertFalse(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN
+            .matcher("INSERT INTO t VALUES (1)")
+            .lookingAt());
+    assertFalse(
+        FederationDdlStatementProcessor.DDL_PREFIX_PATTERN
+            .matcher("UPDATE t SET x = 1")
+            .lookingAt());
   }
 
   // ----- helpers -----

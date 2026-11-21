@@ -11,8 +11,15 @@ public record RecordPageQuery(
     int size,
     List<String> fields,
     RecordFilter filter,
-    List<RecordSort> sorts
+    List<RecordSort> sorts,
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    RecordValueCondition condition
 ) {
+
+  public RecordPageQuery(String physicalModelId, RecordSchemaReference schemaReference, int page, int size,
+      List<String> fields, RecordFilter filter, List<RecordSort> sorts) {
+    this(physicalModelId, schemaReference, page, size, fields, filter, sorts, null);
+  }
 
   /** Enforces page, projection, filter, and sort budgets before execution. */
   public RecordPageQuery {
@@ -24,5 +31,6 @@ public record RecordPageQuery(
     fields = RecordQueryLimits.fields(fields);
     filter = RecordQueryLimits.filter(filter);
     sorts = RecordQueryLimits.sorts(sorts);
+    condition = RecordValueCondition.bounded(condition);
   }
 }

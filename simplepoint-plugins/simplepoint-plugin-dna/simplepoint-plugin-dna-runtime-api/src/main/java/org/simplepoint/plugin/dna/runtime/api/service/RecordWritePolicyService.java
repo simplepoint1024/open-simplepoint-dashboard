@@ -1,11 +1,15 @@
 package org.simplepoint.plugin.dna.runtime.api.service;
 
+import org.simplepoint.plugin.dna.runtime.api.record.RecordReferenceCollectionPreflightQuery;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyCancellationView;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationCommand;
 import org.simplepoint.plugin.dna.runtime.api.record.RecordWritePolicyPublicationView;
 
 /** Owner-management admission transitions; ordinary record callers cannot publish policy. */
 public interface RecordWritePolicyService {
+
+  /** Counts physical references affected by a proposed conversion without installing anything. */
+  long inspectReferenceCollection(RecordReferenceCollectionPreflightQuery query);
 
   /** Checks completeness under exclusive target admission and atomically advances the write version. */
   RecordWritePolicyPublicationView publish(RecordWritePolicyPublicationCommand command);

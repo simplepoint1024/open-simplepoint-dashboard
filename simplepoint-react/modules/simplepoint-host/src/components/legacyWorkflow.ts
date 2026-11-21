@@ -1,3 +1,5 @@
+import {pageTabIdentity} from '../../../../libs/shared/page/viewIdentity.ts';
+
 export const LEGACY_WORKFLOW_TASKS = '/workflow/tasks';
 export const LEGACY_WORKFLOW_INSTANCES = '/workflow/instances';
 type Route = {path?: string; component?: string; disabled?: boolean; routeKind?: string; children?: Route[]};
@@ -50,7 +52,7 @@ export function migrateWorkflowTabs<T extends {key: string; location: string}>(t
   const seen = new Set<string>();
   return tabs.flatMap(tab => {
     const location = migrateWorkflowLocation(tab.location || tab.key, targets, ready);
-    const key = location.replace(/^#/, '').split(/[?#]/, 1)[0];
+    const key = pageTabIdentity(location);
     if (seen.has(key)) return [];
     seen.add(key);
     return [{...tab, key, location}];

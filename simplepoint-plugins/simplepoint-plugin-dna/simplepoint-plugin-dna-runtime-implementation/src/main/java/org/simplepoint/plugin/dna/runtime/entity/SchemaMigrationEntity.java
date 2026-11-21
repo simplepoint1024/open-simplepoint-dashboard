@@ -85,6 +85,12 @@ public class SchemaMigrationEntity extends TenantBaseEntityImpl<String> {
   @Column(name = "actual_schema_checksum", length = 64)
   private String actualSchemaChecksum;
 
+  @Column(name = "plan_json", columnDefinition = "TEXT")
+  private String planJson;
+
+  @Column(name = "plan_checksum", length = 64)
+  private String planChecksum;
+
   @Column(name = "verified_schema_checksum", length = 64)
   private String verifiedSchemaChecksum;
 

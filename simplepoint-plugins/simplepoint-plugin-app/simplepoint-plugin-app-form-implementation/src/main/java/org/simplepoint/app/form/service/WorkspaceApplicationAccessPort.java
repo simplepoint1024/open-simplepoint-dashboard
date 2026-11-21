@@ -35,6 +35,17 @@ public class WorkspaceApplicationAccessPort implements ApplicationAccessPort {
         tenantId);
   }
 
+  @Override
+  @Transactional
+  public void requireApplicationForFormCreation(String tenantId, String applicationId) {
+    var application = entityManager.find(WorkspaceApplication.class, applicationId, LockModeType.PESSIMISTIC_WRITE);
+    requireOwned(application, tenantId);
+    if ("DELETING".equals(application.getStatus())) {
+      throw new ApplicationFormException(ApplicationFormErrorCode.APPLICATION_DELETE_BLOCKED,
+          "Application removal is in progress");
+    }
+  }
+
   private static void requireOwned(final WorkspaceApplication application, final String tenantId) {
     if (application == null || !tenantId.equals(application.getTenantId())) {
       throw new ApplicationFormException(

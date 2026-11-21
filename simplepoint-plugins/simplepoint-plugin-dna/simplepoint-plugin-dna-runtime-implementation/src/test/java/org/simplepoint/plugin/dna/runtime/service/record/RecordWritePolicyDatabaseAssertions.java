@@ -51,6 +51,9 @@ final class RecordWritePolicyDatabaseAssertions {
     var models = mock(RuntimeRecordModelResolver.class);
     when(context.requireActor()).thenReturn(access.actor());
     when(models.resolve(eq(access.actor()), eq(model.physicalModelId()), any())).thenReturn(model);
+    // Cancellation uses its own historical-schema resolver; keep the production owner checks active.
+    when(models.resolveForCancellation(eq(access.actor()), eq(model.physicalModelId()), eq(SCHEMA)))
+        .thenReturn(model);
     var service = new RecordWritePolicyServiceImpl(context, models, compiler, backend,
         new RecordRequestFingerprint(new ObjectMapper().findAndRegisterModules()),
         new RecordAdmissionController(new DnaRuntimeExecutionProperties()), mock(RecordAuditSupport.class), mock(RecordExecutionObserver.class), mock(RecordCalculationPublicationAdapter.class));

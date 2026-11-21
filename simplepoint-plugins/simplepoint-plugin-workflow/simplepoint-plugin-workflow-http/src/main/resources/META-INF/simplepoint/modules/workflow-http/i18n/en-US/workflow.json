@@ -1,4 +1,12 @@
 {
+  "workflow.historyRemoval.action": "Permanently delete workflow history",
+  "workflow.historyRemoval.confirm": "Permanently remove the {count} selected workflows, their approval history, and workflow notifications?",
+  "workflow.historyRemoval.progress": "Workflow histories removed: {completed}/{total}",
+  "workflow.error.HISTORY_REMOVAL_BLOCKED": "Workflow history cannot be removed yet. Verify that the workflow has ended, the selected version is current, and dependent resubmissions are resolved.",
+  "workflow.personalArchive.active": "Current list",
+  "workflow.personalArchive.archived": "Archived",
+  "workflow.personalArchive.archive": "Archive",
+  "workflow.personalArchive.restore": "Restore to list",
   "menu.workflow.center": "Workflow Management",
   "menu.workflow.definitions": "Process Definitions",
   "menu.workflow.instances": "Process Instances",
@@ -386,5 +394,15 @@
   "workflow.version.copyFailed": "Failed to copy the version",
   "workflow.versions.title": "Published versions",
   "workflow.action.view": "View",
-  "workflow.form.notReady": "The business form is not ready. Wait for it to load, then retry."
+  "workflow.form.notReady": "The business form is not ready. Wait for it to load, then retry.",
+  "workflow.definition.delete": "Delete process definition",
+  "workflow.definition.deleteConfirmation": "Permanently delete process “{name}”?",
+  "workflow.deleteFailed": "Deletion failed. Refresh and try again.",
+  "workflow.error.DEFINITION_DELETE_BLOCKED": "Take the process offline first. Existing instances or external form bindings must be cleared before deletion.",
+  "workflow.definition.offline": "Take offline",
+  "workflow.definition.confirmOffline": "Confirm taking the process offline",
+  "workflow.definition.offlineSuccess": "Process taken offline",
+  "workflow.definition.offlineConfirmation": "Taking “{name}” offline stops new starts.",
+  "workflow.definition.offlineFailed": "Failed to take the process offline",
+  "workflow.status.offline": "Offline"
 }

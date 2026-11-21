@@ -15,6 +15,7 @@ export function componentLabels(t: Translate): Record<string, string> {
     'field.transfer': t('app.designer.component.transfer', '穿梭框'),
 
     'data.detail': t('app.designer.detail', '明细行'),
+    'field.reference': t('app.relation.field', '关联记录'),
     'layout.form': t('app.designer.component.form', '表单布局'),
     'layout.matrix': t('app.designer.matrix', '网格布局'),
     'layout.cell': t('app.designer.cell', '单元格'),

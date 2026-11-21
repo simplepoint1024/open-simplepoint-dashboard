@@ -1,6 +1,9 @@
 import {calculationPreviewDocument} from './calculationModel';
 import type {CalculationPreviewLoader} from '../FormRuntime/calculationPreview';
 import {DesignerCalculationContext, type DesignerCalculations} from './CalculationFieldEditor';
+import {DesignerRelationContext} from './relations/Context';
+import type {DesignerRelationDirectory} from './relations/catalog';
+import {detailDesignDocument} from './relations/model';
 import FormProperties from './FormProperties';
 import FormPreview from './Preview';
 import type {DesignerPropertyRegistry} from './extensions';
@@ -42,6 +45,7 @@ export type FormDesignerActions = {
 export type FormDesignerProps = {document: DesignDocument; components: readonly ComponentDescriptor[];
   writePolicies?: readonly FormFieldWritePolicy[];
   calculations?: DesignerCalculations;
+  relations?: DesignerRelationDirectory;
   calculationPreview?: CalculationPreviewLoader;
   calculationTrial?: DesignerCalculationTrial;
   propertyRegistry?: DesignerPropertyRegistry;
@@ -52,7 +56,7 @@ export type FormDesignerProps = {document: DesignDocument; components: readonly 
 
 /** Shared controlled editor: no networking, SQL, permissions or publication state live in the canvas. */
 export default function FormDesigner({document, components, registry = platformFormComponents, labels: customLabels,
-  disabled = false, onChange, writePolicies = [], toolbar, propertyRegistry, calculations, calculationPreview, calculationTrial}: FormDesignerProps) {
+  disabled = false, onChange, writePolicies = [], toolbar, propertyRegistry, calculations, relations, calculationPreview, calculationTrial}: FormDesignerProps) {
   const {t} = useI18n(), {message} = App.useApp();
   const selected = usePageSelected();
   const [sceneId, setSceneId] = useState(() => document.scenes.find(scene => scene.type === 'MAIN')!.sceneId);
@@ -114,7 +118,16 @@ export default function FormDesigner({document, components, registry = platformF
   };
   const edited = editingField && designFields(document).find(item => item.key === fieldKey(editingField));
   const editedDetail = document.details?.find(detail => detail.detailId === editingField?.scope);
-  const attempt = (action: () => void) => {if (!locked) try {action();} catch (error) {setFailure(designError(error, t));}};
+  const attempt = (action: () => void) => {
+    if (locked) return false;
+    try {
+      action();
+      return true;
+    } catch (error) {
+      setFailure(designError(error, t));
+      return false;
+    }
+  };
   const add = (item: ComponentDescriptor, destination = parentId, index = parent.children.length, fieldId?: string) => attempt(() => {
     const result = insertComponent(document, destination, index, item, labels[item.type] ?? item.type, supported, fieldId);
     commit(result.document); setSelectedId(result.componentId);
@@ -212,7 +225,7 @@ export default function FormDesigner({document, components, registry = platformF
     ],
     onButtonEvents: {undo: () => commitHistory(undo(historyRef.current)), redo: () => commitHistory(redo(historyRef.current))},
   };
-  return <DesignerCalculationContext.Provider value={{document, catalog: calculations, trial: calculationTrial, onLocate: locateField}}><div className="sp-form-designer" onKeyDown={keyboard}>
+  return <DesignerRelationContext.Provider value={relations}><DesignerCalculationContext.Provider value={{document, catalog: calculations, trial: calculationTrial, onLocate: locateField}}><div className="sp-form-designer" onKeyDown={keyboard}>
     {(failure || structuralError) && <Alert type="error" showIcon title={failure || structuralError}
       action={structuralIssue?.componentId && <TableActions selectedKeys={[]} selectedRows={[]} buttons={[
         {key: 'locate', sort: 0, icon: 'AimOutlined', text: t('app.designer.locate', '定位')},
@@ -289,7 +302,7 @@ export default function FormDesigner({document, components, registry = platformF
       onClose={() => setNavigation(undefined)} onSelect={selectNode} onField={locateField}/>
     {edited && <FieldDefinitionDialog key={edited.key} field={edited.field} scope={edited.scope}
       mode={edited.field.calculation ? 'calculated' : 'stored'}
-      document={editedDetail ? {...document, fields: editedDetail.fields, indexes: editedDetail.indexes, scenes: [], rules: []} : document}
+      document={editedDetail ? detailDesignDocument(document, editedDetail) : document}
       components={supported} writePolicies={writePolicies} disabled={locked} onClose={() => setEditingField(undefined)}
       onDocumentChange={next => commit(editedDetail ? {...document, details: document.details?.map(detail => detail.detailId === editedDetail.detailId
         ? {...detail, fields: next.fields, indexes: next.indexes} : detail)} : next)}/>}
@@ -300,6 +313,6 @@ export default function FormDesigner({document, components, registry = platformF
       <FormRuntime disabled={!preview || !selected} calculationPreview={calculationPreview} document={previewDocument} registry={registry} sceneId={previewMain.sceneId} value={previewValues} onChange={setPreviewValues}
         onAction={(_, values) => {setPreviewValues(values); setPreviewNotice(true); message.success(t('app.designer.previewValid', '预览校验通过，未保存业务数据。')); return true;}}/>
     </FormPreview>
-  </div></DesignerCalculationContext.Provider>;
+  </div></DesignerCalculationContext.Provider></DesignerRelationContext.Provider>;
 }
 export type {DesignDocument, DesignerContract, FormDraft, FormSummary} from './contracts.ts';

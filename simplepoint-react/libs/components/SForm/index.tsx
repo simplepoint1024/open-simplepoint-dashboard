@@ -23,6 +23,7 @@ import {submitButtonState} from './submitButton';
 import {localizeValidationErrors} from '../../shared/validation/messages';
 import {displayOnlyProjection} from './displayOnly';
 import DisplayValue from './fields/DisplayValue';
+import SelectWidget from './widgets/SelectWidget';
 const LazyLocalizedTextField = lazy(() => import('./fields/LocalizedTextField'));
 const LocalizedTextField = (props: FieldProps) => <Suspense fallback={<Spin size="small"/>}><LazyLocalizedTextField {...props}/></Suspense>;
 import {schemaUi, mergeUiSchema} from './schemaUi';
@@ -43,6 +44,7 @@ const OrganizationSelect = lazyWidget(() => import('./widgets/OrganizationSelect
 const RemoteSelect = lazyWidget(() => import('./widgets/RemoteSelect'));
 const EntitySelectWidget = lazyWidget(() => import('./widgets/EntitySelectWidget'));
 const FormAttachmentsWidget = lazyWidget(() => import('./widgets/FormAttachmentsWidget'));
+const FormReferenceWidget = lazyWidget(() => import('./widgets/FormReferenceWidget'));
 const OssFileWidget = lazyWidget(() => import('./widgets/OssFileWidget'));
 const OssImageWidget = lazyWidget(() => import('./widgets/OssImageWidget'));
 const PermissionExpression = lazyWidget(() => import('./widgets/PermissionExpression'));
@@ -104,7 +106,7 @@ const defaultValidationError = (_errors: RJSFValidationError[]) => {};
 const dateWidget = (Widget: ComponentType<WidgetProps>) => (props: WidgetProps) => <Widget {...props}
   value={props.value === '' || props.value == null ? undefined : props.value} onChange={value => props.onChange(dateFormValue(props.schema, value))}/>;
 
-const defaultWidgets = {Switch, Rating, Time, Cascader, Transfer,
+const defaultWidgets = {Switch, Rating, Time, Cascader, Transfer, SelectWidget,
   DateWidget: dateWidget(Widgets.DateWidget),
   DateTimeWidget: dateWidget(Widgets.DateTimeWidget),
   IconPicker,
@@ -113,6 +115,7 @@ const defaultWidgets = {Switch, Rating, Time, Cascader, Transfer,
   OrganizationSelect,
   RemoteSelect,
   EntitySelect: EntitySelectWidget,
+  FormReference: FormReferenceWidget,
   UserPicker,
   TenantDirectory,
   UserSelect,

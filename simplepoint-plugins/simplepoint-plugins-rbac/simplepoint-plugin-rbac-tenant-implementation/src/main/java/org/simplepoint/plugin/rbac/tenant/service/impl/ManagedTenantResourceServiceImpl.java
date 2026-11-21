@@ -1,5 +1,10 @@
 package org.simplepoint.plugin.rbac.tenant.service.impl;
 
+import java.util.Collection;
+import org.simplepoint.events.api.EventMessage;
+import org.simplepoint.platform.resource.ApplicationCatalogRemovalEvents;
+import org.simplepoint.plugin.rbac.tenant.api.entity.RetiredApplicationResource;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
@@ -107,6 +112,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     String tenant = required(command.tenantId(), 36, "tenantId");
     requiredKey(command.rootKey());
     lockTenant(tenant);
+    requireManagedKeyAvailable(owner, tenant, command.rootKey());
     var root = find(owner, tenant, command.rootKey(), true);
     long revision = root == null ? 0 : root.getNavigationRevision();
     if (revision == command.revision() && Objects.equals(root.getNavigationDigest(), plan.digest)) return revision;
@@ -178,6 +184,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
   public boolean cancelNavigation(org.simplepoint.plugin.rbac.tenant.api.model.ManagedNavigationCommand command) {
     String owner = callerGuard.requireOwner(); var plan = new ManagedNavigationPlan(command);
     String tenant = required(command.tenantId(), 36, "tenantId"); lockTenant(tenant);
+    requireManagedKeyAvailable(owner, tenant, command.rootKey());
     var root = find(owner, tenant, requiredKey(command.rootKey()), true);
     long revision = root == null ? 0 : root.getNavigationRevision();
     // The durable cancellation decision fences requests still in flight at the remote boundary.
@@ -223,6 +230,7 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     org.simplepoint.plugin.rbac.tenant.api.entity.TenantResourceOrigin.forManagedOwner(owner);
     Declaration declaration = validate(owner, command);
     lockTenant(declaration.tenantId());
+    requireManagedKeyAvailable(owner, declaration.tenantId(), declaration.managedKey());
     TenantResource parent = resolveParent(owner, declaration);
     TenantResource host = resolveHost(declaration);
     TenantResource existing = find(owner, declaration.tenantId(), declaration.managedKey(), true);
@@ -445,6 +453,99 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
     authorizationVersions.refreshTenant(event.tenantId());
   }
 
+  /** Erases the exact offline tree and its tenant grants; unselected dependencies block removal. */
+  @Transactional
+  public void removeApplicationCatalog(EventMessage event) {
+    var pages = ApplicationCatalogRemovalEvents.pages(event);
+    String tenant = event.tenantId();
+    String owner = "app";
+    String rootKey = ApplicationCatalogRemovalEvents.rootKey(event.resourceId());
+    var pageKeys = pages.stream().map(ApplicationCatalogRemovalEvents::pageKey)
+        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    var knownKeys = new LinkedHashSet<>(pageKeys);
+    knownKeys.add(rootKey);
+    lockTenant(tenant);
+    var receipt = entityManager.find(RetiredApplicationResource.class, stableId(tenant, owner, rootKey));
+    if (receipt != null) {
+      if (!receipt.getOperationId().equals(event.operationId())) throw removalConflict();
+      return;
+    }
+    var root = find(owner, tenant, rootKey, true);
+    if (root == null ? event.generation() != 0 : root.getNavigationRevision() != event.generation()) {
+      throw removalConflict();
+    }
+    var roots = entityManager.createQuery("from TenantResource r where r.tenantId = :tenant"
+            + " and r.managedOwner = :owner and (r.managedKey in :keys or r.navigationRootKey = :root)",
+            TenantResource.class)
+        .setParameter("tenant", tenant).setParameter("owner", owner).setParameter("keys", knownKeys)
+        .setParameter("root", rootKey).setMaxResults(MAX_SUBTREE_SIZE + 1)
+        .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
+    if (roots.size() > MAX_SUBTREE_SIZE) throw removalConflict();
+    roots.stream().filter(r -> ResourceType.PAGE.equals(r.getType())
+        && rootKey.equals(r.getNavigationRootKey())).map(TenantResource::getManagedKey).forEach(pageKeys::add);
+    var resources = subtree(tenant, owner, roots);
+    for (var item : resources) {
+      String key = item.getManagedKey();
+      if (ResourceType.PAGE.equals(item.getType()) && (!pageKeys.contains(key)
+          || !("/app/runtime/" + event.resourceId() + "/" + key.substring("page:".length())).equals(item.getPath()))) {
+        throw removalConflict();
+      }
+      if (!(rootKey.equals(key) || rootKey.equals(item.getNavigationRootKey()) || pageKeys.contains(key)
+          || ResourceType.ACTION.equals(item.getType()) && pageKeys.stream().anyMatch(page -> key.startsWith(page + ":")))) {
+        throw removalConflict();
+      }
+      if (!ResourceType.GROUP.equals(item.getType())
+          && (item.isEnabled() || item.getLifecycleGeneration() > 0 && !item.isFormallyOffline())) {
+        throw removalConflict();
+      }
+      knownKeys.add(key);
+    }
+    if (!resources.isEmpty()) {
+      var owned = resources.stream().collect(java.util.stream.Collectors.toMap(TenantResource::getId, item -> item));
+      var ids = owned.keySet();
+      var foreign = entityManager.createQuery("select r.id from TenantResource r where r.tenantId = :tenant"
+              + " and r.id not in :ids and (r.parentId in :ids or r.targetResourceId in :ids"
+              + " or r.managedHostResourceId in :ids)", String.class)
+          .setParameter("tenant", tenant).setParameter("ids", ids).setMaxResults(1).getResultList();
+      if (!foreign.isEmpty()) throw removalConflict();
+      var codes = resources.stream().map(TenantResource::getCode).toList();
+      entityManager.createQuery("delete from RoleResourceGrant g where g.tenantId = :tenant"
+              + " and g.resourceCode in :codes")
+          .setParameter("tenant", tenant).setParameter("codes", codes).executeUpdate();
+      resources.stream().sorted(java.util.Comparator
+              .comparingInt((TenantResource item) -> removalDepth(item, owned)).reversed())
+          .forEach(entityManager::remove);
+    }
+    for (String key : knownKeys) {
+      var marker = new RetiredApplicationResource();
+      marker.setId(stableId(tenant, owner, key));
+      marker.setOperationId(event.operationId());
+      entityManager.persist(marker);
+    }
+    entityManager.flush();
+    authorizationVersions.refreshTenant(tenant);
+  }
+
+  private void requireManagedKeyAvailable(String owner, String tenant, String key) {
+    if ("app".equals(owner) && entityManager.find(RetiredApplicationResource.class, stableId(tenant, owner, key)) != null) {
+      throw removalConflict();
+    }
+  }
+
+  private static int removalDepth(TenantResource item, java.util.Map<String, TenantResource> owned) {
+    int depth = 0;
+    for (var parent = item.getParentId(); parent != null && owned.containsKey(parent);
+        parent = owned.get(parent).getParentId()) {
+      if (++depth > 64) throw removalConflict();
+    }
+    return depth;
+  }
+
+  private static ManagedTenantResourceException removalConflict() {
+    return failure(ManagedTenantResourceErrorCode.RESOURCE_CONFLICT,
+        "The application catalog has active, changed or shared resources");
+  }
+
   private void emRevoke(String tenantId, List<String> codes, Instant now) {
     // Keep shared data/field policies and grant history; remove only effective assignments.
     entityManager
@@ -510,11 +611,15 @@ public class ManagedTenantResourceServiceImpl implements ManagedTenantResourceSe
 
   private List<TenantResource> subtree(
       final String tenantId, final String owner, final TenantResource root) {
-    List<TenantResource> resources = new ArrayList<>();
-    resources.add(root);
-    Set<String> seen = new LinkedHashSet<>();
-    seen.add(root.getId());
-    List<String> parents = List.of(root.getId());
+    return subtree(tenantId, owner, List.of(root));
+  }
+
+  private List<TenantResource> subtree(
+      final String tenantId, final String owner, final Collection<TenantResource> roots) {
+    List<TenantResource> resources = new ArrayList<>(roots);
+    Set<String> seen = roots.stream().map(TenantResource::getId)
+        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    List<String> parents = List.copyOf(seen);
     while (!parents.isEmpty()) {
       List<TenantResource> children = new ArrayList<>();
       for (int start = 0; start < parents.size(); start += 100) {
